@@ -37,13 +37,21 @@
                 $optionId = $groupId.'-'.(string) $loop->index;
                 $isChecked = in_array($option['value'], $selected, true);
             @endphp
-            <label for="{{ $optionId }}" class="flex items-center gap-2 text-sm">
+            <label for="{{ $optionId }}" @class(['flex cursor-pointer items-center gap-2 text-sm', 'cursor-not-allowed text-zinc-400' => $disabled || $readonlyChoices || ($option['disabled'] ?? false)])>
                 <input id="{{ $optionId }}" type="{{ $mode }}"
                     name="{{ $mode === 'checkbox' ? $fieldName.'[]' : $fieldName }}"
                     value="{{ $option['value'] }}" @checked($isChecked)
                     @disabled($disabled || $readonlyChoices || ($option['disabled'] ?? false))
                     @if ($readonlyChoices) aria-readonly="true" @endif
-                    class="accent-black focus-visible:ring-4 focus-visible:ring-zinc-400">
+                    class="peer sr-only">
+                <span aria-hidden="true" @class([
+                    'inline-flex h-5 w-5 shrink-0 items-center justify-center border border-black bg-white text-sm font-bold text-transparent',
+                    'rounded-full' => $mode === 'radio',
+                    'rounded-sm' => $mode === 'checkbox',
+                    'peer-checked:border-black peer-checked:bg-black peer-checked:text-white',
+                    'peer-focus-visible:ring-4 peer-focus-visible:ring-zinc-400 peer-focus-visible:ring-offset-2',
+                    'peer-disabled:border-zinc-300 peer-disabled:bg-zinc-100 peer-disabled:opacity-50',
+                ])>{{ $mode === 'checkbox' ? '✓' : '●' }}</span>
                 <span>{{ (string) $option['label'] }}</span>
             </label>
         @endif
