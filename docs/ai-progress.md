@@ -276,6 +276,7 @@ Yêu cầu người dùng: tiếp tục phần InventoryService độc lập, gi
 - Toàn suite random trên MySQL: **819tests/7543assertions PASS**, gồm743test cũ và76test Inventory; lượt xác minh sau khởi động runtime182,187giây. Full Pint và dirty Pint PASS, PHP syntax5file mới PASS. Không thay dependencies/lockfiles/migrations hoặc build lại frontend không đổi.
 - SHA256 source cũ320/320 và UI/dependency/migration protected32/32 giữ nguyên; frozen spec SHA2564736603bf64d9ac2794e48cca1c1bbdeb18a5e0346d60ec509de8ff87942ad2e. Reference/spec/TXT79tệp working baseline không đổi;48EXT không xung đột đường dẫn. Homepage và /up200, slogan giao diện gốc còn nguyên.
 - Development DB vẫn41bảng,roles3/users0; product/import/inventory-movement/order/payment/refund/ledger/outbox đều0. Không chạy InventoryService trên development DB, không gửi thông báo thật; before/after/delta và rollback được kiểm trong database test riêng.
+- Draft PR thực tế: https://github.com/httrung0308/cena-store-laravel/pull/4 , base codex/p01-05-ledger-outbox-primitives; code commit fb6c9ace4fa153a0a28bbf3a3841b409cdf28e32. CI GitHub Linux/MySQL8.4 **SUCCESS** cả push https://github.com/httrung0308/cena-store-laravel/actions/runs/41198584097 và pull_request https://github.com/httrung0308/cena-store-laravel/actions/runs/41198594131 . Pipeline gồm clean install/platform/build, migrations hai schema, toàn suite và Pint/clean diff. PR vẫn draft, không merge main hoặc PR EXT; remote evidence là run thật, không suy ra từ local.
 
 ### Gate sau gói Inventory
 
