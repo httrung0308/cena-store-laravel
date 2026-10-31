@@ -104,7 +104,7 @@ Hợp đồng với bên cộng tác: [administrative-data-contract.md](docs/col
 
 ## Chuẩn bị độc lập ledger/outbox trong lúc chờ EXT
 
-Nhánh codex/p01-05-ledger-outbox-primitives chuẩn bị phần persistence của P01.05, dựa trên core PR#1. P01.04 vẫn chờ dataset/validator; chưa đóng gate P01.05, chưa có InventoryService hoặc workflow checkout/delivery/refund thật. Không thay routes/UI/schema/lockfiles, không có producer/scheduler/transport được bật và không gửi email thật.
+Nhánh codex/p01-05-ledger-outbox-primitives chuẩn bị phần persistence của P01.05, dựa trên core PR#1. Nhánh codex/p01-05-inventory-primitives bổ sung InventoryService và xếp sau PR#2. P01.04 vẫn chờ dataset/validator; chưa đóng gate P01.05 hoặc có workflow checkout/delivery/refund thật. Không thay routes/UI/schema/lockfiles, không có producer/scheduler/transport được bật và không gửi email thật.
 
 SalesLedgerService::postUnique nhận operation key, enum type, signed VND deltas, source IDs và occurredAt snapshot; chỉ gọi trong transaction nghiệp vụ. Service kiểm whitelist/type/range/shape/source chain và insert hoặc replay đúng intent; sửa sai bằng entry bù mới. Nó không thay kiểm tra paid/delivered/refund budget/Policy/row locks của service nghiệp vụ tương lai. Không truyền request.all() vào service.
 
@@ -119,3 +119,23 @@ Kiểm tra trọng tâm:
 ```
 
 Concurrency test dùng hai PHP process/MySQL connection thật và barrier ép cả hai đọc key chưa tồn tại trước insert. Worker fixture tự kiểm TestDatabaseGuard; credential truyền qua process env, không argv/output. Committed fixtures được xóa theo namespace/IDs của chính test; không dùng migrate:fresh, không chạy song song các test suite dùng chung schema. Đây là bằng chứng cho primitive, chưa phải race gate payment/inventory của các phase sau.
+
+## InventoryService chuẩn bị độc lập
+
+InventoryChange là intent do server dựng, không nhận trực tiếp request: operationKey, variantId, action enum, referenceType/refId, quantity, input cost khi nhập hàng, actorId và reason. InventoryService cung cấp reserve/release/issue/receive/receiveQuarantine/restock/writeOff/adjust và applyBatch. Service bắt buộc transaction của caller; savepoint rollback toàn batch khi một SKU lỗi. Các biến thể được khóa theo ID tăng trước khi ghi, kết quả trả theo thứ tự intent. Tất cả movement có delta, before/after ba bucket và giá vốn snapshot; không có API sửa/xóa movement.
+
+Caller phải kiểm Policy và khóa actor/quyền, chứng từ gốc, dòng chứng từ/unit liên quan theo thứ tự canonical trước khi gọi; các locking-read của service đọc lại dữ liệu hiện hành, không thay quy trình khóa root. Retry deadlock bọc toàn transaction SQL của nghiệp vụ; không SMTP/HTTP/file I/O trong closure retry. Đổi size phải gộp hai movement vào cùng transaction/batch. Service không tự chuyển trạng thái order/import/RMA, không kiểm thay deadline/payment/inspection/supplier hay tạo unit/COGS sale/refund; những workflow đó còn ở phase sau.
+
+Quantity chỉ int/digit string dương; tối đa2147483647 cho mỗi movement vì delta là INT signed, trong khi mỗi bucket cho phép tới4294967295. Không nhận float hoặc delta do client tự tính. Reserve không vượt available hoặc lượng còn lại của dòng đơn/RMA; release/issue phải tiêu thụ reserve đúng reference của mình. Receipt import kiểm SKU, cost và quantity của dòng DRAFT. Quarantine theo từng shipment-return-item/RMA, mỗi nguồn một đôi: chỉ nhập lại/hủy đúng hàng của nguồn đó, không lấy hàng cách ly từ chứng từ khác. WarrantyRepair của khách không tạo movement kho.
+
+WAC dùng Cost/BCMath scale4, bao gồm stock đang reserve và loại quarantine. Xuất snapshot WAC tại lúc xuất; restock dùng basis của lần nhận cách ly. Stock về0 giữ giá vốn cuối, lần nhập tiếp theo tính theo hàng mới. Replay exact key/intent trả nguyên row cũ dù WAC/actor/catalog/source status đã đổi; key giống nhưng khác nội dung hoặc khác chữ hoa/thường trả IDEMPOTENCY_MISMATCH. Key mới cũng không được nhận lại/tiêu thụ cùng tài sản vượt lượng chứng từ.
+
+Điều chỉnh thủ công cần Admin hiện hành, reason ít nhất20 ký tự và reference_id biên bản do caller xác minh. MANUAL_ADJUST_OUT chỉ lấy available và ghi INVENTORY_LOSS cùng transaction, expense làm tròn một lần theo tổng basis×quantity; overflow hủy cả thay đổi kho. QUARANTINE_WRITEOFF cần Admin/reason và reference nguồn cách ly thật; RMA còn mở bị chặn, không dùng MANUAL_ADJUSTMENT để rút hàng cách ly không rõ chủ. RETURN_WRITTEN_OFF là disposition của workflow kiểm hàng; workflow quyết định bút toán tổn thất nếu chưa ghi chi phí, tránh ghi hai lần.
+
+Trước ghi mới, service cộng và kiểm chuỗi movement từ0, before/after/cost và ownership của reserve/quarantine so với số dư hiện tại. Mismatch chặn bằng STATE_CONFLICT; assertConsistent chỉ kiểm, không sửa số dư/lịch sử. Phiên bản PREP đọc toàn history của SKU dưới lock để ưu tiên đúng; cần đo tải và thiết kế đối chiếu/checkpoint ở P04 trước production. Chưa có scheduled reconciliation hoặc endpoint được bật.
+
+```powershell
+.\scripts\php.ps1 artisan test --compact tests/Feature/InventoryServiceTest.php tests/Feature/InventoryConcurrencyTest.php
+```
+
+InventoryConcurrencyTest giữ khóa SKU ở connection cha, đợi cả hai worker bước vào locking-read rồi mới nhả khóa, buộc tranh chấp thực. Worker có read snapshot cũ trước khi gọi service để kiểm current-read trong MySQL REPEATABLE READ. Chỉ fixture test dùng file barrier; code nghiệp vụ không I/O. Child workers được join/stop trước cleanup và không chạy cùng suite/lifecycle khác trên schema test.

@@ -11,7 +11,7 @@
 | P01.02 — Models/relationships/casts/Resource whitelist | **Hoàn thành** |34 model miền + DomainModel,147 quan hệ typed,31 enums,34 factory cấu trúc,19 Customer +34 Admin Resources;423 test mới qua; toàn suite558 tests/5808 assertions PASS |
 | P01.03 — Money/clock/enums/exception contract | **Hoàn thành** |115 test mới; toàn suite673 tests/6848 assertions PASS trên MySQL, random order;214 file PHP syntax PASS; nguồn cũ/UI/schema giữ nguyên |
 | P01.04 — Foundation seed/factories/dataset | **Đang làm: core, chờ EXT-001/002** | Core roles/demo/config/factory:700tests/7067assertions PASS; dataset/validator/import và code ship chờ EXT-001/002; chưa chuyển P01.05 |
-| P01.05 — Ledger/outbox chuẩn bị độc lập | **PREP, gate chưa mở** | Chưa vượt P01.04; 743tests/7272assertions PASS; persistence/lease/retry trên nhánh riêng, chưa InventoryService hoặc kích hoạt nghiệp vụ |
+| P01.05 — Inventory/ledger/outbox chuẩn bị độc lập | **PREP, gate chưa mở** | Chưa vượt P01.04; 819tests/7543assertions PASS; inventory/ownership/WAC/replay/rollback và persistence/lease/retry trên nhánh riêng, chưa kích hoạt workflow nghiệp vụ |
 
 **Gate P00: PASS**, xem [biên bản nghiệm thu](evidence/p00-verification.md) và JSON/log/ảnh trong `evidence`. Tại thời điểm nghiệm thu P00/P01.03 chưa có commit/remote; việc công bố GitHub được người dùng ủy quyền sau đó, xem mục cộng tác cuối nhật ký. Không gắn kết quả local thành CI remote hoặc sửa source cũ. Chưa có các chức năng auth/catalog/checkout/kho/payment/RMA thật; menu/cart hiện là shell giao diện.
 
@@ -250,3 +250,33 @@ Yêu cầu mới: tiếp tục các phần độc lập chưa giao bên kia, gi�
 ### Gate và phần giữ lại
 
 Số task canonical hoàn thành vẫn6/51. P01.04 chờ dataset/validator/import/shipping review; P01.05 chưa complete vì chưa có InventoryService/stock movement primitives và chưa tích hợp qua prerequisite đầy đủ. Không có sales/delivery/payment/RMA/notification thật được kích hoạt; không đưa code mới lên main hoặc tự merge PR ngoài. Giữ toàn bộ phạm vi48EXT cho bên kia.
+
+## InventoryService độc lập của P01.05 trong lúc chờ EXT (31/10/2026)
+
+Yêu cầu người dùng: tiếp tục phần InventoryService độc lập, giữ source cũ/giao diện, kiểm đầy đủ và cập nhật nhật ký, không tạo báo cáo riêng. Nhánh codex/p01-05-inventory-primitives xếp trên ledger/outbox PR#2; không lấy code từ PR PREP#3 của bên kia, không sửa48 allowlist EXT hoặc main. Trạng thái dưới đây cập nhật phần “chưa có InventoryService” của bản ghi trước; toàn phase vẫn chưa complete.
+
+### Phần đã triển khai và ranh giới
+
+- InventoryChange readonly chứa server intent; InventoryService có reserve/release/issue/receive/receiveQuarantine/restock/writeOff/adjust/applyBatch và assertConsistent. Caller transaction bắt buộc, savepoint toàn batch, variant locks ID tăng và current-read trong REPEATABLE READ. Không có caller-provided delta hoặc API sửa/xóa movement. Giữ schema, guarded models, enums, routes và UI.
+- Mỗi movement ghi delta/before/after ba bucket, WAC trước/sau, basis và actor snapshot. Quantity strict int/digit string dương ≤2147483647 theo INT signed của delta; bucket ≤4294967295. Giữ reserved<=stock, không xuất hàng chưa reserve hoặc điều chỉnh lấy phần đang giữ.
+- Sở hữu reserve theo đúng Order/RMA/reference/variant; cap held+cumulative issued theo dòng đơn hoặc một target RMA. Quarantine theo receipt thực của từng ShipmentReturnItem/RMA, mỗi nguồn một đôi; không lấy hàng cách ly của chứng từ khác, không nhận/restock/writeoff lần hai bằng key mới. WarrantyRepair không cộng kho. Đổi size kiểm source/target cùng color, khác variant; hai hướng movement chung transaction/batch.
+- Import kiểm DRAFT/item/SKU/qty/cost, WAC bằng Cost/BCMath4 có reserve và loại quarantine. Receipt cách ly giữ basis nguồn; restock/writeoff dùng basis đã ghi, không dùng snapshot sửa về sau. Stock0 giữ last cost, lần nhập mới tính từ hàng mới. Outgoing snapshot WAC tại lúc xuất, không sửa giá vốn movement cũ.
+- Replay exact key/intent trả nguyên row kể cả source đã POSTED/actor renamed-inactive/catalog deleted/WAC đổi. Different key case, action, variant, source, quantity, input basis, actor hoặc reason trả IDEMPOTENCY_MISMATCH. Unique race rollback savepoint trước đọc lại; deadlock để caller retry toàn SQL transaction.
+- Manual cần current active Admin, reason≥20 và reference biên bản; không cấp lại quyền hoặc bypass Policy. MANUAL_ADJUST_OUT ghi INVENTORY_LOSS cùng transaction theo basis hiện hành, order null, movement FK, VND làm tròn tổng một lần. Overflow ledger rollback cả kho/movement. Manual QUARANTINE_WRITEOFF chỉ nguồn thực, chặn RMA mở; workflow disposition bình thường chịu trách nhiệm expense khi chưa ghi, tránh double cost.
+- Reconcile đọc history từ0, kiểm delta shape/cost chain/ownership/balances; mismatch STATE_CONFLICT chặn ghi mới, không tự sửa. assertConsistent chỉ kiểm. Bản PREP đọc toàn history SKU dưới lock, cần đo tải/checkpoint và scheduled report ở P04 trước production.
+- Caller tương lai phải authorize và prelock actor/role/roots/items/units theo canonical, kiểm supplier/cost0 approval/order state/payment/deadline/inspection và đổi status/unit snapshots; service không tự làm các workflow đó. Không bật producer/endpoint/scheduler/transport, không ghi stock giả vào development DB.
+
+### Kiểm tra và sửa lỗi tìm được
+
+- Nhóm InventoryService/InventoryConcurrency: **76tests/271assertions PASS** trên MySQL thật. Bao16action, strict input/cost/key/evidence/actor guards, INT32/UINT32 bounds, reserve ownership/caps, quarantine ownership/duplicate disposition, WAC/replay/snapshot, soft-delete historical release, reconciliation drift và atomic rollback cả stock/movement/loss/outbox.
+- InventoryConcurrency có6race và1transaction-guard test. Hai PHP worker/MySQL connection riêng, parent giữ SKU lock rồi chờ cả hai tới locking-read trước nhả; worker thiết lập snapshot cũ trước service để kiểm current-read. Cases: last pair, same key/same intent, different quantity, same key/different SKU, reversed batch order, release-vs-dispatch. Chỉ một winner khi cần, không oversell hoặc nửa batch/outbox dư; connection IDs được assert khác nhau. Guard DB và process env riêng, join/stop trước cleanup theo IDs, không reset/mutate schema development.
+- Lần test đầu phát hiện dùng nhầm name thay vì full_name của User, expected error chưa đúng ở duplicate RMA reservation, và raw factory chưa refresh trước so sánh rollback. Đã sửa code snapshot sang full_name, sửa fixture/expected theo domain rule thực và chạy lại nhóm; không nới ràng buộc nghiệp vụ để test qua.
+- Audit ban đầu so TXT working CRLF với Git blob LF nên báo khác byte dù git không có diff. Đã đối chiếu đúng working-byte baseline có từ trước: reference/spec/TXT đều giữ nguyên. Không đổi line-ending/tài liệu EXT để làm audit qua.
+- Khi tiếp tục phiên làm việc, MySQL3307 và web8000 đã dừng, khiến lượt rerun chờ kết nối. Đã dừng đúng hai PHP process test do lượt này tạo, khởi động lại MySQL bằng my.ini/datadir Cena hiện hữu và web bằng start-local.ps1, kiểm migration status trước chạy lại suite. Không initialize/provision/reset credential hoặc sửa env/data development; lỗi chờ hạ tầng không được ghi là test PASS.
+- Toàn suite random trên MySQL: **819tests/7543assertions PASS**, gồm743test cũ và76test Inventory; lượt xác minh sau khởi động runtime182,187giây. Full Pint và dirty Pint PASS, PHP syntax5file mới PASS. Không thay dependencies/lockfiles/migrations hoặc build lại frontend không đổi.
+- SHA256 source cũ320/320 và UI/dependency/migration protected32/32 giữ nguyên; frozen spec SHA2564736603bf64d9ac2794e48cca1c1bbdeb18a5e0346d60ec509de8ff87942ad2e. Reference/spec/TXT79tệp working baseline không đổi;48EXT không xung đột đường dẫn. Homepage và /up200, slogan giao diện gốc còn nguyên.
+- Development DB vẫn41bảng,roles3/users0; product/import/inventory-movement/order/payment/refund/ledger/outbox đều0. Không chạy InventoryService trên development DB, không gửi thông báo thật; before/after/delta và rollback được kiểm trong database test riêng.
+
+### Gate sau gói Inventory
+
+Inventory primitives đã được triển khai và kiểm độc lập. Số task canonical hoàn tất vẫn6/51: P01.04 chờ dataset/validator/import/shipping review; toàn P01.05 chờ prerequisite và tích hợp workflow đúng gate. Không coi tests primitive là checkout/delivery/payment/RMA đã hoàn thiện, không merge PR owner/external tự động. Nhật ký/README/ADR/AGENTS hiện có được cập nhật; không tạo báo cáo nghiệm thu riêng.
