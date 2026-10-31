@@ -21,4 +21,19 @@ class RoleFactory extends Factory
             'updated_at' => now(),
         ];
     }
+
+    public function administrator(): static
+    {
+        return $this->state(['slug' => RoleSlug::Admin, 'name' => RoleSlug::Admin->label()]);
+    }
+
+    public function staff(): static
+    {
+        return $this->state(['slug' => RoleSlug::Staff, 'name' => RoleSlug::Staff->label()]);
+    }
+
+    public function customer(): static
+    {
+        return $this->state(['slug' => RoleSlug::Customer, 'name' => RoleSlug::Customer->label()]);
+    }
 }

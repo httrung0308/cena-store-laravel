@@ -8,6 +8,7 @@ Project mới tách biệt với `Shoe-Store_HQTCSDL`. Đã triển khai nền t
 - Homepage và shell menu/cart theo thiết kế gốc; font Montserrat tự phục vụ, ảnh gốc có hash/giấy phép. Đây chưa phải catalog/giỏ hàng/đăng nhập thật: nút nghiệp vụ hiển thị thông báo sắp mở, drawer chỉ là trạng thái trống.
 - Schema P01.01 có34 bảng miền +6 bảng hạ tầng + `migrations` =41 bảng thực tế,70 FK,4 generated unique helpers và110 CHECK. P01.02 có34 model miền, custom pivot, casts,31 string enums,34 factory cấu trúc và Resource whitelist tách Customer/Admin. Tài liệu: `docs/database/schema.md`. Chưa seed user demo/admin hoặc triển khai workflow bán hàng.
 - P01.03: Money integer VND/BCMath, WAC scale4, size canonical, BusinessClock UTC/VN, fingerprint SHA256 và envelope/lỗi Blade–AJAX dùng chung. Các helper không ghi kho/đơn/ledger; FormRequest và workflow thật được nối ở phase tương ứng.
+- P01.04 đang làm phần core: roles seed theo slug, demo users opt-in chỉ local/testing, palette12 màu giữ key/hex source gốc và cấu hình shipping. Dataset/validator chờ EXT-001/002; toàn task chưa PASS và DatabaseSeeder chưa nối seed đầy đủ.
 - MySQL test riêng, tài khoản test không được truy cập database phát triển, PHPUnit guard, CI và bằng chứng cài sạch.
 - Nhật ký: `docs/ai-progress.md`; nghiệm thu: `docs/evidence/p00-verification.md`; contract: `docs/architecture/decisions.md`; rubric: `docs/requirements/traceability.md`.
 
@@ -86,3 +87,17 @@ P01.03 đã hoàn thành Money/clock/enum labels/exception contract. Task tiếp
 ## Nguồn tham chiếu
 
 UI chuyển từ source do người dùng cung cấp (cena261, MIT — `LICENSE-legacy-ui`). Footer giữ nguồn cena261/nike.com như bản gốc; ảnh không được coi là do AI tạo. Laravel skeleton giữ các thông báo giấy phép trong package dependencies. Hướng dẫn chính thức: [Laravel13](https://laravel.com/docs/13.x), [Tailwind3](https://v3.tailwindcss.com/docs/installation), [PHPUnit12.5](https://docs.phpunit.de/en/12.5/), [setup-php](https://github.com/shivammathur/setup-php), [setup-node](https://github.com/actions/setup-node).
+
+## Core foundation trong lúc chờ dataset
+
+Đây là phần identity/config của P01.04, không phải toàn FoundationSeeder. Seed roles idempotent, mặc định không tạo demo user:
+
+```powershell
+.\scripts\php.ps1 artisan db:seed --class=CoreFoundationSeeder --no-interaction
+```
+
+Demo chỉ bật có chủ đích trong local/testing bằng STORE_DEMO_USERS=true và STORE_DEMO_PASSWORD riêng trong env không commit (12..72 bytes, không có mật khẩu mặc định). Khi bật, tạo ba tài khoản .test theo config, một role và giỏ trống mỗi user. Seed lại không đổi password/profile, không mở khóa/khôi phục/tái cấp quyền cho tài khoản đã thay đổi; email trùng không được dùng làm cớ nâng quyền. Không gửi mail. Không bật trên staging/production, kể cả dùng --force. Không chạy config:show store khi có secret demo trong cấu hình.
+
+Palette config tái sử dụng12 key của source: red/blue/green/yellow/black/white/gray/pink/purple/orange/brown/lime. Không có bảng palette mới. Shipping giữ30k/40k và ngưỡng2triệu VND; HCM province code/dataset version chưa thiết lập cho tới khi dữ liệu được duyệt. Đây chưa phải PricingService. Factory wardOf chỉ là fixture synthetic cho test, không được dùng làm địa giới demo thật.
+
+Hợp đồng với bên cộng tác: [administrative-data-contract.md](docs/collaboration/administrative-data-contract.md). Giữ nguyên48 allowlist và prompt đã giao; owner không tự làm lại EXT-001/002/003/004.

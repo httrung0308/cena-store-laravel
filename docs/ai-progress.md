@@ -10,6 +10,7 @@
 | P01.01 — Canonical schema/migrations | **Hoàn thành** |34 bảng miền;483 cột miền gồm4 helper;70 FK,79 index/unique khai báo,110 CHECK;135 tests/2929 assertions qua trên MySQL thật, gồm rollback/dựng lại và thứ tự test ngẫu nhiên |
 | P01.02 — Models/relationships/casts/Resource whitelist | **Hoàn thành** |34 model miền + DomainModel,147 quan hệ typed,31 enums,34 factory cấu trúc,19 Customer +34 Admin Resources;423 test mới qua; toàn suite558 tests/5808 assertions PASS |
 | P01.03 — Money/clock/enums/exception contract | **Hoàn thành** |115 test mới; toàn suite673 tests/6848 assertions PASS trên MySQL, random order;214 file PHP syntax PASS; nguồn cũ/UI/schema giữ nguyên |
+| P01.04 — Foundation seed/factories/dataset | **Đang làm: core, chờ EXT-001/002** | Core roles/demo/config/factory:700tests/7067assertions PASS; dataset/validator/import và code ship chờ EXT-001/002; chưa chuyển P01.05 |
 
 **Gate P00: PASS**, xem [biên bản nghiệm thu](evidence/p00-verification.md) và JSON/log/ảnh trong `evidence`. Tại thời điểm nghiệm thu P00/P01.03 chưa có commit/remote; việc công bố GitHub được người dùng ủy quyền sau đó, xem mục cộng tác cuối nhật ký. Không gắn kết quả local thành CI remote hoặc sửa source cũ. Chưa có các chức năng auth/catalog/checkout/kho/payment/RMA thật; menu/cart hiện là shell giao diện.
 
@@ -186,3 +187,34 @@ Người dùng yêu cầu đưa project lên GitHub, cho phép commit/push và c
 +- Đối chiếu sau publish:320 source cũ và32 tệp UI/dependency/migration protected giữ nguyên SHA256. Homepage và /up vẫn200. Bản project giải nén lồng, env, local credentials, vendor/node_modules/build không có trong Git tree.
 +- Bản TXT Downloads khớp nội dung bản project;48 task có allowlist/dependency/checks/prompt/fork-PR workflow và phân vai.38 PREP không có nghĩa có thể làm cùng lúc hoặc vượt phase;10 WAIT_CONTRACT chỉ bắt đầu khi API/DTO upstream có thật.
 +- Đánh giá tiến độ:6/51 task canonical xong,45 còn lại; task tiếp theo vẫn P01.04. Demo tối31/10 hiện chỉ là nền tảng/UI/test, chưa có login/cart/checkout thật; các mốc và ước lượng có điều kiện ghi trong TXT. Không triển khai hoặc tuyên bố hoàn tất P01.04/P02+ trong lần chuẩn bị cộng tác này.
+
+## P01.04 — Core không chồng lấn với bên cộng tác (31/10/2026)
+
+Người dùng yêu cầu tiếp tục, giữ các phần đã giao cho bên kia. Khi bắt đầu chưa có PR mở. Không sửa48 allowlist EXT, không nghiên cứu lại dataset hoặc viết AdministrativeDatasetValidator, không đụng UI/source cũ và không tạo báo cáo nghiệm thu riêng.
+
+### Phần đã triển khai
+
+- RolesSeeder upsert ba role theo slug; CoreFoundationSeeder bao transaction roles + demo identity. Chưa tạo FoundationSeeder/importer đầy đủ hoặc thay DatabaseSeeder vì cần EXT-001/002 được review trước.
+- DemoUsersSeeder mặc định tắt; bật trong local/testing bằng config/private password12..72bytes. Ba email .test, hash qua User cast, role lookup slug, pivot direct server attributes giữ guarded, giỏ trống. Replay không đổi profile/hash/metadata; tài khoản locked/deleted/revoked/password đổi hoặc email trùng bị từ chối, rollback batch. Không gửi mail, không seed stock/cost/ledger/outbox.
+- config/store.php palette12 key/hex đối chiếu FilterColors/FilterColor và Tailwind3 đã cài; shipping threshold2triệu vàfee30k/40k. Code HCM/version để null chờ nguồn xác minh, không đoán ID/tên tỉnh. Hai env example chỉ thêm flagfalse/secretblank/codesblank; env thật không sửa.
+- RoleFactory có administrator/staff/customer; AdministrativeUnitFactory có wardOf liên kết province/version/date. Đây là synthetic fixture, không file địa giới thật.
+- Hợp đồng dữ liệu ../collaboration/administrative-data-contract.md; README/AGENTS/ADR cập nhật phân công và giới hạn. File TXT/75 UI references và các tệp của EXT giữ nguyên.
+
+### Kiểm tra và vấn đề đã sửa
+
+- Test hẹp FoundationCoreTest:27tests/219assertions PASS trước format. Bao replay/roleID/FK/timestamps, bcrypt/privateconfig, production/staging/thiếu role/configsai, email collision rollback, không mở lại Admin, không reset password, profile/cart, palette/shipping/factory.
+- Negative test ban đầu có thể nhầm exception của prompt xác nhận CLI production với LogicException nghiệp vụ. Đã dùng --force chỉ trong test DB guarded để vào đúng seeder và assert đúng class LogicException; không dựa Mockery exception để báo pass. Fixture được refresh trước so sánh raw attributes, ward sai phải được dựng bằng parent hợp lệ để SQL CHECK không che kiểm tra factory.
+- Core seed local chạy2lần với demo flagfalse bằng process env, không ghi env file. Tạo roles thật theo slug, không tạo người dùng/dữ liệu địa giới hoặc giày/tồn/chứng từ giả.
+- Full Pint và dirty Pint đã chạy sau test hẹp; suite random và đối chiếu nguồn đều PASS.
+
+### Kết quả kiểm tra core cuối
++
++- `php artisan test --compact --order-by=random --random-order-seed=20261031`: **700tests/7067assertions PASS**,100,587 giây; gồm27test core mới và673test nền/schema/model/helper hiện hữu. MySQL test riêng đã guard, không chạy các process test cùng schema đồng thời.
++- PHP syntax7 file PHP thay đổi/mới PASS; full Pint và `--dirty --format agent` PASS. Dependencies/lockfiles/migrations không thay đổi. Không cần build lại UI vì không sửa frontend.
++- `db:seed --class=CoreFoundationSeeder --no-interaction` chạy local2lần, cưỡng chế demo flagfalse chỉ trong process. `db:show --counts`:41 bảng,roles3,users0/user_roles0/carts0/administrative_units0, toàn kho/đơn/thu-hoàn/ledger/outbox0. Không in/lưu demo password, env thật giữ nguyên.
++- SHA256:320/320 file source cũ và32/32 UI/dependency/migration protected giữ nguyên; frozen specification/reference/48-task TXT không sửa. So14 file thay đổi/mới với allowlist của cả48EXT: **0 xung đột đường dẫn**. Homepage và /up200.
++- Nhánh làm việc `codex/p01-04-foundation-core`, không sửa main trực tiếp. Core sẵn sàng review độc lập nhưng toàn task P01.04 vẫn chưa PASS. PR/CI remote sẽ xác nhận bằng URL thật khi được tạo, không lấy kết quả local làm remote PASS.
+
+### Phần chưa hoàn tất
+
+EXT-001 cần giao proposal dataset/manifest/sources/codes thật; EXT-002 cần validator đã chốt API và test; owner review, tạo adapter/importer/canonical files, nối HCM code/version và FoundationSeeder/DatabaseSeeder rồi chạy full seed hai lần. P01.04 hiện WIP, số task canonical hoàn tất vẫn6/51; P01.05 chưa bắt đầu. EXT-003/004 và các task còn lại vẫn do bên kia nhận theo dependency.
