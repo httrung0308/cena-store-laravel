@@ -12,10 +12,17 @@
             @foreach ($visibleEntries as $entry)
                 @php
                     $date = null;
-                    try {
-                        $date = (new \DateTimeImmutable((string) ($entry['created_at'] ?? '')))->setTimezone($timeZone)->format('d/m/Y H:i:s.u');
-                    } catch (\Throwable $exception) {
-                        $date = null;
+                    $timestamp = $entry['created_at'] ?? null;
+                    if (is_string($timestamp) && preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?(?:Z|[+-]\d{2}:\d{2})$/D', $timestamp)) {
+                        try {
+                            $parsed = new \DateTimeImmutable($timestamp);
+                            $parseErrors = \DateTimeImmutable::getLastErrors();
+                            if ($parseErrors === false || ($parseErrors['warning_count'] === 0 && $parseErrors['error_count'] === 0)) {
+                                $date = $parsed->setTimezone($timeZone)->format('d/m/Y H:i:s.u');
+                            }
+                        } catch (\Exception $exception) {
+                            $date = null;
+                        }
                     }
                 @endphp
                 <li class="relative space-y-1 text-sm"><span class="absolute -left-[1.45rem] top-2 h-2 w-2 rounded-full bg-black"></span>
