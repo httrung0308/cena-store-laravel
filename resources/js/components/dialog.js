@@ -1,4 +1,5 @@
 const scrollLocks = new WeakMap();
+const focusOwners = new WeakMap();
 
 function lockScroll(body) {
     if (!body || !body.style) return;
@@ -25,30 +26,45 @@ export function dialogController() {
         body: null,
         doc: null,
         previousFocus: null,
-        attach({ panel, trigger, document: doc, body } = {}) {
+        previousOwner: null,
+        scheduleFocus: null,
+        focusEpoch: 0,
+        destroyed: false,
+        attach({ panel, trigger, document: doc, body, scheduleFocus } = {}) {
             this.panel = panel;
             this.trigger = trigger;
             this.doc = doc;
             this.body = body || doc?.body || null;
+            this.scheduleFocus = scheduleFocus || null;
         },
         openDialog(trigger = this.trigger) {
-            if (this.opened) return;
+            if (this.opened || this.destroyed) return;
             this.previousFocus = trigger || this.doc?.activeElement || null;
             this.opened = true;
+            this.previousOwner = this.body ? focusOwners.get(this.body) || null : null;
+            if (this.body) focusOwners.set(this.body, this);
             lockScroll(this.body);
-            const focusable = this._focusable();
-            (focusable[0] || this.panel)?.focus?.();
+            const epoch = ++this.focusEpoch;
+            const focusAfterShow = () => {
+                if (!this.opened || this.destroyed || this.focusEpoch !== epoch) return;
+                if (this.body && focusOwners.get(this.body) !== this) return;
+                const focusable = this._focusable();
+                (focusable[0] || this.panel)?.focus?.();
+            };
+            if (this.scheduleFocus) this.scheduleFocus(focusAfterShow);
+            else focusAfterShow();
         },
         closeDialog() {
             if (!this.opened || this.busy) return;
+            const ownsFocus = !this.body || focusOwners.get(this.body) === this;
             this._cleanup();
-            this.previousFocus?.focus?.();
+            if (ownsFocus) this.previousFocus?.focus?.();
         },
         _focusable() {
             return Array.from(this.panel?.querySelectorAll?.('a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])') || []).filter(el => !el.hidden && el.tabIndex !== -1);
         },
         onKeydown(event) {
-            if (!this.opened) return;
+            if (!this.opened || (this.body && focusOwners.get(this.body) !== this)) return;
             if (event.key === 'Escape') {
                 if (!this.busy) { event.preventDefault(); this.closeDialog(); }
                 return;
@@ -69,8 +85,18 @@ export function dialogController() {
         _cleanup() {
             if (!this.opened) return;
             this.opened = false;
+            ++this.focusEpoch;
+            if (this.body && focusOwners.get(this.body) === this) {
+                if (this.previousOwner?.opened) focusOwners.set(this.body, this.previousOwner);
+                else focusOwners.delete(this.body);
+            }
+            this.previousOwner = null;
             unlockScroll(this.body);
         },
-        destroy() { this._cleanup(); this.panel = this.trigger = this.body = this.doc = null; },
+        destroy() {
+            this.destroyed = true;
+            this._cleanup();
+            this.panel = this.trigger = this.body = this.doc = this.scheduleFocus = null;
+        },
     };
 }
