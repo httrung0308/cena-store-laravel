@@ -1,0 +1,4336 @@
+{
+  "source": "docs/specification.md §§6.1–6.5; explicit schema contract independent of migration execution",
+  "infrastructure": [
+    "sessions",
+    "cache",
+    "cache_locks",
+    "jobs",
+    "job_batches",
+    "failed_jobs"
+  ],
+  "tables": {
+    "users": {
+      "number": 1,
+      "columns": {
+        "id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": true
+        },
+        "full_name": {
+          "type": "varchar(100)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "email": {
+          "type": "varchar(255)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "phone": {
+          "type": "varchar(20)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "password": {
+          "type": "varchar(255)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "avatar_path": {
+          "type": "varchar(500)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "is_active": {
+          "type": "tinyint(1)",
+          "nullable": false,
+          "default": "1",
+          "auto_increment": false
+        },
+        "last_login_at": {
+          "type": "datetime(6)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "email_verified_at": {
+          "type": "datetime(6)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "auth_version": {
+          "type": "int unsigned",
+          "nullable": false,
+          "default": "1",
+          "auto_increment": false
+        },
+        "remember_token": {
+          "type": "varchar(100)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "created_at": {
+          "type": "datetime(6)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "updated_at": {
+          "type": "datetime(6)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "deleted_at": {
+          "type": "datetime(6)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        }
+      },
+      "foreign_keys": [],
+      "indexes": [
+        {
+          "columns": [
+            "email"
+          ],
+          "unique": true
+        },
+        {
+          "columns": [
+            "is_active",
+            "created_at"
+          ],
+          "unique": false
+        }
+      ],
+      "checks": [
+        "users_is_active_boolean_check",
+        "users_auth_version_positive_check"
+      ]
+    },
+    "roles": {
+      "number": 2,
+      "columns": {
+        "id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": true
+        },
+        "name": {
+          "type": "varchar(50)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "slug": {
+          "type": "varchar(30)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "description": {
+          "type": "varchar(255)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "created_at": {
+          "type": "datetime(6)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "updated_at": {
+          "type": "datetime(6)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        }
+      },
+      "foreign_keys": [],
+      "indexes": [
+        {
+          "columns": [
+            "slug"
+          ],
+          "unique": true
+        }
+      ],
+      "checks": [
+        "roles_slug_allowed_check"
+      ]
+    },
+    "user_roles": {
+      "number": 3,
+      "columns": {
+        "id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": true
+        },
+        "user_id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "role_id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "assigned_by": {
+          "type": "bigint unsigned",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "assigned_at": {
+          "type": "datetime(6)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        }
+      },
+      "foreign_keys": [
+        {
+          "column": "user_id",
+          "table": "users",
+          "references": "id",
+          "on_delete": "RESTRICT"
+        },
+        {
+          "column": "role_id",
+          "table": "roles",
+          "references": "id",
+          "on_delete": "RESTRICT"
+        },
+        {
+          "column": "assigned_by",
+          "table": "users",
+          "references": "id",
+          "on_delete": "RESTRICT"
+        }
+      ],
+      "indexes": [
+        {
+          "columns": [
+            "user_id",
+            "role_id"
+          ],
+          "unique": true
+        },
+        {
+          "columns": [
+            "role_id",
+            "user_id"
+          ],
+          "unique": false
+        }
+      ]
+    },
+    "password_reset_challenges": {
+      "number": 4,
+      "columns": {
+        "id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": true
+        },
+        "user_id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "challenge_token": {
+          "type": "char(64)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "otp_hash": {
+          "type": "varchar(255)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "attempts": {
+          "type": "tinyint unsigned",
+          "nullable": false,
+          "default": "0",
+          "auto_increment": false
+        },
+        "expires_at": {
+          "type": "datetime(6)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "last_sent_at": {
+          "type": "datetime(6)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "verified_at": {
+          "type": "datetime(6)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "used_at": {
+          "type": "datetime(6)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "invalidated_at": {
+          "type": "datetime(6)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "session_binding_hash": {
+          "type": "char(64)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "created_at": {
+          "type": "datetime(6)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "updated_at": {
+          "type": "datetime(6)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        }
+      },
+      "foreign_keys": [
+        {
+          "column": "user_id",
+          "table": "users",
+          "references": "id",
+          "on_delete": "RESTRICT"
+        }
+      ],
+      "indexes": [
+        {
+          "columns": [
+            "user_id"
+          ],
+          "unique": true
+        },
+        {
+          "columns": [
+            "challenge_token"
+          ],
+          "unique": true
+        },
+        {
+          "columns": [
+            "expires_at"
+          ],
+          "unique": false
+        }
+      ],
+      "checks": [
+        "password_reset_challenges_attempts_limit_check"
+      ]
+    },
+    "administrative_units": {
+      "number": 5,
+      "columns": {
+        "id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": true
+        },
+        "code": {
+          "type": "varchar(20)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "name": {
+          "type": "varchar(150)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "level": {
+          "type": "varchar(20)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "parent_id": {
+          "type": "bigint unsigned",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "dataset_version": {
+          "type": "varchar(50)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "valid_from": {
+          "type": "date",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "valid_to": {
+          "type": "date",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "is_active": {
+          "type": "tinyint(1)",
+          "nullable": false,
+          "default": "1",
+          "auto_increment": false
+        },
+        "created_at": {
+          "type": "datetime(6)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "updated_at": {
+          "type": "datetime(6)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        }
+      },
+      "foreign_keys": [
+        {
+          "column": "parent_id",
+          "table": "administrative_units",
+          "references": "id",
+          "on_delete": "RESTRICT"
+        }
+      ],
+      "indexes": [
+        {
+          "columns": [
+            "dataset_version",
+            "code"
+          ],
+          "unique": true
+        },
+        {
+          "columns": [
+            "dataset_version",
+            "level",
+            "parent_id",
+            "is_active"
+          ],
+          "unique": false
+        }
+      ],
+      "checks": [
+        "administrative_units_is_active_boolean_check",
+        "administrative_units_level_allowed_check",
+        "administrative_units_parent_level_check",
+        "administrative_units_valid_dates_check"
+      ]
+    },
+    "addresses": {
+      "number": 6,
+      "columns": {
+        "id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": true
+        },
+        "user_id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "recipient_name": {
+          "type": "varchar(100)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "phone": {
+          "type": "varchar(20)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "province_id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "ward_id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "province_code_snapshot": {
+          "type": "varchar(20)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "province_name_snapshot": {
+          "type": "varchar(150)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "ward_code_snapshot": {
+          "type": "varchar(20)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "ward_name_snapshot": {
+          "type": "varchar(150)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "dataset_version": {
+          "type": "varchar(50)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "street_address": {
+          "type": "varchar(255)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "legacy_district_text": {
+          "type": "varchar(150)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "is_default": {
+          "type": "tinyint(1)",
+          "nullable": false,
+          "default": "0",
+          "auto_increment": false
+        },
+        "created_at": {
+          "type": "datetime(6)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "updated_at": {
+          "type": "datetime(6)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "deleted_at": {
+          "type": "datetime(6)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "default_owner_id": {
+          "type": "bigint unsigned",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false,
+          "generated": "CASE WHEN is_default = 1 AND deleted_at IS NULL THEN user_id ELSE NULL END"
+        }
+      },
+      "foreign_keys": [
+        {
+          "column": "user_id",
+          "table": "users",
+          "references": "id",
+          "on_delete": "RESTRICT"
+        },
+        {
+          "column": "province_id",
+          "table": "administrative_units",
+          "references": "id",
+          "on_delete": "RESTRICT"
+        },
+        {
+          "column": "ward_id",
+          "table": "administrative_units",
+          "references": "id",
+          "on_delete": "RESTRICT"
+        }
+      ],
+      "indexes": [
+        {
+          "columns": [
+            "user_id",
+            "is_default"
+          ],
+          "unique": false
+        },
+        {
+          "columns": [
+            "default_owner_id"
+          ],
+          "unique": true
+        }
+      ],
+      "checks": [
+        "addresses_is_default_boolean_check"
+      ]
+    },
+    "categories": {
+      "number": 7,
+      "columns": {
+        "id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": true
+        },
+        "parent_id": {
+          "type": "bigint unsigned",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "name": {
+          "type": "varchar(100)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "slug": {
+          "type": "varchar(120)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "gender_group": {
+          "type": "varchar(20)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "description": {
+          "type": "text",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "image_path": {
+          "type": "varchar(500)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "display_order": {
+          "type": "smallint unsigned",
+          "nullable": false,
+          "default": "1",
+          "auto_increment": false
+        },
+        "is_active": {
+          "type": "tinyint(1)",
+          "nullable": false,
+          "default": "1",
+          "auto_increment": false
+        },
+        "created_at": {
+          "type": "datetime(6)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "updated_at": {
+          "type": "datetime(6)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "deleted_at": {
+          "type": "datetime(6)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        }
+      },
+      "foreign_keys": [
+        {
+          "column": "parent_id",
+          "table": "categories",
+          "references": "id",
+          "on_delete": "RESTRICT"
+        }
+      ],
+      "indexes": [
+        {
+          "columns": [
+            "slug"
+          ],
+          "unique": true
+        },
+        {
+          "columns": [
+            "parent_id",
+            "display_order"
+          ],
+          "unique": false
+        }
+      ],
+      "checks": [
+        "categories_is_active_boolean_check",
+        "categories_gender_group_allowed_check"
+      ]
+    },
+    "products": {
+      "number": 8,
+      "columns": {
+        "id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": true
+        },
+        "category_id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "name": {
+          "type": "varchar(150)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "slug": {
+          "type": "varchar(180)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "brand_line": {
+          "type": "varchar(100)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "description": {
+          "type": "text",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "specifications": {
+          "type": "json",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "base_price": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "promotion_price": {
+          "type": "bigint unsigned",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "warranty_months": {
+          "type": "smallint unsigned",
+          "nullable": false,
+          "default": "6",
+          "auto_increment": false
+        },
+        "exchange_days": {
+          "type": "smallint unsigned",
+          "nullable": false,
+          "default": "7",
+          "auto_increment": false
+        },
+        "rating_avg": {
+          "type": "decimal(3,2)",
+          "nullable": false,
+          "default": "0.00",
+          "auto_increment": false
+        },
+        "reviews_count": {
+          "type": "int unsigned",
+          "nullable": false,
+          "default": "0",
+          "auto_increment": false
+        },
+        "is_featured": {
+          "type": "tinyint(1)",
+          "nullable": false,
+          "default": "0",
+          "auto_increment": false
+        },
+        "is_active": {
+          "type": "tinyint(1)",
+          "nullable": false,
+          "default": "1",
+          "auto_increment": false
+        },
+        "created_at": {
+          "type": "datetime(6)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "updated_at": {
+          "type": "datetime(6)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "deleted_at": {
+          "type": "datetime(6)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        }
+      },
+      "foreign_keys": [
+        {
+          "column": "category_id",
+          "table": "categories",
+          "references": "id",
+          "on_delete": "RESTRICT"
+        }
+      ],
+      "indexes": [
+        {
+          "columns": [
+            "slug"
+          ],
+          "unique": true
+        },
+        {
+          "columns": [
+            "category_id",
+            "is_active",
+            "created_at"
+          ],
+          "unique": false
+        }
+      ],
+      "checks": [
+        "products_rating_avg_nonnegative_check",
+        "products_is_featured_boolean_check",
+        "products_is_active_boolean_check",
+        "products_base_price_positive_check",
+        "products_promotion_price_range_check",
+        "products_rating_range_check"
+      ]
+    },
+    "product_colors": {
+      "number": 9,
+      "columns": {
+        "id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": true
+        },
+        "product_id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "style_color_code": {
+          "type": "varchar(50)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "color_name": {
+          "type": "varchar(100)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "color_key": {
+          "type": "varchar(20)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "primary_hex": {
+          "type": "char(7)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "display_order": {
+          "type": "smallint unsigned",
+          "nullable": false,
+          "default": "1",
+          "auto_increment": false
+        },
+        "is_active": {
+          "type": "tinyint(1)",
+          "nullable": false,
+          "default": "1",
+          "auto_increment": false
+        },
+        "created_at": {
+          "type": "datetime(6)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "updated_at": {
+          "type": "datetime(6)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "deleted_at": {
+          "type": "datetime(6)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        }
+      },
+      "foreign_keys": [
+        {
+          "column": "product_id",
+          "table": "products",
+          "references": "id",
+          "on_delete": "RESTRICT"
+        }
+      ],
+      "indexes": [
+        {
+          "columns": [
+            "style_color_code"
+          ],
+          "unique": true
+        },
+        {
+          "columns": [
+            "product_id",
+            "is_active",
+            "display_order"
+          ],
+          "unique": false
+        }
+      ],
+      "checks": [
+        "product_colors_is_active_boolean_check",
+        "product_colors_hex_format_check"
+      ]
+    },
+    "product_images": {
+      "number": 10,
+      "columns": {
+        "id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": true
+        },
+        "product_color_id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "source_type": {
+          "type": "varchar(20)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "storage_path": {
+          "type": "varchar(500)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "external_url": {
+          "type": "varchar(1000)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "alt_text": {
+          "type": "varchar(255)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "is_thumbnail": {
+          "type": "tinyint(1)",
+          "nullable": false,
+          "default": "0",
+          "auto_increment": false
+        },
+        "display_order": {
+          "type": "smallint unsigned",
+          "nullable": false,
+          "default": "1",
+          "auto_increment": false
+        },
+        "created_at": {
+          "type": "datetime(6)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "updated_at": {
+          "type": "datetime(6)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "thumbnail_color_id": {
+          "type": "bigint unsigned",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false,
+          "generated": "CASE WHEN is_thumbnail = 1 THEN product_color_id ELSE NULL END"
+        }
+      },
+      "foreign_keys": [
+        {
+          "column": "product_color_id",
+          "table": "product_colors",
+          "references": "id",
+          "on_delete": "RESTRICT"
+        }
+      ],
+      "indexes": [
+        {
+          "columns": [
+            "product_color_id",
+            "display_order"
+          ],
+          "unique": false
+        },
+        {
+          "columns": [
+            "thumbnail_color_id"
+          ],
+          "unique": true
+        }
+      ],
+      "checks": [
+        "product_images_is_thumbnail_boolean_check",
+        "product_images_source_type_allowed_check",
+        "product_images_exactly_one_source_check"
+      ]
+    },
+    "product_variants": {
+      "number": 11,
+      "columns": {
+        "id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": true
+        },
+        "product_color_id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "size_value": {
+          "type": "varchar(10)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "size_numeric": {
+          "type": "decimal(4,1)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "sku": {
+          "type": "varchar(100)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "price_override": {
+          "type": "bigint unsigned",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "stock_qty": {
+          "type": "int unsigned",
+          "nullable": false,
+          "default": "0",
+          "auto_increment": false
+        },
+        "reserved_qty": {
+          "type": "int unsigned",
+          "nullable": false,
+          "default": "0",
+          "auto_increment": false
+        },
+        "quarantine_qty": {
+          "type": "int unsigned",
+          "nullable": false,
+          "default": "0",
+          "auto_increment": false
+        },
+        "average_cost": {
+          "type": "decimal(20,4)",
+          "nullable": false,
+          "default": "0.0000",
+          "auto_increment": false
+        },
+        "is_active": {
+          "type": "tinyint(1)",
+          "nullable": false,
+          "default": "1",
+          "auto_increment": false
+        },
+        "created_at": {
+          "type": "datetime(6)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "updated_at": {
+          "type": "datetime(6)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "deleted_at": {
+          "type": "datetime(6)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        }
+      },
+      "foreign_keys": [
+        {
+          "column": "product_color_id",
+          "table": "product_colors",
+          "references": "id",
+          "on_delete": "RESTRICT"
+        }
+      ],
+      "indexes": [
+        {
+          "columns": [
+            "product_color_id",
+            "size_value"
+          ],
+          "unique": true
+        },
+        {
+          "columns": [
+            "sku"
+          ],
+          "unique": true
+        },
+        {
+          "columns": [
+            "product_color_id",
+            "is_active",
+            "size_numeric"
+          ],
+          "unique": false
+        }
+      ],
+      "checks": [
+        "product_variants_size_numeric_nonnegative_check",
+        "product_variants_average_cost_nonnegative_check",
+        "product_variants_is_active_boolean_check",
+        "product_variants_size_positive_check",
+        "product_variants_price_override_positive_check",
+        "product_variants_reserved_stock_check"
+      ]
+    },
+    "suppliers": {
+      "number": 12,
+      "columns": {
+        "id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": true
+        },
+        "code": {
+          "type": "varchar(50)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "name": {
+          "type": "varchar(150)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "phone": {
+          "type": "varchar(20)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "email": {
+          "type": "varchar(255)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "address": {
+          "type": "varchar(255)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "is_active": {
+          "type": "tinyint(1)",
+          "nullable": false,
+          "default": "1",
+          "auto_increment": false
+        },
+        "created_at": {
+          "type": "datetime(6)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "updated_at": {
+          "type": "datetime(6)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "deleted_at": {
+          "type": "datetime(6)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        }
+      },
+      "foreign_keys": [],
+      "indexes": [
+        {
+          "columns": [
+            "code"
+          ],
+          "unique": true
+        }
+      ],
+      "checks": [
+        "suppliers_is_active_boolean_check"
+      ]
+    },
+    "stock_imports": {
+      "number": 13,
+      "columns": {
+        "id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": true
+        },
+        "import_code": {
+          "type": "varchar(50)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "supplier_id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "supplier_code_snapshot": {
+          "type": "varchar(50)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "supplier_name_snapshot": {
+          "type": "varchar(150)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "created_by": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "posted_by": {
+          "type": "bigint unsigned",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "status": {
+          "type": "varchar(20)",
+          "nullable": false,
+          "default": "DRAFT",
+          "auto_increment": false
+        },
+        "total_quantity": {
+          "type": "int unsigned",
+          "nullable": false,
+          "default": "0",
+          "auto_increment": false
+        },
+        "total_cost_amount": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": "0",
+          "auto_increment": false
+        },
+        "note": {
+          "type": "text",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "posted_at": {
+          "type": "datetime(6)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "command_key": {
+          "type": "char(36)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "created_at": {
+          "type": "datetime(6)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "updated_at": {
+          "type": "datetime(6)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        }
+      },
+      "foreign_keys": [
+        {
+          "column": "supplier_id",
+          "table": "suppliers",
+          "references": "id",
+          "on_delete": "RESTRICT"
+        },
+        {
+          "column": "created_by",
+          "table": "users",
+          "references": "id",
+          "on_delete": "RESTRICT"
+        },
+        {
+          "column": "posted_by",
+          "table": "users",
+          "references": "id",
+          "on_delete": "RESTRICT"
+        }
+      ],
+      "indexes": [
+        {
+          "columns": [
+            "import_code"
+          ],
+          "unique": true
+        },
+        {
+          "columns": [
+            "command_key"
+          ],
+          "unique": true
+        },
+        {
+          "columns": [
+            "status",
+            "posted_at"
+          ],
+          "unique": false
+        }
+      ],
+      "checks": [
+        "stock_imports_status_allowed_check"
+      ]
+    },
+    "stock_import_items": {
+      "number": 14,
+      "columns": {
+        "id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": true
+        },
+        "stock_import_id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "variant_id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "sku_snapshot": {
+          "type": "varchar(100)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "quantity": {
+          "type": "int unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "unit_cost_amount": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "subtotal_amount": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "created_at": {
+          "type": "datetime(6)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "updated_at": {
+          "type": "datetime(6)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        }
+      },
+      "foreign_keys": [
+        {
+          "column": "stock_import_id",
+          "table": "stock_imports",
+          "references": "id",
+          "on_delete": "RESTRICT"
+        },
+        {
+          "column": "variant_id",
+          "table": "product_variants",
+          "references": "id",
+          "on_delete": "RESTRICT"
+        }
+      ],
+      "indexes": [
+        {
+          "columns": [
+            "stock_import_id",
+            "variant_id"
+          ],
+          "unique": true
+        }
+      ],
+      "checks": [
+        "stock_import_items_quantity_positive_check",
+        "stock_import_items_subtotal_matches_check"
+      ]
+    },
+    "inventory_movements": {
+      "number": 15,
+      "columns": {
+        "id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": true
+        },
+        "variant_id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "actor_id": {
+          "type": "bigint unsigned",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "actor_name_snapshot": {
+          "type": "varchar(100)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "action": {
+          "type": "varchar(40)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "stock_delta": {
+          "type": "int",
+          "nullable": false,
+          "default": "0",
+          "auto_increment": false
+        },
+        "reserved_delta": {
+          "type": "int",
+          "nullable": false,
+          "default": "0",
+          "auto_increment": false
+        },
+        "quarantine_delta": {
+          "type": "int",
+          "nullable": false,
+          "default": "0",
+          "auto_increment": false
+        },
+        "stock_before": {
+          "type": "int unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "stock_after": {
+          "type": "int unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "reserved_before": {
+          "type": "int unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "reserved_after": {
+          "type": "int unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "quarantine_before": {
+          "type": "int unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "quarantine_after": {
+          "type": "int unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "average_cost_before": {
+          "type": "decimal(20,4)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "average_cost_after": {
+          "type": "decimal(20,4)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "unit_cost_basis": {
+          "type": "decimal(20,4)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "reference_type": {
+          "type": "varchar(40)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "reference_id": {
+          "type": "bigint unsigned",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "operation_key": {
+          "type": "varchar(180)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "reason": {
+          "type": "varchar(500)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "created_at": {
+          "type": "datetime(6)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        }
+      },
+      "foreign_keys": [
+        {
+          "column": "variant_id",
+          "table": "product_variants",
+          "references": "id",
+          "on_delete": "RESTRICT"
+        },
+        {
+          "column": "actor_id",
+          "table": "users",
+          "references": "id",
+          "on_delete": "RESTRICT"
+        }
+      ],
+      "indexes": [
+        {
+          "columns": [
+            "operation_key"
+          ],
+          "unique": true
+        },
+        {
+          "columns": [
+            "variant_id",
+            "created_at",
+            "id"
+          ],
+          "unique": false
+        },
+        {
+          "columns": [
+            "reference_type",
+            "reference_id"
+          ],
+          "unique": false
+        }
+      ],
+      "checks": [
+        "inventory_movements_average_cost_before_nonnegative_check",
+        "inventory_movements_average_cost_after_nonnegative_check",
+        "inventory_movements_unit_cost_basis_nonnegative_check",
+        "inventory_movements_reference_type_allowed_check",
+        "inventory_movements_action_allowed_check",
+        "inventory_movements_stock_balance_check",
+        "inventory_movements_reserved_balance_check",
+        "inventory_movements_quarantine_balance_check",
+        "inventory_movements_reserved_bucket_check"
+      ]
+    },
+    "carts": {
+      "number": 16,
+      "columns": {
+        "id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": true
+        },
+        "user_id": {
+          "type": "bigint unsigned",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "guest_token_hash": {
+          "type": "char(64)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "version": {
+          "type": "int unsigned",
+          "nullable": false,
+          "default": "1",
+          "auto_increment": false
+        },
+        "expires_at": {
+          "type": "datetime(6)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "created_at": {
+          "type": "datetime(6)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "updated_at": {
+          "type": "datetime(6)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        }
+      },
+      "foreign_keys": [
+        {
+          "column": "user_id",
+          "table": "users",
+          "references": "id",
+          "on_delete": "RESTRICT"
+        }
+      ],
+      "indexes": [
+        {
+          "columns": [
+            "user_id"
+          ],
+          "unique": true
+        },
+        {
+          "columns": [
+            "guest_token_hash"
+          ],
+          "unique": true
+        }
+      ],
+      "checks": [
+        "carts_exactly_one_owner_check",
+        "carts_version_positive_check"
+      ]
+    },
+    "cart_items": {
+      "number": 17,
+      "columns": {
+        "id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": true
+        },
+        "cart_id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "variant_id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "quantity": {
+          "type": "int unsigned",
+          "nullable": false,
+          "default": "1",
+          "auto_increment": false
+        },
+        "created_at": {
+          "type": "datetime(6)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "updated_at": {
+          "type": "datetime(6)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        }
+      },
+      "foreign_keys": [
+        {
+          "column": "cart_id",
+          "table": "carts",
+          "references": "id",
+          "on_delete": "CASCADE"
+        },
+        {
+          "column": "variant_id",
+          "table": "product_variants",
+          "references": "id",
+          "on_delete": "RESTRICT"
+        }
+      ],
+      "indexes": [
+        {
+          "columns": [
+            "cart_id",
+            "variant_id"
+          ],
+          "unique": true
+        }
+      ],
+      "checks": [
+        "cart_items_quantity_range_check"
+      ]
+    },
+    "coupons": {
+      "number": 18,
+      "columns": {
+        "id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": true
+        },
+        "code": {
+          "type": "varchar(50)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "name": {
+          "type": "varchar(150)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "type": {
+          "type": "varchar(30)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "value": {
+          "type": "int unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "min_order_amount": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": "0",
+          "auto_increment": false
+        },
+        "max_discount_amount": {
+          "type": "bigint unsigned",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "usage_limit": {
+          "type": "int unsigned",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "per_user_limit": {
+          "type": "int unsigned",
+          "nullable": false,
+          "default": "1",
+          "auto_increment": false
+        },
+        "starts_at": {
+          "type": "datetime(6)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "expires_at": {
+          "type": "datetime(6)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "is_active": {
+          "type": "tinyint(1)",
+          "nullable": false,
+          "default": "1",
+          "auto_increment": false
+        },
+        "created_at": {
+          "type": "datetime(6)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "updated_at": {
+          "type": "datetime(6)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "deleted_at": {
+          "type": "datetime(6)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        }
+      },
+      "foreign_keys": [],
+      "indexes": [
+        {
+          "columns": [
+            "code"
+          ],
+          "unique": true
+        },
+        {
+          "columns": [
+            "is_active",
+            "starts_at",
+            "expires_at"
+          ],
+          "unique": false
+        }
+      ],
+      "checks": [
+        "coupons_is_active_boolean_check",
+        "coupons_type_allowed_check",
+        "coupons_type_value_check",
+        "coupons_per_user_positive_check",
+        "coupons_valid_period_check"
+      ]
+    },
+    "coupon_redemptions": {
+      "number": 19,
+      "columns": {
+        "id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": true
+        },
+        "coupon_id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "user_id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "order_id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "status": {
+          "type": "varchar(20)",
+          "nullable": false,
+          "default": "RESERVED",
+          "auto_increment": false
+        },
+        "merchandise_discount_amount": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": "0",
+          "auto_increment": false
+        },
+        "shipping_discount_amount": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": "0",
+          "auto_increment": false
+        },
+        "reserved_at": {
+          "type": "datetime(6)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "consumed_at": {
+          "type": "datetime(6)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "released_at": {
+          "type": "datetime(6)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "created_at": {
+          "type": "datetime(6)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "updated_at": {
+          "type": "datetime(6)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        }
+      },
+      "foreign_keys": [
+        {
+          "column": "coupon_id",
+          "table": "coupons",
+          "references": "id",
+          "on_delete": "RESTRICT"
+        },
+        {
+          "column": "user_id",
+          "table": "users",
+          "references": "id",
+          "on_delete": "RESTRICT"
+        },
+        {
+          "column": "order_id",
+          "table": "orders",
+          "references": "id",
+          "on_delete": "RESTRICT"
+        }
+      ],
+      "indexes": [
+        {
+          "columns": [
+            "order_id"
+          ],
+          "unique": true
+        },
+        {
+          "columns": [
+            "coupon_id",
+            "status",
+            "user_id"
+          ],
+          "unique": false
+        }
+      ],
+      "checks": [
+        "coupon_redemptions_status_allowed_check"
+      ]
+    },
+    "orders": {
+      "number": 20,
+      "columns": {
+        "id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": true
+        },
+        "order_code": {
+          "type": "varchar(50)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "user_id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "coupon_id": {
+          "type": "bigint unsigned",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "coupon_code_snapshot": {
+          "type": "varchar(50)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "subtotal_amount": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "merchandise_discount_amount": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": "0",
+          "auto_increment": false
+        },
+        "shipping_base_fee": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "shipping_discount_amount": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": "0",
+          "auto_increment": false
+        },
+        "shipping_fee": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "total_amount": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "order_status": {
+          "type": "varchar(30)",
+          "nullable": false,
+          "default": "PENDING",
+          "auto_increment": false
+        },
+        "payment_method": {
+          "type": "varchar(20)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "payment_status": {
+          "type": "varchar(30)",
+          "nullable": false,
+          "default": "UNPAID",
+          "auto_increment": false
+        },
+        "paid_amount": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": "0",
+          "auto_increment": false
+        },
+        "refunded_amount": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": "0",
+          "auto_increment": false
+        },
+        "shipping_name": {
+          "type": "varchar(100)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "shipping_phone": {
+          "type": "varchar(20)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "shipping_address_snapshot": {
+          "type": "json",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "customer_note": {
+          "type": "varchar(1000)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "cancel_reason": {
+          "type": "varchar(500)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "checkout_key": {
+          "type": "char(36)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "checkout_fingerprint": {
+          "type": "char(64)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "source_cart_version": {
+          "type": "int unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "payment_expires_at": {
+          "type": "datetime(6)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "confirmed_at": {
+          "type": "datetime(6)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "packed_at": {
+          "type": "datetime(6)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "shipped_at": {
+          "type": "datetime(6)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "delivered_at": {
+          "type": "datetime(6)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "cancelled_at": {
+          "type": "datetime(6)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "failed_at": {
+          "type": "datetime(6)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "created_at": {
+          "type": "datetime(6)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "updated_at": {
+          "type": "datetime(6)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        }
+      },
+      "foreign_keys": [
+        {
+          "column": "user_id",
+          "table": "users",
+          "references": "id",
+          "on_delete": "RESTRICT"
+        },
+        {
+          "column": "coupon_id",
+          "table": "coupons",
+          "references": "id",
+          "on_delete": "RESTRICT"
+        }
+      ],
+      "indexes": [
+        {
+          "columns": [
+            "order_code"
+          ],
+          "unique": true
+        },
+        {
+          "columns": [
+            "user_id",
+            "checkout_key"
+          ],
+          "unique": true
+        },
+        {
+          "columns": [
+            "user_id",
+            "created_at"
+          ],
+          "unique": false
+        },
+        {
+          "columns": [
+            "order_status",
+            "payment_expires_at"
+          ],
+          "unique": false
+        },
+        {
+          "columns": [
+            "delivered_at"
+          ],
+          "unique": false
+        }
+      ],
+      "checks": [
+        "orders_order_status_allowed_check",
+        "orders_payment_method_allowed_check",
+        "orders_payment_status_allowed_check",
+        "orders_discount_limit_check",
+        "orders_shipping_discount_limit_check",
+        "orders_shipping_matches_check",
+        "orders_total_matches_check",
+        "orders_paid_limit_check",
+        "orders_refunded_limit_check",
+        "orders_cart_version_positive_check"
+      ]
+    },
+    "order_items": {
+      "number": 21,
+      "columns": {
+        "id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": true
+        },
+        "order_id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "variant_id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "product_name_snapshot": {
+          "type": "varchar(150)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "style_color_snapshot": {
+          "type": "varchar(50)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "color_name_snapshot": {
+          "type": "varchar(100)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "size_value_snapshot": {
+          "type": "varchar(10)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "sku_snapshot": {
+          "type": "varchar(100)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "thumbnail_snapshot": {
+          "type": "varchar(1000)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "quantity": {
+          "type": "tinyint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "original_unit_price": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "unit_price": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "subtotal_amount": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "discount_amount": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": "0",
+          "auto_increment": false
+        },
+        "net_amount": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "exchange_days_snapshot": {
+          "type": "smallint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "warranty_months_snapshot": {
+          "type": "smallint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "cost_unit_snapshot": {
+          "type": "decimal(20,4)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "cogs_amount": {
+          "type": "bigint unsigned",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "created_at": {
+          "type": "datetime(6)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "updated_at": {
+          "type": "datetime(6)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        }
+      },
+      "foreign_keys": [
+        {
+          "column": "order_id",
+          "table": "orders",
+          "references": "id",
+          "on_delete": "RESTRICT"
+        },
+        {
+          "column": "variant_id",
+          "table": "product_variants",
+          "references": "id",
+          "on_delete": "RESTRICT"
+        }
+      ],
+      "indexes": [
+        {
+          "columns": [
+            "order_id",
+            "variant_id"
+          ],
+          "unique": true
+        }
+      ],
+      "checks": [
+        "order_items_cost_unit_snapshot_nonnegative_check",
+        "order_items_quantity_range_check",
+        "order_items_prices_positive_check",
+        "order_items_subtotal_matches_check",
+        "order_items_net_matches_check"
+      ]
+    },
+    "order_item_units": {
+      "number": 22,
+      "columns": {
+        "id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": true
+        },
+        "order_item_id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "unit_no": {
+          "type": "tinyint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "current_variant_id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "state": {
+          "type": "varchar(30)",
+          "nullable": false,
+          "default": "ALLOCATED",
+          "auto_increment": false
+        },
+        "gross_amount": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "discount_amount": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": "0",
+          "auto_increment": false
+        },
+        "net_amount": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "original_cogs_amount": {
+          "type": "bigint unsigned",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "current_cogs_amount": {
+          "type": "bigint unsigned",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "exchange_completed_count": {
+          "type": "tinyint unsigned",
+          "nullable": false,
+          "default": "0",
+          "auto_increment": false
+        },
+        "exchange_deadline_at": {
+          "type": "datetime(6)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "warranty_deadline_at": {
+          "type": "datetime(6)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "refunded_merchandise_amount": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": "0",
+          "auto_increment": false
+        },
+        "created_at": {
+          "type": "datetime(6)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "updated_at": {
+          "type": "datetime(6)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        }
+      },
+      "foreign_keys": [
+        {
+          "column": "order_item_id",
+          "table": "order_items",
+          "references": "id",
+          "on_delete": "RESTRICT"
+        },
+        {
+          "column": "current_variant_id",
+          "table": "product_variants",
+          "references": "id",
+          "on_delete": "RESTRICT"
+        }
+      ],
+      "indexes": [
+        {
+          "columns": [
+            "order_item_id",
+            "unit_no"
+          ],
+          "unique": true
+        },
+        {
+          "columns": [
+            "current_variant_id",
+            "state"
+          ],
+          "unique": false
+        }
+      ],
+      "checks": [
+        "order_item_units_state_allowed_check",
+        "order_item_units_unit_number_range_check",
+        "order_item_units_net_matches_check",
+        "order_item_units_exchange_once_check",
+        "order_item_units_refund_whole_unit_check"
+      ]
+    },
+    "order_status_histories": {
+      "number": 23,
+      "columns": {
+        "id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": true
+        },
+        "order_id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "actor_id": {
+          "type": "bigint unsigned",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "actor_name_snapshot": {
+          "type": "varchar(100)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "actor_roles_snapshot": {
+          "type": "json",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "from_status": {
+          "type": "varchar(30)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "to_status": {
+          "type": "varchar(30)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "reason_code": {
+          "type": "varchar(50)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "note": {
+          "type": "varchar(1000)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "command_key": {
+          "type": "varchar(180)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "created_at": {
+          "type": "datetime(6)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        }
+      },
+      "foreign_keys": [
+        {
+          "column": "order_id",
+          "table": "orders",
+          "references": "id",
+          "on_delete": "RESTRICT"
+        },
+        {
+          "column": "actor_id",
+          "table": "users",
+          "references": "id",
+          "on_delete": "RESTRICT"
+        }
+      ],
+      "indexes": [
+        {
+          "columns": [
+            "command_key"
+          ],
+          "unique": true
+        },
+        {
+          "columns": [
+            "order_id",
+            "created_at",
+            "id"
+          ],
+          "unique": false
+        }
+      ],
+      "checks": [
+        "order_status_histories_from_status_allowed_check",
+        "order_status_histories_to_status_allowed_check"
+      ]
+    },
+    "payments": {
+      "number": 24,
+      "columns": {
+        "id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": true
+        },
+        "order_id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "origin_payment_id": {
+          "type": "bigint unsigned",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "attempt_ref": {
+          "type": "varchar(100)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "method": {
+          "type": "varchar(20)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "status": {
+          "type": "varchar(20)",
+          "nullable": false,
+          "default": "PENDING",
+          "auto_increment": false
+        },
+        "disposition": {
+          "type": "varchar(30)",
+          "nullable": false,
+          "default": "NONE",
+          "auto_increment": false
+        },
+        "expected_amount": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "received_amount": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": "0",
+          "auto_increment": false
+        },
+        "applied_amount": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": "0",
+          "auto_increment": false
+        },
+        "currency": {
+          "type": "char(3)",
+          "nullable": false,
+          "default": "VND",
+          "auto_increment": false
+        },
+        "provider_transaction_id": {
+          "type": "varchar(150)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "bank_transfer_content": {
+          "type": "varchar(255)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "customer_reported_reference": {
+          "type": "varchar(150)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "customer_reported_evidence_path": {
+          "type": "varchar(500)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "customer_reported_at": {
+          "type": "datetime(6)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "confirmed_by": {
+          "type": "bigint unsigned",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "confirmation_evidence_path": {
+          "type": "varchar(500)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "expires_at": {
+          "type": "datetime(6)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "succeeded_at": {
+          "type": "datetime(6)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "idempotency_key": {
+          "type": "varchar(180)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "created_at": {
+          "type": "datetime(6)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "updated_at": {
+          "type": "datetime(6)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "pending_order_id": {
+          "type": "bigint unsigned",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false,
+          "generated": "CASE WHEN status = 'PENDING' THEN order_id ELSE NULL END"
+        }
+      },
+      "foreign_keys": [
+        {
+          "column": "order_id",
+          "table": "orders",
+          "references": "id",
+          "on_delete": "RESTRICT"
+        },
+        {
+          "column": "origin_payment_id",
+          "table": "payments",
+          "references": "id",
+          "on_delete": "RESTRICT"
+        },
+        {
+          "column": "confirmed_by",
+          "table": "users",
+          "references": "id",
+          "on_delete": "RESTRICT"
+        }
+      ],
+      "indexes": [
+        {
+          "columns": [
+            "attempt_ref"
+          ],
+          "unique": true
+        },
+        {
+          "columns": [
+            "idempotency_key"
+          ],
+          "unique": true
+        },
+        {
+          "columns": [
+            "method",
+            "provider_transaction_id"
+          ],
+          "unique": true
+        },
+        {
+          "columns": [
+            "order_id",
+            "status"
+          ],
+          "unique": false
+        },
+        {
+          "columns": [
+            "pending_order_id"
+          ],
+          "unique": true
+        }
+      ],
+      "checks": [
+        "payments_method_allowed_check",
+        "payments_status_allowed_check",
+        "payments_disposition_allowed_check",
+        "payments_currency_vnd_check",
+        "payments_applied_limit_check"
+      ]
+    },
+    "payment_events": {
+      "number": 25,
+      "columns": {
+        "id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": true
+        },
+        "payment_id": {
+          "type": "bigint unsigned",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "provider": {
+          "type": "varchar(30)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "event_key": {
+          "type": "char(64)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "provider_event_ref": {
+          "type": "varchar(150)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "signature_valid": {
+          "type": "tinyint(1)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "processing_status": {
+          "type": "varchar(30)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "payload_redacted": {
+          "type": "json",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "response_code": {
+          "type": "varchar(20)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "received_at": {
+          "type": "datetime(6)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "processed_at": {
+          "type": "datetime(6)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        }
+      },
+      "foreign_keys": [
+        {
+          "column": "payment_id",
+          "table": "payments",
+          "references": "id",
+          "on_delete": "RESTRICT"
+        }
+      ],
+      "indexes": [
+        {
+          "columns": [
+            "event_key"
+          ],
+          "unique": true
+        },
+        {
+          "columns": [
+            "payment_id",
+            "received_at"
+          ],
+          "unique": false
+        }
+      ],
+      "checks": [
+        "payment_events_signature_valid_boolean_check",
+        "payment_events_provider_allowed_check",
+        "payment_events_processing_status_allowed_check"
+      ]
+    },
+    "refunds": {
+      "number": 26,
+      "columns": {
+        "id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": true
+        },
+        "order_id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "payment_id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "after_sales_request_id": {
+          "type": "bigint unsigned",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "order_item_unit_id": {
+          "type": "bigint unsigned",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "reason_type": {
+          "type": "varchar(30)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "status": {
+          "type": "varchar(20)",
+          "nullable": false,
+          "default": "REQUESTED",
+          "auto_increment": false
+        },
+        "merchandise_amount": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": "0",
+          "auto_increment": false
+        },
+        "shipping_amount": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": "0",
+          "auto_increment": false
+        },
+        "amount": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "operation_key": {
+          "type": "varchar(180)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "destination_type": {
+          "type": "varchar(20)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "destination_ciphertext": {
+          "type": "text",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "requested_by": {
+          "type": "bigint unsigned",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "approved_by": {
+          "type": "bigint unsigned",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "paid_by": {
+          "type": "bigint unsigned",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "external_reference": {
+          "type": "varchar(150)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "evidence_path": {
+          "type": "varchar(500)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "failure_reason": {
+          "type": "varchar(500)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "succeeded_at": {
+          "type": "datetime(6)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "created_at": {
+          "type": "datetime(6)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "updated_at": {
+          "type": "datetime(6)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        }
+      },
+      "foreign_keys": [
+        {
+          "column": "order_id",
+          "table": "orders",
+          "references": "id",
+          "on_delete": "RESTRICT"
+        },
+        {
+          "column": "payment_id",
+          "table": "payments",
+          "references": "id",
+          "on_delete": "RESTRICT"
+        },
+        {
+          "column": "after_sales_request_id",
+          "table": "after_sales_requests",
+          "references": "id",
+          "on_delete": "RESTRICT"
+        },
+        {
+          "column": "order_item_unit_id",
+          "table": "order_item_units",
+          "references": "id",
+          "on_delete": "RESTRICT"
+        },
+        {
+          "column": "requested_by",
+          "table": "users",
+          "references": "id",
+          "on_delete": "RESTRICT"
+        },
+        {
+          "column": "approved_by",
+          "table": "users",
+          "references": "id",
+          "on_delete": "RESTRICT"
+        },
+        {
+          "column": "paid_by",
+          "table": "users",
+          "references": "id",
+          "on_delete": "RESTRICT"
+        }
+      ],
+      "indexes": [
+        {
+          "columns": [
+            "operation_key"
+          ],
+          "unique": true
+        },
+        {
+          "columns": [
+            "external_reference"
+          ],
+          "unique": true
+        },
+        {
+          "columns": [
+            "payment_id",
+            "status"
+          ],
+          "unique": false
+        },
+        {
+          "columns": [
+            "order_item_unit_id",
+            "status"
+          ],
+          "unique": false
+        }
+      ],
+      "checks": [
+        "refunds_status_allowed_check",
+        "refunds_reason_type_allowed_check",
+        "refunds_destination_type_allowed_check",
+        "refunds_positive_sum_check"
+      ]
+    },
+    "shipments": {
+      "number": 27,
+      "columns": {
+        "id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": true
+        },
+        "order_id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "tracking_code": {
+          "type": "varchar(100)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "carrier_name": {
+          "type": "varchar(100)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "status": {
+          "type": "varchar(30)",
+          "nullable": false,
+          "default": "READY",
+          "auto_increment": false
+        },
+        "created_by": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "shipped_at": {
+          "type": "datetime(6)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "delivered_at": {
+          "type": "datetime(6)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "failed_at": {
+          "type": "datetime(6)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "return_received_at": {
+          "type": "datetime(6)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "proof_path": {
+          "type": "varchar(500)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "note": {
+          "type": "varchar(1000)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "created_at": {
+          "type": "datetime(6)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "updated_at": {
+          "type": "datetime(6)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        }
+      },
+      "foreign_keys": [
+        {
+          "column": "order_id",
+          "table": "orders",
+          "references": "id",
+          "on_delete": "RESTRICT"
+        },
+        {
+          "column": "created_by",
+          "table": "users",
+          "references": "id",
+          "on_delete": "RESTRICT"
+        }
+      ],
+      "indexes": [
+        {
+          "columns": [
+            "order_id"
+          ],
+          "unique": true
+        },
+        {
+          "columns": [
+            "status",
+            "shipped_at"
+          ],
+          "unique": false
+        }
+      ],
+      "checks": [
+        "shipments_status_allowed_check"
+      ]
+    },
+    "shipment_return_items": {
+      "number": 28,
+      "columns": {
+        "id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": true
+        },
+        "shipment_id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "order_item_unit_id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "variant_id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "received_by": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "received_at": {
+          "type": "datetime(6)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "disposition": {
+          "type": "varchar(20)",
+          "nullable": false,
+          "default": "PENDING",
+          "auto_increment": false
+        },
+        "cost_basis": {
+          "type": "decimal(20,4)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "inspected_by": {
+          "type": "bigint unsigned",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "inspected_at": {
+          "type": "datetime(6)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "note": {
+          "type": "varchar(1000)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "created_at": {
+          "type": "datetime(6)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "updated_at": {
+          "type": "datetime(6)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        }
+      },
+      "foreign_keys": [
+        {
+          "column": "shipment_id",
+          "table": "shipments",
+          "references": "id",
+          "on_delete": "RESTRICT"
+        },
+        {
+          "column": "order_item_unit_id",
+          "table": "order_item_units",
+          "references": "id",
+          "on_delete": "RESTRICT"
+        },
+        {
+          "column": "variant_id",
+          "table": "product_variants",
+          "references": "id",
+          "on_delete": "RESTRICT"
+        },
+        {
+          "column": "received_by",
+          "table": "users",
+          "references": "id",
+          "on_delete": "RESTRICT"
+        },
+        {
+          "column": "inspected_by",
+          "table": "users",
+          "references": "id",
+          "on_delete": "RESTRICT"
+        }
+      ],
+      "indexes": [
+        {
+          "columns": [
+            "order_item_unit_id"
+          ],
+          "unique": true
+        },
+        {
+          "columns": [
+            "shipment_id",
+            "disposition"
+          ],
+          "unique": false
+        }
+      ],
+      "checks": [
+        "shipment_return_items_cost_basis_nonnegative_check",
+        "shipment_return_items_disposition_allowed_check"
+      ]
+    },
+    "reviews": {
+      "number": 29,
+      "columns": {
+        "id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": true
+        },
+        "order_item_unit_id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "user_id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "rating": {
+          "type": "decimal(2,1)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "comment": {
+          "type": "text",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "admin_reply": {
+          "type": "text",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "is_visible": {
+          "type": "tinyint(1)",
+          "nullable": false,
+          "default": "1",
+          "auto_increment": false
+        },
+        "replied_by": {
+          "type": "bigint unsigned",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "replied_at": {
+          "type": "datetime(6)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "created_at": {
+          "type": "datetime(6)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "updated_at": {
+          "type": "datetime(6)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        }
+      },
+      "foreign_keys": [
+        {
+          "column": "order_item_unit_id",
+          "table": "order_item_units",
+          "references": "id",
+          "on_delete": "RESTRICT"
+        },
+        {
+          "column": "user_id",
+          "table": "users",
+          "references": "id",
+          "on_delete": "RESTRICT"
+        },
+        {
+          "column": "replied_by",
+          "table": "users",
+          "references": "id",
+          "on_delete": "RESTRICT"
+        }
+      ],
+      "indexes": [
+        {
+          "columns": [
+            "order_item_unit_id"
+          ],
+          "unique": true
+        },
+        {
+          "columns": [
+            "user_id",
+            "created_at"
+          ],
+          "unique": false
+        }
+      ],
+      "checks": [
+        "reviews_is_visible_boolean_check",
+        "reviews_rating_half_steps_check",
+        "reviews_comment_length_check",
+        "reviews_reply_length_check"
+      ]
+    },
+    "after_sales_requests": {
+      "number": 30,
+      "columns": {
+        "id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": true
+        },
+        "request_code": {
+          "type": "varchar(50)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "order_item_unit_id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "type": {
+          "type": "varchar(30)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "status": {
+          "type": "varchar(30)",
+          "nullable": false,
+          "default": "NEW",
+          "auto_increment": false
+        },
+        "source_variant_id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "target_variant_id": {
+          "type": "bigint unsigned",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "target_reservation_active": {
+          "type": "tinyint(1)",
+          "nullable": false,
+          "default": "0",
+          "auto_increment": false
+        },
+        "source_in_quarantine": {
+          "type": "tinyint(1)",
+          "nullable": false,
+          "default": "0",
+          "auto_increment": false
+        },
+        "return_disposition": {
+          "type": "varchar(20)",
+          "nullable": false,
+          "default": "PENDING",
+          "auto_increment": false
+        },
+        "disposition_by": {
+          "type": "bigint unsigned",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "disposition_at": {
+          "type": "datetime(6)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "customer_reason": {
+          "type": "text",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "staff_note": {
+          "type": "text",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "handled_by": {
+          "type": "bigint unsigned",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "receive_by_at": {
+          "type": "datetime(6)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "received_at": {
+          "type": "datetime(6)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "accepted_at": {
+          "type": "datetime(6)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "ready_at": {
+          "type": "datetime(6)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "customer_handover_at": {
+          "type": "datetime(6)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "returned_cogs_amount": {
+          "type": "bigint unsigned",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "replacement_cogs_amount": {
+          "type": "bigint unsigned",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "repair_expense_amount": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": "0",
+          "auto_increment": false
+        },
+        "repair_expense_approved_by": {
+          "type": "bigint unsigned",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "repair_expense_approved_at": {
+          "type": "datetime(6)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "resolved_at": {
+          "type": "datetime(6)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "command_key": {
+          "type": "varchar(180)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "created_at": {
+          "type": "datetime(6)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "updated_at": {
+          "type": "datetime(6)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "active_unit_id": {
+          "type": "bigint unsigned",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false,
+          "generated": "CASE WHEN status IN ('NEW', 'APPROVED', 'RECEIVED', 'PROCESSING', 'AWAITING_REFUND', 'READY_FOR_PICKUP') THEN order_item_unit_id ELSE NULL END"
+        }
+      },
+      "foreign_keys": [
+        {
+          "column": "order_item_unit_id",
+          "table": "order_item_units",
+          "references": "id",
+          "on_delete": "RESTRICT"
+        },
+        {
+          "column": "source_variant_id",
+          "table": "product_variants",
+          "references": "id",
+          "on_delete": "RESTRICT"
+        },
+        {
+          "column": "target_variant_id",
+          "table": "product_variants",
+          "references": "id",
+          "on_delete": "RESTRICT"
+        },
+        {
+          "column": "disposition_by",
+          "table": "users",
+          "references": "id",
+          "on_delete": "RESTRICT"
+        },
+        {
+          "column": "handled_by",
+          "table": "users",
+          "references": "id",
+          "on_delete": "RESTRICT"
+        },
+        {
+          "column": "repair_expense_approved_by",
+          "table": "users",
+          "references": "id",
+          "on_delete": "RESTRICT"
+        }
+      ],
+      "indexes": [
+        {
+          "columns": [
+            "request_code"
+          ],
+          "unique": true
+        },
+        {
+          "columns": [
+            "command_key"
+          ],
+          "unique": true
+        },
+        {
+          "columns": [
+            "active_unit_id"
+          ],
+          "unique": true
+        },
+        {
+          "columns": [
+            "status",
+            "receive_by_at"
+          ],
+          "unique": false
+        }
+      ],
+      "checks": [
+        "after_sales_requests_target_reservation_active_boolean_check",
+        "after_sales_requests_source_in_quarantine_boolean_check",
+        "after_sales_requests_type_allowed_check",
+        "after_sales_requests_status_allowed_check",
+        "after_sales_requests_return_disposition_allowed_check",
+        "after_sales_requests_target_type_check",
+        "after_sales_requests_warranty_custody_check",
+        "after_sales_requests_reason_length_check"
+      ]
+    },
+    "after_sales_histories": {
+      "number": 31,
+      "columns": {
+        "id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": true
+        },
+        "after_sales_request_id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "actor_id": {
+          "type": "bigint unsigned",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "actor_name_snapshot": {
+          "type": "varchar(100)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "from_status": {
+          "type": "varchar(30)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "to_status": {
+          "type": "varchar(30)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "event_type": {
+          "type": "varchar(40)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "visibility": {
+          "type": "varchar(20)",
+          "nullable": false,
+          "default": "CUSTOMER",
+          "auto_increment": false
+        },
+        "note": {
+          "type": "varchar(2000)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "command_key": {
+          "type": "varchar(180)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "created_at": {
+          "type": "datetime(6)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        }
+      },
+      "foreign_keys": [
+        {
+          "column": "after_sales_request_id",
+          "table": "after_sales_requests",
+          "references": "id",
+          "on_delete": "RESTRICT"
+        },
+        {
+          "column": "actor_id",
+          "table": "users",
+          "references": "id",
+          "on_delete": "RESTRICT"
+        }
+      ],
+      "indexes": [
+        {
+          "columns": [
+            "command_key"
+          ],
+          "unique": true
+        },
+        {
+          "columns": [
+            "after_sales_request_id",
+            "created_at",
+            "id"
+          ],
+          "unique": false
+        }
+      ],
+      "checks": [
+        "after_sales_histories_from_status_allowed_check",
+        "after_sales_histories_to_status_allowed_check",
+        "after_sales_histories_event_type_allowed_check",
+        "after_sales_histories_visibility_allowed_check"
+      ]
+    },
+    "after_sales_attachments": {
+      "number": 32,
+      "columns": {
+        "id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": true
+        },
+        "after_sales_request_id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "uploaded_by": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "disk": {
+          "type": "varchar(20)",
+          "nullable": false,
+          "default": "private",
+          "auto_increment": false
+        },
+        "path": {
+          "type": "varchar(500)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "mime_type": {
+          "type": "varchar(100)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "size_bytes": {
+          "type": "int unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "sha256": {
+          "type": "char(64)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "created_at": {
+          "type": "datetime(6)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        }
+      },
+      "foreign_keys": [
+        {
+          "column": "after_sales_request_id",
+          "table": "after_sales_requests",
+          "references": "id",
+          "on_delete": "RESTRICT"
+        },
+        {
+          "column": "uploaded_by",
+          "table": "users",
+          "references": "id",
+          "on_delete": "RESTRICT"
+        }
+      ],
+      "indexes": [
+        {
+          "columns": [
+            "path"
+          ],
+          "unique": true
+        },
+        {
+          "columns": [
+            "after_sales_request_id",
+            "created_at"
+          ],
+          "unique": false
+        }
+      ],
+      "checks": [
+        "after_sales_attachments_disk_allowed_check",
+        "after_sales_attachments_mime_type_allowed_check",
+        "after_sales_attachments_file_size_check"
+      ]
+    },
+    "sales_ledger_entries": {
+      "number": 33,
+      "columns": {
+        "id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": true
+        },
+        "order_id": {
+          "type": "bigint unsigned",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "order_item_unit_id": {
+          "type": "bigint unsigned",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "after_sales_request_id": {
+          "type": "bigint unsigned",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "refund_id": {
+          "type": "bigint unsigned",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "inventory_movement_id": {
+          "type": "bigint unsigned",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "type": {
+          "type": "varchar(40)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "merchandise_revenue_delta": {
+          "type": "bigint",
+          "nullable": false,
+          "default": "0",
+          "auto_increment": false
+        },
+        "shipping_revenue_delta": {
+          "type": "bigint",
+          "nullable": false,
+          "default": "0",
+          "auto_increment": false
+        },
+        "cogs_delta": {
+          "type": "bigint",
+          "nullable": false,
+          "default": "0",
+          "auto_increment": false
+        },
+        "expense_delta": {
+          "type": "bigint",
+          "nullable": false,
+          "default": "0",
+          "auto_increment": false
+        },
+        "operation_key": {
+          "type": "varchar(180)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "occurred_at": {
+          "type": "datetime(6)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "created_at": {
+          "type": "datetime(6)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        }
+      },
+      "foreign_keys": [
+        {
+          "column": "order_id",
+          "table": "orders",
+          "references": "id",
+          "on_delete": "RESTRICT"
+        },
+        {
+          "column": "order_item_unit_id",
+          "table": "order_item_units",
+          "references": "id",
+          "on_delete": "RESTRICT"
+        },
+        {
+          "column": "after_sales_request_id",
+          "table": "after_sales_requests",
+          "references": "id",
+          "on_delete": "RESTRICT"
+        },
+        {
+          "column": "refund_id",
+          "table": "refunds",
+          "references": "id",
+          "on_delete": "RESTRICT"
+        },
+        {
+          "column": "inventory_movement_id",
+          "table": "inventory_movements",
+          "references": "id",
+          "on_delete": "RESTRICT"
+        }
+      ],
+      "indexes": [
+        {
+          "columns": [
+            "operation_key"
+          ],
+          "unique": true
+        },
+        {
+          "columns": [
+            "occurred_at",
+            "type"
+          ],
+          "unique": false
+        },
+        {
+          "columns": [
+            "order_id",
+            "order_item_unit_id"
+          ],
+          "unique": false
+        }
+      ],
+      "checks": [
+        "sales_ledger_entries_type_allowed_check",
+        "sales_ledger_entries_source_required_check"
+      ]
+    },
+    "outbox_events": {
+      "number": 34,
+      "columns": {
+        "id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": true
+        },
+        "event_type": {
+          "type": "varchar(80)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "aggregate_type": {
+          "type": "varchar(40)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "aggregate_id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "dedup_key": {
+          "type": "varchar(180)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "payload": {
+          "type": "json",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "status": {
+          "type": "varchar(20)",
+          "nullable": false,
+          "default": "PENDING",
+          "auto_increment": false
+        },
+        "attempts": {
+          "type": "smallint unsigned",
+          "nullable": false,
+          "default": "0",
+          "auto_increment": false
+        },
+        "available_at": {
+          "type": "datetime(6)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "lease_until": {
+          "type": "datetime(6)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "sent_at": {
+          "type": "datetime(6)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "last_error": {
+          "type": "varchar(1000)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "created_at": {
+          "type": "datetime(6)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "updated_at": {
+          "type": "datetime(6)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        }
+      },
+      "foreign_keys": [],
+      "indexes": [
+        {
+          "columns": [
+            "dedup_key"
+          ],
+          "unique": true
+        },
+        {
+          "columns": [
+            "status",
+            "available_at"
+          ],
+          "unique": false
+        },
+        {
+          "columns": [
+            "lease_until"
+          ],
+          "unique": false
+        }
+      ],
+      "checks": [
+        "outbox_events_status_allowed_check",
+        "outbox_events_aggregate_type_allowed_check"
+      ]
+    }
+  }
+}

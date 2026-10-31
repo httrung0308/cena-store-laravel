@@ -1,0 +1,5 @@
+{
+  "schema_preflight": "PASS before grants/password change",
+  "env_preflight": "PASS before DB connect",
+  "expected_failure_exit": 255
+}

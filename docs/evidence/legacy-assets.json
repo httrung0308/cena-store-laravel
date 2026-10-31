@@ -1,0 +1,32 @@
+[
+  {
+    "source": "frontend/public/img/main.jpg",
+    "destination": "public/legacy/img/main.jpg",
+    "sha256": "217841b96c302de53b039b1d48e0313e8dfa42cf028ad9ab975149ac27ae306b"
+  },
+  {
+    "source": "frontend/public/img/men.jpg",
+    "destination": "public/legacy/img/men.jpg",
+    "sha256": "0114a76f769140f791b1e6d991ab0af60ef9eb661301e98e2ac33e6c70c89454"
+  },
+  {
+    "source": "frontend/public/img/women.jpg",
+    "destination": "public/legacy/img/women.jpg",
+    "sha256": "1c0e26e44a0817b762b076e84c27e7987c0210bf4914f4ffb1352f1202204e42"
+  },
+  {
+    "source": "frontend/public/img/kid.jpg",
+    "destination": "public/legacy/img/kid.jpg",
+    "sha256": "19606b4a9511dc9fa9c3f4c042ca25986a5fd68b971f2a8635b37497854c9108"
+  },
+  {
+    "source": "frontend/public/img/unisex.jpg",
+    "destination": "public/legacy/img/unisex.jpg",
+    "sha256": "26d3a77086a7410f0c43f1afd15172ef7597bbaa3b6401f29409ea813e06d2b5"
+  },
+  {
+    "source": "frontend/public/favicon.ico",
+    "destination": "public/legacy/favicon.ico",
+    "sha256": "b9e0c239b57dfb2242f8a888c2702e0b121279ec88d6aef0acfb196e48adf311"
+  }
+]

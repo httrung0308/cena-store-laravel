@@ -1,0 +1,44 @@
+{
+  "verified_date": "2026-10-31",
+  "platform": "Windows x64; PowerShell7; no global PATH changes",
+  "php": "8.4.27",
+  "composer": "2.9.4",
+  "node": "22.23.4",
+  "npm": "10.9.9",
+  "mysql": "8.4.3",
+  "mailpit": "1.22.3",
+  "laravel_skeleton": "13.11.0",
+  "php_direct_dependencies": {
+    "barryvdh/laravel-dompdf": "v3.1.2",
+    "fakerphp/faker": "v1.24.1",
+    "laravel/boost": "v2.10.4",
+    "laravel/framework": "v13.39.0",
+    "laravel/pail": "v1.2.7",
+    "laravel/pao": "v1.1.5",
+    "laravel/pint": "v1.32.1",
+    "laravel/tinker": "v3.0.2",
+    "mockery/mockery": "1.6.15",
+    "nunomaduro/collision": "v8.9.5",
+    "phpunit/phpunit": "12.5.42"
+  },
+  "npm_direct_dependencies": {
+    "@fontsource/montserrat": "5.3.0",
+    "alpinejs": "3.17.5",
+    "autoprefixer": "10.6.2",
+    "chart.js": "4.6.1",
+    "laravel-vite-plugin": "3.2.0",
+    "postcss": "8.5.32",
+    "tailwindcss": "3.4.19",
+    "vite": "8.3.5"
+  },
+  "archive_sha256": {
+    "php": "dbae154a0a89791f36c3d48e68bae797878333e7d6cb5721e74617de59b63ab7",
+    "node": "cbc74b5e0982c9dbb41525fd8fb5dcd32fbee237863f7829072f4639a1ce5f20",
+    "composer": "d3eb5c4cb2e708267dac5f9a76d2a57b07836c7ea68783a1a02bd6d94753ea80"
+  },
+  "lock_sha256": {
+    "composer.lock": "020f91ba909ab06e84e1272f9592d0463a56616811b1f012ab8bb39db7d36c7d",
+    "package-lock.json": "8aa7a27ab243f899b09af6abc309d1dc8ca62d207ff4d3e8f520d4b557feb8ba"
+  },
+  "workflow_validation": "actionlint1.7.12; GitHub remote run not performed"
+}

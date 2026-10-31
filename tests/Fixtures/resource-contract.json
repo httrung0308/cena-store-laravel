@@ -1,0 +1,458 @@
+{
+  "admin": {
+    "users": [
+      "App\\Models\\User",
+      "App\\Http\\Resources\\Admin\\UserResource"
+    ],
+    "roles": [
+      "App\\Models\\Role",
+      "App\\Http\\Resources\\Admin\\RoleResource"
+    ],
+    "user_roles": [
+      "App\\Models\\UserRole",
+      "App\\Http\\Resources\\Admin\\UserRoleResource"
+    ],
+    "password_reset_challenges": [
+      "App\\Models\\PasswordResetChallenge",
+      "App\\Http\\Resources\\Admin\\PasswordResetChallengeResource"
+    ],
+    "administrative_units": [
+      "App\\Models\\AdministrativeUnit",
+      "App\\Http\\Resources\\Admin\\AdministrativeUnitResource"
+    ],
+    "addresses": [
+      "App\\Models\\Address",
+      "App\\Http\\Resources\\Admin\\AddressResource"
+    ],
+    "categories": [
+      "App\\Models\\Category",
+      "App\\Http\\Resources\\Admin\\CategoryResource"
+    ],
+    "products": [
+      "App\\Models\\Product",
+      "App\\Http\\Resources\\Admin\\ProductResource"
+    ],
+    "product_colors": [
+      "App\\Models\\ProductColor",
+      "App\\Http\\Resources\\Admin\\ProductColorResource"
+    ],
+    "product_images": [
+      "App\\Models\\ProductImage",
+      "App\\Http\\Resources\\Admin\\ProductImageResource"
+    ],
+    "product_variants": [
+      "App\\Models\\ProductVariant",
+      "App\\Http\\Resources\\Admin\\ProductVariantResource"
+    ],
+    "suppliers": [
+      "App\\Models\\Supplier",
+      "App\\Http\\Resources\\Admin\\SupplierResource"
+    ],
+    "stock_imports": [
+      "App\\Models\\StockImport",
+      "App\\Http\\Resources\\Admin\\StockImportResource"
+    ],
+    "stock_import_items": [
+      "App\\Models\\StockImportItem",
+      "App\\Http\\Resources\\Admin\\StockImportItemResource"
+    ],
+    "inventory_movements": [
+      "App\\Models\\InventoryMovement",
+      "App\\Http\\Resources\\Admin\\InventoryMovementResource"
+    ],
+    "carts": [
+      "App\\Models\\Cart",
+      "App\\Http\\Resources\\Admin\\CartResource"
+    ],
+    "cart_items": [
+      "App\\Models\\CartItem",
+      "App\\Http\\Resources\\Admin\\CartItemResource"
+    ],
+    "coupons": [
+      "App\\Models\\Coupon",
+      "App\\Http\\Resources\\Admin\\CouponResource"
+    ],
+    "coupon_redemptions": [
+      "App\\Models\\CouponRedemption",
+      "App\\Http\\Resources\\Admin\\CouponRedemptionResource"
+    ],
+    "orders": [
+      "App\\Models\\Order",
+      "App\\Http\\Resources\\Admin\\OrderResource"
+    ],
+    "order_items": [
+      "App\\Models\\OrderItem",
+      "App\\Http\\Resources\\Admin\\OrderItemResource"
+    ],
+    "order_item_units": [
+      "App\\Models\\OrderItemUnit",
+      "App\\Http\\Resources\\Admin\\OrderItemUnitResource"
+    ],
+    "order_status_histories": [
+      "App\\Models\\OrderStatusHistory",
+      "App\\Http\\Resources\\Admin\\OrderStatusHistoryResource"
+    ],
+    "payments": [
+      "App\\Models\\Payment",
+      "App\\Http\\Resources\\Admin\\PaymentResource"
+    ],
+    "payment_events": [
+      "App\\Models\\PaymentEvent",
+      "App\\Http\\Resources\\Admin\\PaymentEventResource"
+    ],
+    "refunds": [
+      "App\\Models\\Refund",
+      "App\\Http\\Resources\\Admin\\RefundResource"
+    ],
+    "shipments": [
+      "App\\Models\\Shipment",
+      "App\\Http\\Resources\\Admin\\ShipmentResource"
+    ],
+    "shipment_return_items": [
+      "App\\Models\\ShipmentReturnItem",
+      "App\\Http\\Resources\\Admin\\ShipmentReturnItemResource"
+    ],
+    "reviews": [
+      "App\\Models\\Review",
+      "App\\Http\\Resources\\Admin\\ReviewResource"
+    ],
+    "after_sales_requests": [
+      "App\\Models\\AfterSalesRequest",
+      "App\\Http\\Resources\\Admin\\AfterSalesRequestResource"
+    ],
+    "after_sales_histories": [
+      "App\\Models\\AfterSalesHistory",
+      "App\\Http\\Resources\\Admin\\AfterSalesHistoryResource"
+    ],
+    "after_sales_attachments": [
+      "App\\Models\\AfterSalesAttachment",
+      "App\\Http\\Resources\\Admin\\AfterSalesAttachmentResource"
+    ],
+    "sales_ledger_entries": [
+      "App\\Models\\SalesLedgerEntry",
+      "App\\Http\\Resources\\Admin\\SalesLedgerEntryResource"
+    ],
+    "outbox_events": [
+      "App\\Models\\OutboxEvent",
+      "App\\Http\\Resources\\Admin\\OutboxEventResource"
+    ]
+  },
+  "customer": {
+    "users": {
+      "class": "App\\Models\\User",
+      "resource": "App\\Http\\Resources\\Customer\\UserResource",
+      "fields": [
+        "id",
+        "full_name",
+        "email",
+        "phone",
+        "created_at",
+        "updated_at"
+      ],
+      "owner": "self"
+    },
+    "addresses": {
+      "class": "App\\Models\\Address",
+      "resource": "App\\Http\\Resources\\Customer\\AddressResource",
+      "fields": [
+        "id",
+        "recipient_name",
+        "phone",
+        "province_id",
+        "ward_id",
+        "province_code_snapshot",
+        "province_name_snapshot",
+        "ward_code_snapshot",
+        "ward_name_snapshot",
+        "dataset_version",
+        "street_address",
+        "legacy_district_text",
+        "is_default",
+        "created_at",
+        "updated_at"
+      ],
+      "owner": "user_id"
+    },
+    "products": {
+      "class": "App\\Models\\Product",
+      "resource": "App\\Http\\Resources\\Customer\\ProductResource",
+      "fields": [
+        "id",
+        "name",
+        "slug",
+        "brand_line",
+        "description",
+        "specifications",
+        "base_price",
+        "promotion_price",
+        "warranty_months",
+        "exchange_days",
+        "rating_avg",
+        "reviews_count",
+        "is_featured",
+        "is_active"
+      ],
+      "owner": null
+    },
+    "product_colors": {
+      "class": "App\\Models\\ProductColor",
+      "resource": "App\\Http\\Resources\\Customer\\ProductColorResource",
+      "fields": [
+        "id",
+        "style_color_code",
+        "color_name",
+        "color_key",
+        "primary_hex",
+        "display_order",
+        "is_active"
+      ],
+      "owner": null
+    },
+    "product_images": {
+      "class": "App\\Models\\ProductImage",
+      "resource": "App\\Http\\Resources\\Customer\\ProductImageResource",
+      "fields": [
+        "id",
+        "alt_text",
+        "is_thumbnail",
+        "display_order"
+      ],
+      "owner": null
+    },
+    "product_variants": {
+      "class": "App\\Models\\ProductVariant",
+      "resource": "App\\Http\\Resources\\Customer\\ProductVariantResource",
+      "fields": [
+        "id",
+        "size_value",
+        "size_numeric",
+        "sku",
+        "price_override",
+        "is_active"
+      ],
+      "owner": null
+    },
+    "carts": {
+      "class": "App\\Models\\Cart",
+      "resource": "App\\Http\\Resources\\Customer\\CartResource",
+      "fields": [
+        "id",
+        "version",
+        "expires_at"
+      ],
+      "owner": "user_id"
+    },
+    "cart_items": {
+      "class": "App\\Models\\CartItem",
+      "resource": "App\\Http\\Resources\\Customer\\CartItemResource",
+      "fields": [
+        "id",
+        "variant_id",
+        "quantity"
+      ],
+      "owner": "cart.user_id"
+    },
+    "orders": {
+      "class": "App\\Models\\Order",
+      "resource": "App\\Http\\Resources\\Customer\\OrderResource",
+      "fields": [
+        "id",
+        "order_code",
+        "subtotal_amount",
+        "merchandise_discount_amount",
+        "shipping_base_fee",
+        "shipping_discount_amount",
+        "shipping_fee",
+        "total_amount",
+        "order_status",
+        "payment_method",
+        "payment_status",
+        "paid_amount",
+        "refunded_amount",
+        "shipping_name",
+        "shipping_phone",
+        "shipping_address_snapshot",
+        "customer_note",
+        "cancel_reason",
+        "payment_expires_at",
+        "confirmed_at",
+        "packed_at",
+        "shipped_at",
+        "delivered_at",
+        "cancelled_at",
+        "failed_at",
+        "created_at",
+        "updated_at"
+      ],
+      "owner": "user_id"
+    },
+    "order_items": {
+      "class": "App\\Models\\OrderItem",
+      "resource": "App\\Http\\Resources\\Customer\\OrderItemResource",
+      "fields": [
+        "id",
+        "variant_id",
+        "product_name_snapshot",
+        "style_color_snapshot",
+        "color_name_snapshot",
+        "size_value_snapshot",
+        "sku_snapshot",
+        "thumbnail_snapshot",
+        "quantity",
+        "original_unit_price",
+        "unit_price",
+        "subtotal_amount",
+        "discount_amount",
+        "net_amount",
+        "exchange_days_snapshot",
+        "warranty_months_snapshot"
+      ],
+      "owner": "order.user_id"
+    },
+    "order_item_units": {
+      "class": "App\\Models\\OrderItemUnit",
+      "resource": "App\\Http\\Resources\\Customer\\OrderItemUnitResource",
+      "fields": [
+        "id",
+        "unit_no",
+        "current_variant_id",
+        "state",
+        "gross_amount",
+        "discount_amount",
+        "net_amount",
+        "exchange_completed_count",
+        "exchange_deadline_at",
+        "warranty_deadline_at",
+        "refunded_merchandise_amount"
+      ],
+      "owner": "item.order.user_id"
+    },
+    "order_status_histories": {
+      "class": "App\\Models\\OrderStatusHistory",
+      "resource": "App\\Http\\Resources\\Customer\\OrderStatusHistoryResource",
+      "fields": [
+        "id",
+        "actor_name_snapshot",
+        "from_status",
+        "to_status",
+        "reason_code",
+        "created_at"
+      ],
+      "owner": "order.user_id"
+    },
+    "payments": {
+      "class": "App\\Models\\Payment",
+      "resource": "App\\Http\\Resources\\Customer\\PaymentResource",
+      "fields": [
+        "id",
+        "attempt_ref",
+        "method",
+        "status",
+        "disposition",
+        "expected_amount",
+        "received_amount",
+        "applied_amount",
+        "currency",
+        "customer_reported_reference",
+        "customer_reported_at",
+        "expires_at",
+        "succeeded_at",
+        "created_at"
+      ],
+      "owner": "order.user_id"
+    },
+    "refunds": {
+      "class": "App\\Models\\Refund",
+      "resource": "App\\Http\\Resources\\Customer\\RefundResource",
+      "fields": [
+        "id",
+        "reason_type",
+        "status",
+        "merchandise_amount",
+        "shipping_amount",
+        "amount",
+        "destination_type",
+        "succeeded_at",
+        "created_at"
+      ],
+      "owner": "order.user_id"
+    },
+    "shipments": {
+      "class": "App\\Models\\Shipment",
+      "resource": "App\\Http\\Resources\\Customer\\ShipmentResource",
+      "fields": [
+        "id",
+        "tracking_code",
+        "carrier_name",
+        "status",
+        "shipped_at",
+        "delivered_at",
+        "failed_at",
+        "return_received_at"
+      ],
+      "owner": "order.user_id"
+    },
+    "reviews": {
+      "class": "App\\Models\\Review",
+      "resource": "App\\Http\\Resources\\Customer\\ReviewResource",
+      "fields": [
+        "id",
+        "rating",
+        "comment",
+        "admin_reply",
+        "replied_at",
+        "created_at",
+        "updated_at"
+      ],
+      "owner": null
+    },
+    "after_sales_requests": {
+      "class": "App\\Models\\AfterSalesRequest",
+      "resource": "App\\Http\\Resources\\Customer\\AfterSalesRequestResource",
+      "fields": [
+        "id",
+        "request_code",
+        "order_item_unit_id",
+        "type",
+        "status",
+        "source_variant_id",
+        "target_variant_id",
+        "customer_reason",
+        "receive_by_at",
+        "received_at",
+        "accepted_at",
+        "ready_at",
+        "customer_handover_at",
+        "resolved_at",
+        "created_at",
+        "updated_at"
+      ],
+      "owner": "unit.item.order.user_id"
+    },
+    "after_sales_histories": {
+      "class": "App\\Models\\AfterSalesHistory",
+      "resource": "App\\Http\\Resources\\Customer\\AfterSalesHistoryResource",
+      "fields": [
+        "id",
+        "actor_name_snapshot",
+        "from_status",
+        "to_status",
+        "event_type",
+        "note",
+        "created_at"
+      ],
+      "owner": "afterSalesRequest.unit.item.order.user_id"
+    },
+    "after_sales_attachments": {
+      "class": "App\\Models\\AfterSalesAttachment",
+      "resource": "App\\Http\\Resources\\Customer\\AfterSalesAttachmentResource",
+      "fields": [
+        "id",
+        "mime_type",
+        "size_bytes",
+        "created_at"
+      ],
+      "owner": "afterSalesRequest.unit.item.order.user_id"
+    }
+  }
+}

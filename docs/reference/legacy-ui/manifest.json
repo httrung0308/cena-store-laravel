@@ -1,0 +1,306 @@
+{
+  "source": "User-provided Shoe-Store_HQTCSDL/frontend",
+  "purpose": "Read-only presentation reference, not executable app or canonical backend",
+  "files": [
+    {
+      "path": "common/animations/easings.ts",
+      "sha256": "824cb5f9cbd17e4830459f6145c42b3684f20676a37042cc80d349102b885da4"
+    },
+    {
+      "path": "common/components/button/components/LoaderButton.tsx",
+      "sha256": "f72788f1240e6ae1a7f5bb45319fe049f2a391beb20420d6337a45c3c910cf7b"
+    },
+    {
+      "path": "common/components/cart/animations/Cart.animations.ts",
+      "sha256": "ef422b6ad1113de1cb3ec502fdea8e5b40d16eebe4b8651b95f1518fc67d6915"
+    },
+    {
+      "path": "common/components/cart/components/Cart.tsx",
+      "sha256": "883c44a071d102a55ccfa6dcb3d8e83b4f1315d44628bcbc357f0872dcf4d75a"
+    },
+    {
+      "path": "common/components/cart/components/CartProduct.tsx",
+      "sha256": "570b88fd87b6ff35ef89bc7e5d36dc19e543ecdc4db09bcb806f31fb1cb945d7"
+    },
+    {
+      "path": "common/components/checkbox/components/Checkbox.tsx",
+      "sha256": "ffe145454b49fb1ae57f08eeb02d59439a5777fedd34aee0920883072eeb299f"
+    },
+    {
+      "path": "common/components/footer/components/Footer.tsx",
+      "sha256": "22582e46e72e9f77fe5d49d0385c83a4a459ad88c2f01433d10b13ce015bc60d"
+    },
+    {
+      "path": "common/components/input/components/InputComponent.tsx",
+      "sha256": "36b2afdf7d7f3675b0eb149c2f807d5773961931f260fba0cfb827035ba554f2"
+    },
+    {
+      "path": "common/components/input/components/InputPasswordComponent.tsx",
+      "sha256": "e22ab387b7e76cd7d49ea0205c2d047d7fd1b275d29b5d61b88d69d93ce61dc3"
+    },
+    {
+      "path": "common/components/input/types/input.types.ts",
+      "sha256": "fde2a2d0198b20a5550b9876e8f174f3b4a796ece6605a15ed14426a8dd716ea"
+    },
+    {
+      "path": "common/components/modal/animations/ModalManager.animations.ts",
+      "sha256": "63eba0c1070329017be58162233e395731fef43b65d24346c3eaebcecd5ce510"
+    },
+    {
+      "path": "common/components/modal/components/ModalManager.tsx",
+      "sha256": "0f0df5e12ec1b1a96fc35bb27c00f9b21703d503eccd15c97df62bf4952ad8bc"
+    },
+    {
+      "path": "common/components/motionImage/components/MotionImage.tsx",
+      "sha256": "0132d30c5d701488ef08b50a40153a75e4e0a96ad653b99255b013879820fc5f"
+    },
+    {
+      "path": "common/components/nav/animations/NavBar.animations.ts",
+      "sha256": "0f5c386e92489a16daa5f06a80eddab430467da26ffa38b56523f9f0c99bcb16"
+    },
+    {
+      "path": "common/components/nav/animations/NavMenu.animations.ts",
+      "sha256": "c9c31900e73000c9ae8dbb55783bddc0c22480c5d3eb595122309df8e3f89ed1"
+    },
+    {
+      "path": "common/components/nav/components/NavBar.tsx",
+      "sha256": "d7ac2f18c52b43fe6bf14b4b8e91b4096632ddc0457519a8fa9fe9faeb3872c3"
+    },
+    {
+      "path": "common/components/nav/components/NavItem.tsx",
+      "sha256": "a9e368d58752b805673efaeb729c2873fb5de3fe0891851b4bb04422ca4c5a82"
+    },
+    {
+      "path": "common/components/nav/components/NavMenu.tsx",
+      "sha256": "d286b0bd9cbfdf5b268b93a2441894b8855dcbd6bffd7cd840c6016aea544de2"
+    },
+    {
+      "path": "common/components/portal/components/Portal.ts",
+      "sha256": "f4012bb084694ad7ef7a8c60f14cb68ba501b5ca7e1737a5d01d5f9baf6b215e"
+    },
+    {
+      "path": "common/components/spinner/components/Spinner.tsx",
+      "sha256": "28e66636f9ceefcb70092f1d5e111dd263840a82a14c78b93721c3a75ebaa601"
+    },
+    {
+      "path": "common/components/toast/Toast.tsx",
+      "sha256": "def2409e47b8f3ccbc51b91cf5b07d4bf9e750e744b08ac6ce98aabbe3fdc7ae"
+    },
+    {
+      "path": "common/components/toast/ToastContainer.tsx",
+      "sha256": "253617fc1163953ffa8d23e7c4ed3953b5d81ca4faf1e602da564b568a2f483c"
+    },
+    {
+      "path": "common/layouts/main.tsx",
+      "sha256": "ce7b172765988cd7f309d7dca4d898d7f48a4bf4ea085f9624a5de842048b153"
+    },
+    {
+      "path": "common/styles/global.css",
+      "sha256": "2ebd9462c28e6caac951ea983131e313069e1796f049bb838e82044ff68d2615"
+    },
+    {
+      "path": "modules/account/components/Account.tsx",
+      "sha256": "c2bb8e75fe547fcdc8d4889983ae900ba59d1e87ff8af00195e9076d1cedc158"
+    },
+    {
+      "path": "modules/account/components/AddressManagement.tsx",
+      "sha256": "345aea1625d09ebcafd7f945afa2d29bd03506484e05e8410cb66d577433b16a"
+    },
+    {
+      "path": "modules/account/components/ChangePasswordModal.tsx",
+      "sha256": "f7286c7cc22b5bd67612d1dfd524c26b5df228a3b9e4eaf3c3f274fab60406a3"
+    },
+    {
+      "path": "modules/account/components/OrderHistory.tsx",
+      "sha256": "857350c9c36149a063d2f0849f1443cc47d6a4bcfc5c695b4fab125c0d6057a3"
+    },
+    {
+      "path": "modules/admin/components/AdminDashboard.tsx",
+      "sha256": "da32c0dac5a14439635a0f827adbe9ff4d84f453a039bbcb28978f2d8c1d94f6"
+    },
+    {
+      "path": "modules/admin/components/orders/AdminOrderDetail.tsx",
+      "sha256": "227387a0e489c4cc09e4cd6776e92d490b3f2f55022fb12d1b5312d3aa9510d1"
+    },
+    {
+      "path": "modules/admin/components/orders/AdminOrdersPage.tsx",
+      "sha256": "31e2d1f84819b4e2c430ecbfd0889d883272fe5b765290d340570b4ac6e92c12"
+    },
+    {
+      "path": "modules/admin/components/products/AdminProductCreate.tsx",
+      "sha256": "8312d6e3ff61be724536d74de67a79254088f0757ab8a8f44a3d69f7a0628786"
+    },
+    {
+      "path": "modules/admin/components/products/AdminProductEdit.tsx",
+      "sha256": "58374b381d775555c73748d73bab7cdd6e6417dbe10c063235e5f105ab5faf3b"
+    },
+    {
+      "path": "modules/admin/components/products/AdminProductsPage.tsx",
+      "sha256": "c84d8bcab945d52f0475606caf94e976c17432a8e2ccd59c0b05ca3c2cebe668"
+    },
+    {
+      "path": "modules/admin/components/users/AdminUserDetail.tsx",
+      "sha256": "93cdd1dfae2dec5ca37829cd20cb7d4c3181936b1f7999ee099f8f70f54e8b68"
+    },
+    {
+      "path": "modules/admin/components/users/AdminUsersPage.tsx",
+      "sha256": "e07e0602ca6fed46400a7cecfdb51ff6040be1bb133fa7895e1896ef00694b8b"
+    },
+    {
+      "path": "modules/checkout/components/AddressForm.tsx",
+      "sha256": "3356332faa2bcfd177a62196268584db318193b727f1130792e36c2cbd5a1177"
+    },
+    {
+      "path": "modules/checkout/components/Checkout.tsx",
+      "sha256": "590fc3c3b99b0e129b67f103dfdadbeb1ed67c20427a13ce099fbc5624eafa64"
+    },
+    {
+      "path": "modules/checkout/components/CheckoutForm.tsx",
+      "sha256": "d4984f09607fb6d396709f31a3de0d72c94e2e4aecc4dfb938a23ac4aba64cd8"
+    },
+    {
+      "path": "modules/checkout/components/PriceDetails.tsx",
+      "sha256": "01a6a83f0458f5b1e56a330ff34bde448ba87aaf7db1235b6c36c010c97995d1"
+    },
+    {
+      "path": "modules/forgot-password/components/ForgotPassword.tsx",
+      "sha256": "9d28504202e88d8039c80009e6f5b80bf49f34d00ac917995590ee8e032e0f05"
+    },
+    {
+      "path": "modules/home/animations/Home.animations.ts",
+      "sha256": "060e5945408566109108e2e77960bf5bae85dd19d08f8bc663b5700b2c7da1a6"
+    },
+    {
+      "path": "modules/home/components/Collection.tsx",
+      "sha256": "24a61fcc9952519b8d80509bf81ccbac150198ef53a9cd6917ef10facf587772"
+    },
+    {
+      "path": "modules/home/components/CollectionList.tsx",
+      "sha256": "aef492c4370bf505f71624b771c3a957f26aad783752b0edce8bbc6e81adce9d"
+    },
+    {
+      "path": "modules/home/components/Home.tsx",
+      "sha256": "23ac30a8368196ccdf2adf8c093b6c9b82df9e7dcdf8d5adab9d4f96530a78d8"
+    },
+    {
+      "path": "modules/login/animations/Login.animations.ts",
+      "sha256": "395a3435e10da5a4783e1119a52f8accd13b7ef61ac9cf1bf51948c24f5141af"
+    },
+    {
+      "path": "modules/login/components/Login.tsx",
+      "sha256": "ee7842305b4159da7e2b7e868673ea63641f72aec46a4272d1680135fa08559c"
+    },
+    {
+      "path": "modules/login/components/LoginForm.tsx",
+      "sha256": "0cd13677f6a42cc701517ec28baaf5f032ddfc496f4fdcdad838c98667adde5c"
+    },
+    {
+      "path": "modules/login/modals/IncorrectCredentials.tsx",
+      "sha256": "0826d648e953f38a2a34b2e971d5cb47aac460f5c69b5889beccf78b6f81118d"
+    },
+    {
+      "path": "modules/productDetails/animations/ProductGallery.animations.ts",
+      "sha256": "485263f9334dc7bc3ad046b5b6357ff01272db704ecd1610dbd5162c90bca5d1"
+    },
+    {
+      "path": "modules/productDetails/components/ProductDetails.tsx",
+      "sha256": "7a6d359f07398df2ed30cdc479b91eb4d583d5fcb48b30cbfb61ca3386fd3a0d"
+    },
+    {
+      "path": "modules/productDetails/components/ProductGallery.tsx",
+      "sha256": "db41f9c1711aa730b6db93247a5cbc77aef880520f8ac306641b9c472477b546"
+    },
+    {
+      "path": "modules/productDetails/components/ProductVariant.tsx",
+      "sha256": "68685bcd9e8b6d7e1c880749367ac3965fc518bba94691a195d0107c59963471"
+    },
+    {
+      "path": "modules/productDetails/components/Size.tsx",
+      "sha256": "ab11aa04daa56230aff55749f56b71ea34350628f78017c55266da31efa53b5b"
+    },
+    {
+      "path": "modules/productDetails/modals/ProductDetailsModal.tsx",
+      "sha256": "9e57e3a94b95f49cf63c1b159c5929e67e4e1012788951e7a37bd281f7323c1d"
+    },
+    {
+      "path": "modules/productDetails/modals/Reviews.tsx",
+      "sha256": "052be42f3c5b99ce620a7c4fff8e96d2120e7023d4c5dab6083a111dc7114d04"
+    },
+    {
+      "path": "modules/productDetails/modals/SizeGuide.tsx",
+      "sha256": "f17e3adcab15df6389ba12442ca2bd6f3fbad9dd949aa634bab463ce0d87038e"
+    },
+    {
+      "path": "modules/products/components/filter/Filter.tsx",
+      "sha256": "7f757fc11be210cedc050cb067dc15c3c389a414c32a65b968169d875a4129e2"
+    },
+    {
+      "path": "modules/products/components/filter/FilterColor.tsx",
+      "sha256": "3425ab6891d5689a46fa32b887e64c23b1af6f4a7fae3cbb719201edc97806b8"
+    },
+    {
+      "path": "modules/products/components/filter/FilterColors.tsx",
+      "sha256": "bdea45136aaddd8ccf5286aac07986f36ac86d9ec487efda8228fc6473a7bbd8"
+    },
+    {
+      "path": "modules/products/components/filter/FilterGender.tsx",
+      "sha256": "260e8e65166ef418f4a32d2b700a2667b1467fc5778d637f4e4a1811ec0d7257"
+    },
+    {
+      "path": "modules/products/components/filter/FilterKids.tsx",
+      "sha256": "1570987c42fd211faeac0572d33cc8dd968d0323b58eec2bf45b0264ef11789c"
+    },
+    {
+      "path": "modules/products/components/filter/FilterOptions.tsx",
+      "sha256": "3dbd5adddd4e180c2617adf0cbdc9984db583bb72f270cd43626f6d8821b04cd"
+    },
+    {
+      "path": "modules/products/components/filter/FilterPrice.tsx",
+      "sha256": "f511b6db4b8e69f71fc7b631ca01af02ac42daf944b703c7f858a3d5644c43da"
+    },
+    {
+      "path": "modules/products/components/Product.tsx",
+      "sha256": "5e8df420584973337a5db0dbc8c2a9e9cb0b189adc536dd166abf6865f244a63"
+    },
+    {
+      "path": "modules/products/components/ProductList.tsx",
+      "sha256": "97078ea112e6c8f707be7382d61aa59decc4deb22772c3d96eceb8b71dd75bc9"
+    },
+    {
+      "path": "modules/products/helpers/filterProducts.ts",
+      "sha256": "5c8a3987a419308d547627650bae5dba563ccb86aab537724efbb63d9c495996"
+    },
+    {
+      "path": "modules/products/helpers/sortProducts.ts",
+      "sha256": "772f483423d5fc74da2d61c1e75c75a247af6b64298910ffa106469649cb5311"
+    },
+    {
+      "path": "modules/register/animations/Register.animations.ts",
+      "sha256": "395a3435e10da5a4783e1119a52f8accd13b7ef61ac9cf1bf51948c24f5141af"
+    },
+    {
+      "path": "modules/register/components/Background.tsx",
+      "sha256": "031a7b5c6ae90c664a44bbd005ae054be2af1afb2cc372152705614d747f6307"
+    },
+    {
+      "path": "modules/register/components/Register.tsx",
+      "sha256": "e2efa265754df42d9bbf2cfc269a88c86d12155cae6cb0b3465b225245fd523a"
+    },
+    {
+      "path": "modules/register/components/RegistrationForm.tsx",
+      "sha256": "15d0d79493e8869dc6a769f2d1ca31b648c8ac6d4c40af5ca2481a322b3505bf"
+    },
+    {
+      "path": "modules/register/modals/EmailSent.tsx",
+      "sha256": "38f71b471d17d638a885e245747a32f72cbfc7f1ce06e47ad4b09a29e8cb964e"
+    },
+    {
+      "path": "modules/register/modals/ErrorModal.tsx",
+      "sha256": "601e12056db400ad79478ad624df44df7c83ed63a9b943b5d647865cd6b0d24b"
+    },
+    {
+      "path": "modules/reset-password/components/ResetPassword.tsx",
+      "sha256": "fec34461227b7790fbe59e7c9584de0cc63ec2e4cd98d7e69805cf850affed3b"
+    }
+  ]
+}

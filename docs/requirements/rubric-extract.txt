@@ -1,0 +1,168 @@
+TRƯỜNG ĐH CÔNG THƯƠNG TP. HCM	CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM
+KHOA CÔNG NGHỆ THÔNG TIN	Độc lập – Tự do – Hạnh phúc
+Bộ môn Kỹ thuật phần mềm
+Tp. Hồ Chí Minh, ngày 22 tháng 10 năm 2026
+YÊU CẦU ĐỒ ÁN CUỐI MÔN HỌC
+Học phần: LẬP TRÌNH MÃ NGUỒN MỞ
+(Xây dựng ứng dụng web bằng Laravel Framework)
+1. Thông tin chung
+Nội dung
+Quy định
+Hình thức thực hiện
+Làm việc nhóm, 3–5 sinh viên/nhóm
+Tỷ trọng điểm
+100% điểm “Báo cáo đồ án môn học” = 50% điểm cuối kỳ (theo Đề cương học phần)
+Chuẩn đầu ra liên quan
+CLO1, CLO2, CLO3, CLO4, CLO5
+Thời điểm nộp bài
+Sau khi kết thúc học phần 1 tuần — hạn chót: [GV điền ngày cụ thể]
+Kênh nộp bài
+Google Classroom của lớp học phần
+Đề tài
+Chọn từ danh sách gợi ý (Mục 4) hoặc nhóm tự đề xuất, cần GV phê duyệt trước [GV điền ngày]
+2. Mục tiêu đồ án
+Thông qua đồ án, mỗi nhóm sinh viên phải chứng minh được năng lực:
+CLO1 — vận dụng PHP, lập trình hướng đối tượng, thao tác CSDL và framework Laravel để xây dựng một ứng dụng web hoàn chỉnh.
+CLO2 — tự đánh giá chất lượng sản phẩm của chính nhóm mình dựa trên các tiêu chí kỹ thuật và trải nghiệm người dùng.
+CLO3 — phân công, phối hợp và đánh giá đóng góp của từng thành viên trong nhóm.
+CLO4 — triển khai một website có thể vận hành thực tế cho một tổ chức, nhóm ngành hoặc nhu cầu cụ thể.
+CLO5 — thể hiện tinh thần trách nhiệm, chủ động tự học và cập nhật kiến thức trong suốt quá trình thực hiện.
+3. Yêu cầu kỹ thuật bắt buộc
+3.1. Công nghệ sử dụng
+Backend: Laravel Framework (bản mới nhất được hỗ trợ bởi Composer tại thời điểm làm đồ án).
+Cơ sở dữ liệu: MySQL, thao tác qua Eloquent ORM; cấu trúc bảng khai báo bằng Migration; có Seeder/Factory để tạo dữ liệu mẫu.
+Giao diện: Blade Template kết hợp Bootstrap (hoặc Tailwind nếu nhóm tự tin), giao diện tách riêng khu vực người dùng và khu vực quản trị.
+Quản lý mã nguồn: khuyến khích dùng Git/GitHub trong suốt quá trình làm nhóm (không bắt buộc nhưng được cộng điểm ở tiêu chí “Tham gia thực hiện”).
+3.2. Vai trò người dùng (bắt buộc tối thiểu 2 role)
+Admin/Quản trị: đăng nhập vào khu vực quản trị riêng (/admin), thực hiện đầy đủ CRUD trên dữ liệu nghiệp vụ.
+User (Student/Customer/Employee/… tùy đề tài): xem, tìm kiếm dữ liệu công khai; có thể đăng ký/đăng nhập để sử dụng một số chức năng dành riêng (đặt hàng, bình luận, đăng ký tham gia…).
+Phân quyền thực hiện bằng Laravel Auth (hoặc Breeze) kết hợp Middleware — route của từng vai trò phải được bảo vệ đúng quyền hạn.
+3.3. Chức năng tối thiểu
+CRUD (Thêm – Xem – Sửa – Xóa) đầy đủ trên ít nhất 2 bảng dữ liệu có quan hệ với nhau (hasMany/belongsTo hoặc belongsToMany).
+Đăng nhập / đăng xuất và phân quyền theo vai trò (Middleware).
+Tìm kiếm kết hợp phân trang trên ít nhất 1 danh sách dữ liệu chính (giữ từ khóa khi chuyển trang).
+Validation dữ liệu khi nhập form (Form Request hoặc validate() trong Controller), có thông báo lỗi rõ ràng cho người dùng.
+Giao diện phản hồi (flash message) sau khi thêm/sửa/xóa thành công.
+3.4. Hồ sơ kèm theo sản phẩm
+Mô tả đề tài: bài toán thực tế, đối tượng sử dụng, phạm vi chức năng.
+Thiết kế cơ sở dữ liệu: sơ đồ ERD thể hiện bảng, khóa chính/khóa ngoại, quan hệ giữa các bảng.
+Sơ đồ UML Use Case: mô tả tương tác của từng vai trò với hệ thống.
+Mô tả chi tiết các chức năng chính (kèm ảnh chụp màn hình minh họa).
+Bảng phân công công việc rõ ràng giữa các thành viên trong nhóm.
+4. Danh sách đề tài gợi ý
+Mỗi nhóm chọn 1 đề tài dưới đây, hoặc đề xuất đề tài khác có chức năng tương đương và được giảng viên phê duyệt trước khi thực hiện. Hai nhóm trong cùng lớp không được trùng đề tài.
+#
+Đề tài
+Chức năng tiêu biểu
+Vai trò (role)
+1
+Website Quản lý Sinh viên – Lớp học
+Quản lý sinh viên, lớp học, môn học; đăng ký môn học; điểm danh.
+Admin (quản lý) · Student (xem, đăng ký)
+2
+Website Tin tức / Blog cá nhân
+Đăng bài viết, chuyên mục, bình luận; tìm kiếm theo từ khóa/chuyên mục.
+Admin (quản trị) · User (đăng/đọc bình luận)
+3
+Website Bán hàng Online (đơn giản)
+Quản lý sản phẩm, loại sản phẩm, giỏ hàng, đơn hàng; đăng ký tài khoản.
+Admin (sản phẩm, đơn hàng) · Customer (mua hàng)
+4
+Website Quản lý Thư viện
+Quản lý sách, tác giả, phiếu mượn – trả; tìm kiếm theo tên/tác giả.
+Admin (thư viện) · User (độc giả)
+5
+Website Quản lý Nhân sự
+Quản lý nhân viên, phòng ban, chấm công; xuất báo cáo thống kê.
+HR (quản lý) · Employee (xem, cập nhật hồ sơ)
+6
+Website Quản lý Sự kiện – Đăng ký tham gia
+Tạo sự kiện, đăng ký tham dự, danh sách người tham gia; phân loại sự kiện.
+Admin (tạo, quản lý) · User (đăng ký)
+7
+Website Đặt vé xem phim / sự kiện (đơn giản)
+Quản lý phim/sự kiện, suất chiếu, đặt vé; lưu lịch sử đặt vé.
+Admin (quản lý phim/sự kiện) · User (đặt vé)
+5. Yêu cầu mở rộng (tùy chọn — tính điểm cộng)
+Các hạng mục dưới đây không bắt buộc nhưng thể hiện sự đầu tư của nhóm và được cộng điểm ở tiêu chí “Sản phẩm phần mềm” / “Sáng tạo”:
+Upload file (hình ảnh sản phẩm, avatar người dùng…) qua Laravel Storage.
+Tích hợp AJAX cho một số thao tác (giỏ hàng, tìm kiếm trực tiếp, bình luận…).
+Tích hợp API bên ngoài (ví dụ: Google Maps cho sự kiện, OpenWeather cho ứng dụng thời tiết).
+Giao diện responsive tốt trên thiết bị di động.
+Áp dụng Soft Delete, Role-based Middleware tùy chỉnh, hoặc các kỹ thuật nâng cao khác đã học.
+6. Cấu trúc và hình thức báo cáo
+6.1. Cấu trúc nội dung báo cáo
+Trang bìa: tên đề tài, danh sách thành viên + MSSV, lớp, giảng viên hướng dẫn.
+Mục lục.
+Giới thiệu đề tài: lý do chọn đề tài, mục tiêu, phạm vi thực hiện.
+Phân tích & thiết kế hệ thống: sơ đồ ERD, sơ đồ UML Use Case, mô tả các chức năng chính.
+Công nghệ sử dụng: liệt kê và giải thích ngắn gọn vai trò của từng công nghệ/thư viện.
+Hướng dẫn cài đặt và sử dụng: các bước chạy dự án từ mã nguồn (composer install, .env, migrate, seed…).
+Kết quả đạt được: ảnh chụp màn hình các chức năng chính, theo đúng vai trò người dùng.
+Phân công công việc: bảng phân công nhiệm vụ và mức độ hoàn thành của từng thành viên.
+Hạn chế và hướng phát triển.
+Tài liệu tham khảo.
+6.2. Hình thức trình bày
+Font chữ Times New Roman, cỡ 13, giãn dòng 1.5; in trên khổ A4.
+Tối thiểu 10 trang nội dung (không tính bìa, mục lục, tài liệu tham khảo).
+Đánh số trang, có tiêu đề chương/mục rõ ràng, không lỗi chính tả, trình bày nhất quán.
+Hình ảnh/sơ đồ phải có chú thích (caption) và được tham chiếu trong nội dung.
+7. Sản phẩm nộp bài
+Mã nguồn đầy đủ của dự án Laravel (nén .zip hoặc đường dẫn repository GitHub).
+File cơ sở dữ liệu: export SQL hoặc đầy đủ Migration + Seeder để dựng lại CSDL.
+File báo cáo (.docx hoặc .pdf) theo đúng cấu trúc Mục 6.
+File README hướng dẫn cài đặt và chạy dự án trên máy khác.
+File slide thuyết trình (nếu lớp có buổi báo cáo/bảo vệ đồ án).
+8. Tiêu chí chấm điểm
+Đồ án được chấm theo Rubric 2 — Đánh giá đồ án môn học, quy định chính thức trong Đề cương học phần Lập trình mã nguồn mở. Bảng dưới đây tóm tắt 5 tiêu chí, trọng số và yêu cầu để đạt mức điểm tối đa (8.5–10); thang điểm chi tiết đủ 5 mức được áp dụng theo đúng Rubric 2 của Đề cương.
+Tiêu chí
+CĐR
+Trọng số
+Yêu cầu đạt mức điểm tối đa (8.5 – 10)
+Hình thức báo cáo
+CLO1
+10%
+Trình bày đúng quy định tại Mục 6.2, đẹp, rõ ràng, không lỗi chính tả.
+Nội dung / chất lượng báo cáo
+CLO5
+10%
+Đáp ứng đầy đủ cấu trúc nội dung tại Mục 6.1, mô tả rõ ràng, chính xác.
+Giao diện phần mềm
+CLO2
+30%
+Bố cục, màu sắc hài hòa; trải nghiệm người dùng tốt; đáp ứng đầy đủ yêu cầu giao diện của đề tài.
+Sản phẩm phần mềm (chức năng)
+CLO4
+40%
+Đầy đủ chức năng tối thiểu tại Mục 3.3, hoạt động đúng, không lỗi; áp dụng đúng kỹ thuật Laravel (Eloquent, Migration, Middleware, Form Request…).
+Tham gia thực hiện & tương tác nhóm
+CLO3
+10%
+Tương tác thường xuyên trong quá trình thực hiện công việc nhóm, mức độ đóng góp đồng đều (~100%).
+Lưu ý: điểm cho hạng mục “Yêu cầu mở rộng” (Mục 5) được cộng thêm trực tiếp vào tiêu chí “Sản phẩm phần mềm”, không vượt quá điểm tối đa của tiêu chí này.
+9. Lịch trình thực hiện
+Mốc thời gian
+Nội dung
+Hạn chót
+Đăng ký nhóm & đề tài
+Nộp danh sách nhóm (3–5 SV) và đề tài đã chọn/đề xuất qua Google Classroom.
+[GV điền ngày]
+Duyệt đề tài tự đề xuất
+GV phản hồi phê duyệt hoặc yêu cầu điều chỉnh đề tài.
+[GV điền ngày]
+Nộp bản nháp (khuyến khích)
+ERD, Use Case và tiến độ chức năng để GV góp ý giữa chừng.
+[GV điền ngày]
+Nộp sản phẩm & báo cáo hoàn chỉnh
+Nộp đầy đủ các hạng mục tại Mục 7 qua Google Classroom.
+Sau khi kết thúc học phần 1 tuần
+Báo cáo/bảo vệ đồ án (nếu có)
+Thuyết trình và trả lời vấn đáp theo lịch của lớp.
+[GV điền ngày]
+10. Quy định về liêm chính học thuật
+Nghiêm cấm sao chép nguyên bản mã nguồn/báo cáo giữa các nhóm hoặc từ nguồn có sẵn mà không ghi nhận, chỉnh sửa.
+Mỗi thành viên phải nắm rõ toàn bộ mã nguồn của nhóm; có thể bị vấn đáp riêng để xác nhận mức độ đóng góp thực tế.
+Trường hợp phát hiện sao chép: nhóm liên quan nhận 0 điểm cho phần bị sao chép và bị xử lý theo quy chế đào tạo của Trường.
+Khuyến khích trích dẫn rõ nguồn tham khảo (tài liệu, thư viện, đoạn mã mẫu) trong báo cáo.
+Giảng viên phụ trách
+(Ký, ghi rõ họ tên)

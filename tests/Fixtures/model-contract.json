@@ -1,0 +1,980 @@
+{
+  "users": {
+    "class": "App\\Models\\User",
+    "belongs_to": [],
+    "enums": {}
+  },
+  "roles": {
+    "class": "App\\Models\\Role",
+    "belongs_to": [],
+    "enums": {
+      "slug": "App\\Enums\\RoleSlug"
+    },
+    "enum_cases": {
+      "slug": [
+        "admin",
+        "staff",
+        "customer"
+      ]
+    }
+  },
+  "user_roles": {
+    "class": "App\\Models\\UserRole",
+    "belongs_to": [
+      {
+        "column": "user_id",
+        "relation": "user",
+        "class": "App\\Models\\User",
+        "history": true
+      },
+      {
+        "column": "role_id",
+        "relation": "role",
+        "class": "App\\Models\\Role",
+        "history": false
+      },
+      {
+        "column": "assigned_by",
+        "relation": "assignedBy",
+        "class": "App\\Models\\User",
+        "history": true
+      }
+    ],
+    "enums": {}
+  },
+  "password_reset_challenges": {
+    "class": "App\\Models\\PasswordResetChallenge",
+    "belongs_to": [
+      {
+        "column": "user_id",
+        "relation": "user",
+        "class": "App\\Models\\User",
+        "history": false
+      }
+    ],
+    "enums": {}
+  },
+  "administrative_units": {
+    "class": "App\\Models\\AdministrativeUnit",
+    "belongs_to": [
+      {
+        "column": "parent_id",
+        "relation": "parent",
+        "class": "App\\Models\\AdministrativeUnit",
+        "history": false
+      }
+    ],
+    "enums": {
+      "level": "App\\Enums\\AdministrativeUnitLevel"
+    },
+    "enum_cases": {
+      "level": [
+        "PROVINCE",
+        "WARD"
+      ]
+    }
+  },
+  "addresses": {
+    "class": "App\\Models\\Address",
+    "belongs_to": [
+      {
+        "column": "user_id",
+        "relation": "user",
+        "class": "App\\Models\\User",
+        "history": false
+      },
+      {
+        "column": "province_id",
+        "relation": "province",
+        "class": "App\\Models\\AdministrativeUnit",
+        "history": false
+      },
+      {
+        "column": "ward_id",
+        "relation": "ward",
+        "class": "App\\Models\\AdministrativeUnit",
+        "history": false
+      }
+    ],
+    "enums": {}
+  },
+  "categories": {
+    "class": "App\\Models\\Category",
+    "belongs_to": [
+      {
+        "column": "parent_id",
+        "relation": "parent",
+        "class": "App\\Models\\Category",
+        "history": false
+      }
+    ],
+    "enums": {
+      "gender_group": "App\\Enums\\GenderGroup"
+    },
+    "enum_cases": {
+      "gender_group": [
+        "MEN",
+        "WOMEN",
+        "KIDS",
+        "UNISEX"
+      ]
+    }
+  },
+  "products": {
+    "class": "App\\Models\\Product",
+    "belongs_to": [
+      {
+        "column": "category_id",
+        "relation": "category",
+        "class": "App\\Models\\Category",
+        "history": false
+      }
+    ],
+    "enums": {}
+  },
+  "product_colors": {
+    "class": "App\\Models\\ProductColor",
+    "belongs_to": [
+      {
+        "column": "product_id",
+        "relation": "product",
+        "class": "App\\Models\\Product",
+        "history": false
+      }
+    ],
+    "enums": {}
+  },
+  "product_images": {
+    "class": "App\\Models\\ProductImage",
+    "belongs_to": [
+      {
+        "column": "product_color_id",
+        "relation": "color",
+        "class": "App\\Models\\ProductColor",
+        "history": false
+      }
+    ],
+    "enums": {
+      "source_type": "App\\Enums\\ProductImageSourceType"
+    },
+    "enum_cases": {
+      "source_type": [
+        "UPLOAD",
+        "EXTERNAL_URL"
+      ]
+    }
+  },
+  "product_variants": {
+    "class": "App\\Models\\ProductVariant",
+    "belongs_to": [
+      {
+        "column": "product_color_id",
+        "relation": "color",
+        "class": "App\\Models\\ProductColor",
+        "history": false
+      }
+    ],
+    "enums": {}
+  },
+  "suppliers": {
+    "class": "App\\Models\\Supplier",
+    "belongs_to": [],
+    "enums": {}
+  },
+  "stock_imports": {
+    "class": "App\\Models\\StockImport",
+    "belongs_to": [
+      {
+        "column": "supplier_id",
+        "relation": "supplier",
+        "class": "App\\Models\\Supplier",
+        "history": true
+      },
+      {
+        "column": "created_by",
+        "relation": "createdBy",
+        "class": "App\\Models\\User",
+        "history": true
+      },
+      {
+        "column": "posted_by",
+        "relation": "postedBy",
+        "class": "App\\Models\\User",
+        "history": true
+      }
+    ],
+    "enums": {
+      "status": "App\\Enums\\StockImportStatus"
+    },
+    "enum_cases": {
+      "status": [
+        "DRAFT",
+        "POSTED",
+        "CANCELLED"
+      ]
+    }
+  },
+  "stock_import_items": {
+    "class": "App\\Models\\StockImportItem",
+    "belongs_to": [
+      {
+        "column": "stock_import_id",
+        "relation": "stockImport",
+        "class": "App\\Models\\StockImport",
+        "history": false
+      },
+      {
+        "column": "variant_id",
+        "relation": "variant",
+        "class": "App\\Models\\ProductVariant",
+        "history": true
+      }
+    ],
+    "enums": {}
+  },
+  "inventory_movements": {
+    "class": "App\\Models\\InventoryMovement",
+    "belongs_to": [
+      {
+        "column": "variant_id",
+        "relation": "variant",
+        "class": "App\\Models\\ProductVariant",
+        "history": true
+      },
+      {
+        "column": "actor_id",
+        "relation": "actor",
+        "class": "App\\Models\\User",
+        "history": true
+      }
+    ],
+    "enums": {
+      "action": "App\\Enums\\InventoryAction",
+      "reference_type": "App\\Enums\\InventoryReferenceType"
+    },
+    "enum_cases": {
+      "action": [
+        "IMPORT_POSTED",
+        "ORDER_RESERVED",
+        "ORDER_RELEASED",
+        "ORDER_DISPATCHED",
+        "SHIPMENT_RETURN_RECEIVED",
+        "RETURN_RESTOCKED",
+        "RETURN_WRITTEN_OFF",
+        "EXCHANGE_RESERVED",
+        "EXCHANGE_RELEASED",
+        "EXCHANGE_OLD_RECEIVED",
+        "EXCHANGE_COMPLETED_IN",
+        "EXCHANGE_COMPLETED_OUT",
+        "DEFECT_RECEIVED",
+        "MANUAL_ADJUST_IN",
+        "MANUAL_ADJUST_OUT",
+        "QUARANTINE_WRITEOFF"
+      ],
+      "reference_type": [
+        "STOCK_IMPORT",
+        "ORDER",
+        "SHIPMENT_RETURN_ITEM",
+        "AFTER_SALES_REQUEST",
+        "MANUAL_ADJUSTMENT"
+      ]
+    }
+  },
+  "carts": {
+    "class": "App\\Models\\Cart",
+    "belongs_to": [
+      {
+        "column": "user_id",
+        "relation": "user",
+        "class": "App\\Models\\User",
+        "history": false
+      }
+    ],
+    "enums": {}
+  },
+  "cart_items": {
+    "class": "App\\Models\\CartItem",
+    "belongs_to": [
+      {
+        "column": "cart_id",
+        "relation": "cart",
+        "class": "App\\Models\\Cart",
+        "history": false
+      },
+      {
+        "column": "variant_id",
+        "relation": "variant",
+        "class": "App\\Models\\ProductVariant",
+        "history": true
+      }
+    ],
+    "enums": {}
+  },
+  "coupons": {
+    "class": "App\\Models\\Coupon",
+    "belongs_to": [],
+    "enums": {
+      "type": "App\\Enums\\CouponType"
+    },
+    "enum_cases": {
+      "type": [
+        "PERCENTAGE",
+        "FIXED",
+        "FREE_SHIPPING"
+      ]
+    }
+  },
+  "coupon_redemptions": {
+    "class": "App\\Models\\CouponRedemption",
+    "belongs_to": [
+      {
+        "column": "coupon_id",
+        "relation": "coupon",
+        "class": "App\\Models\\Coupon",
+        "history": true
+      },
+      {
+        "column": "user_id",
+        "relation": "user",
+        "class": "App\\Models\\User",
+        "history": true
+      },
+      {
+        "column": "order_id",
+        "relation": "order",
+        "class": "App\\Models\\Order",
+        "history": false
+      }
+    ],
+    "enums": {
+      "status": "App\\Enums\\CouponRedemptionStatus"
+    },
+    "enum_cases": {
+      "status": [
+        "RESERVED",
+        "CONSUMED",
+        "RELEASED"
+      ]
+    }
+  },
+  "orders": {
+    "class": "App\\Models\\Order",
+    "belongs_to": [
+      {
+        "column": "user_id",
+        "relation": "user",
+        "class": "App\\Models\\User",
+        "history": true
+      },
+      {
+        "column": "coupon_id",
+        "relation": "coupon",
+        "class": "App\\Models\\Coupon",
+        "history": true
+      }
+    ],
+    "enums": {
+      "order_status": "App\\Enums\\OrderStatus",
+      "payment_method": "App\\Enums\\PaymentMethod",
+      "payment_status": "App\\Enums\\OrderPaymentStatus"
+    },
+    "enum_cases": {
+      "order_status": [
+        "PENDING",
+        "CONFIRMED",
+        "PACKING",
+        "ON_DELIVERY",
+        "DELIVERED",
+        "CANCELLED",
+        "FAILED"
+      ],
+      "payment_method": [
+        "COD",
+        "VIETQR",
+        "VNPAY"
+      ],
+      "payment_status": [
+        "UNPAID",
+        "PAID",
+        "REFUND_PENDING",
+        "PARTIALLY_REFUNDED",
+        "REFUNDED"
+      ]
+    }
+  },
+  "order_items": {
+    "class": "App\\Models\\OrderItem",
+    "belongs_to": [
+      {
+        "column": "order_id",
+        "relation": "order",
+        "class": "App\\Models\\Order",
+        "history": false
+      },
+      {
+        "column": "variant_id",
+        "relation": "variant",
+        "class": "App\\Models\\ProductVariant",
+        "history": true
+      }
+    ],
+    "enums": {}
+  },
+  "order_item_units": {
+    "class": "App\\Models\\OrderItemUnit",
+    "belongs_to": [
+      {
+        "column": "order_item_id",
+        "relation": "item",
+        "class": "App\\Models\\OrderItem",
+        "history": false
+      },
+      {
+        "column": "current_variant_id",
+        "relation": "currentVariant",
+        "class": "App\\Models\\ProductVariant",
+        "history": true
+      }
+    ],
+    "enums": {
+      "state": "App\\Enums\\OrderUnitState"
+    },
+    "enum_cases": {
+      "state": [
+        "ALLOCATED",
+        "OUTBOUND",
+        "OWNED_BY_CUSTOMER",
+        "RETURNED_TO_STORE",
+        "LOST",
+        "RETURNED_REFUNDED",
+        "CANCELLED"
+      ]
+    }
+  },
+  "order_status_histories": {
+    "class": "App\\Models\\OrderStatusHistory",
+    "belongs_to": [
+      {
+        "column": "order_id",
+        "relation": "order",
+        "class": "App\\Models\\Order",
+        "history": false
+      },
+      {
+        "column": "actor_id",
+        "relation": "actor",
+        "class": "App\\Models\\User",
+        "history": true
+      }
+    ],
+    "enums": {
+      "from_status": "App\\Enums\\OrderStatus",
+      "to_status": "App\\Enums\\OrderStatus"
+    },
+    "enum_cases": {
+      "from_status": [
+        "PENDING",
+        "CONFIRMED",
+        "PACKING",
+        "ON_DELIVERY",
+        "DELIVERED",
+        "CANCELLED",
+        "FAILED"
+      ],
+      "to_status": [
+        "PENDING",
+        "CONFIRMED",
+        "PACKING",
+        "ON_DELIVERY",
+        "DELIVERED",
+        "CANCELLED",
+        "FAILED"
+      ]
+    }
+  },
+  "payments": {
+    "class": "App\\Models\\Payment",
+    "belongs_to": [
+      {
+        "column": "order_id",
+        "relation": "order",
+        "class": "App\\Models\\Order",
+        "history": false
+      },
+      {
+        "column": "origin_payment_id",
+        "relation": "originPayment",
+        "class": "App\\Models\\Payment",
+        "history": false
+      },
+      {
+        "column": "confirmed_by",
+        "relation": "confirmedBy",
+        "class": "App\\Models\\User",
+        "history": true
+      }
+    ],
+    "enums": {
+      "method": "App\\Enums\\PaymentMethod",
+      "status": "App\\Enums\\PaymentAttemptStatus",
+      "disposition": "App\\Enums\\PaymentDisposition",
+      "currency": "App\\Enums\\Currency"
+    },
+    "enum_cases": {
+      "method": [
+        "COD",
+        "VIETQR",
+        "VNPAY"
+      ],
+      "status": [
+        "PENDING",
+        "SUCCEEDED",
+        "FAILED",
+        "EXPIRED"
+      ],
+      "disposition": [
+        "NONE",
+        "APPLIED",
+        "UNAPPLIED_LATE",
+        "UNAPPLIED_DUPLICATE",
+        "UNAPPLIED_MISMATCH"
+      ],
+      "currency": [
+        "VND"
+      ]
+    }
+  },
+  "payment_events": {
+    "class": "App\\Models\\PaymentEvent",
+    "belongs_to": [
+      {
+        "column": "payment_id",
+        "relation": "payment",
+        "class": "App\\Models\\Payment",
+        "history": false
+      }
+    ],
+    "enums": {
+      "provider": "App\\Enums\\PaymentMethod",
+      "processing_status": "App\\Enums\\PaymentEventProcessingStatus"
+    },
+    "enum_cases": {
+      "provider": [
+        "COD",
+        "VIETQR",
+        "VNPAY"
+      ],
+      "processing_status": [
+        "RECEIVED",
+        "APPLIED",
+        "DUPLICATE",
+        "REVIEW",
+        "REJECTED"
+      ]
+    }
+  },
+  "refunds": {
+    "class": "App\\Models\\Refund",
+    "belongs_to": [
+      {
+        "column": "order_id",
+        "relation": "order",
+        "class": "App\\Models\\Order",
+        "history": false
+      },
+      {
+        "column": "payment_id",
+        "relation": "payment",
+        "class": "App\\Models\\Payment",
+        "history": false
+      },
+      {
+        "column": "after_sales_request_id",
+        "relation": "afterSalesRequest",
+        "class": "App\\Models\\AfterSalesRequest",
+        "history": false
+      },
+      {
+        "column": "order_item_unit_id",
+        "relation": "unit",
+        "class": "App\\Models\\OrderItemUnit",
+        "history": false
+      },
+      {
+        "column": "requested_by",
+        "relation": "requestedBy",
+        "class": "App\\Models\\User",
+        "history": true
+      },
+      {
+        "column": "approved_by",
+        "relation": "approvedBy",
+        "class": "App\\Models\\User",
+        "history": true
+      },
+      {
+        "column": "paid_by",
+        "relation": "paidBy",
+        "class": "App\\Models\\User",
+        "history": true
+      }
+    ],
+    "enums": {
+      "reason_type": "App\\Enums\\RefundReasonType",
+      "status": "App\\Enums\\RefundStatus",
+      "destination_type": "App\\Enums\\RefundDestinationType"
+    },
+    "enum_cases": {
+      "reason_type": [
+        "ORDER_CANCELLED",
+        "SHIPMENT_FAILED",
+        "DEFECT_RETURN",
+        "LATE_PAYMENT",
+        "DUPLICATE_PAYMENT",
+        "MISMATCH_PAYMENT",
+        "SHIPPING_RETURN"
+      ],
+      "status": [
+        "REQUESTED",
+        "APPROVED",
+        "PROCESSING",
+        "SUCCEEDED",
+        "FAILED",
+        "CANCELLED"
+      ],
+      "destination_type": [
+        "BANK_TRANSFER",
+        "CASH"
+      ]
+    }
+  },
+  "shipments": {
+    "class": "App\\Models\\Shipment",
+    "belongs_to": [
+      {
+        "column": "order_id",
+        "relation": "order",
+        "class": "App\\Models\\Order",
+        "history": false
+      },
+      {
+        "column": "created_by",
+        "relation": "createdBy",
+        "class": "App\\Models\\User",
+        "history": true
+      }
+    ],
+    "enums": {
+      "status": "App\\Enums\\ShipmentStatus"
+    },
+    "enum_cases": {
+      "status": [
+        "READY",
+        "IN_TRANSIT",
+        "DELIVERED",
+        "RETURNING",
+        "RETURN_RECEIVED",
+        "LOST"
+      ]
+    }
+  },
+  "shipment_return_items": {
+    "class": "App\\Models\\ShipmentReturnItem",
+    "belongs_to": [
+      {
+        "column": "shipment_id",
+        "relation": "shipment",
+        "class": "App\\Models\\Shipment",
+        "history": false
+      },
+      {
+        "column": "order_item_unit_id",
+        "relation": "unit",
+        "class": "App\\Models\\OrderItemUnit",
+        "history": false
+      },
+      {
+        "column": "variant_id",
+        "relation": "variant",
+        "class": "App\\Models\\ProductVariant",
+        "history": true
+      },
+      {
+        "column": "received_by",
+        "relation": "receivedBy",
+        "class": "App\\Models\\User",
+        "history": true
+      },
+      {
+        "column": "inspected_by",
+        "relation": "inspectedBy",
+        "class": "App\\Models\\User",
+        "history": true
+      }
+    ],
+    "enums": {
+      "disposition": "App\\Enums\\ReturnDisposition"
+    },
+    "enum_cases": {
+      "disposition": [
+        "PENDING",
+        "RESTOCK",
+        "WRITE_OFF"
+      ]
+    }
+  },
+  "reviews": {
+    "class": "App\\Models\\Review",
+    "belongs_to": [
+      {
+        "column": "order_item_unit_id",
+        "relation": "unit",
+        "class": "App\\Models\\OrderItemUnit",
+        "history": false
+      },
+      {
+        "column": "user_id",
+        "relation": "user",
+        "class": "App\\Models\\User",
+        "history": true
+      },
+      {
+        "column": "replied_by",
+        "relation": "repliedBy",
+        "class": "App\\Models\\User",
+        "history": true
+      }
+    ],
+    "enums": {}
+  },
+  "after_sales_requests": {
+    "class": "App\\Models\\AfterSalesRequest",
+    "belongs_to": [
+      {
+        "column": "order_item_unit_id",
+        "relation": "unit",
+        "class": "App\\Models\\OrderItemUnit",
+        "history": false
+      },
+      {
+        "column": "source_variant_id",
+        "relation": "sourceVariant",
+        "class": "App\\Models\\ProductVariant",
+        "history": true
+      },
+      {
+        "column": "target_variant_id",
+        "relation": "targetVariant",
+        "class": "App\\Models\\ProductVariant",
+        "history": true
+      },
+      {
+        "column": "disposition_by",
+        "relation": "dispositionBy",
+        "class": "App\\Models\\User",
+        "history": true
+      },
+      {
+        "column": "handled_by",
+        "relation": "handler",
+        "class": "App\\Models\\User",
+        "history": true
+      },
+      {
+        "column": "repair_expense_approved_by",
+        "relation": "repairExpenseApprovedBy",
+        "class": "App\\Models\\User",
+        "history": true
+      }
+    ],
+    "enums": {
+      "type": "App\\Enums\\AfterSalesType",
+      "status": "App\\Enums\\AfterSalesStatus",
+      "return_disposition": "App\\Enums\\ReturnDisposition"
+    },
+    "enum_cases": {
+      "type": [
+        "SIZE_EXCHANGE",
+        "WARRANTY_REPAIR",
+        "DEFECT_RETURN"
+      ],
+      "status": [
+        "NEW",
+        "APPROVED",
+        "RECEIVED",
+        "PROCESSING",
+        "AWAITING_REFUND",
+        "READY_FOR_PICKUP",
+        "COMPLETED",
+        "REJECTED",
+        "CANCELLED"
+      ],
+      "return_disposition": [
+        "PENDING",
+        "RESTOCK",
+        "WRITE_OFF"
+      ]
+    }
+  },
+  "after_sales_histories": {
+    "class": "App\\Models\\AfterSalesHistory",
+    "belongs_to": [
+      {
+        "column": "after_sales_request_id",
+        "relation": "afterSalesRequest",
+        "class": "App\\Models\\AfterSalesRequest",
+        "history": false
+      },
+      {
+        "column": "actor_id",
+        "relation": "actor",
+        "class": "App\\Models\\User",
+        "history": true
+      }
+    ],
+    "enums": {
+      "from_status": "App\\Enums\\AfterSalesStatus",
+      "to_status": "App\\Enums\\AfterSalesStatus",
+      "event_type": "App\\Enums\\AfterSalesEventType",
+      "visibility": "App\\Enums\\HistoryVisibility"
+    },
+    "enum_cases": {
+      "from_status": [
+        "NEW",
+        "APPROVED",
+        "RECEIVED",
+        "PROCESSING",
+        "AWAITING_REFUND",
+        "READY_FOR_PICKUP",
+        "COMPLETED",
+        "REJECTED",
+        "CANCELLED"
+      ],
+      "to_status": [
+        "NEW",
+        "APPROVED",
+        "RECEIVED",
+        "PROCESSING",
+        "AWAITING_REFUND",
+        "READY_FOR_PICKUP",
+        "COMPLETED",
+        "REJECTED",
+        "CANCELLED"
+      ],
+      "event_type": [
+        "CREATED",
+        "TRANSITION",
+        "INSPECTED",
+        "HANDOVER",
+        "NOTE",
+        "DEADLINE_EXTENDED"
+      ],
+      "visibility": [
+        "CUSTOMER",
+        "INTERNAL"
+      ]
+    }
+  },
+  "after_sales_attachments": {
+    "class": "App\\Models\\AfterSalesAttachment",
+    "belongs_to": [
+      {
+        "column": "after_sales_request_id",
+        "relation": "afterSalesRequest",
+        "class": "App\\Models\\AfterSalesRequest",
+        "history": false
+      },
+      {
+        "column": "uploaded_by",
+        "relation": "uploadedBy",
+        "class": "App\\Models\\User",
+        "history": true
+      }
+    ],
+    "enums": {
+      "disk": "App\\Enums\\AttachmentDisk",
+      "mime_type": "App\\Enums\\AttachmentMimeType"
+    },
+    "enum_cases": {
+      "disk": [
+        "private"
+      ],
+      "mime_type": [
+        "image/jpeg",
+        "image/png",
+        "image/webp"
+      ]
+    }
+  },
+  "sales_ledger_entries": {
+    "class": "App\\Models\\SalesLedgerEntry",
+    "belongs_to": [
+      {
+        "column": "order_id",
+        "relation": "order",
+        "class": "App\\Models\\Order",
+        "history": false
+      },
+      {
+        "column": "order_item_unit_id",
+        "relation": "unit",
+        "class": "App\\Models\\OrderItemUnit",
+        "history": false
+      },
+      {
+        "column": "after_sales_request_id",
+        "relation": "afterSalesRequest",
+        "class": "App\\Models\\AfterSalesRequest",
+        "history": false
+      },
+      {
+        "column": "refund_id",
+        "relation": "refund",
+        "class": "App\\Models\\Refund",
+        "history": false
+      },
+      {
+        "column": "inventory_movement_id",
+        "relation": "inventoryMovement",
+        "class": "App\\Models\\InventoryMovement",
+        "history": false
+      }
+    ],
+    "enums": {
+      "type": "App\\Enums\\SalesLedgerType"
+    },
+    "enum_cases": {
+      "type": [
+        "SALE_RECOGNIZED",
+        "SHIPPING_RECOGNIZED",
+        "SALE_REVERSED",
+        "SHIPPING_REVERSED",
+        "EXCHANGE_COGS_ADJUSTMENT",
+        "RMA_EXPENSE",
+        "INVENTORY_LOSS"
+      ]
+    }
+  },
+  "outbox_events": {
+    "class": "App\\Models\\OutboxEvent",
+    "belongs_to": [],
+    "enums": {
+      "status": "App\\Enums\\OutboxStatus",
+      "aggregate_type": "App\\Enums\\OutboxAggregateType"
+    },
+    "enum_cases": {
+      "status": [
+        "PENDING",
+        "PROCESSING",
+        "SENT",
+        "FAILED"
+      ],
+      "aggregate_type": [
+        "ORDER",
+        "RMA",
+        "REFUND",
+        "USER"
+      ]
+    }
+  }
+}

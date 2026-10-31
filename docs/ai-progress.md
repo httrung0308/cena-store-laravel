@@ -1,0 +1,180 @@
+# Nhật ký triển khai AI — Cena Store
+
+Đặc tả: `specification.md`. Ngày làm việc:31/10/2026. Yêu cầu bổ sung: giữ giao diện source gốc; homepage đã chuyển từ JSX sang Blade, các phase sau tiếp tục dùng giao diện gốc.
+
+| Task | Trạng thái hiện tại | Bằng chứng / phần còn lại |
+|---|---|---|
+| P00.01 — Freeze contract/rubric | **Hoàn thành** | decisions.md, traceability.md, snapshot spec và source-manifest;34+6 bảng/enum/invariants đúng canonical; rubric gốc đã đối chiếu |
+| P00.02 — Laravel/dependency/runtime | **Hoàn thành** | PHP8.4.27/Laravel13.39.0/MySQL8.4.3; composer validate/install/platform, npm ci/build qua; homepage gốc Blade và desktop/mobile đã kiểm |
+| P00.03 — Tests/config/CI | **Hoàn thành local** |19 tests/39 assertions trên DB test thật và clean-copy DB mới; actionlint qua; env/private ignore; negative guards qua;95 file source/config khớp;320 file nguồn cũ giữ nguyên |
+| P01.01 — Canonical schema/migrations | **Hoàn thành** |34 bảng miền;483 cột miền gồm4 helper;70 FK,79 index/unique khai báo,110 CHECK;135 tests/2929 assertions qua trên MySQL thật, gồm rollback/dựng lại và thứ tự test ngẫu nhiên |
+| P01.02 — Models/relationships/casts/Resource whitelist | **Hoàn thành** |34 model miền + DomainModel,147 quan hệ typed,31 enums,34 factory cấu trúc,19 Customer +34 Admin Resources;423 test mới qua; toàn suite558 tests/5808 assertions PASS |
+| P01.03 — Money/clock/enums/exception contract | **Hoàn thành** |115 test mới; toàn suite673 tests/6848 assertions PASS trên MySQL, random order;214 file PHP syntax PASS; nguồn cũ/UI/schema giữ nguyên |
+
+**Gate P00: PASS**, xem [biên bản nghiệm thu](evidence/p00-verification.md) và JSON/log/ảnh trong `evidence`. Tại thời điểm nghiệm thu P00/P01.03 chưa có commit/remote; việc công bố GitHub được người dùng ủy quyền sau đó, xem mục cộng tác cuối nhật ký. Không gắn kết quả local thành CI remote hoặc sửa source cũ. Chưa có các chức năng auth/catalog/checkout/kho/payment/RMA thật; menu/cart hiện là shell giao diện.
+
+**Gate P01.01, P01.02 và P01.03: PASS**. Task tiếp theo: **P01.04 — Foundation seed, factories và dataset địa chỉ**. Schema giữ41 bảng thực tế, các lớp chặn DB/user/config-cache giữ nguyên. Toàn phase P01 chưa hoàn tất: foundation seed/dataset/state nghiệp vụ và nền transaction/outbox vẫn ở các task P01.04/P01.05.
+
+Yêu cầu giao diện áp dụng xuyên suốt: port theo source Cena gốc ở mọi màn hình tiếp theo. Không tự thay bố cục/font/slogan/ảnh bằng thiết kế mới. Font phục vụ local, ảnh/favicon giữ hash, SVG icons giữ path/license; Framer đổi sang CSS/Alpine do stack Laravel.
+
+Các giới hạn hồ sơ: rubric quy định nộp sau khi kết thúc học phần một tuần, ngày cụ thể và duyệt đề tài chưa có; danh sách/phân công nhóm chưa nhận, không bịa thông tin/đóng góp/điểm số.
+
+## P01.01 — Nhật ký và kiểm tra từng yêu cầu (31/10/2026)
+
+Yêu cầu người dùng: chỉ triển khai P01.01, giữ nguyên source cũ và giao diện gốc, kiểm tra đủ rồi cập nhật nhật ký; **không tạo báo cáo nghiệm thu riêng**. Kết quả và giới hạn được ghi trực tiếp tại đây; `database/schema.md` là tài liệu kỹ thuật schema theo task.
+
+### Tệp thay đổi
+
+- Sáu migration mới trong `database/migrations`, từ `2026_10_31_021526_create_identity_and_locations_tables.php` đến `2026_10_31_021531_add_canonical_schema_constraints.php`. Các nhóm ở giữa: catalog/inventory; carts/orders; payments/shipments/reviews; after-sales/refunds/ledgers. Ba migration `0001_*` của P00 giữ nguyên byte/hash.
+- `tests/Feature/SchemaContractTest.php`, `MigrationLifecycleTest.php`, `tests/Fixtures/schema-contract.json`; cập nhật InfrastructureConnectionTest cho schema sau P01.01, không bỏ kiểm tên database/tài khoản/quyền truy cập chéo.
+- `docs/database/schema.md`: danh sách34 bảng,483 cột/kiểu/null/default,70 FK,79 index/unique khai báo,4 helper expressions và110 CHECK; ranh giới giữa bảo vệ SQL và nghiệp vụ service.
+- README, AGENTS, decisions, traceability và nhật ký được cập nhật trạng thái. Không thay dependencies/lockfiles, env, routes, Blade/CSS/JS, ảnh hoặc source Java/Next cũ. Không tạo models/seed/services vượt sang task sau; không commit/push.
+
+### Đối chiếu yêu cầu P01.01
+
+| Yêu cầu | Kiểm tra thực tế | Kết quả |
+|---|---|---|
+| Đúng thứ tự phụ thuộc §6.5, đủ34 miền+6 hạ tầng | Metadata bảng/cột/FK/index/CHECK cho từng bảng; development `db:show --counts` xác nhận41 bảng | PASS |
+| Không password_reset_tokens, không tạo trùng sessions/cache/jobs | SchemaContractTest đối chiếu chính xác tập41 bảng; ba migration P00 nguyên trạng | PASS |
+| FK, CHECK, unique, generated helper |70 FK đúng parent, DELETE/UPDATE rule;110 CHECK đều ENFORCED=YES; toàn bộ index canonical được tìm thấy bằng danh sách cột/tính unique | PASS |
+| Default/thumbnail/RMA mở không trùng | SQL insert/update bị1062 khi giữ trùng slot; soft-delete/bỏ thumbnail/đóng RMA giải phóng slot; kiểm đủ6 trạng thái RMA mở và3 trạng thái terminal | PASS |
+| Một payment PENDING/đơn, vẫn giữ lịch sử | Pending slot từ chối attempt trùng; EXPIRED giải phóng slot và giữ row cũ | PASS |
+| Nghiệm thu theo metadata DB, không theo số file | information_schema.COLUMNS/STATISTICS/KEY_COLUMN_USAGE/REFERENTIAL_CONSTRAINTS/TABLE_CONSTRAINTS + Schema::getTableListing | PASS |
+| Database trắng migrate có41 bảng | MigrationLifecycleTest reset chỉ DB test về còn bảng migrations, migrate lại đúng41 và định nghĩa cột giữ nguyên | PASS |
+| Rollback rồi migrate lại | Reset toàn bộ rồi dựng lại; rollback riêng6 migration P01 còn7 bảng P00, migrate lại41; không tắt FK để che thứ tự sai | PASS |
+| FK/SKU/reserved vượt stock bị từ chối | Foreign key sai1452; xóa chứng từ có con1451; SKU/size trùng1062 kể cả sau soft-delete; reserved>stock3819 | PASS |
+| Không hồi quy nền tảng/giao diện | Suite đầy đủ và random order; home/health200;320 file nguồn cũ và23 file UI/config/dependency khớp baseline trước task | PASS |
+
+### Lệnh đã chạy và kết quả
+
+Sử dụng PHP8.4.27/Laravel13.39.0/MySQL8.4.3 từ runtime P00, lệnh bọc `scripts/php.ps1`.
+
+- `php artisan migrate:fresh --env=testing --force --no-interaction`: thành công trên **cena_store_test** sau khi xác nhận tên database; dùng trong quá trình dựng schema test. Không chạy fresh/reset/rollback database phát triển.
+- `php artisan test --compact tests/Feature/SchemaContractTest.php`: **115 tests/2874 assertions PASS**. Bao gồm bảng/columns/default/null/identity/engine/collation/keys/checks, dữ liệu sai và valid cases: decimal4 chữ số, size42.5, ledger signed, ảnh URL, guest cart.
+- `php artisan test --compact tests/Feature/MigrationLifecycleTest.php`: **1 test/10 assertions PASS**; full reset/migrate và rollback riêng phần P01/migrate được kiểm trên DB test đã guard.
+- `php artisan test --compact tests/Feature/InfrastructureConnectionTest.php`: **3 tests/12 assertions PASS**, xác nhận MySQL test8.4/UTC/user riêng, các bảng hạ tầng còn, test user không đọc được development DB.
+- `php artisan migrate --force --no-interaction`: thành công cho development **cena_store**; batch1 là3 migration P00, batch2 là6 migration P01.01. Chỉ thêm schema, không seed/tạo đơn hay thao tác tiền/kho.
+- `php artisan migrate:status` và `php artisan db:show --counts`:9 migrations Ran,41 bảng development;34 bảng miền đều0 row, sessions hiện hữu được giữ.
+- `php artisan test --compact --order-by=random --random-order-seed=20261031`: **135 tests/2929 assertions PASS**;135/135 test qua, thời gian khoảng145 giây. Đây là kết quả toàn suite sau thay đổi, không phải chỉ đếm thêm vào kết quả P00.
+- `php vendor/bin/pint --format agent` và `--dirty --format agent`: PASS sau định dạng; PHP `-l` trên12 migration/test files: PASS; `git diff --check`: PASS.
+- Đối chiếu SHA256: **320/320 file source cũ giữ nguyên**, **23/23 file giao diện/config/dependency giữ nguyên**, **3/3 migration P00 giữ nguyên**. HTTP `/` và `/up`200; HTML vẫn slogan/hero gốc. Không chỉnh giao diện trong P01.01, nên không tạo ảnh hoặc báo cáo UI mới.
+
+### Vấn đề đã xử lý và giới hạn
+
+- Index administrative_units theo4 cột vượt giới hạn64 ký tự khi dùng tên tự sinh Laravel: đã đặt tên ngắn, giữ nguyên thứ tự cột. Lỗi chỉ xảy ra khi phát triển trên DB test và đã dựng lại/test thành công.
+- Sửa hai lỗi trong test harness mới: không phát lệnh UPDATE với mảng rỗng ở trường hợp payment mặc định PENDING; chuẩn hóa metadata objects thành arrays trước assertSame khi so schema sau dựng lại. Chạy lại các file bị sửa và suite toàn bộ đều qua.
+- P01.01 chỉ bảo vệ schema cục bộ; owner nhiều cấp, state machine, quota/row-lock/idempotency, snapshot bất biến, tổng unit/line/order, palette/size và Policy vẫn cần triển khai/test ở các task tương ứng. Các fixtures SQL là dữ liệu cấu trúc tối thiểu, không phải demo nghiệp vụ đã vận hành.
+- Giữ nguyên guard DB/user/config-cache. MigrationLifecycleTest reset schema test, nên không chạy nhiều test process chung `cena_store_test` đồng thời.
+- Không có bút toán tiền/kho ở database phát triển; không có số liệu trước/sau ledger để báo như nghiệp vụ đã chạy. Workflow CI hiện hữu sẽ chạy các test mới khi có remote, nhưng chưa có GitHub Actions remote run trong task này.
+
+## P01.02 — Nhật ký và kiểm tra từng yêu cầu (31/10/2026)
+
+Yêu cầu: triển khai P01.02 theo kế hoạch, giữ nguyên source cũ và giao diện, kiểm tra đầy đủ rồi cập nhật nhật ký; **không tạo báo cáo nghiệm thu riêng**. Kết quả ghi trực tiếp tại đây, phần tham chiếu kỹ thuật bổ sung vào `database/schema.md` hiện hữu.
+
+### Tệp và phạm vi đã triển khai
+
+- `app/Models`:34 model miền cho đủ34 bảng và một abstract DomainModel dùng chung HasFactory/dateFormat; User extends Authenticatable, UserRole extends Pivot. Thay scaffold User dùng `name` bằng `full_name` đúng schema.
+-147 relationships khai báo return type cụ thể, gồm70 belongsTo theo FK, inverse relations, User↔Role qua custom pivot, Product.variants qua ProductColor, thumbnail có điều kiện và các relation lịch sử có chủ đích.
+- `app/Enums`:31 string-backed enums;18 enum canonical §5.2 và discriminator/domain hữu hạn còn lại. PHP case TitleCase, giá trị DB/JSON giữ nguyên. Chưa làm Money/clock/exception contract/tiện ích labels của P01.03.
+- Cast rõ integer cho tiền/delta/IDs, decimal string cho cost/rating/size_numeric, boolean/immutable date/datetime/array/enum. User.password hashed; Refund.destination_ciphertext encrypted:array. Date format microseconds UTC; append-only không ghi cột updated_at không tồn tại.
+- Model fillable chỉ mở các trường mô tả/đầu vào cho phép. Stock/cost/role/owner FK/trạng thái tiền/helpers và các chứng từ hệ thống bị guard; dữ liệu secret/cost/helper/private path tương ứng có hidden bảo vệ raw model serialization thêm một lớp.
+- `app/Http/Resources/Customer`:19 Resource whitelist + OwnedResource abstract; `Admin`:34 Resource whitelist + AdminResource abstract. Customer tài liệu cá nhân kiểm owner/active và trả404 cho guest/owner khác; Admin tài chính kiểm active/not-trashed/current admin role và trả403 khi không đủ quyền. Không tạo API route mới hoặc đổi giao diện.
+- `database/factories`:34 factory cấu trúc có FK parents và state cần cho kiểm thử (inactive, administrator, thumbnail, stocked, succeeded, guest). Sửa UserFactory theo full_name và password hashed cast; không seed vào development. Seed nền/dataset thật/demo xuyên workflow vẫn thuộc P01.04/P10.
+- `tests/Feature/ModelRelationsTest.php`, `ModelSerializationTest.php`, `tests/Fixtures/model-contract.json`, `resource-contract.json`: contract và kiểm tra MySQL/serialization. README/AGENTS/decisions/traceability/schema reference được cập nhật trạng thái và giới hạn.
+
+### Đối chiếu yêu cầu P01.02
+
+| Yêu cầu | Kiểm tra hành vi thực tế | Kết quả |
+|---|---|---|
+| Đủ models, pivot custom, relationships §6.6 |34 factory persist+refresh;70 belongsTo query đúng FK/parent thật; UserRole assignment ID/assigned_at, quan hệ ngược và role slug; Unit→item→order→user/RMA resolve | PASS |
+| Timestamps đúng bảng append-only | Factory persist đủ34 bảng không chèn cột lạ;5 bảng chỉ created_at dùng UPDATED_AT=null; UserRole/PaymentEvent timestamps=false; UTC immutable/microseconds123456 round-trip | PASS |
+| Cast enum/boolean/date/array rõ, tiền nguyên/cost string |182 backing-value cases hydrate/set chính xác; mọi cột hiện hữu được kiểm cast qua model persist; money integer999999999, cost123456.7891, size42.5 và JSON giữ đúng kiểu | PASS |
+| Không mở mass assignment stock/cost/role/trạng thái tiền |58 trường hợp fill dữ liệu không tin cậy không đổi thuộc tính protected; UserRole khóa cả user_id/role_id/assigned_by/assigned_at; helper không nhận dữ liệu client | PASS |
+| Tách Resource Customer/Admin và whitelist | Serialize đủ19 Customer/34 Admin Resource; cột private giả thêm vào model không lọt payload; kiểm credential/helper/proof paths không xuất hiện | PASS |
+| Không lộ giá vốn, proof path, staff note cho khách | Duyệt payload lồng nhau; RMA đã eager load histories/attachments chỉ trả CUSTOMER history, không nội bộ/path; Admin xem cost đúng whitelist nhưng Customer view của chính Admin vẫn không có cost | PASS |
+| Owner/privacy và quyền hiện tại | Guest/owner khác404 cho cả14 Resource cá nhân; Staff/customer/inactive/deleted/revoked-admin403 ở Admin tài chính; hasRole không tin collection roles cũ | PASS |
+| Chứng từ còn đọc được khi catalog bị ẩn | Xóa mềm category/product/color/variant, đổi tên catalog rồi serialize đơn từ snapshot cũ; quan hệ historical vẫn resolve; review bị ẩn không làm đơn404 | PASS |
+| Chống N+1 theo §6.6 |4 product eager load category/colors.thumbnail/colors.variants đúng5 query; serialize catalog đã eager load thêm0 query | PASS |
+| Không hồi quy/bảo toàn nguồn | Suite đầy đủ random order, schema vẫn41 bảng;320 source cũ và32 file UI/dependency/migrations khớp baseline; home/health200 | PASS |
+
+### Lệnh và kết quả cuối
+
+- `php artisan test --compact tests/Feature/ModelRelationsTest.php tests/Feature/ModelSerializationTest.php`: **423 tests/2879 assertions PASS** (349 model/cast/relationship/protection cases +74 Resource cases).
+- `php artisan test --compact --order-by=random --random-order-seed=20261031`: **558 tests/5808 assertions PASS**, khoảng149 giây; gồm cả135 test nền/schema/migration lifecycle đã có. Không chạy test song song dùng chung schema test.
+- `php vendor/bin/pint --format agent` và `--dirty --format agent`: PASS sau format. PHP `-l` trên **157 file** models/enums/Resources/factories/hai test mới: PASS. `git diff --check`: PASS.
+- Đối chiếu SHA256 baseline trước task: **320/320 file source cũ giữ nguyên**; **32/32 file protected giữ nguyên**, gồm23 file UI/config/dependency và9 migration. Không tạo/sửa/xóa migration hoặc nâng dependency trong P01.02.
+- HTTP `/`, `/up`:200; HTML vẫn slogan “Sport, the smart choice.” và hero gốc. `route:list --except-vendor` vẫn chỉ có route ứng dụng `home`, không thêm endpoint giả. Database development vẫn41 bảng; không chạy migration/seed nghiệp vụ trong task.
+- Test chỉ dùng MySQL `cena_store_test` bằng user test đã guard; toàn bộ factory data nằm trong transaction test. MigrationLifecycleTest hiện hữu reset/dựng lại chỉ DB test. Không commit/push, không chạy GitHub Actions remote.
+
+### Vấn đề đã xử lý và quyết định cần giữ khi làm task sau
+
+- Pivot mặc định của Laravel có guarded rỗng: test phát hiện UserRole nhận role/user/actor/time qua fill. Đã đặt guarded=['*'] rõ ràng, giữ Fillable rỗng. RoleService ở P02 phải ghi pivot bằng thuộc tính server đã xác thực và gán tường minh, không mở lại mass assignment chỉ để dùng attach/sync metadata. Test/factory tạo pivot bằng cơ chế Factory dành cho dữ liệu test; relation roles/assignment đọc đúng custom pivot.
+- Request trong test Resource bị AuthServiceProvider thay user resolver khi rebind vào container: đã đặt resolver sau rebind, chạy lại owner/admin tests. Guard không bị nới lỏng để làm test qua.
+- Review invisible nếu serialize trực tiếp bị404; khi nằm trong đơn đã mua, Resource unit bỏ review đó thành null để không làm mất cả chứng từ. Đã thêm test hồi quy và chạy lại.
+- Các bảng model có default attributes khớp default DB để instance vừa create có is_active/status đúng trước refresh; generic model tests vẫn persist+refresh để kiểm dữ liệu thật.
+- Giữ ranh giới: chưa có middleware/Policy/AuthService/RoleService, nghiệp vụ kho/thu-hoàn/RMA, JSON envelope/exception contract hoặc API mới. Admin Resources có cost chỉ dành Admin; Staff vận hành cần DTO theo quyền module sau này. Customer CartResource hiện không nhận guest cart chưa có owner user; guest-token resolver thuộc P05.
+- Factories chỉ tạo cấu trúc để kiểm relationships/casts/DTO, không mô phỏng đầy đủ state machine/ledger/outbox. Không dùng state succeeded/stocked như chứng cứ đã có PaymentService/InventoryService. Không seed tài khoản Admin hoặc dataset địa giới giả vào môi trường phát triển.
+
+## P01.03 — Money, clock, enums và exception contract (31/10/2026)
+
+Yêu cầu: triển khai đúng task P01.03 theo kế hoạch hợp nhất, giữ source cũ/UI gốc, kiểm từng yêu cầu rồi cập nhật nhật ký, **không tạo báo cáo nghiệm thu riêng**. Chưa chuyển sang P01.04/P06.
+
+### Tệp thay đổi
+
+- app/Support: Money, Cost, ShoeSize, CanonicalPayload, BusinessClock, ApiResponse, RequestIdentity và ExceptionRenderer; app/Exceptions/DomainException.php; config/store.php; AppServiceProvider bind clock.
+-31 enum miền bổ sung label(), không đổi backing values; ErrorCode mới29 mã dùng chung Blade/AJAX.
+- bootstrap/app.php, Http/Middleware/RequestId; hai base StoreResource/StoreResourceCollection và7 base/public Resource chuyển sang kế thừa base chung. Không đổi field whitelist hoặc bỏ owner/admin guards của P01.02.
+- Unit MoneyAllocationTest/BusinessClockTest/FingerprintTest, Feature ApiContractTest; pint.json loại bản project giải nén lồng khỏi formatter. README/AGENTS/decisions/traceability/schema cập nhật tài liệu kỹ thuật hiện hữu. Không đổi dependency, migration, UI, routes/web.php hoặc source cũ.
+- Xóa hai scaffold enum rỗng không sử dụng app/RoleSlug.php và app/Enums/Enums/ErrorCode.php do generator tạo nhầm namespace; actual App\Enums\RoleSlug/ErrorCode giữ nguyên đúng vị trí.
+
+### Đối chiếu từng yêu cầu
+
+| Yêu cầu | Bằng chứng trong test | Kết quả |
+|---|---|---|
+| Integer VND, half-up, overflow | Chặn float/bool/null/âm/exponent; boundary PHP_INT_MAX; cộng/nhân/round vượt giới hạn bị từ chối;1 tỷ VND hợp lệ, lớn hơn bị chặn | PASS |
+| Largest remainder1 VND/3 unit | Tổng đúng1, unit_no nhỏ nhất nhận dư, đảo thứ tự input không đổi kết quả; weight khác nhau ưu tiên remainder; matrix gồm0/1/2/100/1 tỷ/PHP_INT_MAX và weight sum/product vượt integer64 | PASS |
+| Null cap, zero cap, phép nhân lớn | percent half-up trước min; null/0/cap khác nhau; percent100 tại PHP_INT_MAX không tràn intermediate | PASS |
+| BCMath WAC scale4/COGS | Cost trả string, công thức/carry half-up chữ số4, existing0/gift0, UINT32_MAX và DECIMAL20,4 max; COGS round tổng line một lần, overflow bị từ chối | PASS |
+| Size40.5 không float/parseInt |040.5000→40.5,40.0→40; reject float40.5,40.1,âm/exponent/0/overflow; Resource thực tế trả size_value string40.5 | PASS |
+| Clock freeze/exclusive/VN→UTC | Microsecond trước/bằng/sau deadline; nullable coupon window; config OTP/payment/COD/RMA; snapshot đổi7 ngày/bảo hành6 tháng, ngày cuối tháng/năm nhuận/gần nửa đêm; ngày VN thành half-open UTC | PASS |
+| Fingerprint cùng dữ liệu | Recursive map key order, enum và UTC instant tương đương cho cùng SHA256; cart/address/method/coupon/list order/type thay đổi làm hash khác; reject float/object/UTF8/depth lỗi | PASS |
+| Enum và lỗi dùng chung |29 Domain codes; status/label riêng; success Resource/collection/pagination;401 thực qua auth middleware,419 handler,422 fields,409,429 Retry-After,404/405 Allow,500 debug không lộ nội bộ; Blade error bag/flash và lọc input nhạy cảm | PASS |
+| Không hồi quy/giữ nguồn |673 tests/6848 assertions PASS;320 source cũ,32 file protected và304 tệp bản ZIP lồng khớp; HTTP home/health200 | PASS |
+
+### Sự cố và cách xử lý
+
+- Test đầu phát hiện kỳ vọng thứ tự map tie của numeric ID có leading zero chưa đúng quy tắc binary fallback; sửa expected theo toàn thứ tự đã định nghĩa, giữ kiểm đảo input và tổng tiền. Không bỏ test overflow/độ ổn định.
+- Resource mới tạo bằng factory có wasRecentlyCreated=true nên Laravel chuẩn trả201. Fixture GET được load lại bằng fresh(), giữ đúng hành vi framework cho POST tạo mới. Fixture nested size dùng đúng cột canonical size_value, không thêm cột size_string vào DB.
+- Route login tạm trong test cần refreshNameLookups sau đặt tên; production load route thông thường không cần workaround đó. Test kiểm cả browser redirect và AJAX401 qua middleware auth thật.
+- Tính warranty trên UTC có thể sai ngày VN khi giao gần nửa đêm: đã đổi sang cộng tháng tại business timezone rồi trả UTC; test31/10 00:30 và leap-year bảo vệ lỗi này.
+- Một lượt test bị ngắt vì MySQL riêng3307 không còn lắng nghe. Dừng đúng tiến trình test đang chờ, khởi động lại đúng isolated datadir/user hiện hữu, chạy lại thành công. Script start-local-services sau khi đưa MySQL lên đã từ chối Mailpit do1025 đang thuộc Mailpit Laragon khác; không chiếm/tắt SMTP đó, task này không gửi mail. PHP server được chạy lại cho kiểm HTTP.
+- Formatter ban đầu quét cả bản giải nén lồng cena-store-laravel/cena-store-laravel ngoài phạm vi. Đã chứng minh114 khác biệt chỉ do cùng phiên bản Pint định dạng từ ZIP, hoàn nguyên chính xác và đối chiếu304/304 tệp bằng bytes với ZIP. Không xóa/di chuyển/hợp nhất bản lồng; pint.json ngăn lặp lại. Nguồn Java/Next cũ không bị format.
+
+### Lệnh và kết quả cuối
+
+- Nhóm mới MoneyAllocationTest/BusinessClockTest/FingerprintTest/ApiContractTest đã chạy hẹp trong quá trình triển khai; lượt114 tests/997 assertions PASS trước khi thêm regression HttpResponseException. Lượt cuối `php artisan test --compact tests/Feature/ApiContractTest.php`: **44 tests/669 assertions PASS**. Toàn suite cuối chứa đủ **115 test mới** của P01.03.
+- `php artisan test --compact --order-by=random --random-order-seed=20261031`: **673 tests/6848 assertions PASS**,149,265 giây. Bao gồm migration lifecycle reset/rollback/dựng lại schema, metadata MySQL, protection/ownership và các test P00/P01.01/P01.02. Không chạy nhiều test process đồng thời trên schema test.
+- PHP `-l` trên **214 file PHP** thuộc app/bootstrap/config/database/routes/scripts/tests: **0 lỗi**. `php vendor/bin/pint --format agent` format toàn project trong phạm vi pint.json, sau đó `--dirty --format agent`: PASS. `git diff --check`: PASS; repo mới chưa commit nên nguồn còn untracked, việc kiểm PHP thực tế dựa thêm full Pint/syntax và suite, không chỉ git diff.
+- SHA256 baseline trước task: **320/320 file source Java/Next cũ giữ nguyên**, **32/32 file protected giữ nguyên** (UI/assets/dependencies/migrations/routes). Snapshot specification.md khớp nguyên bản kế hoạch hợp nhất. Bản project giải nén lồng đã khớp bytes **304/304 file** với ZIP, không được đưa vào phần triển khai này.
+- HTTP `http://127.0.0.1:8000/` và `/up`: **200**, có X-Request-ID UUID server; home vẫn chứa “Sport, the smart choice.”. Không sửa Blade/CSS/JS/assets và không cần rebuild UI. `php artisan route:list --except-vendor --no-interaction` vẫn chỉ có ứng dụng route home; các route __contract chỉ tồn tại trong process test.
+- `php artisan db:show --counts --no-interaction`: MySQL8.4.3, `cena_store`/`cena_app` trên127.0.0.1:3307, **41 bảng**,9 migration,34 bảng miền đều0 row. Session hạ tầng có row do kiểm HTTP; không có seed/giao dịch tiền-kho-ledger trong development.
+- Test dùng MySQL thật `cena_store_test` qua user test đã guard; factory dữ liệu test rollback bằng transaction. MigrationLifecycleTest chỉ reset DB test. Source cũ `git status --short` vẫn chỉ có tệp phân tích TXT untracked từ trước task; không sửa file đó. Không commit/push, không chạy GitHub Actions remote và không tạo báo cáo nghiệm thu P01.03 riêng.
+
+### Ranh giới và lưu ý cho task tiếp theo
+
+- P01.03 là helper/contract nền, không phải PricingService/QuoteDTO/checkout/OTP/InventoryService; không có nghiệp vụ ghi tiền/kho/ledger hoặc endpoint giả mới. Không có bảng/ledger trước-sau để minh họa giao dịch chưa triển khai. Store config cần được dùng lại và thực thi trong FormRequest/service ở đúng phase.
+- Chi tiết API, tie-break, timezone, fingerprint và lỗi: ADR-009 trong architecture/decisions.md. Caller dùng weight gross, không phân bổ shipping vào unit; Q của WAC là stock bao gồm reserved và loại quarantine. Money hỗ trợ amount không âm; signed ledger delta thuộc service có chủ đích.
+- Fingerprint chỉ hash payload đã chuẩn hóa/validated. Future PricingService phải dựng đủ cart version, address snapshot, method, coupon và stable line identity/order; hash không tự cấp quyền hay thay idempotency transaction.
+- Error contract/Resource guards không thay route middleware active/role/Policy của P02.419 hiện kiểm bằng TokenMismatchException đi qua handler; chưa tuyên bố đã kiểm toàn bộ form/CSRF ở các chức năng chưa làm. Blade có flash/error bag sẵn; việc hiển thị toast trong màn hình nghiệp vụ dùng lại UI gốc ở phase tương ứng.
+- Task tiếp theo: P01.04 Foundation seed/factories/dataset địa chỉ. Không seed admin/demo/dataset giả trong P01.03, không commit/push hoặc tự chạy CI remote.
+
+## Công bố GitHub và chuẩn bị cộng tác (31/10/2026)
+
+Người dùng yêu cầu đưa project lên GitHub, cho phép commit/push và chọn repository công khai để bên khác tự fork/gửi PR. Repo đã tạo: https://github.com/httrung0308/cena-store-laravel . Không mời cộng tác viên write vào main, không tự merge PR bên ngoài.
+
+- Có CONTRIBUTING.md, CODEOWNERS chủ repo, PR template và48 gói hỗ trợ kèm prompt riêng trong docs/collaboration/EXTERNAL_TASKS_AND_PROMPTS.txt; bản TXT đồng nhất được xuất ra Downloads/PHAN_CONG_TASK_CHATGPT_WEB_CENA_STORE.txt.38 gói PREP (chỉ bắt đầu khi EXT dependency đủ),10 gói WAIT_CONTRACT. Đây là subtask hỗ trợ, không thay51 task canonical hoặc tự vượt gate.
+-75 tệp TSX/CSS chỉ đọc được copy từ source gốc vào docs/reference/legacy-ui với manifest SHA256; không gồm backend/API/payment implementation. Snapshot tham chiếu không chạy được như app độc lập, không dùng làm contract bảo mật. Gitattributes giữ bytes của đặc tả và reference để không đổi checksum khi checkout Linux.
+- .gitignore loại bản project giải nén lồng; không xóa/di chuyển bản đó. Bản source Java/Next cũ chỉ đọc. Preflight:386 tệp Git-eligible, khoảng4,78MB,0 exact-match secret local và0 token/private-key pattern; env/private files/vendor/node_modules/build không nằm tập công bố.
+- Không sửa PHP/Blade/CSS/JS runtime hoặc dependencies/schema của baseline673test/6848assertions. CI full sẽ chạy trên checkout GitHub Linux, kết quả chỉ xác nhận sau khi có run thật.
+
+PUBLICATION_FINAL_CHECKS

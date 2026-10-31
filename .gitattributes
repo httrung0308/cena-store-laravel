@@ -1,0 +1,19 @@
+* text=auto eol=lf
+
+*.blade.php diff=html
+*.css diff=css
+*.html diff=html
+*.md diff=markdown
+*.php diff=php
+
+/.github export-ignore
+CHANGELOG.md export-ignore
+.styleci.yml export-ignore
+
+# Frozen source/reference checksums describe original bytes, including line endings.
+/docs/specification.md -text whitespace=cr-at-eol,-blank-at-eol
+/docs/reference/legacy-ui/** -text whitespace=cr-at-eol,-blank-at-eol
+
+# Preserve terminal padding and the unused upstream Laravel welcome template.
+/docs/evidence/*.txt whitespace=-blank-at-eol
+/resources/views/welcome.blade.php whitespace=-blank-at-eol

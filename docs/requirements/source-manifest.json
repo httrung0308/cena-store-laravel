@@ -1,0 +1,12 @@
+{
+  "review_date": "2026-10-31",
+  "plan": {
+    "filename": "KE_HOACH_HOP_NHAT_CENA_STORE_LARAVEL.md",
+    "sha256": "4736603bf64d9ac2794e48cca1c1bbdeb18a5e0346d60ec509de8ff87942ad2e"
+  },
+  "rubric": {
+    "filename": "YeuCau_DoAnCuoiMon_LTMNM_Laravel.docx",
+    "sha256": "e86297fcadac6eb0fa1e4295226d4716024db285a0d1d3f39ead28f30ad6af99"
+  },
+  "precedence": "User request > canonical specification + explicit ADR clarifications > legacy implementation. Rubric confirms course constraints; it does not silently authorize project actions."
+}

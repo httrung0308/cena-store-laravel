@@ -1,0 +1,1513 @@
+﻿CENA STORE — PHÂN CÔNG 48 TASK CHO BÊN CỘNG TÁC DÙNG CHATGPT WEB
+Ngày lập:31/10/2026, giờ Việt Nam. Tác giả tích hợp/chủ repo: httrung0308.
+Repo công khai: https://github.com/httrung0308/cena-store-laravel
+Nhánh đích PR: main. Không cấp quyền push main cho bên ngoài; fork→branch→DraftPR→CI→owner review→merge.
+
+A. HIỆN TRẠNG VÀ MỐC DEMO
+- Hoàn thành6/51 task canonical: P00.01/P00.02/P00.03/P01.01/P01.02/P01.03. Còn45 task;12% theo số task không phải phần trăm công sức/chức năng.
+- Có UI homepage gốc và shell menu/cart;41 bảng,34 models, relationships/casts/resources, Money/Cost/Clock/size/fingerprint/exception contract. Local toàn suite673 tests/6848 assertions PASS. Chưa có auth/catalog/cart/checkout/kho/payment/RMA thật.
+- Demo team tối 31/10:được ngay nếu nói rõ là demo nền tảng,không phải app bán hàng hoàn chỉnh. Hiển thị home/mobile, menu/carttrống, cấu trúcDBvàCI/test. Không bấm route chưa có rồi tuyên bố feature hoạt động.
+- Muốn demo đăngký/login thật:ít nhất P01.04/P01.05/P02.01, thêmP02.02 nếu demo Admin/quyền. Muốn browsecatalog thật theo gate chuẩn:quaP02,P03,P04vàP05.01; cartthật đếnP05.04. Đặtđơn đếnP06.03, hủy/expiry đếnP06.04, COD/attempt đếnP07.01; để ghi nhận giao hàng/doanhthuđúng phải qua toàn các prerequisite củaP08.02. VNPay/refund/hậu mãi/báocáo không nằm trong demo sớm.
+- Ước lượng lập kế hoạch,không phải cam kết:catalog+cart dùng thử còn khoảng16–32giờ tập trung(2–4ngày8h); luồngđặtđơn/COD có kiểm chứng khoảng32–64giờ(4–8ngày). Hoàn tất45task,kểcảrace,refund/RMA,report/deploy/tài liệu:120–200giờ đường tích hợp chính(15–25ngày8h). Có hỗ trợ UI/docs/tests phù hợp có thể giảm xuống khoảng10–20ngàylàmviệc,tùy sốPR đạt review và sự sẵn có của dataset/payment sandbox. Không coi2AI là tự động nhanh gấp2; đo lại sau batch3–5PR và sauP02. Không hứa hoàn thành toàn bộ tối nay.
+
+B. PHÂN VAI
+Owner/tích hợp chính giữ:FoundationSeeder/import dataset chính thức, mọi migration/constraint/modelguard, Inventory/SalesLedger/Outbox/idempotency/deadlock, Auth/RBAC/Admin cuối/OTP/session, MediaService/security, ProductManagement transactions, Cart owner/version/merge, Pricing/coupon quota/Checkout, payment/IPN/refund, dispatch/sale/failedshipment, RMA/custody/cost, ReportQuery, concurrency gate, final merge/deploy.
+Bên ngoài nhận48gói dưới đây:đa số component/view/JS thuần/read query/data research; không ghi số dư/quyền/tiền. Đây là48subtask hỗ trợ các phase,không phải48task canonical hoàn tất độc lập. Một người có thể làm nhiềuPR tuần tự; không phát48PR một lượt.
+
+C. CÁCH LÀM TRONG CHATGPT WEB
+1) Kiểm tra khả năng thật của tài khoản:đọc repo được? có terminal/chạy lệnh? ghi vào fork và tạoPR được? Một cửa sổ chat/quyền đọc không tự bảo đảm push/PR.
+2) Nếu có môi trường Codex Cloud:connect fork GitHub,setup PHP/Node/MySQL8.4/lockfiles,tạo environment chạy được rồi mới giao task. Tham khảo chính thức:https://learn.chatgpt.com/docs/cloud và https://learn.chatgpt.com/docs/environments/cloud-environments . Tài liệu cho phép coding task, chạy tools và review rồicommit/mởPR; quyền thực tế phải kiểm tra ở tài khoản bên đó.
+3) Nếu chỉ có chat:đưa đúng file cần sửa và specphầnliênquan, yêu cầu xuất .patch/tệp UTF8 và PR body. Người có quyền dùnggit áp dụng,chạy test,pushfork,mởPR theo hướng dẫn bên dưới. Không gửi password/GitHub token/AppKey qua chat.
+4) Không giao tất cả file này cùng lúc để viết toàn bộ48task. Chọn1ID, copy nguyên prompt củaID đó vào một chat/task riêng. Các prompt đã lặp quy tắc nền để có thể copyđộc lập.
+
+D. GIT/FORK/PR (THỰC HIỆN TRONG WORKSPACE RIÊNG CỦA CỘNG TÁC VIÊN)
+gh repo fork httrung0308/cena-store-laravel --clone
+cd cena-store-laravel
+git remote -v
+Nếu chưa có upstream:git remote add upstream https://github.com/httrung0308/cena-store-laravel.git
+git fetch upstream main
+git switch -c codex/ext-004-text-field upstream/main
+git rev-parse HEAD   (ghi giá trị này là BASE_SHA thật trong PR)
+Thực hiện đúng1task và kiểm tra. Không lấy branch cũ thiếuPR vừa merge làm base.
+git status --short
+git diff --check
+git add -- <chỉ các file đúng allowlist đã đọc lại>
+git diff --cached --stat
+git diff --cached     (soát code và secret trước commit)
+git commit -m "feat: EXT-004 add legacy-style form fields"
+git push -u origin codex/ext-004-text-field
+Tạo tệp PR_BODY.md tạm ngoài phạm vi source hoặc dùng mẫu.github/PULL_REQUEST_TEMPLATE.md; không commit báo cáo thừa.
+gh pr create --repo httrung0308/cena-store-laravel --base main --head YOUR_GITHUB_LOGIN:codex/ext-004-text-field --draft --title "EXT-004: Legacy-style form fields" --body-file PR_BODY.md
+Thay ID/slug/title bằng task thật. Không dùng YOUR_GITHUB_LOGIN như username thật; lấy gh api user --jq .login.
+Nếu không dùnggh:GitHub fork→Compare&pull request→base httrung0308/main→comparefork/branch→DraftPR. Gửi URL thật choowner.
+Không sửa PR sau review bằngforce nếu không cần; thêmcommit sửa và chờCI/reviewlại. Không bật automerge.
+
+E. CHECKS VÀ MERGE
+- CI foundation chạy PHP8.4/MySQL8.4/Node22, composerinstall/checkplatform, npmci/build, migratehaiDB,test,Pint/diff. PR từfork không dùng secret của máy tác giả; workflowlầnđầu có thể cần ownerapprove sau khiđọc diff.
+- Node test của module mới phải ghi lệnh cụ thể; workflow hiệnchưa tự tìm mọi tests/JavaScript/*.mjs, owner/chủPR phải chạy lệnh đó hoặc đềxuất ownerthêmCI tập trung riêng. Không âmthầmsửa workflowtrongtaskUI.
+- Beforemerge:đúngallowlist, khôngphasehopping, giữUI, khônglộ dữliệu, dependency đãmerge, tests phùhợp và CI xanh, ownerreview. Chủrepo tíchhợp routes/imports/Policy khi đúnggate rồi chạyregression; người ngoài không tự đánh dấu phasePASS.
+- Mỗi lầnownerđổi service/DTO, taskWAIT phảiđọclại interface upstream. Không mởextend enum/model hoặc làm stub để che thiếuinterface.
+- PhầnUI thiếu backend chỉ merge dạngcomponent/module không active import; phải córender/behavior check riêng. CI xanh chỉ cófoundation không chứngminhfeatuređãtíchhợp.
+
+F. ƯU TIÊN THỰC HIỆN
+Batch đầu:EXT-001,002,003,004,006,008,009,011,012,025,047,048 (làm các task dependency đãđápứng trước;datasetresearch ưu tiênhỗtrợP01.04). Saukhi3–5PRđạt chấtlượng mới nhận thêm.
+Batch2:formauth/account/address và product/catalog component; đây làPREP,khôngskipcanonicalgate.
+Batch3:cart/checkout/query/document/mail/chart cóbackendcontract, chỉbắtđầu khicácgate ghi trongtaskđãxong.
+Mỗi thờiđiểm nên tối đa2–3PR mở/người và mộtngười sởhữu mộtfile/module; owner xửlý sharedlayout/app.js/routes. Không tựsửa cùng file trên2PR.
+
+G. DANH MỤC48GÓI
+EXT-001 | PREP | P01.04 | Nghiên cứu và chuẩn hóa nguồn dataset tỉnh/ward hai cấp
+EXT-002 | PREP | P01.04 | Validator độc lập cho gói dữ liệu địa giới
+EXT-003 | PREP | P03.01/P05.01 | Bảng đối chiếu UI/assets và danh sách asset còn thiếu
+EXT-004 | PREP | P03.01/P02 UI | Blade text field và field error dùng lại
+EXT-005 | PREP | P02.01/P02.04 UI | Password input có nút hiện/ẩn và accessibility
+EXT-006 | PREP | P03.01 | Button/loading spinner dùng lại giao diện gốc
+EXT-007 | PREP | P03.01 | Checkbox/radio group với label và lỗi
+EXT-008 | PREP | P03.01 | Dialog Alpine độc lập với focus trap/Escape
+EXT-009 | PREP | P03.01/P05.04 | Toast nhận flash/JSON an toàn
+EXT-010 | PREP | P03.01/P05.04 | Empty/error/offline feedback cho các list
+EXT-011 | PREP | P03.02/P05.01 | Pagination partial giữ filter và query string
+EXT-012 | PREP | P02.01/P03.01 | Auth layout nền video/ảnh theo source gốc
+EXT-013 | PREP | P02.01 | Login form Blade chuẩn bị cho AuthService
+EXT-014 | PREP | P02.01 | Register form Blade chống field quyền trong UI
+EXT-015 | PREP | P02.03 | Form yêu cầu OTP reset mật khẩu
+EXT-016 | PREP | P02.03 | Các form verify OTP và đặt mật khẩu mới
+EXT-017 | PREP | P02.04 | Form thông tin hồ sơ/avatar
+EXT-018 | PREP | P02.04 | Form đổi mật khẩu cần current_password
+EXT-019 | PREP | P02.05 | Province/ward selector chỉ trình bày, giữ code string
+EXT-020 | PREP | P02.05 | Address card/list và trạng thái default
+EXT-021 | PREP | P03.02 | UI category list/form cho Admin
+EXT-022 | PREP | P03.02 | UI supplier list/form cho Admin
+EXT-023 | PREP | P03.03 | Product metadata form UI
+EXT-024 | PREP | P03.03 | UI bảng phối màu/size của product
+EXT-025 | PREP | P03.03 | Sinh dải half-size bằng BCMath
+EXT-026 | PREP | P03.03 | Image picker/reorder preview phía trình duyệt
+EXT-027 | PREP | P05.01 | Product card của storefront
+EXT-028 | PREP | P05.01 | Filter sidebar storefront giữ query contract
+EXT-029 | PREP | P05.01 | Catalog grid/list shell
+EXT-030 | PREP | P05.01 | Gallery chi tiết sản phẩm và thumbnail
+EXT-031 | PREP | P05.01 | Color/size selector giữ40.5
+EXT-032 | PREP | P05.04 | Cart line component theo DTO server
+EXT-033 | WAIT_CONTRACT | P05.04 | Drawer cart nối API thật
+EXT-034 | WAIT_CONTRACT | P05.02/P05.04 | Client request adapter cho cart và lỗi version
+EXT-035 | WAIT_CONTRACT | P06.03 UI | Checkout quote/address/payment view
+EXT-036 | WAIT_CONTRACT | P03.02 | Category browse query chỉ đọc
+EXT-037 | WAIT_CONTRACT | P03.02 | Supplier browse query chỉ đọc
+EXT-038 | PREP | P08.01 UI | Customer order list view từ snapshot
+EXT-039 | PREP | P08.01/P08.04 UI | Customer order detail và danh sách từng đôi
+EXT-040 | PREP | P08.04/P09.06 UI | Timeline trạng thái dùng dữ liệu server
+EXT-041 | WAIT_CONTRACT | P08.04 | PDF Blade hóa đơn/phiếu từ snapshot
+EXT-042 | WAIT_CONTRACT | P09.02 UI | Customer RMA create form theo unit
+EXT-043 | PREP | P09.06 UI | Customer RMA detail/history/attachments
+EXT-044 | WAIT_CONTRACT | P04.02 UI | Trang thẻ kho chỉ đọc không lộ cost cho Staff
+EXT-045 | WAIT_CONTRACT | P10.02 | Email Blade order/RMA/refund từ snapshot
+EXT-046 | WAIT_CONTRACT | P10.01 UI | Chart.js adapter chỉ vẽ báo cáo server
+EXT-047 | PREP | P11.04 hỗ trợ cộng tác | Hướng dẫn cài sạch Linux/Codex Cloud từ lockfiles
+EXT-048 | PREP | P10.03/P11.01 hỗ trợ | Kịch bản demo team và smoke matrix trung thực
+
+H. PROMPT CHI TIẾT TỪNG TASK
+
+====================================================================================
+EXT-001 — PROMPT COPY NGUYÊN KHỐI
+====================================================================================
+Bạn là cộng tác viên của Cena Store, làm trên fork GitHub của bạn; repo upstream https://github.com/httrung0308/cena-store-laravel, base main. Chỉ thực hiện TASK bên dưới, không triển khai toàn dự án.
+Trước code: fetch main mới nhất, ghi BASE_SHA thật; đọc AGENTS.md, CONTRIBUTING.md, docs/specification.md đúng phase/WF, docs/architecture/decisions.md, docs/ai-progress.md và file nguồn liên quan. Baseline P00/P01.01–P01.03 hoàn tất. Nếu task đã được upstream làm hoặc dependency/interface còn thiếu, báo tình trạng; không viết lớp trùng hoặc tự chế hợp đồng.
+Chỉ sửa allowlist của task. Không sửa migrations, lockfiles/dependency, .env, TestDatabaseGuard, Money/Cost/BusinessClock, enum backing value, Customer/Admin Resource guards, roles/auth/OTP, inventory/ledger/outbox, checkout/payment/refund/RMA service hoặc shared routes/bootstrap/app.js/CSS/home đang chạy. Cần ngoại lệ thì đề xuất trong PR body, không lén mở rộng. Không sửa docs/reference/legacy-ui hay public/legacy; giữ layout, Montserrat, Cena, ảnh/nội dung gốc, port Blade/Tailwind3/Alpine3, không React/Next/JWT/Stripe. Không tạo endpoint/seed/thành công giả. Escape dữ liệu, không lộ cost/proof path/internal note cho Customer.
+PREP chỉ là module/component chuẩn bị, không hoàn thành phase và không tích hợp vào app đang chạy. WAIT_CONTRACT chỉ bắt đầu code khi API/DTO/service/dependency ghi trong task đã merge và được owner xác nhận. Các EXT dependencies cũng phải merge trước khi import chúng; không làm48task trong một PR.
+Kiểm narrow tests hành vi cần thiết, real MySQL8.4 cena_store_test bằng cena_test/cena_ci cho feature có DB; mỗi môi trường test riêng, không SQLite/root/dev DB hoặc chạy song song chung schema. PHP mới dùng Artisan --no-interaction, PHPUnit chuẩn project, type hints/return types và Pint. UI: npm run build, render/visual/keyboard phù hợp; không test mirror class/markup. JS thuần dùng Node22 node --test, không thêm dependency. Không thể chạy thì ghi NOT RUN chính xác, không bịa log/screenshot/test pass.
+Hoàn thành trên branch codex/ext-NNN-short-name của fork, commit các file đúng task, push fork và tạo DRAFT PR về upstream main. PR ghi taskID/phase,BASE_SHA,behavior,phụ thuộc,files,commands/results và giới hạn. Không merge, force-push main, đổi workflow/guard để xanh hoặc cập nhật nhật ký chung. Nếu môi trường không có terminal/GitHub write, xuất patch đầy đủ + PR body và lệnh để người có quyền áp dụng; không nói đã tạo PR nếu chưa có URL thật.
+
+TASK EXT-001: Nghiên cứu và chuẩn hóa nguồn dataset tỉnh/ward hai cấp
+Phase canonical: P01.04
+Trạng thái: PREP
+Dependency/gate: Không phụ thuộc EXT khác; owner đang chờ đầu vào cho P01.04.
+Allowlist:
+- docs/collaboration/data-source-proposal.md
+- database/data/proposals/administrative_units.json
+- database/data/proposals/manifest.json
+Tham chiếu bắt buộc: specification WF-04/WF-24 và bảng administrative_units
+Công việc cụ thể:
+1. Đọc đúng cấu trúc administrative_units và WF-04/WF-24; đề xuất nguồn chính thức hoặc nguồn mở có dẫn nguồn pháp lý rõ, ngày hiệu lực, giấy phép và version.
+2. Tạo dataset đầy đủ từ nguồn xác minh được, mã là string giữ số 0 đầu, province/ward và parent_code; manifest có checksum SHA256 của bytes JSON, nguồn URL và ngày truy cập.
+3. Nếu không tìm được nguồn đầy đủ đáng tin, chỉ giao nghiên cứu và ghi thiếu dữ liệu; không tự bịa ward hoặc dùng63 tỉnh/huyện cũ. Đặt dưới proposals, không sửa dataset production/FoundationSeeder.
+Nghiệm thu/task checks:
+- Kiểm mã trùng, parent bị thiếu, level ngoài PROVINCE/WARD, số 0 đầu và phiên bản đồng nhất.
+- Có URL nguồn thực và script/lệnh tái tạo dữ liệu trong PR; checksum thực khớp file.
+- Owner duyệt dữ liệu trước khi nhập chính thức, task này không tự đánh dấu P01.04 xong.
+
+Đầu ra bắt buộc: code/patch đúng allowlist; lệnh/kết quả thật hoặc NOT RUN; DRAFT PR URL thật (nếu tạo được) và dependencies/limitations. Không merge PR.
+
+====================================================================================
+EXT-002 — PROMPT COPY NGUYÊN KHỐI
+====================================================================================
+Bạn là cộng tác viên của Cena Store, làm trên fork GitHub của bạn; repo upstream https://github.com/httrung0308/cena-store-laravel, base main. Chỉ thực hiện TASK bên dưới, không triển khai toàn dự án.
+Trước code: fetch main mới nhất, ghi BASE_SHA thật; đọc AGENTS.md, CONTRIBUTING.md, docs/specification.md đúng phase/WF, docs/architecture/decisions.md, docs/ai-progress.md và file nguồn liên quan. Baseline P00/P01.01–P01.03 hoàn tất. Nếu task đã được upstream làm hoặc dependency/interface còn thiếu, báo tình trạng; không viết lớp trùng hoặc tự chế hợp đồng.
+Chỉ sửa allowlist của task. Không sửa migrations, lockfiles/dependency, .env, TestDatabaseGuard, Money/Cost/BusinessClock, enum backing value, Customer/Admin Resource guards, roles/auth/OTP, inventory/ledger/outbox, checkout/payment/refund/RMA service hoặc shared routes/bootstrap/app.js/CSS/home đang chạy. Cần ngoại lệ thì đề xuất trong PR body, không lén mở rộng. Không sửa docs/reference/legacy-ui hay public/legacy; giữ layout, Montserrat, Cena, ảnh/nội dung gốc, port Blade/Tailwind3/Alpine3, không React/Next/JWT/Stripe. Không tạo endpoint/seed/thành công giả. Escape dữ liệu, không lộ cost/proof path/internal note cho Customer.
+PREP chỉ là module/component chuẩn bị, không hoàn thành phase và không tích hợp vào app đang chạy. WAIT_CONTRACT chỉ bắt đầu code khi API/DTO/service/dependency ghi trong task đã merge và được owner xác nhận. Các EXT dependencies cũng phải merge trước khi import chúng; không làm48task trong một PR.
+Kiểm narrow tests hành vi cần thiết, real MySQL8.4 cena_store_test bằng cena_test/cena_ci cho feature có DB; mỗi môi trường test riêng, không SQLite/root/dev DB hoặc chạy song song chung schema. PHP mới dùng Artisan --no-interaction, PHPUnit chuẩn project, type hints/return types và Pint. UI: npm run build, render/visual/keyboard phù hợp; không test mirror class/markup. JS thuần dùng Node22 node --test, không thêm dependency. Không thể chạy thì ghi NOT RUN chính xác, không bịa log/screenshot/test pass.
+Hoàn thành trên branch codex/ext-NNN-short-name của fork, commit các file đúng task, push fork và tạo DRAFT PR về upstream main. PR ghi taskID/phase,BASE_SHA,behavior,phụ thuộc,files,commands/results và giới hạn. Không merge, force-push main, đổi workflow/guard để xanh hoặc cập nhật nhật ký chung. Nếu môi trường không có terminal/GitHub write, xuất patch đầy đủ + PR body và lệnh để người có quyền áp dụng; không nói đã tạo PR nếu chưa có URL thật.
+
+TASK EXT-002: Validator độc lập cho gói dữ liệu địa giới
+Phase canonical: P01.04
+Trạng thái: PREP
+Dependency/gate: Chốt schema đề xuất với EXT-001/owner trước code; có thể chuẩn bị test fixture synthetic ghi nhãn rõ.
+Allowlist:
+- app/Support/AdministrativeDatasetValidator.php
+- tests/Unit/AdministrativeDatasetValidatorTest.php
+Tham chiếu bắt buộc: P01.04; EXT-001 manifest proposal
+Công việc cụ thể:
+1. Xây validator thuần đọc array và manifest, trả kết quả/các lỗi có đường dẫn row, không ghi database và không tải HTTP.
+2. Kiểm code string duy nhất theo version, level/parent nhất quán, province không có parent, ward thuộc province, tên không rỗng; kiểm checksum file ở boundary riêng có input bytes.
+3. Lỗi rõ ràng, không dùng IDs tự tăng hoặc tạo postcode/tỉnh giả để lấp dữ liệu.
+Nghiệm thu/task checks:
+- Test số 0 đầu, duplicate, parent sai/khác version, ward mồ côi, checksum sai và dữ liệu hợp lệ.
+- Không phụ thuộc network, không seed, không giảm kiểm tra guard/schema.
+- Interface public trong PR body để owner tích hợp vào FoundationSeeder sau review.
+
+Đầu ra bắt buộc: code/patch đúng allowlist; lệnh/kết quả thật hoặc NOT RUN; DRAFT PR URL thật (nếu tạo được) và dependencies/limitations. Không merge PR.
+
+====================================================================================
+EXT-003 — PROMPT COPY NGUYÊN KHỐI
+====================================================================================
+Bạn là cộng tác viên của Cena Store, làm trên fork GitHub của bạn; repo upstream https://github.com/httrung0308/cena-store-laravel, base main. Chỉ thực hiện TASK bên dưới, không triển khai toàn dự án.
+Trước code: fetch main mới nhất, ghi BASE_SHA thật; đọc AGENTS.md, CONTRIBUTING.md, docs/specification.md đúng phase/WF, docs/architecture/decisions.md, docs/ai-progress.md và file nguồn liên quan. Baseline P00/P01.01–P01.03 hoàn tất. Nếu task đã được upstream làm hoặc dependency/interface còn thiếu, báo tình trạng; không viết lớp trùng hoặc tự chế hợp đồng.
+Chỉ sửa allowlist của task. Không sửa migrations, lockfiles/dependency, .env, TestDatabaseGuard, Money/Cost/BusinessClock, enum backing value, Customer/Admin Resource guards, roles/auth/OTP, inventory/ledger/outbox, checkout/payment/refund/RMA service hoặc shared routes/bootstrap/app.js/CSS/home đang chạy. Cần ngoại lệ thì đề xuất trong PR body, không lén mở rộng. Không sửa docs/reference/legacy-ui hay public/legacy; giữ layout, Montserrat, Cena, ảnh/nội dung gốc, port Blade/Tailwind3/Alpine3, không React/Next/JWT/Stripe. Không tạo endpoint/seed/thành công giả. Escape dữ liệu, không lộ cost/proof path/internal note cho Customer.
+PREP chỉ là module/component chuẩn bị, không hoàn thành phase và không tích hợp vào app đang chạy. WAIT_CONTRACT chỉ bắt đầu code khi API/DTO/service/dependency ghi trong task đã merge và được owner xác nhận. Các EXT dependencies cũng phải merge trước khi import chúng; không làm48task trong một PR.
+Kiểm narrow tests hành vi cần thiết, real MySQL8.4 cena_store_test bằng cena_test/cena_ci cho feature có DB; mỗi môi trường test riêng, không SQLite/root/dev DB hoặc chạy song song chung schema. PHP mới dùng Artisan --no-interaction, PHPUnit chuẩn project, type hints/return types và Pint. UI: npm run build, render/visual/keyboard phù hợp; không test mirror class/markup. JS thuần dùng Node22 node --test, không thêm dependency. Không thể chạy thì ghi NOT RUN chính xác, không bịa log/screenshot/test pass.
+Hoàn thành trên branch codex/ext-NNN-short-name của fork, commit các file đúng task, push fork và tạo DRAFT PR về upstream main. PR ghi taskID/phase,BASE_SHA,behavior,phụ thuộc,files,commands/results và giới hạn. Không merge, force-push main, đổi workflow/guard để xanh hoặc cập nhật nhật ký chung. Nếu môi trường không có terminal/GitHub write, xuất patch đầy đủ + PR body và lệnh để người có quyền áp dụng; không nói đã tạo PR nếu chưa có URL thật.
+
+TASK EXT-003: Bảng đối chiếu UI/assets và danh sách asset còn thiếu
+Phase canonical: P03.01/P05.01
+Trạng thái: PREP
+Dependency/gate: Không phụ thuộc EXT khác.
+Allowlist:
+- docs/collaboration/legacy-ui-map.md
+Tham chiếu bắt buộc: ADR-002; docs/reference/legacy-ui
+Công việc cụ thể:
+1. Đọc docs/reference/legacy-ui/manifest.json và các template Blade hiện có; ánh xạ màn cũ sang màn Laravel dự kiến.
+2. Liệt kê asset local đã có và video/ảnh chưa có; ghi source/license/hash nếu tồn tại, không tải ảnh bên ngoài hoặc thay logo.
+3. Phân biệt trang gốc với module security Oracle/Stripe không thuộc phạm vi port; xác định vị trí reference cho login/catalog/detail/cart/order.
+Nghiệm thu/task checks:
+- Mọi đường dẫn reference tồn tại thật, không coi75 tệp tham chiếu là source chạy được.
+- Không sửa public/legacy, CSS global, homepage hoặc manifest gốc.
+- PR tài liệu ngắn, có danh sách thiếu để owner quyết định; không tuyên bố pixel-perfect.
+
+Đầu ra bắt buộc: code/patch đúng allowlist; lệnh/kết quả thật hoặc NOT RUN; DRAFT PR URL thật (nếu tạo được) và dependencies/limitations. Không merge PR.
+
+====================================================================================
+EXT-004 — PROMPT COPY NGUYÊN KHỐI
+====================================================================================
+Bạn là cộng tác viên của Cena Store, làm trên fork GitHub của bạn; repo upstream https://github.com/httrung0308/cena-store-laravel, base main. Chỉ thực hiện TASK bên dưới, không triển khai toàn dự án.
+Trước code: fetch main mới nhất, ghi BASE_SHA thật; đọc AGENTS.md, CONTRIBUTING.md, docs/specification.md đúng phase/WF, docs/architecture/decisions.md, docs/ai-progress.md và file nguồn liên quan. Baseline P00/P01.01–P01.03 hoàn tất. Nếu task đã được upstream làm hoặc dependency/interface còn thiếu, báo tình trạng; không viết lớp trùng hoặc tự chế hợp đồng.
+Chỉ sửa allowlist của task. Không sửa migrations, lockfiles/dependency, .env, TestDatabaseGuard, Money/Cost/BusinessClock, enum backing value, Customer/Admin Resource guards, roles/auth/OTP, inventory/ledger/outbox, checkout/payment/refund/RMA service hoặc shared routes/bootstrap/app.js/CSS/home đang chạy. Cần ngoại lệ thì đề xuất trong PR body, không lén mở rộng. Không sửa docs/reference/legacy-ui hay public/legacy; giữ layout, Montserrat, Cena, ảnh/nội dung gốc, port Blade/Tailwind3/Alpine3, không React/Next/JWT/Stripe. Không tạo endpoint/seed/thành công giả. Escape dữ liệu, không lộ cost/proof path/internal note cho Customer.
+PREP chỉ là module/component chuẩn bị, không hoàn thành phase và không tích hợp vào app đang chạy. WAIT_CONTRACT chỉ bắt đầu code khi API/DTO/service/dependency ghi trong task đã merge và được owner xác nhận. Các EXT dependencies cũng phải merge trước khi import chúng; không làm48task trong một PR.
+Kiểm narrow tests hành vi cần thiết, real MySQL8.4 cena_store_test bằng cena_test/cena_ci cho feature có DB; mỗi môi trường test riêng, không SQLite/root/dev DB hoặc chạy song song chung schema. PHP mới dùng Artisan --no-interaction, PHPUnit chuẩn project, type hints/return types và Pint. UI: npm run build, render/visual/keyboard phù hợp; không test mirror class/markup. JS thuần dùng Node22 node --test, không thêm dependency. Không thể chạy thì ghi NOT RUN chính xác, không bịa log/screenshot/test pass.
+Hoàn thành trên branch codex/ext-NNN-short-name của fork, commit các file đúng task, push fork và tạo DRAFT PR về upstream main. PR ghi taskID/phase,BASE_SHA,behavior,phụ thuộc,files,commands/results và giới hạn. Không merge, force-push main, đổi workflow/guard để xanh hoặc cập nhật nhật ký chung. Nếu môi trường không có terminal/GitHub write, xuất patch đầy đủ + PR body và lệnh để người có quyền áp dụng; không nói đã tạo PR nếu chưa có URL thật.
+
+TASK EXT-004: Blade text field và field error dùng lại
+Phase canonical: P03.01/P02 UI
+Trạng thái: PREP
+Dependency/gate: Không phụ thuộc EXT khác.
+Allowlist:
+- resources/views/components/forms/text-field.blade.php
+- resources/views/components/forms/field-error.blade.php
+- tests/Feature/FormTextFieldTest.php
+Tham chiếu bắt buộc: common/components/input; Tailwind3 class tokens hiện có
+Công việc cụ thể:
+1. Port kiểu input/label/error từ InputComponent.tsx; props name/id/label/value/type/hint/required/autocomplete rõ ràng.
+2. Giữ old input khi phù hợp, gắn label-for, aria-invalid/aria-describedby, error bag Laravel; escape label/value/error.
+3. Không tự render password/OTP qua text field hoặc tạo form action/route mới.
+Nghiệm thu/task checks:
+- Render các props thật và kiểm XSS payload bị escape, label liên kết đúng, value0 không mất.
+- Mở360/768/1440 nếu có browser; nếu không, ghi NOT RUN cho visual check.
+- Không chỉnh global CSS hoặc component storefront hiện hữu.
+
+Đầu ra bắt buộc: code/patch đúng allowlist; lệnh/kết quả thật hoặc NOT RUN; DRAFT PR URL thật (nếu tạo được) và dependencies/limitations. Không merge PR.
+
+====================================================================================
+EXT-005 — PROMPT COPY NGUYÊN KHỐI
+====================================================================================
+Bạn là cộng tác viên của Cena Store, làm trên fork GitHub của bạn; repo upstream https://github.com/httrung0308/cena-store-laravel, base main. Chỉ thực hiện TASK bên dưới, không triển khai toàn dự án.
+Trước code: fetch main mới nhất, ghi BASE_SHA thật; đọc AGENTS.md, CONTRIBUTING.md, docs/specification.md đúng phase/WF, docs/architecture/decisions.md, docs/ai-progress.md và file nguồn liên quan. Baseline P00/P01.01–P01.03 hoàn tất. Nếu task đã được upstream làm hoặc dependency/interface còn thiếu, báo tình trạng; không viết lớp trùng hoặc tự chế hợp đồng.
+Chỉ sửa allowlist của task. Không sửa migrations, lockfiles/dependency, .env, TestDatabaseGuard, Money/Cost/BusinessClock, enum backing value, Customer/Admin Resource guards, roles/auth/OTP, inventory/ledger/outbox, checkout/payment/refund/RMA service hoặc shared routes/bootstrap/app.js/CSS/home đang chạy. Cần ngoại lệ thì đề xuất trong PR body, không lén mở rộng. Không sửa docs/reference/legacy-ui hay public/legacy; giữ layout, Montserrat, Cena, ảnh/nội dung gốc, port Blade/Tailwind3/Alpine3, không React/Next/JWT/Stripe. Không tạo endpoint/seed/thành công giả. Escape dữ liệu, không lộ cost/proof path/internal note cho Customer.
+PREP chỉ là module/component chuẩn bị, không hoàn thành phase và không tích hợp vào app đang chạy. WAIT_CONTRACT chỉ bắt đầu code khi API/DTO/service/dependency ghi trong task đã merge và được owner xác nhận. Các EXT dependencies cũng phải merge trước khi import chúng; không làm48task trong một PR.
+Kiểm narrow tests hành vi cần thiết, real MySQL8.4 cena_store_test bằng cena_test/cena_ci cho feature có DB; mỗi môi trường test riêng, không SQLite/root/dev DB hoặc chạy song song chung schema. PHP mới dùng Artisan --no-interaction, PHPUnit chuẩn project, type hints/return types và Pint. UI: npm run build, render/visual/keyboard phù hợp; không test mirror class/markup. JS thuần dùng Node22 node --test, không thêm dependency. Không thể chạy thì ghi NOT RUN chính xác, không bịa log/screenshot/test pass.
+Hoàn thành trên branch codex/ext-NNN-short-name của fork, commit các file đúng task, push fork và tạo DRAFT PR về upstream main. PR ghi taskID/phase,BASE_SHA,behavior,phụ thuộc,files,commands/results và giới hạn. Không merge, force-push main, đổi workflow/guard để xanh hoặc cập nhật nhật ký chung. Nếu môi trường không có terminal/GitHub write, xuất patch đầy đủ + PR body và lệnh để người có quyền áp dụng; không nói đã tạo PR nếu chưa có URL thật.
+
+TASK EXT-005: Password input có nút hiện/ẩn và accessibility
+Phase canonical: P02.01/P02.04 UI
+Trạng thái: PREP
+Dependency/gate: EXT-004 nếu tái sử dụng field-error; chờ component này merge.
+Allowlist:
+- resources/views/components/forms/password-field.blade.php
+- resources/js/components/password-field.js
+- tests/JavaScript/password-field.test.mjs
+Tham chiếu bắt buộc: common/components/input/InputPasswordComponent.tsx; SENSITIVE_INPUTS
+Công việc cụ thể:
+1. Port InputPasswordComponent.tsx sang Blade/Alpine; props name/id/label/autocomplete, không có prop value cho mật khẩu.
+2. Toggle type và aria-pressed bằng trạng thái cục bộ; giữ focus, không ghi password vào log/localStorage/query string.
+3. Module xuất factory thuần, owner sẽ đăng ký Alpine sau; không tự sửa app.js hoặc thêm dependency.
+Nghiệm thu/task checks:
+- Node --test kiểm toggle và instance isolation; không kiểm bằng snapshot mã nguồn.
+- Form không điền old password và không nhúng bí mật trong x-data.
+- Kiểm bàn phím/tab và nhãn Show/Hide rõ ràng.
+
+Đầu ra bắt buộc: code/patch đúng allowlist; lệnh/kết quả thật hoặc NOT RUN; DRAFT PR URL thật (nếu tạo được) và dependencies/limitations. Không merge PR.
+
+====================================================================================
+EXT-006 — PROMPT COPY NGUYÊN KHỐI
+====================================================================================
+Bạn là cộng tác viên của Cena Store, làm trên fork GitHub của bạn; repo upstream https://github.com/httrung0308/cena-store-laravel, base main. Chỉ thực hiện TASK bên dưới, không triển khai toàn dự án.
+Trước code: fetch main mới nhất, ghi BASE_SHA thật; đọc AGENTS.md, CONTRIBUTING.md, docs/specification.md đúng phase/WF, docs/architecture/decisions.md, docs/ai-progress.md và file nguồn liên quan. Baseline P00/P01.01–P01.03 hoàn tất. Nếu task đã được upstream làm hoặc dependency/interface còn thiếu, báo tình trạng; không viết lớp trùng hoặc tự chế hợp đồng.
+Chỉ sửa allowlist của task. Không sửa migrations, lockfiles/dependency, .env, TestDatabaseGuard, Money/Cost/BusinessClock, enum backing value, Customer/Admin Resource guards, roles/auth/OTP, inventory/ledger/outbox, checkout/payment/refund/RMA service hoặc shared routes/bootstrap/app.js/CSS/home đang chạy. Cần ngoại lệ thì đề xuất trong PR body, không lén mở rộng. Không sửa docs/reference/legacy-ui hay public/legacy; giữ layout, Montserrat, Cena, ảnh/nội dung gốc, port Blade/Tailwind3/Alpine3, không React/Next/JWT/Stripe. Không tạo endpoint/seed/thành công giả. Escape dữ liệu, không lộ cost/proof path/internal note cho Customer.
+PREP chỉ là module/component chuẩn bị, không hoàn thành phase và không tích hợp vào app đang chạy. WAIT_CONTRACT chỉ bắt đầu code khi API/DTO/service/dependency ghi trong task đã merge và được owner xác nhận. Các EXT dependencies cũng phải merge trước khi import chúng; không làm48task trong một PR.
+Kiểm narrow tests hành vi cần thiết, real MySQL8.4 cena_store_test bằng cena_test/cena_ci cho feature có DB; mỗi môi trường test riêng, không SQLite/root/dev DB hoặc chạy song song chung schema. PHP mới dùng Artisan --no-interaction, PHPUnit chuẩn project, type hints/return types và Pint. UI: npm run build, render/visual/keyboard phù hợp; không test mirror class/markup. JS thuần dùng Node22 node --test, không thêm dependency. Không thể chạy thì ghi NOT RUN chính xác, không bịa log/screenshot/test pass.
+Hoàn thành trên branch codex/ext-NNN-short-name của fork, commit các file đúng task, push fork và tạo DRAFT PR về upstream main. PR ghi taskID/phase,BASE_SHA,behavior,phụ thuộc,files,commands/results và giới hạn. Không merge, force-push main, đổi workflow/guard để xanh hoặc cập nhật nhật ký chung. Nếu môi trường không có terminal/GitHub write, xuất patch đầy đủ + PR body và lệnh để người có quyền áp dụng; không nói đã tạo PR nếu chưa có URL thật.
+
+TASK EXT-006: Button/loading spinner dùng lại giao diện gốc
+Phase canonical: P03.01
+Trạng thái: PREP
+Dependency/gate: Không phụ thuộc EXT khác.
+Allowlist:
+- resources/views/components/ui/button.blade.php
+- resources/views/components/ui/spinner.blade.php
+Tham chiếu bắt buộc: common/components/button; spinner; resources/css/app.css đọc-only
+Công việc cụ thể:
+1. Port btn/LoaderButton/Spinner từ reference, giữ kích thước và hiệu ứng gốc.
+2. Button mặc định type=button, submit phải tường minh; nhận loading/disabled và aria-busy.
+3. Không tự disable toàn form hoặc gửi request; không thêm icon/font/package mới.
+Nghiệm thu/task checks:
+- Build và render các trạng thái; xem keyboard focus và reduced-motion.
+- Loading không đổi width gây nhảy bố cục; disabled có semantics thật.
+- Không thêm test chỉ so HTML class với implementation; ghi manual checks trong PR.
+
+Đầu ra bắt buộc: code/patch đúng allowlist; lệnh/kết quả thật hoặc NOT RUN; DRAFT PR URL thật (nếu tạo được) và dependencies/limitations. Không merge PR.
+
+====================================================================================
+EXT-007 — PROMPT COPY NGUYÊN KHỐI
+====================================================================================
+Bạn là cộng tác viên của Cena Store, làm trên fork GitHub của bạn; repo upstream https://github.com/httrung0308/cena-store-laravel, base main. Chỉ thực hiện TASK bên dưới, không triển khai toàn dự án.
+Trước code: fetch main mới nhất, ghi BASE_SHA thật; đọc AGENTS.md, CONTRIBUTING.md, docs/specification.md đúng phase/WF, docs/architecture/decisions.md, docs/ai-progress.md và file nguồn liên quan. Baseline P00/P01.01–P01.03 hoàn tất. Nếu task đã được upstream làm hoặc dependency/interface còn thiếu, báo tình trạng; không viết lớp trùng hoặc tự chế hợp đồng.
+Chỉ sửa allowlist của task. Không sửa migrations, lockfiles/dependency, .env, TestDatabaseGuard, Money/Cost/BusinessClock, enum backing value, Customer/Admin Resource guards, roles/auth/OTP, inventory/ledger/outbox, checkout/payment/refund/RMA service hoặc shared routes/bootstrap/app.js/CSS/home đang chạy. Cần ngoại lệ thì đề xuất trong PR body, không lén mở rộng. Không sửa docs/reference/legacy-ui hay public/legacy; giữ layout, Montserrat, Cena, ảnh/nội dung gốc, port Blade/Tailwind3/Alpine3, không React/Next/JWT/Stripe. Không tạo endpoint/seed/thành công giả. Escape dữ liệu, không lộ cost/proof path/internal note cho Customer.
+PREP chỉ là module/component chuẩn bị, không hoàn thành phase và không tích hợp vào app đang chạy. WAIT_CONTRACT chỉ bắt đầu code khi API/DTO/service/dependency ghi trong task đã merge và được owner xác nhận. Các EXT dependencies cũng phải merge trước khi import chúng; không làm48task trong một PR.
+Kiểm narrow tests hành vi cần thiết, real MySQL8.4 cena_store_test bằng cena_test/cena_ci cho feature có DB; mỗi môi trường test riêng, không SQLite/root/dev DB hoặc chạy song song chung schema. PHP mới dùng Artisan --no-interaction, PHPUnit chuẩn project, type hints/return types và Pint. UI: npm run build, render/visual/keyboard phù hợp; không test mirror class/markup. JS thuần dùng Node22 node --test, không thêm dependency. Không thể chạy thì ghi NOT RUN chính xác, không bịa log/screenshot/test pass.
+Hoàn thành trên branch codex/ext-NNN-short-name của fork, commit các file đúng task, push fork và tạo DRAFT PR về upstream main. PR ghi taskID/phase,BASE_SHA,behavior,phụ thuộc,files,commands/results và giới hạn. Không merge, force-push main, đổi workflow/guard để xanh hoặc cập nhật nhật ký chung. Nếu môi trường không có terminal/GitHub write, xuất patch đầy đủ + PR body và lệnh để người có quyền áp dụng; không nói đã tạo PR nếu chưa có URL thật.
+
+TASK EXT-007: Checkbox/radio group với label và lỗi
+Phase canonical: P03.01
+Trạng thái: PREP
+Dependency/gate: EXT-004 nếu dùng component error.
+Allowlist:
+- resources/views/components/forms/choice-group.blade.php
+- tests/Feature/FormChoiceGroupTest.php
+Tham chiếu bắt buộc: common/components/checkbox; JSON contract §7.3
+Công việc cụ thể:
+1. Tạo group checkbox/radio từ danh sách option server, value giữ string, label/fieldset/legend đúng.
+2. Khôi phục old values không ép size hoặc code thành số; readonly/disabled rõ.
+3. Không tự suy ra quyền/payment method/coupon từ label.
+Nghiệm thu/task checks:
+- Test escape label và giữ chuỗi00001/40.5, checked chính xác khi đổi thứ tự option.
+- Keyboard và label click chọn được; id không trùng giữa hai instance.
+- Không sửa enum hoặc danh sách canonical.
+
+Đầu ra bắt buộc: code/patch đúng allowlist; lệnh/kết quả thật hoặc NOT RUN; DRAFT PR URL thật (nếu tạo được) và dependencies/limitations. Không merge PR.
+
+====================================================================================
+EXT-008 — PROMPT COPY NGUYÊN KHỐI
+====================================================================================
+Bạn là cộng tác viên của Cena Store, làm trên fork GitHub của bạn; repo upstream https://github.com/httrung0308/cena-store-laravel, base main. Chỉ thực hiện TASK bên dưới, không triển khai toàn dự án.
+Trước code: fetch main mới nhất, ghi BASE_SHA thật; đọc AGENTS.md, CONTRIBUTING.md, docs/specification.md đúng phase/WF, docs/architecture/decisions.md, docs/ai-progress.md và file nguồn liên quan. Baseline P00/P01.01–P01.03 hoàn tất. Nếu task đã được upstream làm hoặc dependency/interface còn thiếu, báo tình trạng; không viết lớp trùng hoặc tự chế hợp đồng.
+Chỉ sửa allowlist của task. Không sửa migrations, lockfiles/dependency, .env, TestDatabaseGuard, Money/Cost/BusinessClock, enum backing value, Customer/Admin Resource guards, roles/auth/OTP, inventory/ledger/outbox, checkout/payment/refund/RMA service hoặc shared routes/bootstrap/app.js/CSS/home đang chạy. Cần ngoại lệ thì đề xuất trong PR body, không lén mở rộng. Không sửa docs/reference/legacy-ui hay public/legacy; giữ layout, Montserrat, Cena, ảnh/nội dung gốc, port Blade/Tailwind3/Alpine3, không React/Next/JWT/Stripe. Không tạo endpoint/seed/thành công giả. Escape dữ liệu, không lộ cost/proof path/internal note cho Customer.
+PREP chỉ là module/component chuẩn bị, không hoàn thành phase và không tích hợp vào app đang chạy. WAIT_CONTRACT chỉ bắt đầu code khi API/DTO/service/dependency ghi trong task đã merge và được owner xác nhận. Các EXT dependencies cũng phải merge trước khi import chúng; không làm48task trong một PR.
+Kiểm narrow tests hành vi cần thiết, real MySQL8.4 cena_store_test bằng cena_test/cena_ci cho feature có DB; mỗi môi trường test riêng, không SQLite/root/dev DB hoặc chạy song song chung schema. PHP mới dùng Artisan --no-interaction, PHPUnit chuẩn project, type hints/return types và Pint. UI: npm run build, render/visual/keyboard phù hợp; không test mirror class/markup. JS thuần dùng Node22 node --test, không thêm dependency. Không thể chạy thì ghi NOT RUN chính xác, không bịa log/screenshot/test pass.
+Hoàn thành trên branch codex/ext-NNN-short-name của fork, commit các file đúng task, push fork và tạo DRAFT PR về upstream main. PR ghi taskID/phase,BASE_SHA,behavior,phụ thuộc,files,commands/results và giới hạn. Không merge, force-push main, đổi workflow/guard để xanh hoặc cập nhật nhật ký chung. Nếu môi trường không có terminal/GitHub write, xuất patch đầy đủ + PR body và lệnh để người có quyền áp dụng; không nói đã tạo PR nếu chưa có URL thật.
+
+TASK EXT-008: Dialog Alpine độc lập với focus trap/Escape
+Phase canonical: P03.01
+Trạng thái: PREP
+Dependency/gate: Không phụ thuộc EXT khác; đọc panels gốc nhưng không sửa nó.
+Allowlist:
+- resources/views/components/ui/dialog.blade.php
+- resources/js/components/dialog.js
+- tests/JavaScript/dialog.test.mjs
+Tham chiếu bắt buộc: common/components/modal; storefront/panels.blade.php
+Công việc cụ thể:
+1. Chuẩn bị dialog reusable theo modal gốc, open/close state từng instance; trả focus đúng nút mở.
+2. Trap Tab/ShiftTab, Escape, backdrop, lock scroll có khôi phục giá trị ban đầu; không đóng modal đang submit nếu owner khóa thao tác.
+3. Không thay panels.blade.php/app.js, không tạo popup trên homepage hiện tại.
+Nghiệm thu/task checks:
+- Node test state/cleanup bằng interface DOM tối thiểu hoặc browser nếu có; không thêm DOM test library mới.
+- Manual keyboard với2 dialog và reduced-motion; chỉ báo đã kiểm khi thực chạy.
+- Không dùng innerHTML từ nội dung người dùng.
+
+Đầu ra bắt buộc: code/patch đúng allowlist; lệnh/kết quả thật hoặc NOT RUN; DRAFT PR URL thật (nếu tạo được) và dependencies/limitations. Không merge PR.
+
+====================================================================================
+EXT-009 — PROMPT COPY NGUYÊN KHỐI
+====================================================================================
+Bạn là cộng tác viên của Cena Store, làm trên fork GitHub của bạn; repo upstream https://github.com/httrung0308/cena-store-laravel, base main. Chỉ thực hiện TASK bên dưới, không triển khai toàn dự án.
+Trước code: fetch main mới nhất, ghi BASE_SHA thật; đọc AGENTS.md, CONTRIBUTING.md, docs/specification.md đúng phase/WF, docs/architecture/decisions.md, docs/ai-progress.md và file nguồn liên quan. Baseline P00/P01.01–P01.03 hoàn tất. Nếu task đã được upstream làm hoặc dependency/interface còn thiếu, báo tình trạng; không viết lớp trùng hoặc tự chế hợp đồng.
+Chỉ sửa allowlist của task. Không sửa migrations, lockfiles/dependency, .env, TestDatabaseGuard, Money/Cost/BusinessClock, enum backing value, Customer/Admin Resource guards, roles/auth/OTP, inventory/ledger/outbox, checkout/payment/refund/RMA service hoặc shared routes/bootstrap/app.js/CSS/home đang chạy. Cần ngoại lệ thì đề xuất trong PR body, không lén mở rộng. Không sửa docs/reference/legacy-ui hay public/legacy; giữ layout, Montserrat, Cena, ảnh/nội dung gốc, port Blade/Tailwind3/Alpine3, không React/Next/JWT/Stripe. Không tạo endpoint/seed/thành công giả. Escape dữ liệu, không lộ cost/proof path/internal note cho Customer.
+PREP chỉ là module/component chuẩn bị, không hoàn thành phase và không tích hợp vào app đang chạy. WAIT_CONTRACT chỉ bắt đầu code khi API/DTO/service/dependency ghi trong task đã merge và được owner xác nhận. Các EXT dependencies cũng phải merge trước khi import chúng; không làm48task trong một PR.
+Kiểm narrow tests hành vi cần thiết, real MySQL8.4 cena_store_test bằng cena_test/cena_ci cho feature có DB; mỗi môi trường test riêng, không SQLite/root/dev DB hoặc chạy song song chung schema. PHP mới dùng Artisan --no-interaction, PHPUnit chuẩn project, type hints/return types và Pint. UI: npm run build, render/visual/keyboard phù hợp; không test mirror class/markup. JS thuần dùng Node22 node --test, không thêm dependency. Không thể chạy thì ghi NOT RUN chính xác, không bịa log/screenshot/test pass.
+Hoàn thành trên branch codex/ext-NNN-short-name của fork, commit các file đúng task, push fork và tạo DRAFT PR về upstream main. PR ghi taskID/phase,BASE_SHA,behavior,phụ thuộc,files,commands/results và giới hạn. Không merge, force-push main, đổi workflow/guard để xanh hoặc cập nhật nhật ký chung. Nếu môi trường không có terminal/GitHub write, xuất patch đầy đủ + PR body và lệnh để người có quyền áp dụng; không nói đã tạo PR nếu chưa có URL thật.
+
+TASK EXT-009: Toast nhận flash/JSON an toàn
+Phase canonical: P03.01/P05.04
+Trạng thái: PREP
+Dependency/gate: EXT-006 nếu cần nút đóng; không phụ thuộc API thật.
+Allowlist:
+- resources/views/components/ui/toasts.blade.php
+- resources/js/components/toasts.js
+- tests/JavaScript/toasts.test.mjs
+Tham chiếu bắt buộc: common/components/toast; ApiResponse; ExceptionRenderer
+Công việc cụ thể:
+1. Toast nhận message/type/request_id từ server hoặc event đã chuẩn hóa; dùng textContent/x-text.
+2. Cấu hình auto-dismiss, hover pause và nút close; aria-live phù hợp, không nuốt validation field errors.
+3. Flash error/error_code đã có từ P01.03; không sửa ExceptionRenderer, không lấy raw exception/HTML.
+Nghiệm thu/task checks:
+- Test queue/dismiss/isolation và XSS hiển thị text, không inject DOM.
+- Kiểm style đúng toast reference, không đổi slogan/copy của home.
+- Không tự đăng ký module global hoặc tạo route preview production.
+
+Đầu ra bắt buộc: code/patch đúng allowlist; lệnh/kết quả thật hoặc NOT RUN; DRAFT PR URL thật (nếu tạo được) và dependencies/limitations. Không merge PR.
+
+====================================================================================
+EXT-010 — PROMPT COPY NGUYÊN KHỐI
+====================================================================================
+Bạn là cộng tác viên của Cena Store, làm trên fork GitHub của bạn; repo upstream https://github.com/httrung0308/cena-store-laravel, base main. Chỉ thực hiện TASK bên dưới, không triển khai toàn dự án.
+Trước code: fetch main mới nhất, ghi BASE_SHA thật; đọc AGENTS.md, CONTRIBUTING.md, docs/specification.md đúng phase/WF, docs/architecture/decisions.md, docs/ai-progress.md và file nguồn liên quan. Baseline P00/P01.01–P01.03 hoàn tất. Nếu task đã được upstream làm hoặc dependency/interface còn thiếu, báo tình trạng; không viết lớp trùng hoặc tự chế hợp đồng.
+Chỉ sửa allowlist của task. Không sửa migrations, lockfiles/dependency, .env, TestDatabaseGuard, Money/Cost/BusinessClock, enum backing value, Customer/Admin Resource guards, roles/auth/OTP, inventory/ledger/outbox, checkout/payment/refund/RMA service hoặc shared routes/bootstrap/app.js/CSS/home đang chạy. Cần ngoại lệ thì đề xuất trong PR body, không lén mở rộng. Không sửa docs/reference/legacy-ui hay public/legacy; giữ layout, Montserrat, Cena, ảnh/nội dung gốc, port Blade/Tailwind3/Alpine3, không React/Next/JWT/Stripe. Không tạo endpoint/seed/thành công giả. Escape dữ liệu, không lộ cost/proof path/internal note cho Customer.
+PREP chỉ là module/component chuẩn bị, không hoàn thành phase và không tích hợp vào app đang chạy. WAIT_CONTRACT chỉ bắt đầu code khi API/DTO/service/dependency ghi trong task đã merge và được owner xác nhận. Các EXT dependencies cũng phải merge trước khi import chúng; không làm48task trong một PR.
+Kiểm narrow tests hành vi cần thiết, real MySQL8.4 cena_store_test bằng cena_test/cena_ci cho feature có DB; mỗi môi trường test riêng, không SQLite/root/dev DB hoặc chạy song song chung schema. PHP mới dùng Artisan --no-interaction, PHPUnit chuẩn project, type hints/return types và Pint. UI: npm run build, render/visual/keyboard phù hợp; không test mirror class/markup. JS thuần dùng Node22 node --test, không thêm dependency. Không thể chạy thì ghi NOT RUN chính xác, không bịa log/screenshot/test pass.
+Hoàn thành trên branch codex/ext-NNN-short-name của fork, commit các file đúng task, push fork và tạo DRAFT PR về upstream main. PR ghi taskID/phase,BASE_SHA,behavior,phụ thuộc,files,commands/results và giới hạn. Không merge, force-push main, đổi workflow/guard để xanh hoặc cập nhật nhật ký chung. Nếu môi trường không có terminal/GitHub write, xuất patch đầy đủ + PR body và lệnh để người có quyền áp dụng; không nói đã tạo PR nếu chưa có URL thật.
+
+TASK EXT-010: Empty/error/offline feedback cho các list
+Phase canonical: P03.01/P05.04
+Trạng thái: PREP
+Dependency/gate: EXT-006 nếu dùng button.
+Allowlist:
+- resources/views/components/ui/feedback.blade.php
+Tham chiếu bắt buộc: Cart/ProductList style gốc; ErrorCode messages
+Công việc cụ thể:
+1. Component trình bày ba trạng thái empty/error/offline với title/message và retry slot tùy chọn.
+2. Giữ typography đen-trắng gốc, không thêm ảnh marketing hoặc fake count.
+3. Chỉ hiển thị server-safe message/request ID; escape tất cả dữ liệu.
+Nghiệm thu/task checks:
+- Render từng trạng thái, xem layout nhỏ/lớn và screen reader text.
+- Không gọi API, không reload tự động hoặc thực thi callback từ string.
+- Không viết test chỉ mirror markup; manual checks đủ cho thay đổi này.
+
+Đầu ra bắt buộc: code/patch đúng allowlist; lệnh/kết quả thật hoặc NOT RUN; DRAFT PR URL thật (nếu tạo được) và dependencies/limitations. Không merge PR.
+
+====================================================================================
+EXT-011 — PROMPT COPY NGUYÊN KHỐI
+====================================================================================
+Bạn là cộng tác viên của Cena Store, làm trên fork GitHub của bạn; repo upstream https://github.com/httrung0308/cena-store-laravel, base main. Chỉ thực hiện TASK bên dưới, không triển khai toàn dự án.
+Trước code: fetch main mới nhất, ghi BASE_SHA thật; đọc AGENTS.md, CONTRIBUTING.md, docs/specification.md đúng phase/WF, docs/architecture/decisions.md, docs/ai-progress.md và file nguồn liên quan. Baseline P00/P01.01–P01.03 hoàn tất. Nếu task đã được upstream làm hoặc dependency/interface còn thiếu, báo tình trạng; không viết lớp trùng hoặc tự chế hợp đồng.
+Chỉ sửa allowlist của task. Không sửa migrations, lockfiles/dependency, .env, TestDatabaseGuard, Money/Cost/BusinessClock, enum backing value, Customer/Admin Resource guards, roles/auth/OTP, inventory/ledger/outbox, checkout/payment/refund/RMA service hoặc shared routes/bootstrap/app.js/CSS/home đang chạy. Cần ngoại lệ thì đề xuất trong PR body, không lén mở rộng. Không sửa docs/reference/legacy-ui hay public/legacy; giữ layout, Montserrat, Cena, ảnh/nội dung gốc, port Blade/Tailwind3/Alpine3, không React/Next/JWT/Stripe. Không tạo endpoint/seed/thành công giả. Escape dữ liệu, không lộ cost/proof path/internal note cho Customer.
+PREP chỉ là module/component chuẩn bị, không hoàn thành phase và không tích hợp vào app đang chạy. WAIT_CONTRACT chỉ bắt đầu code khi API/DTO/service/dependency ghi trong task đã merge và được owner xác nhận. Các EXT dependencies cũng phải merge trước khi import chúng; không làm48task trong một PR.
+Kiểm narrow tests hành vi cần thiết, real MySQL8.4 cena_store_test bằng cena_test/cena_ci cho feature có DB; mỗi môi trường test riêng, không SQLite/root/dev DB hoặc chạy song song chung schema. PHP mới dùng Artisan --no-interaction, PHPUnit chuẩn project, type hints/return types và Pint. UI: npm run build, render/visual/keyboard phù hợp; không test mirror class/markup. JS thuần dùng Node22 node --test, không thêm dependency. Không thể chạy thì ghi NOT RUN chính xác, không bịa log/screenshot/test pass.
+Hoàn thành trên branch codex/ext-NNN-short-name của fork, commit các file đúng task, push fork và tạo DRAFT PR về upstream main. PR ghi taskID/phase,BASE_SHA,behavior,phụ thuộc,files,commands/results và giới hạn. Không merge, force-push main, đổi workflow/guard để xanh hoặc cập nhật nhật ký chung. Nếu môi trường không có terminal/GitHub write, xuất patch đầy đủ + PR body và lệnh để người có quyền áp dụng; không nói đã tạo PR nếu chưa có URL thật.
+
+TASK EXT-011: Pagination partial giữ filter và query string
+Phase canonical: P03.02/P05.01
+Trạng thái: PREP
+Dependency/gate: Không phụ thuộc EXT khác.
+Allowlist:
+- resources/views/components/ui/pagination.blade.php
+- tests/Feature/StorePaginationTest.php
+Tham chiếu bắt buộc: ProductList reference; WF-06 query contract
+Công việc cụ thể:
+1. Tạo partial nhận LengthAwarePaginator; giữ query string qua withQueryString do caller truyền, không mất filter.
+2. Hiển thị prev/next/current/breakpoint theo style gốc, aria-current và label rõ.
+3. Không query DB hoặc hardcode /shoes/admin route trong component.
+Nghiệm thu/task checks:
+- Test link trang2 giữ search/gender/colors/sort và escape query độc hại.
+- Test0/1/nhiều trang, không có link Next hợp lệ khi hết trang.
+- Không thay default paginator toàn app trước owner integration.
+
+Đầu ra bắt buộc: code/patch đúng allowlist; lệnh/kết quả thật hoặc NOT RUN; DRAFT PR URL thật (nếu tạo được) và dependencies/limitations. Không merge PR.
+
+====================================================================================
+EXT-012 — PROMPT COPY NGUYÊN KHỐI
+====================================================================================
+Bạn là cộng tác viên của Cena Store, làm trên fork GitHub của bạn; repo upstream https://github.com/httrung0308/cena-store-laravel, base main. Chỉ thực hiện TASK bên dưới, không triển khai toàn dự án.
+Trước code: fetch main mới nhất, ghi BASE_SHA thật; đọc AGENTS.md, CONTRIBUTING.md, docs/specification.md đúng phase/WF, docs/architecture/decisions.md, docs/ai-progress.md và file nguồn liên quan. Baseline P00/P01.01–P01.03 hoàn tất. Nếu task đã được upstream làm hoặc dependency/interface còn thiếu, báo tình trạng; không viết lớp trùng hoặc tự chế hợp đồng.
+Chỉ sửa allowlist của task. Không sửa migrations, lockfiles/dependency, .env, TestDatabaseGuard, Money/Cost/BusinessClock, enum backing value, Customer/Admin Resource guards, roles/auth/OTP, inventory/ledger/outbox, checkout/payment/refund/RMA service hoặc shared routes/bootstrap/app.js/CSS/home đang chạy. Cần ngoại lệ thì đề xuất trong PR body, không lén mở rộng. Không sửa docs/reference/legacy-ui hay public/legacy; giữ layout, Montserrat, Cena, ảnh/nội dung gốc, port Blade/Tailwind3/Alpine3, không React/Next/JWT/Stripe. Không tạo endpoint/seed/thành công giả. Escape dữ liệu, không lộ cost/proof path/internal note cho Customer.
+PREP chỉ là module/component chuẩn bị, không hoàn thành phase và không tích hợp vào app đang chạy. WAIT_CONTRACT chỉ bắt đầu code khi API/DTO/service/dependency ghi trong task đã merge và được owner xác nhận. Các EXT dependencies cũng phải merge trước khi import chúng; không làm48task trong một PR.
+Kiểm narrow tests hành vi cần thiết, real MySQL8.4 cena_store_test bằng cena_test/cena_ci cho feature có DB; mỗi môi trường test riêng, không SQLite/root/dev DB hoặc chạy song song chung schema. PHP mới dùng Artisan --no-interaction, PHPUnit chuẩn project, type hints/return types và Pint. UI: npm run build, render/visual/keyboard phù hợp; không test mirror class/markup. JS thuần dùng Node22 node --test, không thêm dependency. Không thể chạy thì ghi NOT RUN chính xác, không bịa log/screenshot/test pass.
+Hoàn thành trên branch codex/ext-NNN-short-name của fork, commit các file đúng task, push fork và tạo DRAFT PR về upstream main. PR ghi taskID/phase,BASE_SHA,behavior,phụ thuộc,files,commands/results và giới hạn. Không merge, force-push main, đổi workflow/guard để xanh hoặc cập nhật nhật ký chung. Nếu môi trường không có terminal/GitHub write, xuất patch đầy đủ + PR body và lệnh để người có quyền áp dụng; không nói đã tạo PR nếu chưa có URL thật.
+
+TASK EXT-012: Auth layout nền video/ảnh theo source gốc
+Phase canonical: P02.01/P03.01
+Trạng thái: PREP
+Dependency/gate: EXT-003 để biết asset thật đã có.
+Allowlist:
+- resources/views/layouts/auth.blade.php
+- resources/views/components/auth/background.blade.php
+Tham chiếu bắt buộc: modules/register/Background; modules/login; ADR-002
+Công việc cụ thể:
+1. Port Background/Register/Login layout, giữ Montserrat/spacing/brand và bố cục mobile.
+2. Nếu video gốc chưa có local, dùng fallback asset local đã xác minh và ghi thiếu; không hotlink/video giả.
+3. Slot content/title và đường dẫn home dùng route(home), không gắn link login/register chưa tồn tại.
+Nghiệm thu/task checks:
+- Render với slot ngắn/dài, kiểm360/768/1440 và reduced-motion.
+- Không sửa storefront layout/home/app.css hoặc tải media mới.
+- Ghi rõ sai khác bắt buộc do asset thiếu để owner review.
+
+Đầu ra bắt buộc: code/patch đúng allowlist; lệnh/kết quả thật hoặc NOT RUN; DRAFT PR URL thật (nếu tạo được) và dependencies/limitations. Không merge PR.
+
+====================================================================================
+EXT-013 — PROMPT COPY NGUYÊN KHỐI
+====================================================================================
+Bạn là cộng tác viên của Cena Store, làm trên fork GitHub của bạn; repo upstream https://github.com/httrung0308/cena-store-laravel, base main. Chỉ thực hiện TASK bên dưới, không triển khai toàn dự án.
+Trước code: fetch main mới nhất, ghi BASE_SHA thật; đọc AGENTS.md, CONTRIBUTING.md, docs/specification.md đúng phase/WF, docs/architecture/decisions.md, docs/ai-progress.md và file nguồn liên quan. Baseline P00/P01.01–P01.03 hoàn tất. Nếu task đã được upstream làm hoặc dependency/interface còn thiếu, báo tình trạng; không viết lớp trùng hoặc tự chế hợp đồng.
+Chỉ sửa allowlist của task. Không sửa migrations, lockfiles/dependency, .env, TestDatabaseGuard, Money/Cost/BusinessClock, enum backing value, Customer/Admin Resource guards, roles/auth/OTP, inventory/ledger/outbox, checkout/payment/refund/RMA service hoặc shared routes/bootstrap/app.js/CSS/home đang chạy. Cần ngoại lệ thì đề xuất trong PR body, không lén mở rộng. Không sửa docs/reference/legacy-ui hay public/legacy; giữ layout, Montserrat, Cena, ảnh/nội dung gốc, port Blade/Tailwind3/Alpine3, không React/Next/JWT/Stripe. Không tạo endpoint/seed/thành công giả. Escape dữ liệu, không lộ cost/proof path/internal note cho Customer.
+PREP chỉ là module/component chuẩn bị, không hoàn thành phase và không tích hợp vào app đang chạy. WAIT_CONTRACT chỉ bắt đầu code khi API/DTO/service/dependency ghi trong task đã merge và được owner xác nhận. Các EXT dependencies cũng phải merge trước khi import chúng; không làm48task trong một PR.
+Kiểm narrow tests hành vi cần thiết, real MySQL8.4 cena_store_test bằng cena_test/cena_ci cho feature có DB; mỗi môi trường test riêng, không SQLite/root/dev DB hoặc chạy song song chung schema. PHP mới dùng Artisan --no-interaction, PHPUnit chuẩn project, type hints/return types và Pint. UI: npm run build, render/visual/keyboard phù hợp; không test mirror class/markup. JS thuần dùng Node22 node --test, không thêm dependency. Không thể chạy thì ghi NOT RUN chính xác, không bịa log/screenshot/test pass.
+Hoàn thành trên branch codex/ext-NNN-short-name của fork, commit các file đúng task, push fork và tạo DRAFT PR về upstream main. PR ghi taskID/phase,BASE_SHA,behavior,phụ thuộc,files,commands/results và giới hạn. Không merge, force-push main, đổi workflow/guard để xanh hoặc cập nhật nhật ký chung. Nếu môi trường không có terminal/GitHub write, xuất patch đầy đủ + PR body và lệnh để người có quyền áp dụng; không nói đã tạo PR nếu chưa có URL thật.
+
+TASK EXT-013: Login form Blade chuẩn bị cho AuthService
+Phase canonical: P02.01
+Trạng thái: PREP
+Dependency/gate: EXT-004/005/006/012 đã merge; action và URL do caller truyền.
+Allowlist:
+- resources/views/components/auth/login-form.blade.php
+- tests/Feature/LoginFormPresentationTest.php
+Tham chiếu bắt buộc: modules/login/LoginForm; P02.01 và WF-01
+Công việc cụ thể:
+1. Port LoginForm UI; field email/password/remember, CSRF token, error bag và submit state.
+2. Không gọi route(login) chưa có: action URL nhận từ controller; không có action thì disable form và ghi trạng thái unavailable.
+3. Không code auth/session/JWT/remember-token/backend hoặc thêm account demo vào template.
+Nghiệm thu/task checks:
+- Test password không old-fill, email escape và CSRF có mặt trong form action hợp lệ.
+- Không render fake success, link quên mật khẩu chỉ khi URL được caller cấp.
+- Visual theo reference và keyboard.
+
+Đầu ra bắt buộc: code/patch đúng allowlist; lệnh/kết quả thật hoặc NOT RUN; DRAFT PR URL thật (nếu tạo được) và dependencies/limitations. Không merge PR.
+
+====================================================================================
+EXT-014 — PROMPT COPY NGUYÊN KHỐI
+====================================================================================
+Bạn là cộng tác viên của Cena Store, làm trên fork GitHub của bạn; repo upstream https://github.com/httrung0308/cena-store-laravel, base main. Chỉ thực hiện TASK bên dưới, không triển khai toàn dự án.
+Trước code: fetch main mới nhất, ghi BASE_SHA thật; đọc AGENTS.md, CONTRIBUTING.md, docs/specification.md đúng phase/WF, docs/architecture/decisions.md, docs/ai-progress.md và file nguồn liên quan. Baseline P00/P01.01–P01.03 hoàn tất. Nếu task đã được upstream làm hoặc dependency/interface còn thiếu, báo tình trạng; không viết lớp trùng hoặc tự chế hợp đồng.
+Chỉ sửa allowlist của task. Không sửa migrations, lockfiles/dependency, .env, TestDatabaseGuard, Money/Cost/BusinessClock, enum backing value, Customer/Admin Resource guards, roles/auth/OTP, inventory/ledger/outbox, checkout/payment/refund/RMA service hoặc shared routes/bootstrap/app.js/CSS/home đang chạy. Cần ngoại lệ thì đề xuất trong PR body, không lén mở rộng. Không sửa docs/reference/legacy-ui hay public/legacy; giữ layout, Montserrat, Cena, ảnh/nội dung gốc, port Blade/Tailwind3/Alpine3, không React/Next/JWT/Stripe. Không tạo endpoint/seed/thành công giả. Escape dữ liệu, không lộ cost/proof path/internal note cho Customer.
+PREP chỉ là module/component chuẩn bị, không hoàn thành phase và không tích hợp vào app đang chạy. WAIT_CONTRACT chỉ bắt đầu code khi API/DTO/service/dependency ghi trong task đã merge và được owner xác nhận. Các EXT dependencies cũng phải merge trước khi import chúng; không làm48task trong một PR.
+Kiểm narrow tests hành vi cần thiết, real MySQL8.4 cena_store_test bằng cena_test/cena_ci cho feature có DB; mỗi môi trường test riêng, không SQLite/root/dev DB hoặc chạy song song chung schema. PHP mới dùng Artisan --no-interaction, PHPUnit chuẩn project, type hints/return types và Pint. UI: npm run build, render/visual/keyboard phù hợp; không test mirror class/markup. JS thuần dùng Node22 node --test, không thêm dependency. Không thể chạy thì ghi NOT RUN chính xác, không bịa log/screenshot/test pass.
+Hoàn thành trên branch codex/ext-NNN-short-name của fork, commit các file đúng task, push fork và tạo DRAFT PR về upstream main. PR ghi taskID/phase,BASE_SHA,behavior,phụ thuộc,files,commands/results và giới hạn. Không merge, force-push main, đổi workflow/guard để xanh hoặc cập nhật nhật ký chung. Nếu môi trường không có terminal/GitHub write, xuất patch đầy đủ + PR body và lệnh để người có quyền áp dụng; không nói đã tạo PR nếu chưa có URL thật.
+
+TASK EXT-014: Register form Blade chống field quyền trong UI
+Phase canonical: P02.01
+Trạng thái: PREP
+Dependency/gate: EXT-004/005/006/012 đã merge.
+Allowlist:
+- resources/views/components/auth/register-form.blade.php
+- tests/Feature/RegisterFormPresentationTest.php
+Tham chiếu bắt buộc: modules/register; User model; WF-01
+Công việc cụ thể:
+1. Port RegistrationForm; full_name/email/password/password_confirmation đúng schema mới.
+2. Không có role/is_active/auth_version, không port username/address cũ nếu đặc tả không có.
+3. Action/links truyền props, CSRF, field errors; không ghi User hay attach role.
+Nghiệm thu/task checks:
+- Test form không có role/active/stock và không old-fill password.
+- Escape full_name/email độc hại; render validation state.
+- Owner sẽ kiểm role injection ở backend thật, không coi test UI là bằng chứng chặn backend.
+
+Đầu ra bắt buộc: code/patch đúng allowlist; lệnh/kết quả thật hoặc NOT RUN; DRAFT PR URL thật (nếu tạo được) và dependencies/limitations. Không merge PR.
+
+====================================================================================
+EXT-015 — PROMPT COPY NGUYÊN KHỐI
+====================================================================================
+Bạn là cộng tác viên của Cena Store, làm trên fork GitHub của bạn; repo upstream https://github.com/httrung0308/cena-store-laravel, base main. Chỉ thực hiện TASK bên dưới, không triển khai toàn dự án.
+Trước code: fetch main mới nhất, ghi BASE_SHA thật; đọc AGENTS.md, CONTRIBUTING.md, docs/specification.md đúng phase/WF, docs/architecture/decisions.md, docs/ai-progress.md và file nguồn liên quan. Baseline P00/P01.01–P01.03 hoàn tất. Nếu task đã được upstream làm hoặc dependency/interface còn thiếu, báo tình trạng; không viết lớp trùng hoặc tự chế hợp đồng.
+Chỉ sửa allowlist của task. Không sửa migrations, lockfiles/dependency, .env, TestDatabaseGuard, Money/Cost/BusinessClock, enum backing value, Customer/Admin Resource guards, roles/auth/OTP, inventory/ledger/outbox, checkout/payment/refund/RMA service hoặc shared routes/bootstrap/app.js/CSS/home đang chạy. Cần ngoại lệ thì đề xuất trong PR body, không lén mở rộng. Không sửa docs/reference/legacy-ui hay public/legacy; giữ layout, Montserrat, Cena, ảnh/nội dung gốc, port Blade/Tailwind3/Alpine3, không React/Next/JWT/Stripe. Không tạo endpoint/seed/thành công giả. Escape dữ liệu, không lộ cost/proof path/internal note cho Customer.
+PREP chỉ là module/component chuẩn bị, không hoàn thành phase và không tích hợp vào app đang chạy. WAIT_CONTRACT chỉ bắt đầu code khi API/DTO/service/dependency ghi trong task đã merge và được owner xác nhận. Các EXT dependencies cũng phải merge trước khi import chúng; không làm48task trong một PR.
+Kiểm narrow tests hành vi cần thiết, real MySQL8.4 cena_store_test bằng cena_test/cena_ci cho feature có DB; mỗi môi trường test riêng, không SQLite/root/dev DB hoặc chạy song song chung schema. PHP mới dùng Artisan --no-interaction, PHPUnit chuẩn project, type hints/return types và Pint. UI: npm run build, render/visual/keyboard phù hợp; không test mirror class/markup. JS thuần dùng Node22 node --test, không thêm dependency. Không thể chạy thì ghi NOT RUN chính xác, không bịa log/screenshot/test pass.
+Hoàn thành trên branch codex/ext-NNN-short-name của fork, commit các file đúng task, push fork và tạo DRAFT PR về upstream main. PR ghi taskID/phase,BASE_SHA,behavior,phụ thuộc,files,commands/results và giới hạn. Không merge, force-push main, đổi workflow/guard để xanh hoặc cập nhật nhật ký chung. Nếu môi trường không có terminal/GitHub write, xuất patch đầy đủ + PR body và lệnh để người có quyền áp dụng; không nói đã tạo PR nếu chưa có URL thật.
+
+TASK EXT-015: Form yêu cầu OTP reset mật khẩu
+Phase canonical: P02.03
+Trạng thái: PREP
+Dependency/gate: EXT-004/006/012 đã merge.
+Allowlist:
+- resources/views/components/auth/request-reset-form.blade.php
+Tham chiếu bắt buộc: modules/forgot-password; WF-02
+Công việc cụ thể:
+1. Port ForgotPassword UI với email và phản hồi trung tính không tiết lộ tài khoản.
+2. CSRF/action props, cooldown được server truyền; không dùng email trên URL hoặc đoán tồn tại.
+3. Không code mail/OTP/hash/rate limiter; không log email/password.
+Nghiệm thu/task checks:
+- Render trạng thái initial/submitted/cooldown/network error bằng props rõ ràng.
+- Không có text xác nhận email tồn tại hoặc tự reset cooldown sau refresh.
+- Visual theo reference; manual checks, không thêm test mirror template.
+
+Đầu ra bắt buộc: code/patch đúng allowlist; lệnh/kết quả thật hoặc NOT RUN; DRAFT PR URL thật (nếu tạo được) và dependencies/limitations. Không merge PR.
+
+====================================================================================
+EXT-016 — PROMPT COPY NGUYÊN KHỐI
+====================================================================================
+Bạn là cộng tác viên của Cena Store, làm trên fork GitHub của bạn; repo upstream https://github.com/httrung0308/cena-store-laravel, base main. Chỉ thực hiện TASK bên dưới, không triển khai toàn dự án.
+Trước code: fetch main mới nhất, ghi BASE_SHA thật; đọc AGENTS.md, CONTRIBUTING.md, docs/specification.md đúng phase/WF, docs/architecture/decisions.md, docs/ai-progress.md và file nguồn liên quan. Baseline P00/P01.01–P01.03 hoàn tất. Nếu task đã được upstream làm hoặc dependency/interface còn thiếu, báo tình trạng; không viết lớp trùng hoặc tự chế hợp đồng.
+Chỉ sửa allowlist của task. Không sửa migrations, lockfiles/dependency, .env, TestDatabaseGuard, Money/Cost/BusinessClock, enum backing value, Customer/Admin Resource guards, roles/auth/OTP, inventory/ledger/outbox, checkout/payment/refund/RMA service hoặc shared routes/bootstrap/app.js/CSS/home đang chạy. Cần ngoại lệ thì đề xuất trong PR body, không lén mở rộng. Không sửa docs/reference/legacy-ui hay public/legacy; giữ layout, Montserrat, Cena, ảnh/nội dung gốc, port Blade/Tailwind3/Alpine3, không React/Next/JWT/Stripe. Không tạo endpoint/seed/thành công giả. Escape dữ liệu, không lộ cost/proof path/internal note cho Customer.
+PREP chỉ là module/component chuẩn bị, không hoàn thành phase và không tích hợp vào app đang chạy. WAIT_CONTRACT chỉ bắt đầu code khi API/DTO/service/dependency ghi trong task đã merge và được owner xác nhận. Các EXT dependencies cũng phải merge trước khi import chúng; không làm48task trong một PR.
+Kiểm narrow tests hành vi cần thiết, real MySQL8.4 cena_store_test bằng cena_test/cena_ci cho feature có DB; mỗi môi trường test riêng, không SQLite/root/dev DB hoặc chạy song song chung schema. PHP mới dùng Artisan --no-interaction, PHPUnit chuẩn project, type hints/return types và Pint. UI: npm run build, render/visual/keyboard phù hợp; không test mirror class/markup. JS thuần dùng Node22 node --test, không thêm dependency. Không thể chạy thì ghi NOT RUN chính xác, không bịa log/screenshot/test pass.
+Hoàn thành trên branch codex/ext-NNN-short-name của fork, commit các file đúng task, push fork và tạo DRAFT PR về upstream main. PR ghi taskID/phase,BASE_SHA,behavior,phụ thuộc,files,commands/results và giới hạn. Không merge, force-push main, đổi workflow/guard để xanh hoặc cập nhật nhật ký chung. Nếu môi trường không có terminal/GitHub write, xuất patch đầy đủ + PR body và lệnh để người có quyền áp dụng; không nói đã tạo PR nếu chưa có URL thật.
+
+TASK EXT-016: Các form verify OTP và đặt mật khẩu mới
+Phase canonical: P02.03
+Trạng thái: PREP
+Dependency/gate: EXT-004/005/006/012 đã merge; backend challenge flow chờ owner.
+Allowlist:
+- resources/views/components/auth/verify-reset-form.blade.php
+- resources/views/components/auth/reset-password-form.blade.php
+- tests/Feature/ResetFormsPresentationTest.php
+Tham chiếu bắt buộc: reset-password reference; BusinessClock; WF-02
+Công việc cụ thể:
+1. Form OTP digit string6 ký tự giữ số 0 đầu, autocomplete one-time-code, không value từ old input.
+2. Form password mới/confirmation nhận action opaque được server cấp; không OTP/token raw trong URL/HTML value.
+3. Countdown nhận expiry server để hiển thị, chỉ server quyết định còn hạn/số lần thử; không tạo fake verifier.
+Nghiệm thu/task checks:
+- Test000001 không thành1 ở DOM contract, không lưu OTP/password qua old input.
+- Không có inline log/localStorage/bank data; không tự báo reset thành công.
+- Không thay PasswordResetService hoặc logic consume/attempts.
+
+Đầu ra bắt buộc: code/patch đúng allowlist; lệnh/kết quả thật hoặc NOT RUN; DRAFT PR URL thật (nếu tạo được) và dependencies/limitations. Không merge PR.
+
+====================================================================================
+EXT-017 — PROMPT COPY NGUYÊN KHỐI
+====================================================================================
+Bạn là cộng tác viên của Cena Store, làm trên fork GitHub của bạn; repo upstream https://github.com/httrung0308/cena-store-laravel, base main. Chỉ thực hiện TASK bên dưới, không triển khai toàn dự án.
+Trước code: fetch main mới nhất, ghi BASE_SHA thật; đọc AGENTS.md, CONTRIBUTING.md, docs/specification.md đúng phase/WF, docs/architecture/decisions.md, docs/ai-progress.md và file nguồn liên quan. Baseline P00/P01.01–P01.03 hoàn tất. Nếu task đã được upstream làm hoặc dependency/interface còn thiếu, báo tình trạng; không viết lớp trùng hoặc tự chế hợp đồng.
+Chỉ sửa allowlist của task. Không sửa migrations, lockfiles/dependency, .env, TestDatabaseGuard, Money/Cost/BusinessClock, enum backing value, Customer/Admin Resource guards, roles/auth/OTP, inventory/ledger/outbox, checkout/payment/refund/RMA service hoặc shared routes/bootstrap/app.js/CSS/home đang chạy. Cần ngoại lệ thì đề xuất trong PR body, không lén mở rộng. Không sửa docs/reference/legacy-ui hay public/legacy; giữ layout, Montserrat, Cena, ảnh/nội dung gốc, port Blade/Tailwind3/Alpine3, không React/Next/JWT/Stripe. Không tạo endpoint/seed/thành công giả. Escape dữ liệu, không lộ cost/proof path/internal note cho Customer.
+PREP chỉ là module/component chuẩn bị, không hoàn thành phase và không tích hợp vào app đang chạy. WAIT_CONTRACT chỉ bắt đầu code khi API/DTO/service/dependency ghi trong task đã merge và được owner xác nhận. Các EXT dependencies cũng phải merge trước khi import chúng; không làm48task trong một PR.
+Kiểm narrow tests hành vi cần thiết, real MySQL8.4 cena_store_test bằng cena_test/cena_ci cho feature có DB; mỗi môi trường test riêng, không SQLite/root/dev DB hoặc chạy song song chung schema. PHP mới dùng Artisan --no-interaction, PHPUnit chuẩn project, type hints/return types và Pint. UI: npm run build, render/visual/keyboard phù hợp; không test mirror class/markup. JS thuần dùng Node22 node --test, không thêm dependency. Không thể chạy thì ghi NOT RUN chính xác, không bịa log/screenshot/test pass.
+Hoàn thành trên branch codex/ext-NNN-short-name của fork, commit các file đúng task, push fork và tạo DRAFT PR về upstream main. PR ghi taskID/phase,BASE_SHA,behavior,phụ thuộc,files,commands/results và giới hạn. Không merge, force-push main, đổi workflow/guard để xanh hoặc cập nhật nhật ký chung. Nếu môi trường không có terminal/GitHub write, xuất patch đầy đủ + PR body và lệnh để người có quyền áp dụng; không nói đã tạo PR nếu chưa có URL thật.
+
+TASK EXT-017: Form thông tin hồ sơ/avatar
+Phase canonical: P02.04
+Trạng thái: PREP
+Dependency/gate: EXT-004/006 đã merge.
+Allowlist:
+- resources/views/components/account/profile-form.blade.php
+- tests/Feature/ProfileFormPresentationTest.php
+Tham chiếu bắt buộc: modules/account/Account; P02.04
+Công việc cụ thể:
+1. Port Account profile layout, chỉ full_name/phone/avatar và readonly email theo đặc tả.
+2. Multipart/CSRF, ảnh public URL từ server đã kiểm, accept JPEG/PNG/WebP chỉ là gợi ý frontend.
+3. Không upload/delete file, không nhận role/is_active/email mutation hoặc tự đổi mật khẩu.
+Nghiệm thu/task checks:
+- Test field whitelist của form và escape tên/phone, không raw credential/cost.
+- Không dựng link private proof path; avatar lỗi có fallback local.
+- Owner làm MediaService/Policy/real MIME tests sau.
+
+Đầu ra bắt buộc: code/patch đúng allowlist; lệnh/kết quả thật hoặc NOT RUN; DRAFT PR URL thật (nếu tạo được) và dependencies/limitations. Không merge PR.
+
+====================================================================================
+EXT-018 — PROMPT COPY NGUYÊN KHỐI
+====================================================================================
+Bạn là cộng tác viên của Cena Store, làm trên fork GitHub của bạn; repo upstream https://github.com/httrung0308/cena-store-laravel, base main. Chỉ thực hiện TASK bên dưới, không triển khai toàn dự án.
+Trước code: fetch main mới nhất, ghi BASE_SHA thật; đọc AGENTS.md, CONTRIBUTING.md, docs/specification.md đúng phase/WF, docs/architecture/decisions.md, docs/ai-progress.md và file nguồn liên quan. Baseline P00/P01.01–P01.03 hoàn tất. Nếu task đã được upstream làm hoặc dependency/interface còn thiếu, báo tình trạng; không viết lớp trùng hoặc tự chế hợp đồng.
+Chỉ sửa allowlist của task. Không sửa migrations, lockfiles/dependency, .env, TestDatabaseGuard, Money/Cost/BusinessClock, enum backing value, Customer/Admin Resource guards, roles/auth/OTP, inventory/ledger/outbox, checkout/payment/refund/RMA service hoặc shared routes/bootstrap/app.js/CSS/home đang chạy. Cần ngoại lệ thì đề xuất trong PR body, không lén mở rộng. Không sửa docs/reference/legacy-ui hay public/legacy; giữ layout, Montserrat, Cena, ảnh/nội dung gốc, port Blade/Tailwind3/Alpine3, không React/Next/JWT/Stripe. Không tạo endpoint/seed/thành công giả. Escape dữ liệu, không lộ cost/proof path/internal note cho Customer.
+PREP chỉ là module/component chuẩn bị, không hoàn thành phase và không tích hợp vào app đang chạy. WAIT_CONTRACT chỉ bắt đầu code khi API/DTO/service/dependency ghi trong task đã merge và được owner xác nhận. Các EXT dependencies cũng phải merge trước khi import chúng; không làm48task trong một PR.
+Kiểm narrow tests hành vi cần thiết, real MySQL8.4 cena_store_test bằng cena_test/cena_ci cho feature có DB; mỗi môi trường test riêng, không SQLite/root/dev DB hoặc chạy song song chung schema. PHP mới dùng Artisan --no-interaction, PHPUnit chuẩn project, type hints/return types và Pint. UI: npm run build, render/visual/keyboard phù hợp; không test mirror class/markup. JS thuần dùng Node22 node --test, không thêm dependency. Không thể chạy thì ghi NOT RUN chính xác, không bịa log/screenshot/test pass.
+Hoàn thành trên branch codex/ext-NNN-short-name của fork, commit các file đúng task, push fork và tạo DRAFT PR về upstream main. PR ghi taskID/phase,BASE_SHA,behavior,phụ thuộc,files,commands/results và giới hạn. Không merge, force-push main, đổi workflow/guard để xanh hoặc cập nhật nhật ký chung. Nếu môi trường không có terminal/GitHub write, xuất patch đầy đủ + PR body và lệnh để người có quyền áp dụng; không nói đã tạo PR nếu chưa có URL thật.
+
+TASK EXT-018: Form đổi mật khẩu cần current_password
+Phase canonical: P02.04
+Trạng thái: PREP
+Dependency/gate: EXT-005/006 đã merge.
+Allowlist:
+- resources/views/components/account/change-password-form.blade.php
+- tests/Feature/ChangePasswordFormPresentationTest.php
+Tham chiếu bắt buộc: modules/account/ChangePasswordModal; P02.04
+Công việc cụ thể:
+1. Port ChangePasswordModal content; current_password/new password/confirmation, CSRF.
+2. Không render giá trị cũ; action nhận từ caller; thông báo đăng nhập lại theo response server.
+3. Không sửa auth_version, revoke session hoặc cookie ở client.
+Nghiệm thu/task checks:
+- Test mọi password field trống khi có old input, autocomplete đúng.
+- Không đổi email/role hoặc phát request GET mutation.
+- Visual gắn được vào dialog độc lập mà không sửa global UI.
+
+Đầu ra bắt buộc: code/patch đúng allowlist; lệnh/kết quả thật hoặc NOT RUN; DRAFT PR URL thật (nếu tạo được) và dependencies/limitations. Không merge PR.
+
+====================================================================================
+EXT-019 — PROMPT COPY NGUYÊN KHỐI
+====================================================================================
+Bạn là cộng tác viên của Cena Store, làm trên fork GitHub của bạn; repo upstream https://github.com/httrung0308/cena-store-laravel, base main. Chỉ thực hiện TASK bên dưới, không triển khai toàn dự án.
+Trước code: fetch main mới nhất, ghi BASE_SHA thật; đọc AGENTS.md, CONTRIBUTING.md, docs/specification.md đúng phase/WF, docs/architecture/decisions.md, docs/ai-progress.md và file nguồn liên quan. Baseline P00/P01.01–P01.03 hoàn tất. Nếu task đã được upstream làm hoặc dependency/interface còn thiếu, báo tình trạng; không viết lớp trùng hoặc tự chế hợp đồng.
+Chỉ sửa allowlist của task. Không sửa migrations, lockfiles/dependency, .env, TestDatabaseGuard, Money/Cost/BusinessClock, enum backing value, Customer/Admin Resource guards, roles/auth/OTP, inventory/ledger/outbox, checkout/payment/refund/RMA service hoặc shared routes/bootstrap/app.js/CSS/home đang chạy. Cần ngoại lệ thì đề xuất trong PR body, không lén mở rộng. Không sửa docs/reference/legacy-ui hay public/legacy; giữ layout, Montserrat, Cena, ảnh/nội dung gốc, port Blade/Tailwind3/Alpine3, không React/Next/JWT/Stripe. Không tạo endpoint/seed/thành công giả. Escape dữ liệu, không lộ cost/proof path/internal note cho Customer.
+PREP chỉ là module/component chuẩn bị, không hoàn thành phase và không tích hợp vào app đang chạy. WAIT_CONTRACT chỉ bắt đầu code khi API/DTO/service/dependency ghi trong task đã merge và được owner xác nhận. Các EXT dependencies cũng phải merge trước khi import chúng; không làm48task trong một PR.
+Kiểm narrow tests hành vi cần thiết, real MySQL8.4 cena_store_test bằng cena_test/cena_ci cho feature có DB; mỗi môi trường test riêng, không SQLite/root/dev DB hoặc chạy song song chung schema. PHP mới dùng Artisan --no-interaction, PHPUnit chuẩn project, type hints/return types và Pint. UI: npm run build, render/visual/keyboard phù hợp; không test mirror class/markup. JS thuần dùng Node22 node --test, không thêm dependency. Không thể chạy thì ghi NOT RUN chính xác, không bịa log/screenshot/test pass.
+Hoàn thành trên branch codex/ext-NNN-short-name của fork, commit các file đúng task, push fork và tạo DRAFT PR về upstream main. PR ghi taskID/phase,BASE_SHA,behavior,phụ thuộc,files,commands/results và giới hạn. Không merge, force-push main, đổi workflow/guard để xanh hoặc cập nhật nhật ký chung. Nếu môi trường không có terminal/GitHub write, xuất patch đầy đủ + PR body và lệnh để người có quyền áp dụng; không nói đã tạo PR nếu chưa có URL thật.
+
+TASK EXT-019: Province/ward selector chỉ trình bày, giữ code string
+Phase canonical: P02.05
+Trạng thái: PREP
+Dependency/gate: EXT-004 đã merge; props/provider schema do owner duyệt trước; integration chờ P02.05 API.
+Allowlist:
+- resources/views/components/account/address-fields.blade.php
+- resources/js/components/address-selector.js
+- tests/JavaScript/address-selector.test.mjs
+Tham chiếu bắt buộc: modules/account/AddressManagement; WF-04; AdministrativeUnitResource
+Công việc cụ thể:
+1. Gồm2 cấp province→ward, không có huyện; code giữ string và ward reset khi đổi province.
+2. Provider getWards(provinceCode) được inject, không hardcode URL/63 tỉnh/IDs; xử lý loading/error và abort phản hồi cũ.
+3. Tên/code/version là giá trị server, selector không tự xác nhận dữ liệu cũ hoặc viết address snapshot.
+Nghiệm thu/task checks:
+- Node test responses đảo thứ tự vẫn hiển thị ward của province cuối; số 0 đầu không mất.
+- Test đổi province clear ward/error, retry và disabled khi provider chưa có.
+- Không sửa AddressService/DB/endpoint; ghi interface đề nghị trong PR body.
+
+Đầu ra bắt buộc: code/patch đúng allowlist; lệnh/kết quả thật hoặc NOT RUN; DRAFT PR URL thật (nếu tạo được) và dependencies/limitations. Không merge PR.
+
+====================================================================================
+EXT-020 — PROMPT COPY NGUYÊN KHỐI
+====================================================================================
+Bạn là cộng tác viên của Cena Store, làm trên fork GitHub của bạn; repo upstream https://github.com/httrung0308/cena-store-laravel, base main. Chỉ thực hiện TASK bên dưới, không triển khai toàn dự án.
+Trước code: fetch main mới nhất, ghi BASE_SHA thật; đọc AGENTS.md, CONTRIBUTING.md, docs/specification.md đúng phase/WF, docs/architecture/decisions.md, docs/ai-progress.md và file nguồn liên quan. Baseline P00/P01.01–P01.03 hoàn tất. Nếu task đã được upstream làm hoặc dependency/interface còn thiếu, báo tình trạng; không viết lớp trùng hoặc tự chế hợp đồng.
+Chỉ sửa allowlist của task. Không sửa migrations, lockfiles/dependency, .env, TestDatabaseGuard, Money/Cost/BusinessClock, enum backing value, Customer/Admin Resource guards, roles/auth/OTP, inventory/ledger/outbox, checkout/payment/refund/RMA service hoặc shared routes/bootstrap/app.js/CSS/home đang chạy. Cần ngoại lệ thì đề xuất trong PR body, không lén mở rộng. Không sửa docs/reference/legacy-ui hay public/legacy; giữ layout, Montserrat, Cena, ảnh/nội dung gốc, port Blade/Tailwind3/Alpine3, không React/Next/JWT/Stripe. Không tạo endpoint/seed/thành công giả. Escape dữ liệu, không lộ cost/proof path/internal note cho Customer.
+PREP chỉ là module/component chuẩn bị, không hoàn thành phase và không tích hợp vào app đang chạy. WAIT_CONTRACT chỉ bắt đầu code khi API/DTO/service/dependency ghi trong task đã merge và được owner xác nhận. Các EXT dependencies cũng phải merge trước khi import chúng; không làm48task trong một PR.
+Kiểm narrow tests hành vi cần thiết, real MySQL8.4 cena_store_test bằng cena_test/cena_ci cho feature có DB; mỗi môi trường test riêng, không SQLite/root/dev DB hoặc chạy song song chung schema. PHP mới dùng Artisan --no-interaction, PHPUnit chuẩn project, type hints/return types và Pint. UI: npm run build, render/visual/keyboard phù hợp; không test mirror class/markup. JS thuần dùng Node22 node --test, không thêm dependency. Không thể chạy thì ghi NOT RUN chính xác, không bịa log/screenshot/test pass.
+Hoàn thành trên branch codex/ext-NNN-short-name của fork, commit các file đúng task, push fork và tạo DRAFT PR về upstream main. PR ghi taskID/phase,BASE_SHA,behavior,phụ thuộc,files,commands/results và giới hạn. Không merge, force-push main, đổi workflow/guard để xanh hoặc cập nhật nhật ký chung. Nếu môi trường không có terminal/GitHub write, xuất patch đầy đủ + PR body và lệnh để người có quyền áp dụng; không nói đã tạo PR nếu chưa có URL thật.
+
+TASK EXT-020: Address card/list và trạng thái default
+Phase canonical: P02.05
+Trạng thái: PREP
+Dependency/gate: EXT-006 đã merge; owner cấp các URL mutation.
+Allowlist:
+- resources/views/components/account/address-card.blade.php
+- resources/views/components/account/address-list.blade.php
+- tests/Feature/AddressCardsPresentationTest.php
+Tham chiếu bắt buộc: AddressResource; P02.05
+Công việc cụ thể:
+1. Port card/list địa chỉ từ DTO owner-scoped, default badge từ server.
+2. Edit/delete/set-default là form CSRF đúng method, chỉ hiện khi action URL được cấp.
+3. Không query địa chỉ user khác, không tự sửa default hoặc hard-delete.
+Nghiệm thu/task checks:
+- Test escape fullname/địa chỉ và không render mutation link khi thiếu action.
+- Không hiển thị địa chỉ đầy đủ trong public tracking hoặc public product.
+- Owner tích hợp khóa user/default uniqueness sau.
+
+Đầu ra bắt buộc: code/patch đúng allowlist; lệnh/kết quả thật hoặc NOT RUN; DRAFT PR URL thật (nếu tạo được) và dependencies/limitations. Không merge PR.
+
+====================================================================================
+EXT-021 — PROMPT COPY NGUYÊN KHỐI
+====================================================================================
+Bạn là cộng tác viên của Cena Store, làm trên fork GitHub của bạn; repo upstream https://github.com/httrung0308/cena-store-laravel, base main. Chỉ thực hiện TASK bên dưới, không triển khai toàn dự án.
+Trước code: fetch main mới nhất, ghi BASE_SHA thật; đọc AGENTS.md, CONTRIBUTING.md, docs/specification.md đúng phase/WF, docs/architecture/decisions.md, docs/ai-progress.md và file nguồn liên quan. Baseline P00/P01.01–P01.03 hoàn tất. Nếu task đã được upstream làm hoặc dependency/interface còn thiếu, báo tình trạng; không viết lớp trùng hoặc tự chế hợp đồng.
+Chỉ sửa allowlist của task. Không sửa migrations, lockfiles/dependency, .env, TestDatabaseGuard, Money/Cost/BusinessClock, enum backing value, Customer/Admin Resource guards, roles/auth/OTP, inventory/ledger/outbox, checkout/payment/refund/RMA service hoặc shared routes/bootstrap/app.js/CSS/home đang chạy. Cần ngoại lệ thì đề xuất trong PR body, không lén mở rộng. Không sửa docs/reference/legacy-ui hay public/legacy; giữ layout, Montserrat, Cena, ảnh/nội dung gốc, port Blade/Tailwind3/Alpine3, không React/Next/JWT/Stripe. Không tạo endpoint/seed/thành công giả. Escape dữ liệu, không lộ cost/proof path/internal note cho Customer.
+PREP chỉ là module/component chuẩn bị, không hoàn thành phase và không tích hợp vào app đang chạy. WAIT_CONTRACT chỉ bắt đầu code khi API/DTO/service/dependency ghi trong task đã merge và được owner xác nhận. Các EXT dependencies cũng phải merge trước khi import chúng; không làm48task trong một PR.
+Kiểm narrow tests hành vi cần thiết, real MySQL8.4 cena_store_test bằng cena_test/cena_ci cho feature có DB; mỗi môi trường test riêng, không SQLite/root/dev DB hoặc chạy song song chung schema. PHP mới dùng Artisan --no-interaction, PHPUnit chuẩn project, type hints/return types và Pint. UI: npm run build, render/visual/keyboard phù hợp; không test mirror class/markup. JS thuần dùng Node22 node --test, không thêm dependency. Không thể chạy thì ghi NOT RUN chính xác, không bịa log/screenshot/test pass.
+Hoàn thành trên branch codex/ext-NNN-short-name của fork, commit các file đúng task, push fork và tạo DRAFT PR về upstream main. PR ghi taskID/phase,BASE_SHA,behavior,phụ thuộc,files,commands/results và giới hạn. Không merge, force-push main, đổi workflow/guard để xanh hoặc cập nhật nhật ký chung. Nếu môi trường không có terminal/GitHub write, xuất patch đầy đủ + PR body và lệnh để người có quyền áp dụng; không nói đã tạo PR nếu chưa có URL thật.
+
+TASK EXT-021: UI category list/form cho Admin
+Phase canonical: P03.02
+Trạng thái: PREP
+Dependency/gate: EXT-004/006/011 đã merge; integration chờ P03.02 controller/Policy.
+Allowlist:
+- resources/views/components/admin/categories/table.blade.php
+- resources/views/components/admin/categories/form.blade.php
+Tham chiếu bắt buộc: P03.02; categories schema; WF-05
+Công việc cụ thể:
+1. List search/active/order/gender và form parent tối đa2 cấp từ option server.
+2. Không tự query hoặc cho gán parent/gender không tồn tại; server validation vẫn là nguồn chuẩn.
+3. Action/query URLs được inject, không thêm routes hoặc tự tạo quyền.
+Nghiệm thu/task checks:
+- Render parent/child/empty/validation error và pagination query.
+- Không có delete GET hoặc seed ID hardcode; escape tên/mô tả.
+- Không coi việc UI ẩn nút là phân quyền backend.
+
+Đầu ra bắt buộc: code/patch đúng allowlist; lệnh/kết quả thật hoặc NOT RUN; DRAFT PR URL thật (nếu tạo được) và dependencies/limitations. Không merge PR.
+
+====================================================================================
+EXT-022 — PROMPT COPY NGUYÊN KHỐI
+====================================================================================
+Bạn là cộng tác viên của Cena Store, làm trên fork GitHub của bạn; repo upstream https://github.com/httrung0308/cena-store-laravel, base main. Chỉ thực hiện TASK bên dưới, không triển khai toàn dự án.
+Trước code: fetch main mới nhất, ghi BASE_SHA thật; đọc AGENTS.md, CONTRIBUTING.md, docs/specification.md đúng phase/WF, docs/architecture/decisions.md, docs/ai-progress.md và file nguồn liên quan. Baseline P00/P01.01–P01.03 hoàn tất. Nếu task đã được upstream làm hoặc dependency/interface còn thiếu, báo tình trạng; không viết lớp trùng hoặc tự chế hợp đồng.
+Chỉ sửa allowlist của task. Không sửa migrations, lockfiles/dependency, .env, TestDatabaseGuard, Money/Cost/BusinessClock, enum backing value, Customer/Admin Resource guards, roles/auth/OTP, inventory/ledger/outbox, checkout/payment/refund/RMA service hoặc shared routes/bootstrap/app.js/CSS/home đang chạy. Cần ngoại lệ thì đề xuất trong PR body, không lén mở rộng. Không sửa docs/reference/legacy-ui hay public/legacy; giữ layout, Montserrat, Cena, ảnh/nội dung gốc, port Blade/Tailwind3/Alpine3, không React/Next/JWT/Stripe. Không tạo endpoint/seed/thành công giả. Escape dữ liệu, không lộ cost/proof path/internal note cho Customer.
+PREP chỉ là module/component chuẩn bị, không hoàn thành phase và không tích hợp vào app đang chạy. WAIT_CONTRACT chỉ bắt đầu code khi API/DTO/service/dependency ghi trong task đã merge và được owner xác nhận. Các EXT dependencies cũng phải merge trước khi import chúng; không làm48task trong một PR.
+Kiểm narrow tests hành vi cần thiết, real MySQL8.4 cena_store_test bằng cena_test/cena_ci cho feature có DB; mỗi môi trường test riêng, không SQLite/root/dev DB hoặc chạy song song chung schema. PHP mới dùng Artisan --no-interaction, PHPUnit chuẩn project, type hints/return types và Pint. UI: npm run build, render/visual/keyboard phù hợp; không test mirror class/markup. JS thuần dùng Node22 node --test, không thêm dependency. Không thể chạy thì ghi NOT RUN chính xác, không bịa log/screenshot/test pass.
+Hoàn thành trên branch codex/ext-NNN-short-name của fork, commit các file đúng task, push fork và tạo DRAFT PR về upstream main. PR ghi taskID/phase,BASE_SHA,behavior,phụ thuộc,files,commands/results và giới hạn. Không merge, force-push main, đổi workflow/guard để xanh hoặc cập nhật nhật ký chung. Nếu môi trường không có terminal/GitHub write, xuất patch đầy đủ + PR body và lệnh để người có quyền áp dụng; không nói đã tạo PR nếu chưa có URL thật.
+
+TASK EXT-022: UI supplier list/form cho Admin
+Phase canonical: P03.02
+Trạng thái: PREP
+Dependency/gate: EXT-004/006/011 đã merge.
+Allowlist:
+- resources/views/components/admin/suppliers/table.blade.php
+- resources/views/components/admin/suppliers/form.blade.php
+Tham chiếu bắt buộc: P03.02; suppliers schema
+Công việc cụ thể:
+1. Danh sách code/name/contact/active và form trường đúng schema; giữ search qua trang.
+2. Trạng thái có chứng từ chỉ hiện deactivate khi server allowed action như vậy; không tự hard-delete.
+3. CSRF và route URLs truyền từ owner, không sửa StockImport/Supplier models.
+Nghiệm thu/task checks:
+- Render special characters và supplier đã dùng/không dùng theo props.
+- Không client-side check unique như bảo vệ duy nhất; server xử lý409/422.
+- Không seed số dư hoặc dữ liệu NCC thật.
+
+Đầu ra bắt buộc: code/patch đúng allowlist; lệnh/kết quả thật hoặc NOT RUN; DRAFT PR URL thật (nếu tạo được) và dependencies/limitations. Không merge PR.
+
+====================================================================================
+EXT-023 — PROMPT COPY NGUYÊN KHỐI
+====================================================================================
+Bạn là cộng tác viên của Cena Store, làm trên fork GitHub của bạn; repo upstream https://github.com/httrung0308/cena-store-laravel, base main. Chỉ thực hiện TASK bên dưới, không triển khai toàn dự án.
+Trước code: fetch main mới nhất, ghi BASE_SHA thật; đọc AGENTS.md, CONTRIBUTING.md, docs/specification.md đúng phase/WF, docs/architecture/decisions.md, docs/ai-progress.md và file nguồn liên quan. Baseline P00/P01.01–P01.03 hoàn tất. Nếu task đã được upstream làm hoặc dependency/interface còn thiếu, báo tình trạng; không viết lớp trùng hoặc tự chế hợp đồng.
+Chỉ sửa allowlist của task. Không sửa migrations, lockfiles/dependency, .env, TestDatabaseGuard, Money/Cost/BusinessClock, enum backing value, Customer/Admin Resource guards, roles/auth/OTP, inventory/ledger/outbox, checkout/payment/refund/RMA service hoặc shared routes/bootstrap/app.js/CSS/home đang chạy. Cần ngoại lệ thì đề xuất trong PR body, không lén mở rộng. Không sửa docs/reference/legacy-ui hay public/legacy; giữ layout, Montserrat, Cena, ảnh/nội dung gốc, port Blade/Tailwind3/Alpine3, không React/Next/JWT/Stripe. Không tạo endpoint/seed/thành công giả. Escape dữ liệu, không lộ cost/proof path/internal note cho Customer.
+PREP chỉ là module/component chuẩn bị, không hoàn thành phase và không tích hợp vào app đang chạy. WAIT_CONTRACT chỉ bắt đầu code khi API/DTO/service/dependency ghi trong task đã merge và được owner xác nhận. Các EXT dependencies cũng phải merge trước khi import chúng; không làm48task trong một PR.
+Kiểm narrow tests hành vi cần thiết, real MySQL8.4 cena_store_test bằng cena_test/cena_ci cho feature có DB; mỗi môi trường test riêng, không SQLite/root/dev DB hoặc chạy song song chung schema. PHP mới dùng Artisan --no-interaction, PHPUnit chuẩn project, type hints/return types và Pint. UI: npm run build, render/visual/keyboard phù hợp; không test mirror class/markup. JS thuần dùng Node22 node --test, không thêm dependency. Không thể chạy thì ghi NOT RUN chính xác, không bịa log/screenshot/test pass.
+Hoàn thành trên branch codex/ext-NNN-short-name của fork, commit các file đúng task, push fork và tạo DRAFT PR về upstream main. PR ghi taskID/phase,BASE_SHA,behavior,phụ thuộc,files,commands/results và giới hạn. Không merge, force-push main, đổi workflow/guard để xanh hoặc cập nhật nhật ký chung. Nếu môi trường không có terminal/GitHub write, xuất patch đầy đủ + PR body và lệnh để người có quyền áp dụng; không nói đã tạo PR nếu chưa có URL thật.
+
+TASK EXT-023: Product metadata form UI
+Phase canonical: P03.03
+Trạng thái: PREP
+Dependency/gate: EXT-004/006/007 đã merge; integration chờ ProductManagementService.
+Allowlist:
+- resources/views/components/admin/products/metadata-form.blade.php
+Tham chiếu bắt buộc: AdminProductCreate/Edit reference; Product schema
+Công việc cụ thể:
+1. Các field mô tả/name/slug/brand/category/base/promo/policy warranty/exchange đúng schema.
+2. Tiền input là digit string VND không nhân100; helper backend mới xác thực, không tính total/WAC trong JS.
+3. Không có stock/reserved/quarantine/average_cost hoặc trạng thái tài chính trong payload form.
+Nghiệm thu/task checks:
+- Render lỗi theo field, giữ promotion0 rõ khác null khi policy cho phép; không dùng parseFloat/parseInt cho size/tiền.
+- Escape description thay vì render HTML chưa được sanitize.
+- Không đổi Service/requests/catalog database.
+
+Đầu ra bắt buộc: code/patch đúng allowlist; lệnh/kết quả thật hoặc NOT RUN; DRAFT PR URL thật (nếu tạo được) và dependencies/limitations. Không merge PR.
+
+====================================================================================
+EXT-024 — PROMPT COPY NGUYÊN KHỐI
+====================================================================================
+Bạn là cộng tác viên của Cena Store, làm trên fork GitHub của bạn; repo upstream https://github.com/httrung0308/cena-store-laravel, base main. Chỉ thực hiện TASK bên dưới, không triển khai toàn dự án.
+Trước code: fetch main mới nhất, ghi BASE_SHA thật; đọc AGENTS.md, CONTRIBUTING.md, docs/specification.md đúng phase/WF, docs/architecture/decisions.md, docs/ai-progress.md và file nguồn liên quan. Baseline P00/P01.01–P01.03 hoàn tất. Nếu task đã được upstream làm hoặc dependency/interface còn thiếu, báo tình trạng; không viết lớp trùng hoặc tự chế hợp đồng.
+Chỉ sửa allowlist của task. Không sửa migrations, lockfiles/dependency, .env, TestDatabaseGuard, Money/Cost/BusinessClock, enum backing value, Customer/Admin Resource guards, roles/auth/OTP, inventory/ledger/outbox, checkout/payment/refund/RMA service hoặc shared routes/bootstrap/app.js/CSS/home đang chạy. Cần ngoại lệ thì đề xuất trong PR body, không lén mở rộng. Không sửa docs/reference/legacy-ui hay public/legacy; giữ layout, Montserrat, Cena, ảnh/nội dung gốc, port Blade/Tailwind3/Alpine3, không React/Next/JWT/Stripe. Không tạo endpoint/seed/thành công giả. Escape dữ liệu, không lộ cost/proof path/internal note cho Customer.
+PREP chỉ là module/component chuẩn bị, không hoàn thành phase và không tích hợp vào app đang chạy. WAIT_CONTRACT chỉ bắt đầu code khi API/DTO/service/dependency ghi trong task đã merge và được owner xác nhận. Các EXT dependencies cũng phải merge trước khi import chúng; không làm48task trong một PR.
+Kiểm narrow tests hành vi cần thiết, real MySQL8.4 cena_store_test bằng cena_test/cena_ci cho feature có DB; mỗi môi trường test riêng, không SQLite/root/dev DB hoặc chạy song song chung schema. PHP mới dùng Artisan --no-interaction, PHPUnit chuẩn project, type hints/return types và Pint. UI: npm run build, render/visual/keyboard phù hợp; không test mirror class/markup. JS thuần dùng Node22 node --test, không thêm dependency. Không thể chạy thì ghi NOT RUN chính xác, không bịa log/screenshot/test pass.
+Hoàn thành trên branch codex/ext-NNN-short-name của fork, commit các file đúng task, push fork và tạo DRAFT PR về upstream main. PR ghi taskID/phase,BASE_SHA,behavior,phụ thuộc,files,commands/results và giới hạn. Không merge, force-push main, đổi workflow/guard để xanh hoặc cập nhật nhật ký chung. Nếu môi trường không có terminal/GitHub write, xuất patch đầy đủ + PR body và lệnh để người có quyền áp dụng; không nói đã tạo PR nếu chưa có URL thật.
+
+TASK EXT-024: UI bảng phối màu/size của product
+Phase canonical: P03.03
+Trạng thái: PREP
+Dependency/gate: EXT-004/006/007 và EXT-025 nếu dùng generator đã merge.
+Allowlist:
+- resources/views/components/admin/products/color-variants.blade.php
+- resources/js/components/color-variants.js
+- tests/JavaScript/color-variants.test.mjs
+Tham chiếu bắt buộc: modules/admin/products; WF-05
+Công việc cụ thể:
+1. Form collection có identity bền vững cho row client, tên/code/hex/color palette và size strings.
+2. Giữ40/40.5 riêng, price_override nullable khác0, không gửi stock/cost; existing IDs do server bind scoped.
+3. Không tự hard-delete variant đã dùng; UI gửi ý định hide/remove để owner xử lý diff transaction.
+Nghiệm thu/task checks:
+- Node test add/remove/reorder giữ đúng ID/size, không lẫn child của color khác.
+- Không đổi product management transaction, không tạo API giả.
+- PR mô tả mapping tên field với Store/UpdateProductRequest thật trước integrate.
+
+Đầu ra bắt buộc: code/patch đúng allowlist; lệnh/kết quả thật hoặc NOT RUN; DRAFT PR URL thật (nếu tạo được) và dependencies/limitations. Không merge PR.
+
+====================================================================================
+EXT-025 — PROMPT COPY NGUYÊN KHỐI
+====================================================================================
+Bạn là cộng tác viên của Cena Store, làm trên fork GitHub của bạn; repo upstream https://github.com/httrung0308/cena-store-laravel, base main. Chỉ thực hiện TASK bên dưới, không triển khai toàn dự án.
+Trước code: fetch main mới nhất, ghi BASE_SHA thật; đọc AGENTS.md, CONTRIBUTING.md, docs/specification.md đúng phase/WF, docs/architecture/decisions.md, docs/ai-progress.md và file nguồn liên quan. Baseline P00/P01.01–P01.03 hoàn tất. Nếu task đã được upstream làm hoặc dependency/interface còn thiếu, báo tình trạng; không viết lớp trùng hoặc tự chế hợp đồng.
+Chỉ sửa allowlist của task. Không sửa migrations, lockfiles/dependency, .env, TestDatabaseGuard, Money/Cost/BusinessClock, enum backing value, Customer/Admin Resource guards, roles/auth/OTP, inventory/ledger/outbox, checkout/payment/refund/RMA service hoặc shared routes/bootstrap/app.js/CSS/home đang chạy. Cần ngoại lệ thì đề xuất trong PR body, không lén mở rộng. Không sửa docs/reference/legacy-ui hay public/legacy; giữ layout, Montserrat, Cena, ảnh/nội dung gốc, port Blade/Tailwind3/Alpine3, không React/Next/JWT/Stripe. Không tạo endpoint/seed/thành công giả. Escape dữ liệu, không lộ cost/proof path/internal note cho Customer.
+PREP chỉ là module/component chuẩn bị, không hoàn thành phase và không tích hợp vào app đang chạy. WAIT_CONTRACT chỉ bắt đầu code khi API/DTO/service/dependency ghi trong task đã merge và được owner xác nhận. Các EXT dependencies cũng phải merge trước khi import chúng; không làm48task trong một PR.
+Kiểm narrow tests hành vi cần thiết, real MySQL8.4 cena_store_test bằng cena_test/cena_ci cho feature có DB; mỗi môi trường test riêng, không SQLite/root/dev DB hoặc chạy song song chung schema. PHP mới dùng Artisan --no-interaction, PHPUnit chuẩn project, type hints/return types và Pint. UI: npm run build, render/visual/keyboard phù hợp; không test mirror class/markup. JS thuần dùng Node22 node --test, không thêm dependency. Không thể chạy thì ghi NOT RUN chính xác, không bịa log/screenshot/test pass.
+Hoàn thành trên branch codex/ext-NNN-short-name của fork, commit các file đúng task, push fork và tạo DRAFT PR về upstream main. PR ghi taskID/phase,BASE_SHA,behavior,phụ thuộc,files,commands/results và giới hạn. Không merge, force-push main, đổi workflow/guard để xanh hoặc cập nhật nhật ký chung. Nếu môi trường không có terminal/GitHub write, xuất patch đầy đủ + PR body và lệnh để người có quyền áp dụng; không nói đã tạo PR nếu chưa có URL thật.
+
+TASK EXT-025: Sinh dải half-size bằng BCMath
+Phase canonical: P03.03
+Trạng thái: PREP
+Dependency/gate: Không phụ thuộc EXT khác; giữ nguyên ShoeSize hiện có.
+Allowlist:
+- app/Support/ShoeSizeSequence.php
+- tests/Unit/ShoeSizeSequenceTest.php
+Tham chiếu bắt buộc: ShoeSize.php; P03.03 step2
+Công việc cụ thể:
+1. API between(string first,string last):array<string> trả list size canonical tăng0.5, gọi ShoeSize::normalize cho đầu/cuối.
+2. Dùng BCMath string, không float/parseInt; từ chối khoảng ngược, endpoints không hợp lệ và không vượt miền cấu trúc helper.
+3. Không quy định một tập EU mới hoặc sửa giá trị variant; caller request tương lai kiểm dải EU của cửa hàng.
+Nghiệm thu/task checks:
+- Test40..41→40,40.5,41;40.5..40.5;leading zero;invalid/negative/reversed.
+- Pure unit test không DB; không sửa Money/ShoeSize/Cost hoặc dependency.
+- Owner review API trước tích hợp quick-create size.
+
+Đầu ra bắt buộc: code/patch đúng allowlist; lệnh/kết quả thật hoặc NOT RUN; DRAFT PR URL thật (nếu tạo được) và dependencies/limitations. Không merge PR.
+
+====================================================================================
+EXT-026 — PROMPT COPY NGUYÊN KHỐI
+====================================================================================
+Bạn là cộng tác viên của Cena Store, làm trên fork GitHub của bạn; repo upstream https://github.com/httrung0308/cena-store-laravel, base main. Chỉ thực hiện TASK bên dưới, không triển khai toàn dự án.
+Trước code: fetch main mới nhất, ghi BASE_SHA thật; đọc AGENTS.md, CONTRIBUTING.md, docs/specification.md đúng phase/WF, docs/architecture/decisions.md, docs/ai-progress.md và file nguồn liên quan. Baseline P00/P01.01–P01.03 hoàn tất. Nếu task đã được upstream làm hoặc dependency/interface còn thiếu, báo tình trạng; không viết lớp trùng hoặc tự chế hợp đồng.
+Chỉ sửa allowlist của task. Không sửa migrations, lockfiles/dependency, .env, TestDatabaseGuard, Money/Cost/BusinessClock, enum backing value, Customer/Admin Resource guards, roles/auth/OTP, inventory/ledger/outbox, checkout/payment/refund/RMA service hoặc shared routes/bootstrap/app.js/CSS/home đang chạy. Cần ngoại lệ thì đề xuất trong PR body, không lén mở rộng. Không sửa docs/reference/legacy-ui hay public/legacy; giữ layout, Montserrat, Cena, ảnh/nội dung gốc, port Blade/Tailwind3/Alpine3, không React/Next/JWT/Stripe. Không tạo endpoint/seed/thành công giả. Escape dữ liệu, không lộ cost/proof path/internal note cho Customer.
+PREP chỉ là module/component chuẩn bị, không hoàn thành phase và không tích hợp vào app đang chạy. WAIT_CONTRACT chỉ bắt đầu code khi API/DTO/service/dependency ghi trong task đã merge và được owner xác nhận. Các EXT dependencies cũng phải merge trước khi import chúng; không làm48task trong một PR.
+Kiểm narrow tests hành vi cần thiết, real MySQL8.4 cena_store_test bằng cena_test/cena_ci cho feature có DB; mỗi môi trường test riêng, không SQLite/root/dev DB hoặc chạy song song chung schema. PHP mới dùng Artisan --no-interaction, PHPUnit chuẩn project, type hints/return types và Pint. UI: npm run build, render/visual/keyboard phù hợp; không test mirror class/markup. JS thuần dùng Node22 node --test, không thêm dependency. Không thể chạy thì ghi NOT RUN chính xác, không bịa log/screenshot/test pass.
+Hoàn thành trên branch codex/ext-NNN-short-name của fork, commit các file đúng task, push fork và tạo DRAFT PR về upstream main. PR ghi taskID/phase,BASE_SHA,behavior,phụ thuộc,files,commands/results và giới hạn. Không merge, force-push main, đổi workflow/guard để xanh hoặc cập nhật nhật ký chung. Nếu môi trường không có terminal/GitHub write, xuất patch đầy đủ + PR body và lệnh để người có quyền áp dụng; không nói đã tạo PR nếu chưa có URL thật.
+
+TASK EXT-026: Image picker/reorder preview phía trình duyệt
+Phase canonical: P03.03
+Trạng thái: PREP
+Dependency/gate: EXT-006 đã merge; backend MediaService/allowlist do owner quản lý.
+Allowlist:
+- resources/views/components/admin/products/images.blade.php
+- resources/js/components/product-images.js
+- tests/JavaScript/product-images.test.mjs
+Tham chiếu bắt buộc: ProductImage schema; WF-05; upload §7.2
+Công việc cụ thể:
+1. UI upload/https external image theo source reference, mỗi row một nguồn; thumbnail ý định duy nhất phía UI.
+2. ObjectURL preview file local, revoke khi bỏ/đổi/unmount; không gửi file trước submit backend thật.
+3. Giữ image identity khi reorder; không SSRF/fetch URL từ server hoặc tải arbitraryremote để validate.
+Nghiệm thu/task checks:
+- Node test reorder/thumbnail/switch source/objectURL cleanup; MIME/pixel backend vẫn bắt buộc.
+- Không dùng filename làm storage path, không cho SVG/PHP là ảnh hợp lệ chỉ vì extension.
+- Không sửa file staging/transaction/DB.
+
+Đầu ra bắt buộc: code/patch đúng allowlist; lệnh/kết quả thật hoặc NOT RUN; DRAFT PR URL thật (nếu tạo được) và dependencies/limitations. Không merge PR.
+
+====================================================================================
+EXT-027 — PROMPT COPY NGUYÊN KHỐI
+====================================================================================
+Bạn là cộng tác viên của Cena Store, làm trên fork GitHub của bạn; repo upstream https://github.com/httrung0308/cena-store-laravel, base main. Chỉ thực hiện TASK bên dưới, không triển khai toàn dự án.
+Trước code: fetch main mới nhất, ghi BASE_SHA thật; đọc AGENTS.md, CONTRIBUTING.md, docs/specification.md đúng phase/WF, docs/architecture/decisions.md, docs/ai-progress.md và file nguồn liên quan. Baseline P00/P01.01–P01.03 hoàn tất. Nếu task đã được upstream làm hoặc dependency/interface còn thiếu, báo tình trạng; không viết lớp trùng hoặc tự chế hợp đồng.
+Chỉ sửa allowlist của task. Không sửa migrations, lockfiles/dependency, .env, TestDatabaseGuard, Money/Cost/BusinessClock, enum backing value, Customer/Admin Resource guards, roles/auth/OTP, inventory/ledger/outbox, checkout/payment/refund/RMA service hoặc shared routes/bootstrap/app.js/CSS/home đang chạy. Cần ngoại lệ thì đề xuất trong PR body, không lén mở rộng. Không sửa docs/reference/legacy-ui hay public/legacy; giữ layout, Montserrat, Cena, ảnh/nội dung gốc, port Blade/Tailwind3/Alpine3, không React/Next/JWT/Stripe. Không tạo endpoint/seed/thành công giả. Escape dữ liệu, không lộ cost/proof path/internal note cho Customer.
+PREP chỉ là module/component chuẩn bị, không hoàn thành phase và không tích hợp vào app đang chạy. WAIT_CONTRACT chỉ bắt đầu code khi API/DTO/service/dependency ghi trong task đã merge và được owner xác nhận. Các EXT dependencies cũng phải merge trước khi import chúng; không làm48task trong một PR.
+Kiểm narrow tests hành vi cần thiết, real MySQL8.4 cena_store_test bằng cena_test/cena_ci cho feature có DB; mỗi môi trường test riêng, không SQLite/root/dev DB hoặc chạy song song chung schema. PHP mới dùng Artisan --no-interaction, PHPUnit chuẩn project, type hints/return types và Pint. UI: npm run build, render/visual/keyboard phù hợp; không test mirror class/markup. JS thuần dùng Node22 node --test, không thêm dependency. Không thể chạy thì ghi NOT RUN chính xác, không bịa log/screenshot/test pass.
+Hoàn thành trên branch codex/ext-NNN-short-name của fork, commit các file đúng task, push fork và tạo DRAFT PR về upstream main. PR ghi taskID/phase,BASE_SHA,behavior,phụ thuộc,files,commands/results và giới hạn. Không merge, force-push main, đổi workflow/guard để xanh hoặc cập nhật nhật ký chung. Nếu môi trường không có terminal/GitHub write, xuất patch đầy đủ + PR body và lệnh để người có quyền áp dụng; không nói đã tạo PR nếu chưa có URL thật.
+
+TASK EXT-027: Product card của storefront
+Phase canonical: P05.01
+Trạng thái: PREP
+Dependency/gate: EXT-006 đã merge; chỉ component, integration chờ P05.01.
+Allowlist:
+- resources/views/components/catalog/product-card.blade.php
+- tests/Feature/ProductCardPresentationTest.php
+Tham chiếu bắt buộc: modules/products/Product.tsx; Customer ProductResource
+Công việc cụ thể:
+1. Port Product.tsx với ảnh/name/brand/effective price/promotion từ DTO server.
+2. URL detail/image được caller cung cấp; hình lỗi dùng local fallback có nguồn, không tự fetch.
+3. Không tự tính giá từ thuộc tính hiện tại hoặc hiển thị cost/SKU nội bộ không nằm DTO.
+Nghiệm thu/task checks:
+- Test escape name và giữ amount integer VND/size không bị truncate.
+- Render discount/no-discount/sold-out theo props, không tự suy ra tồn từ template.
+- Không sửa homepage hoặc CatalogQuery.
+
+Đầu ra bắt buộc: code/patch đúng allowlist; lệnh/kết quả thật hoặc NOT RUN; DRAFT PR URL thật (nếu tạo được) và dependencies/limitations. Không merge PR.
+
+====================================================================================
+EXT-028 — PROMPT COPY NGUYÊN KHỐI
+====================================================================================
+Bạn là cộng tác viên của Cena Store, làm trên fork GitHub của bạn; repo upstream https://github.com/httrung0308/cena-store-laravel, base main. Chỉ thực hiện TASK bên dưới, không triển khai toàn dự án.
+Trước code: fetch main mới nhất, ghi BASE_SHA thật; đọc AGENTS.md, CONTRIBUTING.md, docs/specification.md đúng phase/WF, docs/architecture/decisions.md, docs/ai-progress.md và file nguồn liên quan. Baseline P00/P01.01–P01.03 hoàn tất. Nếu task đã được upstream làm hoặc dependency/interface còn thiếu, báo tình trạng; không viết lớp trùng hoặc tự chế hợp đồng.
+Chỉ sửa allowlist của task. Không sửa migrations, lockfiles/dependency, .env, TestDatabaseGuard, Money/Cost/BusinessClock, enum backing value, Customer/Admin Resource guards, roles/auth/OTP, inventory/ledger/outbox, checkout/payment/refund/RMA service hoặc shared routes/bootstrap/app.js/CSS/home đang chạy. Cần ngoại lệ thì đề xuất trong PR body, không lén mở rộng. Không sửa docs/reference/legacy-ui hay public/legacy; giữ layout, Montserrat, Cena, ảnh/nội dung gốc, port Blade/Tailwind3/Alpine3, không React/Next/JWT/Stripe. Không tạo endpoint/seed/thành công giả. Escape dữ liệu, không lộ cost/proof path/internal note cho Customer.
+PREP chỉ là module/component chuẩn bị, không hoàn thành phase và không tích hợp vào app đang chạy. WAIT_CONTRACT chỉ bắt đầu code khi API/DTO/service/dependency ghi trong task đã merge và được owner xác nhận. Các EXT dependencies cũng phải merge trước khi import chúng; không làm48task trong một PR.
+Kiểm narrow tests hành vi cần thiết, real MySQL8.4 cena_store_test bằng cena_test/cena_ci cho feature có DB; mỗi môi trường test riêng, không SQLite/root/dev DB hoặc chạy song song chung schema. PHP mới dùng Artisan --no-interaction, PHPUnit chuẩn project, type hints/return types và Pint. UI: npm run build, render/visual/keyboard phù hợp; không test mirror class/markup. JS thuần dùng Node22 node --test, không thêm dependency. Không thể chạy thì ghi NOT RUN chính xác, không bịa log/screenshot/test pass.
+Hoàn thành trên branch codex/ext-NNN-short-name của fork, commit các file đúng task, push fork và tạo DRAFT PR về upstream main. PR ghi taskID/phase,BASE_SHA,behavior,phụ thuộc,files,commands/results và giới hạn. Không merge, force-push main, đổi workflow/guard để xanh hoặc cập nhật nhật ký chung. Nếu môi trường không có terminal/GitHub write, xuất patch đầy đủ + PR body và lệnh để người có quyền áp dụng; không nói đã tạo PR nếu chưa có URL thật.
+
+TASK EXT-028: Filter sidebar storefront giữ query contract
+Phase canonical: P05.01
+Trạng thái: PREP
+Dependency/gate: EXT-004/007 đã merge.
+Allowlist:
+- resources/views/components/catalog/filter-panel.blade.php
+- tests/Feature/CatalogFilterPresentationTest.php
+Tham chiếu bắt buộc: WF-06; modules/products/components/filter
+Công việc cụ thể:
+1. Port FilterGender/Colors/Price với search, category slug, gender, colors[], size string, promotion, min/max, sort whitelist.
+2. Form GET về action server; giữ filters hợp lệ khi paginate/sort và có reset URL được cấp.
+3. Không hardcode màu/tỉnh/danh mục IDs hoặc gọi API chưa có.
+Nghiệm thu/task checks:
+- Test40.5 vẫn string, colors có thể nhiều option, query escape.
+- Không thêm sort ngoài newest/price_asc/price_desc/name_asc/name_desc.
+- Không thay backend effective price/query grouping.
+
+Đầu ra bắt buộc: code/patch đúng allowlist; lệnh/kết quả thật hoặc NOT RUN; DRAFT PR URL thật (nếu tạo được) và dependencies/limitations. Không merge PR.
+
+====================================================================================
+EXT-029 — PROMPT COPY NGUYÊN KHỐI
+====================================================================================
+Bạn là cộng tác viên của Cena Store, làm trên fork GitHub của bạn; repo upstream https://github.com/httrung0308/cena-store-laravel, base main. Chỉ thực hiện TASK bên dưới, không triển khai toàn dự án.
+Trước code: fetch main mới nhất, ghi BASE_SHA thật; đọc AGENTS.md, CONTRIBUTING.md, docs/specification.md đúng phase/WF, docs/architecture/decisions.md, docs/ai-progress.md và file nguồn liên quan. Baseline P00/P01.01–P01.03 hoàn tất. Nếu task đã được upstream làm hoặc dependency/interface còn thiếu, báo tình trạng; không viết lớp trùng hoặc tự chế hợp đồng.
+Chỉ sửa allowlist của task. Không sửa migrations, lockfiles/dependency, .env, TestDatabaseGuard, Money/Cost/BusinessClock, enum backing value, Customer/Admin Resource guards, roles/auth/OTP, inventory/ledger/outbox, checkout/payment/refund/RMA service hoặc shared routes/bootstrap/app.js/CSS/home đang chạy. Cần ngoại lệ thì đề xuất trong PR body, không lén mở rộng. Không sửa docs/reference/legacy-ui hay public/legacy; giữ layout, Montserrat, Cena, ảnh/nội dung gốc, port Blade/Tailwind3/Alpine3, không React/Next/JWT/Stripe. Không tạo endpoint/seed/thành công giả. Escape dữ liệu, không lộ cost/proof path/internal note cho Customer.
+PREP chỉ là module/component chuẩn bị, không hoàn thành phase và không tích hợp vào app đang chạy. WAIT_CONTRACT chỉ bắt đầu code khi API/DTO/service/dependency ghi trong task đã merge và được owner xác nhận. Các EXT dependencies cũng phải merge trước khi import chúng; không làm48task trong một PR.
+Kiểm narrow tests hành vi cần thiết, real MySQL8.4 cena_store_test bằng cena_test/cena_ci cho feature có DB; mỗi môi trường test riêng, không SQLite/root/dev DB hoặc chạy song song chung schema. PHP mới dùng Artisan --no-interaction, PHPUnit chuẩn project, type hints/return types và Pint. UI: npm run build, render/visual/keyboard phù hợp; không test mirror class/markup. JS thuần dùng Node22 node --test, không thêm dependency. Không thể chạy thì ghi NOT RUN chính xác, không bịa log/screenshot/test pass.
+Hoàn thành trên branch codex/ext-NNN-short-name của fork, commit các file đúng task, push fork và tạo DRAFT PR về upstream main. PR ghi taskID/phase,BASE_SHA,behavior,phụ thuộc,files,commands/results và giới hạn. Không merge, force-push main, đổi workflow/guard để xanh hoặc cập nhật nhật ký chung. Nếu môi trường không có terminal/GitHub write, xuất patch đầy đủ + PR body và lệnh để người có quyền áp dụng; không nói đã tạo PR nếu chưa có URL thật.
+
+TASK EXT-029: Catalog grid/list shell
+Phase canonical: P05.01
+Trạng thái: PREP
+Dependency/gate: EXT-010/011/027/028 đã merge.
+Allowlist:
+- resources/views/components/catalog/listing.blade.php
+Tham chiếu bắt buộc: modules/products/ProductList; P05.01
+Công việc cụ thể:
+1. Compose list9 sản phẩm/trang từ paginator/DTO, filter và card gốc; không query trong Blade.
+2. Count/empty/error từ dữ liệu server, giữ responsive layout cũ.
+3. Không bind route /shoes, không đổi homepage/router trước gate.
+Nghiệm thu/task checks:
+- Render0/1/9 items và long name,360/768/1440.
+- Không tạo mock product làm dữ liệu thật trong development.
+- PR chỉ component và props contract.
+
+Đầu ra bắt buộc: code/patch đúng allowlist; lệnh/kết quả thật hoặc NOT RUN; DRAFT PR URL thật (nếu tạo được) và dependencies/limitations. Không merge PR.
+
+====================================================================================
+EXT-030 — PROMPT COPY NGUYÊN KHỐI
+====================================================================================
+Bạn là cộng tác viên của Cena Store, làm trên fork GitHub của bạn; repo upstream https://github.com/httrung0308/cena-store-laravel, base main. Chỉ thực hiện TASK bên dưới, không triển khai toàn dự án.
+Trước code: fetch main mới nhất, ghi BASE_SHA thật; đọc AGENTS.md, CONTRIBUTING.md, docs/specification.md đúng phase/WF, docs/architecture/decisions.md, docs/ai-progress.md và file nguồn liên quan. Baseline P00/P01.01–P01.03 hoàn tất. Nếu task đã được upstream làm hoặc dependency/interface còn thiếu, báo tình trạng; không viết lớp trùng hoặc tự chế hợp đồng.
+Chỉ sửa allowlist của task. Không sửa migrations, lockfiles/dependency, .env, TestDatabaseGuard, Money/Cost/BusinessClock, enum backing value, Customer/Admin Resource guards, roles/auth/OTP, inventory/ledger/outbox, checkout/payment/refund/RMA service hoặc shared routes/bootstrap/app.js/CSS/home đang chạy. Cần ngoại lệ thì đề xuất trong PR body, không lén mở rộng. Không sửa docs/reference/legacy-ui hay public/legacy; giữ layout, Montserrat, Cena, ảnh/nội dung gốc, port Blade/Tailwind3/Alpine3, không React/Next/JWT/Stripe. Không tạo endpoint/seed/thành công giả. Escape dữ liệu, không lộ cost/proof path/internal note cho Customer.
+PREP chỉ là module/component chuẩn bị, không hoàn thành phase và không tích hợp vào app đang chạy. WAIT_CONTRACT chỉ bắt đầu code khi API/DTO/service/dependency ghi trong task đã merge và được owner xác nhận. Các EXT dependencies cũng phải merge trước khi import chúng; không làm48task trong một PR.
+Kiểm narrow tests hành vi cần thiết, real MySQL8.4 cena_store_test bằng cena_test/cena_ci cho feature có DB; mỗi môi trường test riêng, không SQLite/root/dev DB hoặc chạy song song chung schema. PHP mới dùng Artisan --no-interaction, PHPUnit chuẩn project, type hints/return types và Pint. UI: npm run build, render/visual/keyboard phù hợp; không test mirror class/markup. JS thuần dùng Node22 node --test, không thêm dependency. Không thể chạy thì ghi NOT RUN chính xác, không bịa log/screenshot/test pass.
+Hoàn thành trên branch codex/ext-NNN-short-name của fork, commit các file đúng task, push fork và tạo DRAFT PR về upstream main. PR ghi taskID/phase,BASE_SHA,behavior,phụ thuộc,files,commands/results và giới hạn. Không merge, force-push main, đổi workflow/guard để xanh hoặc cập nhật nhật ký chung. Nếu môi trường không có terminal/GitHub write, xuất patch đầy đủ + PR body và lệnh để người có quyền áp dụng; không nói đã tạo PR nếu chưa có URL thật.
+
+TASK EXT-030: Gallery chi tiết sản phẩm và thumbnail
+Phase canonical: P05.01
+Trạng thái: PREP
+Dependency/gate: EXT-003 đã merge hoặc asset được xác minh.
+Allowlist:
+- resources/views/components/catalog/gallery.blade.php
+- resources/js/components/gallery.js
+- tests/JavaScript/gallery.test.mjs
+Tham chiếu bắt buộc: modules/productDetails/ProductGallery
+Công việc cụ thể:
+1. Port ProductGallery, chọn ảnh active/thumbnail theo color từ DTO.
+2. Keyboard arrow/focus/alt tốt, chuyển color reset selection hợp lệ; không dùng innerHTML.
+3. Không server-fetch external URLs hoặc tự cho file private vào img src.
+Nghiệm thu/task checks:
+- Node test selection khi đổi color/ảnh mất/album rỗng.
+- Manual ảnh ngang/dọc, breakpoint và reduced-motion.
+- Không sửa global CSS hoặc ProductResource.
+
+Đầu ra bắt buộc: code/patch đúng allowlist; lệnh/kết quả thật hoặc NOT RUN; DRAFT PR URL thật (nếu tạo được) và dependencies/limitations. Không merge PR.
+
+====================================================================================
+EXT-031 — PROMPT COPY NGUYÊN KHỐI
+====================================================================================
+Bạn là cộng tác viên của Cena Store, làm trên fork GitHub của bạn; repo upstream https://github.com/httrung0308/cena-store-laravel, base main. Chỉ thực hiện TASK bên dưới, không triển khai toàn dự án.
+Trước code: fetch main mới nhất, ghi BASE_SHA thật; đọc AGENTS.md, CONTRIBUTING.md, docs/specification.md đúng phase/WF, docs/architecture/decisions.md, docs/ai-progress.md và file nguồn liên quan. Baseline P00/P01.01–P01.03 hoàn tất. Nếu task đã được upstream làm hoặc dependency/interface còn thiếu, báo tình trạng; không viết lớp trùng hoặc tự chế hợp đồng.
+Chỉ sửa allowlist của task. Không sửa migrations, lockfiles/dependency, .env, TestDatabaseGuard, Money/Cost/BusinessClock, enum backing value, Customer/Admin Resource guards, roles/auth/OTP, inventory/ledger/outbox, checkout/payment/refund/RMA service hoặc shared routes/bootstrap/app.js/CSS/home đang chạy. Cần ngoại lệ thì đề xuất trong PR body, không lén mở rộng. Không sửa docs/reference/legacy-ui hay public/legacy; giữ layout, Montserrat, Cena, ảnh/nội dung gốc, port Blade/Tailwind3/Alpine3, không React/Next/JWT/Stripe. Không tạo endpoint/seed/thành công giả. Escape dữ liệu, không lộ cost/proof path/internal note cho Customer.
+PREP chỉ là module/component chuẩn bị, không hoàn thành phase và không tích hợp vào app đang chạy. WAIT_CONTRACT chỉ bắt đầu code khi API/DTO/service/dependency ghi trong task đã merge và được owner xác nhận. Các EXT dependencies cũng phải merge trước khi import chúng; không làm48task trong một PR.
+Kiểm narrow tests hành vi cần thiết, real MySQL8.4 cena_store_test bằng cena_test/cena_ci cho feature có DB; mỗi môi trường test riêng, không SQLite/root/dev DB hoặc chạy song song chung schema. PHP mới dùng Artisan --no-interaction, PHPUnit chuẩn project, type hints/return types và Pint. UI: npm run build, render/visual/keyboard phù hợp; không test mirror class/markup. JS thuần dùng Node22 node --test, không thêm dependency. Không thể chạy thì ghi NOT RUN chính xác, không bịa log/screenshot/test pass.
+Hoàn thành trên branch codex/ext-NNN-short-name của fork, commit các file đúng task, push fork và tạo DRAFT PR về upstream main. PR ghi taskID/phase,BASE_SHA,behavior,phụ thuộc,files,commands/results và giới hạn. Không merge, force-push main, đổi workflow/guard để xanh hoặc cập nhật nhật ký chung. Nếu môi trường không có terminal/GitHub write, xuất patch đầy đủ + PR body và lệnh để người có quyền áp dụng; không nói đã tạo PR nếu chưa có URL thật.
+
+TASK EXT-031: Color/size selector giữ40.5
+Phase canonical: P05.01
+Trạng thái: PREP
+Dependency/gate: EXT-007 đã merge; server cung cấp variant ID/size/available/effective price.
+Allowlist:
+- resources/views/components/catalog/variant-picker.blade.php
+- resources/js/components/variant-picker.js
+- tests/JavaScript/variant-picker.test.mjs
+Tham chiếu bắt buộc: modules/productDetails/Size; WF-06
+Công việc cụ thể:
+1. Port ProductVariant/Size, value là variant ID và size_value string gốc.
+2. Disable out-of-stock/inactive từ DTO, đổi color xóa selection không còn hợp lệ.
+3. Không tự tính tồn, sửa price hoặc chọn size gần đúng; chưa submit add-cart nếu API chưa có.
+Nghiệm thu/task checks:
+- Test40 và40.5 khác nhau, hai color cùngsize không gộp variant, đổi color không giữ ID cũ.
+- Giữ số 0/null logic rõ; không parseInt/float size.
+- Owner tích hợp CartService ở gate P05.
+
+Đầu ra bắt buộc: code/patch đúng allowlist; lệnh/kết quả thật hoặc NOT RUN; DRAFT PR URL thật (nếu tạo được) và dependencies/limitations. Không merge PR.
+
+====================================================================================
+EXT-032 — PROMPT COPY NGUYÊN KHỐI
+====================================================================================
+Bạn là cộng tác viên của Cena Store, làm trên fork GitHub của bạn; repo upstream https://github.com/httrung0308/cena-store-laravel, base main. Chỉ thực hiện TASK bên dưới, không triển khai toàn dự án.
+Trước code: fetch main mới nhất, ghi BASE_SHA thật; đọc AGENTS.md, CONTRIBUTING.md, docs/specification.md đúng phase/WF, docs/architecture/decisions.md, docs/ai-progress.md và file nguồn liên quan. Baseline P00/P01.01–P01.03 hoàn tất. Nếu task đã được upstream làm hoặc dependency/interface còn thiếu, báo tình trạng; không viết lớp trùng hoặc tự chế hợp đồng.
+Chỉ sửa allowlist của task. Không sửa migrations, lockfiles/dependency, .env, TestDatabaseGuard, Money/Cost/BusinessClock, enum backing value, Customer/Admin Resource guards, roles/auth/OTP, inventory/ledger/outbox, checkout/payment/refund/RMA service hoặc shared routes/bootstrap/app.js/CSS/home đang chạy. Cần ngoại lệ thì đề xuất trong PR body, không lén mở rộng. Không sửa docs/reference/legacy-ui hay public/legacy; giữ layout, Montserrat, Cena, ảnh/nội dung gốc, port Blade/Tailwind3/Alpine3, không React/Next/JWT/Stripe. Không tạo endpoint/seed/thành công giả. Escape dữ liệu, không lộ cost/proof path/internal note cho Customer.
+PREP chỉ là module/component chuẩn bị, không hoàn thành phase và không tích hợp vào app đang chạy. WAIT_CONTRACT chỉ bắt đầu code khi API/DTO/service/dependency ghi trong task đã merge và được owner xác nhận. Các EXT dependencies cũng phải merge trước khi import chúng; không làm48task trong một PR.
+Kiểm narrow tests hành vi cần thiết, real MySQL8.4 cena_store_test bằng cena_test/cena_ci cho feature có DB; mỗi môi trường test riêng, không SQLite/root/dev DB hoặc chạy song song chung schema. PHP mới dùng Artisan --no-interaction, PHPUnit chuẩn project, type hints/return types và Pint. UI: npm run build, render/visual/keyboard phù hợp; không test mirror class/markup. JS thuần dùng Node22 node --test, không thêm dependency. Không thể chạy thì ghi NOT RUN chính xác, không bịa log/screenshot/test pass.
+Hoàn thành trên branch codex/ext-NNN-short-name của fork, commit các file đúng task, push fork và tạo DRAFT PR về upstream main. PR ghi taskID/phase,BASE_SHA,behavior,phụ thuộc,files,commands/results và giới hạn. Không merge, force-push main, đổi workflow/guard để xanh hoặc cập nhật nhật ký chung. Nếu môi trường không có terminal/GitHub write, xuất patch đầy đủ + PR body và lệnh để người có quyền áp dụng; không nói đã tạo PR nếu chưa có URL thật.
+
+TASK EXT-032: Cart line component theo DTO server
+Phase canonical: P05.04
+Trạng thái: PREP
+Dependency/gate: EXT-006 đã merge; props cần owner duyệt theo cart API thực.
+Allowlist:
+- resources/views/components/cart/line.blade.php
+- tests/Feature/CartLinePresentationTest.php
+Tham chiếu bắt buộc: common/components/cart/CartProduct; P05.04
+Công việc cụ thể:
+1. Port CartProduct, tên/color/size/quantity/line total và unavailable warning được server cấp.
+2. Controls nhận allowedActions/URL từ caller; không tự suy ra line amount hoặc stock.
+3. Không chứa guest token/owner ID/private data trong HTML data attributes.
+Nghiệm thu/task checks:
+- Test escaped snapshot và size40.5 nguyên vẹn.
+- 0đ và null price không bị dùng falsy thay thế; chưa có action thì không submit.
+- Không sửa CartResource owner guard hoặc backend cart storage.
+
+Đầu ra bắt buộc: code/patch đúng allowlist; lệnh/kết quả thật hoặc NOT RUN; DRAFT PR URL thật (nếu tạo được) và dependencies/limitations. Không merge PR.
+
+====================================================================================
+EXT-033 — PROMPT COPY NGUYÊN KHỐI
+====================================================================================
+Bạn là cộng tác viên của Cena Store, làm trên fork GitHub của bạn; repo upstream https://github.com/httrung0308/cena-store-laravel, base main. Chỉ thực hiện TASK bên dưới, không triển khai toàn dự án.
+Trước code: fetch main mới nhất, ghi BASE_SHA thật; đọc AGENTS.md, CONTRIBUTING.md, docs/specification.md đúng phase/WF, docs/architecture/decisions.md, docs/ai-progress.md và file nguồn liên quan. Baseline P00/P01.01–P01.03 hoàn tất. Nếu task đã được upstream làm hoặc dependency/interface còn thiếu, báo tình trạng; không viết lớp trùng hoặc tự chế hợp đồng.
+Chỉ sửa allowlist của task. Không sửa migrations, lockfiles/dependency, .env, TestDatabaseGuard, Money/Cost/BusinessClock, enum backing value, Customer/Admin Resource guards, roles/auth/OTP, inventory/ledger/outbox, checkout/payment/refund/RMA service hoặc shared routes/bootstrap/app.js/CSS/home đang chạy. Cần ngoại lệ thì đề xuất trong PR body, không lén mở rộng. Không sửa docs/reference/legacy-ui hay public/legacy; giữ layout, Montserrat, Cena, ảnh/nội dung gốc, port Blade/Tailwind3/Alpine3, không React/Next/JWT/Stripe. Không tạo endpoint/seed/thành công giả. Escape dữ liệu, không lộ cost/proof path/internal note cho Customer.
+PREP chỉ là module/component chuẩn bị, không hoàn thành phase và không tích hợp vào app đang chạy. WAIT_CONTRACT chỉ bắt đầu code khi API/DTO/service/dependency ghi trong task đã merge và được owner xác nhận. Các EXT dependencies cũng phải merge trước khi import chúng; không làm48task trong một PR.
+Kiểm narrow tests hành vi cần thiết, real MySQL8.4 cena_store_test bằng cena_test/cena_ci cho feature có DB; mỗi môi trường test riêng, không SQLite/root/dev DB hoặc chạy song song chung schema. PHP mới dùng Artisan --no-interaction, PHPUnit chuẩn project, type hints/return types và Pint. UI: npm run build, render/visual/keyboard phù hợp; không test mirror class/markup. JS thuần dùng Node22 node --test, không thêm dependency. Không thể chạy thì ghi NOT RUN chính xác, không bịa log/screenshot/test pass.
+Hoàn thành trên branch codex/ext-NNN-short-name của fork, commit các file đúng task, push fork và tạo DRAFT PR về upstream main. PR ghi taskID/phase,BASE_SHA,behavior,phụ thuộc,files,commands/results và giới hạn. Không merge, force-push main, đổi workflow/guard để xanh hoặc cập nhật nhật ký chung. Nếu môi trường không có terminal/GitHub write, xuất patch đầy đủ + PR body và lệnh để người có quyền áp dụng; không nói đã tạo PR nếu chưa có URL thật.
+
+TASK EXT-033: Drawer cart nối API thật
+Phase canonical: P05.04
+Trạng thái: WAIT_CONTRACT
+Dependency/gate: P05.02 và P05.03 đã merge; EXT-008/010/032 đã merge; owner giao JSON/URL contract.
+Allowlist:
+- resources/views/components/cart/drawer.blade.php
+- resources/js/components/cart-drawer.js
+- tests/JavaScript/cart-drawer.test.mjs
+Tham chiếu bắt buộc: P05.04; shared ApiResponse/ErrorCode; cart API đã merge
+Công việc cụ thể:
+1. Port drawer gốc, dùng items/count/totals/version từ response thật; submit CSRF đúng method.
+2. Xử lý loading/empty/offline/401/419/422/409, không double submit; CART_STALE refresh/hiển thị thông báo rõ.
+3. Chỉ module và component mới; owner mới nối app.js/panels lúc integrate, không biến shell0 hiện tại thành dữ liệu giả.
+Nghiệm thu/task checks:
+- Mock HTTP boundary trong Node tests theo response thật; stale response không ghi đè state mới.
+- Không cộng tiền client, không localStorage JWT/guest token, không retry mutation vô hạn.
+- Browser focus/Escape/scroll/360/768/1440 và logout/cart ownership khi integrate.
+
+Đầu ra bắt buộc: code/patch đúng allowlist; lệnh/kết quả thật hoặc NOT RUN; DRAFT PR URL thật (nếu tạo được) và dependencies/limitations. Không merge PR.
+
+====================================================================================
+EXT-034 — PROMPT COPY NGUYÊN KHỐI
+====================================================================================
+Bạn là cộng tác viên của Cena Store, làm trên fork GitHub của bạn; repo upstream https://github.com/httrung0308/cena-store-laravel, base main. Chỉ thực hiện TASK bên dưới, không triển khai toàn dự án.
+Trước code: fetch main mới nhất, ghi BASE_SHA thật; đọc AGENTS.md, CONTRIBUTING.md, docs/specification.md đúng phase/WF, docs/architecture/decisions.md, docs/ai-progress.md và file nguồn liên quan. Baseline P00/P01.01–P01.03 hoàn tất. Nếu task đã được upstream làm hoặc dependency/interface còn thiếu, báo tình trạng; không viết lớp trùng hoặc tự chế hợp đồng.
+Chỉ sửa allowlist của task. Không sửa migrations, lockfiles/dependency, .env, TestDatabaseGuard, Money/Cost/BusinessClock, enum backing value, Customer/Admin Resource guards, roles/auth/OTP, inventory/ledger/outbox, checkout/payment/refund/RMA service hoặc shared routes/bootstrap/app.js/CSS/home đang chạy. Cần ngoại lệ thì đề xuất trong PR body, không lén mở rộng. Không sửa docs/reference/legacy-ui hay public/legacy; giữ layout, Montserrat, Cena, ảnh/nội dung gốc, port Blade/Tailwind3/Alpine3, không React/Next/JWT/Stripe. Không tạo endpoint/seed/thành công giả. Escape dữ liệu, không lộ cost/proof path/internal note cho Customer.
+PREP chỉ là module/component chuẩn bị, không hoàn thành phase và không tích hợp vào app đang chạy. WAIT_CONTRACT chỉ bắt đầu code khi API/DTO/service/dependency ghi trong task đã merge và được owner xác nhận. Các EXT dependencies cũng phải merge trước khi import chúng; không làm48task trong một PR.
+Kiểm narrow tests hành vi cần thiết, real MySQL8.4 cena_store_test bằng cena_test/cena_ci cho feature có DB; mỗi môi trường test riêng, không SQLite/root/dev DB hoặc chạy song song chung schema. PHP mới dùng Artisan --no-interaction, PHPUnit chuẩn project, type hints/return types và Pint. UI: npm run build, render/visual/keyboard phù hợp; không test mirror class/markup. JS thuần dùng Node22 node --test, không thêm dependency. Không thể chạy thì ghi NOT RUN chính xác, không bịa log/screenshot/test pass.
+Hoàn thành trên branch codex/ext-NNN-short-name của fork, commit các file đúng task, push fork và tạo DRAFT PR về upstream main. PR ghi taskID/phase,BASE_SHA,behavior,phụ thuộc,files,commands/results và giới hạn. Không merge, force-push main, đổi workflow/guard để xanh hoặc cập nhật nhật ký chung. Nếu môi trường không có terminal/GitHub write, xuất patch đầy đủ + PR body và lệnh để người có quyền áp dụng; không nói đã tạo PR nếu chưa có URL thật.
+
+TASK EXT-034: Client request adapter cho cart và lỗi version
+Phase canonical: P05.02/P05.04
+Trạng thái: WAIT_CONTRACT
+Dependency/gate: P05.02 API merge và owner chốt route, body, expected version; phối hợp EXT-033 để không viết adapter trùng.
+Allowlist:
+- resources/js/cart-client.js
+- tests/JavaScript/cart-client.test.mjs
+Tham chiếu bắt buộc: §7.3; P05.02/P05.04
+Công việc cụ thể:
+1. Một boundary fetch injected nhận URL/CSRF/version và trả envelope chuẩn; content-type/Accept JSON đúng.
+2. Nhận request_id và phân biệt network, validation422, auth401,CSRF419, conflict409, throttle429.
+3. Không tự checkout/retry PATCH/POST khi status không rõ, không coi HTML login200 là JSON success.
+Nghiệm thu/task checks:
+- Node test malformedJSON/HTML200/timeout/cancel,409 mới hơn,422 field arrays,429 Retry-After.
+- Không sửa backend/cart version/idempotency; không thêm Axios/dependency mới.
+- Giữ contract adapter nhỏ, không sửa app.js global.
+
+Đầu ra bắt buộc: code/patch đúng allowlist; lệnh/kết quả thật hoặc NOT RUN; DRAFT PR URL thật (nếu tạo được) và dependencies/limitations. Không merge PR.
+
+====================================================================================
+EXT-035 — PROMPT COPY NGUYÊN KHỐI
+====================================================================================
+Bạn là cộng tác viên của Cena Store, làm trên fork GitHub của bạn; repo upstream https://github.com/httrung0308/cena-store-laravel, base main. Chỉ thực hiện TASK bên dưới, không triển khai toàn dự án.
+Trước code: fetch main mới nhất, ghi BASE_SHA thật; đọc AGENTS.md, CONTRIBUTING.md, docs/specification.md đúng phase/WF, docs/architecture/decisions.md, docs/ai-progress.md và file nguồn liên quan. Baseline P00/P01.01–P01.03 hoàn tất. Nếu task đã được upstream làm hoặc dependency/interface còn thiếu, báo tình trạng; không viết lớp trùng hoặc tự chế hợp đồng.
+Chỉ sửa allowlist của task. Không sửa migrations, lockfiles/dependency, .env, TestDatabaseGuard, Money/Cost/BusinessClock, enum backing value, Customer/Admin Resource guards, roles/auth/OTP, inventory/ledger/outbox, checkout/payment/refund/RMA service hoặc shared routes/bootstrap/app.js/CSS/home đang chạy. Cần ngoại lệ thì đề xuất trong PR body, không lén mở rộng. Không sửa docs/reference/legacy-ui hay public/legacy; giữ layout, Montserrat, Cena, ảnh/nội dung gốc, port Blade/Tailwind3/Alpine3, không React/Next/JWT/Stripe. Không tạo endpoint/seed/thành công giả. Escape dữ liệu, không lộ cost/proof path/internal note cho Customer.
+PREP chỉ là module/component chuẩn bị, không hoàn thành phase và không tích hợp vào app đang chạy. WAIT_CONTRACT chỉ bắt đầu code khi API/DTO/service/dependency ghi trong task đã merge và được owner xác nhận. Các EXT dependencies cũng phải merge trước khi import chúng; không làm48task trong một PR.
+Kiểm narrow tests hành vi cần thiết, real MySQL8.4 cena_store_test bằng cena_test/cena_ci cho feature có DB; mỗi môi trường test riêng, không SQLite/root/dev DB hoặc chạy song song chung schema. PHP mới dùng Artisan --no-interaction, PHPUnit chuẩn project, type hints/return types và Pint. UI: npm run build, render/visual/keyboard phù hợp; không test mirror class/markup. JS thuần dùng Node22 node --test, không thêm dependency. Không thể chạy thì ghi NOT RUN chính xác, không bịa log/screenshot/test pass.
+Hoàn thành trên branch codex/ext-NNN-short-name của fork, commit các file đúng task, push fork và tạo DRAFT PR về upstream main. PR ghi taskID/phase,BASE_SHA,behavior,phụ thuộc,files,commands/results và giới hạn. Không merge, force-push main, đổi workflow/guard để xanh hoặc cập nhật nhật ký chung. Nếu môi trường không có terminal/GitHub write, xuất patch đầy đủ + PR body và lệnh để người có quyền áp dụng; không nói đã tạo PR nếu chưa có URL thật.
+
+TASK EXT-035: Checkout quote/address/payment view
+Phase canonical: P06.03 UI
+Trạng thái: WAIT_CONTRACT
+Dependency/gate: P06.01/P06.02 và QuoteDTO/API đã merge; address/auth/cart dependencies hoàn tất.
+Allowlist:
+- resources/views/components/checkout/form.blade.php
+- resources/views/components/checkout/summary.blade.php
+- tests/Feature/CheckoutPresentationTest.php
+Tham chiếu bắt buộc: WF-10/WF-11; modules/checkout không Stripe
+Công việc cụ thể:
+1. Port Checkout/AddressForm/PriceDetails từ reference bằng QuoteDTO thật và source address theo đặc tả.
+2. Chỉ render giá server: subtotal/discount/shipping/total; request key/version/expected fingerprint từ owner, không tự hash client.
+3. 409 PRICE_CHANGED phải hiển thị quote mới và yêu cầu xác nhận, không âm thầm resubmit; payment methods chỉ server enabled.
+Nghiệm thu/task checks:
+- Test snapshot address/size/0VND/discountnull hiển thị đúng và escape.
+- Không cho client quyết định paid/shipping/stock; không port Stripe.
+- Full checkout transaction do owner kiểm, PR UI không tự đánh dấu P06.03 hoàn tất.
+
+Đầu ra bắt buộc: code/patch đúng allowlist; lệnh/kết quả thật hoặc NOT RUN; DRAFT PR URL thật (nếu tạo được) và dependencies/limitations. Không merge PR.
+
+====================================================================================
+EXT-036 — PROMPT COPY NGUYÊN KHỐI
+====================================================================================
+Bạn là cộng tác viên của Cena Store, làm trên fork GitHub của bạn; repo upstream https://github.com/httrung0308/cena-store-laravel, base main. Chỉ thực hiện TASK bên dưới, không triển khai toàn dự án.
+Trước code: fetch main mới nhất, ghi BASE_SHA thật; đọc AGENTS.md, CONTRIBUTING.md, docs/specification.md đúng phase/WF, docs/architecture/decisions.md, docs/ai-progress.md và file nguồn liên quan. Baseline P00/P01.01–P01.03 hoàn tất. Nếu task đã được upstream làm hoặc dependency/interface còn thiếu, báo tình trạng; không viết lớp trùng hoặc tự chế hợp đồng.
+Chỉ sửa allowlist của task. Không sửa migrations, lockfiles/dependency, .env, TestDatabaseGuard, Money/Cost/BusinessClock, enum backing value, Customer/Admin Resource guards, roles/auth/OTP, inventory/ledger/outbox, checkout/payment/refund/RMA service hoặc shared routes/bootstrap/app.js/CSS/home đang chạy. Cần ngoại lệ thì đề xuất trong PR body, không lén mở rộng. Không sửa docs/reference/legacy-ui hay public/legacy; giữ layout, Montserrat, Cena, ảnh/nội dung gốc, port Blade/Tailwind3/Alpine3, không React/Next/JWT/Stripe. Không tạo endpoint/seed/thành công giả. Escape dữ liệu, không lộ cost/proof path/internal note cho Customer.
+PREP chỉ là module/component chuẩn bị, không hoàn thành phase và không tích hợp vào app đang chạy. WAIT_CONTRACT chỉ bắt đầu code khi API/DTO/service/dependency ghi trong task đã merge và được owner xác nhận. Các EXT dependencies cũng phải merge trước khi import chúng; không làm48task trong một PR.
+Kiểm narrow tests hành vi cần thiết, real MySQL8.4 cena_store_test bằng cena_test/cena_ci cho feature có DB; mỗi môi trường test riêng, không SQLite/root/dev DB hoặc chạy song song chung schema. PHP mới dùng Artisan --no-interaction, PHPUnit chuẩn project, type hints/return types và Pint. UI: npm run build, render/visual/keyboard phù hợp; không test mirror class/markup. JS thuần dùng Node22 node --test, không thêm dependency. Không thể chạy thì ghi NOT RUN chính xác, không bịa log/screenshot/test pass.
+Hoàn thành trên branch codex/ext-NNN-short-name của fork, commit các file đúng task, push fork và tạo DRAFT PR về upstream main. PR ghi taskID/phase,BASE_SHA,behavior,phụ thuộc,files,commands/results và giới hạn. Không merge, force-push main, đổi workflow/guard để xanh hoặc cập nhật nhật ký chung. Nếu môi trường không có terminal/GitHub write, xuất patch đầy đủ + PR body và lệnh để người có quyền áp dụng; không nói đã tạo PR nếu chưa có URL thật.
+
+TASK EXT-036: Category browse query chỉ đọc
+Phase canonical: P03.02
+Trạng thái: WAIT_CONTRACT
+Dependency/gate: P03.01/02 read contract được owner duyệt, auth/seed đã merge; không sở hữu Category mutations.
+Allowlist:
+- app/Queries/CategoryBrowseQuery.php
+- tests/Feature/CategoryBrowseQueryTest.php
+Tham chiếu bắt buộc: P03.02; categories schema và GenderGroup
+Công việc cụ thể:
+1. Query list search/gender/active và stable order từ category model có soft delete, trả paginator hoặc options theo interface thống nhất trước code.
+2. Không bỏ global scope để lộ hidden category cho storefront; admin list cần quyền ở controller owner.
+3. Eager parent nếu render, giữ filter qua pagination; không count children bằng query mỗi row.
+Nghiệm thu/task checks:
+- MySQL fixture: parent/child, khácgender,inactive/deleted,search specialchars vàtie id.
+- Đếm query có upper bound hợp lý, không mock query builder.
+- Không sửa model/schema/Policy/route hoặc mở UI admin public.
+
+Đầu ra bắt buộc: code/patch đúng allowlist; lệnh/kết quả thật hoặc NOT RUN; DRAFT PR URL thật (nếu tạo được) và dependencies/limitations. Không merge PR.
+
+====================================================================================
+EXT-037 — PROMPT COPY NGUYÊN KHỐI
+====================================================================================
+Bạn là cộng tác viên của Cena Store, làm trên fork GitHub của bạn; repo upstream https://github.com/httrung0308/cena-store-laravel, base main. Chỉ thực hiện TASK bên dưới, không triển khai toàn dự án.
+Trước code: fetch main mới nhất, ghi BASE_SHA thật; đọc AGENTS.md, CONTRIBUTING.md, docs/specification.md đúng phase/WF, docs/architecture/decisions.md, docs/ai-progress.md và file nguồn liên quan. Baseline P00/P01.01–P01.03 hoàn tất. Nếu task đã được upstream làm hoặc dependency/interface còn thiếu, báo tình trạng; không viết lớp trùng hoặc tự chế hợp đồng.
+Chỉ sửa allowlist của task. Không sửa migrations, lockfiles/dependency, .env, TestDatabaseGuard, Money/Cost/BusinessClock, enum backing value, Customer/Admin Resource guards, roles/auth/OTP, inventory/ledger/outbox, checkout/payment/refund/RMA service hoặc shared routes/bootstrap/app.js/CSS/home đang chạy. Cần ngoại lệ thì đề xuất trong PR body, không lén mở rộng. Không sửa docs/reference/legacy-ui hay public/legacy; giữ layout, Montserrat, Cena, ảnh/nội dung gốc, port Blade/Tailwind3/Alpine3, không React/Next/JWT/Stripe. Không tạo endpoint/seed/thành công giả. Escape dữ liệu, không lộ cost/proof path/internal note cho Customer.
+PREP chỉ là module/component chuẩn bị, không hoàn thành phase và không tích hợp vào app đang chạy. WAIT_CONTRACT chỉ bắt đầu code khi API/DTO/service/dependency ghi trong task đã merge và được owner xác nhận. Các EXT dependencies cũng phải merge trước khi import chúng; không làm48task trong một PR.
+Kiểm narrow tests hành vi cần thiết, real MySQL8.4 cena_store_test bằng cena_test/cena_ci cho feature có DB; mỗi môi trường test riêng, không SQLite/root/dev DB hoặc chạy song song chung schema. PHP mới dùng Artisan --no-interaction, PHPUnit chuẩn project, type hints/return types và Pint. UI: npm run build, render/visual/keyboard phù hợp; không test mirror class/markup. JS thuần dùng Node22 node --test, không thêm dependency. Không thể chạy thì ghi NOT RUN chính xác, không bịa log/screenshot/test pass.
+Hoàn thành trên branch codex/ext-NNN-short-name của fork, commit các file đúng task, push fork và tạo DRAFT PR về upstream main. PR ghi taskID/phase,BASE_SHA,behavior,phụ thuộc,files,commands/results và giới hạn. Không merge, force-push main, đổi workflow/guard để xanh hoặc cập nhật nhật ký chung. Nếu môi trường không có terminal/GitHub write, xuất patch đầy đủ + PR body và lệnh để người có quyền áp dụng; không nói đã tạo PR nếu chưa có URL thật.
+
+TASK EXT-037: Supplier browse query chỉ đọc
+Phase canonical: P03.02
+Trạng thái: WAIT_CONTRACT
+Dependency/gate: P03.02 controller/Policy/read contract đã có; thống nhất per-page/search với owner.
+Allowlist:
+- app/Queries/SupplierBrowseQuery.php
+- tests/Feature/SupplierBrowseQueryTest.php
+Tham chiếu bắt buộc: P03.02; suppliers schema
+Công việc cụ thể:
+1. Query code/name/contact search/active stable order, pagination query string.
+2. Không mutate, không hard-delete supplier có chứng từ, không đưa danh sách này ra public API.
+3. Select whitelist đủ view, không join cost/import amount để tiện.
+Nghiệm thu/task checks:
+- MySQL fixture duplicate-like names/code, inactive, pagination/search escaped binds.
+- Không thêm query N+1 khi render table; không raw SQL string interpolation.
+- Controller authentication/authorization do owner giữ.
+
+Đầu ra bắt buộc: code/patch đúng allowlist; lệnh/kết quả thật hoặc NOT RUN; DRAFT PR URL thật (nếu tạo được) và dependencies/limitations. Không merge PR.
+
+====================================================================================
+EXT-038 — PROMPT COPY NGUYÊN KHỐI
+====================================================================================
+Bạn là cộng tác viên của Cena Store, làm trên fork GitHub của bạn; repo upstream https://github.com/httrung0308/cena-store-laravel, base main. Chỉ thực hiện TASK bên dưới, không triển khai toàn dự án.
+Trước code: fetch main mới nhất, ghi BASE_SHA thật; đọc AGENTS.md, CONTRIBUTING.md, docs/specification.md đúng phase/WF, docs/architecture/decisions.md, docs/ai-progress.md và file nguồn liên quan. Baseline P00/P01.01–P01.03 hoàn tất. Nếu task đã được upstream làm hoặc dependency/interface còn thiếu, báo tình trạng; không viết lớp trùng hoặc tự chế hợp đồng.
+Chỉ sửa allowlist của task. Không sửa migrations, lockfiles/dependency, .env, TestDatabaseGuard, Money/Cost/BusinessClock, enum backing value, Customer/Admin Resource guards, roles/auth/OTP, inventory/ledger/outbox, checkout/payment/refund/RMA service hoặc shared routes/bootstrap/app.js/CSS/home đang chạy. Cần ngoại lệ thì đề xuất trong PR body, không lén mở rộng. Không sửa docs/reference/legacy-ui hay public/legacy; giữ layout, Montserrat, Cena, ảnh/nội dung gốc, port Blade/Tailwind3/Alpine3, không React/Next/JWT/Stripe. Không tạo endpoint/seed/thành công giả. Escape dữ liệu, không lộ cost/proof path/internal note cho Customer.
+PREP chỉ là module/component chuẩn bị, không hoàn thành phase và không tích hợp vào app đang chạy. WAIT_CONTRACT chỉ bắt đầu code khi API/DTO/service/dependency ghi trong task đã merge và được owner xác nhận. Các EXT dependencies cũng phải merge trước khi import chúng; không làm48task trong một PR.
+Kiểm narrow tests hành vi cần thiết, real MySQL8.4 cena_store_test bằng cena_test/cena_ci cho feature có DB; mỗi môi trường test riêng, không SQLite/root/dev DB hoặc chạy song song chung schema. PHP mới dùng Artisan --no-interaction, PHPUnit chuẩn project, type hints/return types và Pint. UI: npm run build, render/visual/keyboard phù hợp; không test mirror class/markup. JS thuần dùng Node22 node --test, không thêm dependency. Không thể chạy thì ghi NOT RUN chính xác, không bịa log/screenshot/test pass.
+Hoàn thành trên branch codex/ext-NNN-short-name của fork, commit các file đúng task, push fork và tạo DRAFT PR về upstream main. PR ghi taskID/phase,BASE_SHA,behavior,phụ thuộc,files,commands/results và giới hạn. Không merge, force-push main, đổi workflow/guard để xanh hoặc cập nhật nhật ký chung. Nếu môi trường không có terminal/GitHub write, xuất patch đầy đủ + PR body và lệnh để người có quyền áp dụng; không nói đã tạo PR nếu chưa có URL thật.
+
+TASK EXT-038: Customer order list view từ snapshot
+Phase canonical: P08.01 UI
+Trạng thái: PREP
+Dependency/gate: EXT-011 đã merge; chỉ component, integration chờ P08.01 owner-scoped query.
+Allowlist:
+- resources/views/components/orders/customer-list.blade.php
+- tests/Feature/CustomerOrderListPresentationTest.php
+Tham chiếu bắt buộc: modules/account/OrderHistory; Customer OrderResource
+Công việc cụ thể:
+1. Port OrderHistory, nhận Customer OrderResource collection, code/date/totals/order/payment labels và URL chi tiết từ caller.
+2. Không query theo user_id client hoặc render admin notes/cogs/cost/proof path.
+3. Filter/pagination do controller, không tự tính paid/refund status.
+Nghiệm thu/task checks:
+- Test owner-safe DTO có specialchars/0/null và không raw model.toArray.
+- URL thiếu thì không tạo route giả; Customer layout không dùng Admin Resource.
+- Không coi UI list là Policy; request tests integration do owner.
+
+Đầu ra bắt buộc: code/patch đúng allowlist; lệnh/kết quả thật hoặc NOT RUN; DRAFT PR URL thật (nếu tạo được) và dependencies/limitations. Không merge PR.
+
+====================================================================================
+EXT-039 — PROMPT COPY NGUYÊN KHỐI
+====================================================================================
+Bạn là cộng tác viên của Cena Store, làm trên fork GitHub của bạn; repo upstream https://github.com/httrung0308/cena-store-laravel, base main. Chỉ thực hiện TASK bên dưới, không triển khai toàn dự án.
+Trước code: fetch main mới nhất, ghi BASE_SHA thật; đọc AGENTS.md, CONTRIBUTING.md, docs/specification.md đúng phase/WF, docs/architecture/decisions.md, docs/ai-progress.md và file nguồn liên quan. Baseline P00/P01.01–P01.03 hoàn tất. Nếu task đã được upstream làm hoặc dependency/interface còn thiếu, báo tình trạng; không viết lớp trùng hoặc tự chế hợp đồng.
+Chỉ sửa allowlist của task. Không sửa migrations, lockfiles/dependency, .env, TestDatabaseGuard, Money/Cost/BusinessClock, enum backing value, Customer/Admin Resource guards, roles/auth/OTP, inventory/ledger/outbox, checkout/payment/refund/RMA service hoặc shared routes/bootstrap/app.js/CSS/home đang chạy. Cần ngoại lệ thì đề xuất trong PR body, không lén mở rộng. Không sửa docs/reference/legacy-ui hay public/legacy; giữ layout, Montserrat, Cena, ảnh/nội dung gốc, port Blade/Tailwind3/Alpine3, không React/Next/JWT/Stripe. Không tạo endpoint/seed/thành công giả. Escape dữ liệu, không lộ cost/proof path/internal note cho Customer.
+PREP chỉ là module/component chuẩn bị, không hoàn thành phase và không tích hợp vào app đang chạy. WAIT_CONTRACT chỉ bắt đầu code khi API/DTO/service/dependency ghi trong task đã merge và được owner xác nhận. Các EXT dependencies cũng phải merge trước khi import chúng; không làm48task trong một PR.
+Kiểm narrow tests hành vi cần thiết, real MySQL8.4 cena_store_test bằng cena_test/cena_ci cho feature có DB; mỗi môi trường test riêng, không SQLite/root/dev DB hoặc chạy song song chung schema. PHP mới dùng Artisan --no-interaction, PHPUnit chuẩn project, type hints/return types và Pint. UI: npm run build, render/visual/keyboard phù hợp; không test mirror class/markup. JS thuần dùng Node22 node --test, không thêm dependency. Không thể chạy thì ghi NOT RUN chính xác, không bịa log/screenshot/test pass.
+Hoàn thành trên branch codex/ext-NNN-short-name của fork, commit các file đúng task, push fork và tạo DRAFT PR về upstream main. PR ghi taskID/phase,BASE_SHA,behavior,phụ thuộc,files,commands/results và giới hạn. Không merge, force-push main, đổi workflow/guard để xanh hoặc cập nhật nhật ký chung. Nếu môi trường không có terminal/GitHub write, xuất patch đầy đủ + PR body và lệnh để người có quyền áp dụng; không nói đã tạo PR nếu chưa có URL thật.
+
+TASK EXT-039: Customer order detail và danh sách từng đôi
+Phase canonical: P08.01/P08.04 UI
+Trạng thái: PREP
+Dependency/gate: EXT-038 nếu tái sử dụng list partial; schema Resource hiện hữu là hợp đồng đọc.
+Allowlist:
+- resources/views/components/orders/customer-detail.blade.php
+- tests/Feature/CustomerOrderDetailPresentationTest.php
+Tham chiếu bắt buộc: Customer Order/OrderItem/Unit resources; WF-23
+Công việc cụ thể:
+1. Hiển thị order/items/units từ snapshot; unit_no/size hiện tại và history theo Customer Resource.
+2. Giữ đọc được khi product/color/variant bị xóa mềm, không thay tên/giá snapshot bằng catalog mới.
+3. Allowed actions/review/RMA URLs do server cấp; thiếu action thì không render nút mutation.
+Nghiệm thu/task checks:
+- Test hidden/deleted catalog vẫn render snapshot, escape note, không chứa cost/cogs/proof path/internal history.
+- Không query catalog từ Blade; không hiển thị khả năng RMA chỉ dựa đồng hồ browser.
+- Không sửa OwnedResource/OrderResource hoặc state machine.
+
+Đầu ra bắt buộc: code/patch đúng allowlist; lệnh/kết quả thật hoặc NOT RUN; DRAFT PR URL thật (nếu tạo được) và dependencies/limitations. Không merge PR.
+
+====================================================================================
+EXT-040 — PROMPT COPY NGUYÊN KHỐI
+====================================================================================
+Bạn là cộng tác viên của Cena Store, làm trên fork GitHub của bạn; repo upstream https://github.com/httrung0308/cena-store-laravel, base main. Chỉ thực hiện TASK bên dưới, không triển khai toàn dự án.
+Trước code: fetch main mới nhất, ghi BASE_SHA thật; đọc AGENTS.md, CONTRIBUTING.md, docs/specification.md đúng phase/WF, docs/architecture/decisions.md, docs/ai-progress.md và file nguồn liên quan. Baseline P00/P01.01–P01.03 hoàn tất. Nếu task đã được upstream làm hoặc dependency/interface còn thiếu, báo tình trạng; không viết lớp trùng hoặc tự chế hợp đồng.
+Chỉ sửa allowlist của task. Không sửa migrations, lockfiles/dependency, .env, TestDatabaseGuard, Money/Cost/BusinessClock, enum backing value, Customer/Admin Resource guards, roles/auth/OTP, inventory/ledger/outbox, checkout/payment/refund/RMA service hoặc shared routes/bootstrap/app.js/CSS/home đang chạy. Cần ngoại lệ thì đề xuất trong PR body, không lén mở rộng. Không sửa docs/reference/legacy-ui hay public/legacy; giữ layout, Montserrat, Cena, ảnh/nội dung gốc, port Blade/Tailwind3/Alpine3, không React/Next/JWT/Stripe. Không tạo endpoint/seed/thành công giả. Escape dữ liệu, không lộ cost/proof path/internal note cho Customer.
+PREP chỉ là module/component chuẩn bị, không hoàn thành phase và không tích hợp vào app đang chạy. WAIT_CONTRACT chỉ bắt đầu code khi API/DTO/service/dependency ghi trong task đã merge và được owner xác nhận. Các EXT dependencies cũng phải merge trước khi import chúng; không làm48task trong một PR.
+Kiểm narrow tests hành vi cần thiết, real MySQL8.4 cena_store_test bằng cena_test/cena_ci cho feature có DB; mỗi môi trường test riêng, không SQLite/root/dev DB hoặc chạy song song chung schema. PHP mới dùng Artisan --no-interaction, PHPUnit chuẩn project, type hints/return types và Pint. UI: npm run build, render/visual/keyboard phù hợp; không test mirror class/markup. JS thuần dùng Node22 node --test, không thêm dependency. Không thể chạy thì ghi NOT RUN chính xác, không bịa log/screenshot/test pass.
+Hoàn thành trên branch codex/ext-NNN-short-name của fork, commit các file đúng task, push fork và tạo DRAFT PR về upstream main. PR ghi taskID/phase,BASE_SHA,behavior,phụ thuộc,files,commands/results và giới hạn. Không merge, force-push main, đổi workflow/guard để xanh hoặc cập nhật nhật ký chung. Nếu môi trường không có terminal/GitHub write, xuất patch đầy đủ + PR body và lệnh để người có quyền áp dụng; không nói đã tạo PR nếu chưa có URL thật.
+
+TASK EXT-040: Timeline trạng thái dùng dữ liệu server
+Phase canonical: P08.04/P09.06 UI
+Trạng thái: PREP
+Dependency/gate: Không phụ thuộc EXT khác; owner cấp timestamp ISO và nhãn đã chuẩn hóa.
+Allowlist:
+- resources/views/components/orders/timeline.blade.php
+- tests/Feature/TimelinePresentationTest.php
+Tham chiếu bắt buộc: OrderStatusHistoryResource; AfterSalesHistoryResource; BusinessClock
+Công việc cụ thể:
+1. Component timeline hiển thị date VN theo BusinessClock hoặc presenter server, canonical status riêng label.
+2. Không làm timeline bằng cách suy đoán từ order_status duy nhất; giữ lịch sử thật theo stable sequence.
+3. Customer chỉ nhận visibility CUSTOMER đã lọc; không hiển thị internal note dù có field lạ trong DTO.
+Nghiệm thu/task checks:
+- Test cùngtimestamp, microsecond, escaped actor/note và không lộ internal fields.
+- Không query DB hoặc đổi deadline snapshot/refresh delivered_at.
+- Ghi rõ timezone và props required trong PR body.
+
+Đầu ra bắt buộc: code/patch đúng allowlist; lệnh/kết quả thật hoặc NOT RUN; DRAFT PR URL thật (nếu tạo được) và dependencies/limitations. Không merge PR.
+
+====================================================================================
+EXT-041 — PROMPT COPY NGUYÊN KHỐI
+====================================================================================
+Bạn là cộng tác viên của Cena Store, làm trên fork GitHub của bạn; repo upstream https://github.com/httrung0308/cena-store-laravel, base main. Chỉ thực hiện TASK bên dưới, không triển khai toàn dự án.
+Trước code: fetch main mới nhất, ghi BASE_SHA thật; đọc AGENTS.md, CONTRIBUTING.md, docs/specification.md đúng phase/WF, docs/architecture/decisions.md, docs/ai-progress.md và file nguồn liên quan. Baseline P00/P01.01–P01.03 hoàn tất. Nếu task đã được upstream làm hoặc dependency/interface còn thiếu, báo tình trạng; không viết lớp trùng hoặc tự chế hợp đồng.
+Chỉ sửa allowlist của task. Không sửa migrations, lockfiles/dependency, .env, TestDatabaseGuard, Money/Cost/BusinessClock, enum backing value, Customer/Admin Resource guards, roles/auth/OTP, inventory/ledger/outbox, checkout/payment/refund/RMA service hoặc shared routes/bootstrap/app.js/CSS/home đang chạy. Cần ngoại lệ thì đề xuất trong PR body, không lén mở rộng. Không sửa docs/reference/legacy-ui hay public/legacy; giữ layout, Montserrat, Cena, ảnh/nội dung gốc, port Blade/Tailwind3/Alpine3, không React/Next/JWT/Stripe. Không tạo endpoint/seed/thành công giả. Escape dữ liệu, không lộ cost/proof path/internal note cho Customer.
+PREP chỉ là module/component chuẩn bị, không hoàn thành phase và không tích hợp vào app đang chạy. WAIT_CONTRACT chỉ bắt đầu code khi API/DTO/service/dependency ghi trong task đã merge và được owner xác nhận. Các EXT dependencies cũng phải merge trước khi import chúng; không làm48task trong một PR.
+Kiểm narrow tests hành vi cần thiết, real MySQL8.4 cena_store_test bằng cena_test/cena_ci cho feature có DB; mỗi môi trường test riêng, không SQLite/root/dev DB hoặc chạy song song chung schema. PHP mới dùng Artisan --no-interaction, PHPUnit chuẩn project, type hints/return types và Pint. UI: npm run build, render/visual/keyboard phù hợp; không test mirror class/markup. JS thuần dùng Node22 node --test, không thêm dependency. Không thể chạy thì ghi NOT RUN chính xác, không bịa log/screenshot/test pass.
+Hoàn thành trên branch codex/ext-NNN-short-name của fork, commit các file đúng task, push fork và tạo DRAFT PR về upstream main. PR ghi taskID/phase,BASE_SHA,behavior,phụ thuộc,files,commands/results và giới hạn. Không merge, force-push main, đổi workflow/guard để xanh hoặc cập nhật nhật ký chung. Nếu môi trường không có terminal/GitHub write, xuất patch đầy đủ + PR body và lệnh để người có quyền áp dụng; không nói đã tạo PR nếu chưa có URL thật.
+
+TASK EXT-041: PDF Blade hóa đơn/phiếu từ snapshot
+Phase canonical: P08.04
+Trạng thái: WAIT_CONTRACT
+Dependency/gate: P08.03/04 document DTO, quyền và route download do owner công bố.
+Allowlist:
+- resources/views/documents/order-invoice.blade.php
+- resources/views/documents/packing-slip.blade.php
+- tests/Feature/OrderDocumentPresentationTest.php
+Tham chiếu bắt buộc: P08.04; DomPDF đã cài; WF-23
+Công việc cụ thể:
+1. Template PDF chỉ nhận snapshot whitelisted, tiền VND server, unit/line/total đúng DTO; không query catalog.
+2. Dùng local assets/font đã có và CSS tương thích DomPDF; không fetch URL client hoặc đặt private proof path trong img.
+3. Không có QR thanh toán/paid stamp khi server chưa xác nhận; không chứa cost/cogs cho bản khách.
+Nghiệm thu/task checks:
+- Render PDF thật, kiểm text/Unicode VN/1–n trang và xem artifact nếu môi trường có công cụ.
+- Kiểm summary số tiền không cộng lại quafloat, ảnhURLinternal không bị tải.
+- Download Policy/owner access/PDF service do owner, không tạo route công khai mới.
+
+Đầu ra bắt buộc: code/patch đúng allowlist; lệnh/kết quả thật hoặc NOT RUN; DRAFT PR URL thật (nếu tạo được) và dependencies/limitations. Không merge PR.
+
+====================================================================================
+EXT-042 — PROMPT COPY NGUYÊN KHỐI
+====================================================================================
+Bạn là cộng tác viên của Cena Store, làm trên fork GitHub của bạn; repo upstream https://github.com/httrung0308/cena-store-laravel, base main. Chỉ thực hiện TASK bên dưới, không triển khai toàn dự án.
+Trước code: fetch main mới nhất, ghi BASE_SHA thật; đọc AGENTS.md, CONTRIBUTING.md, docs/specification.md đúng phase/WF, docs/architecture/decisions.md, docs/ai-progress.md và file nguồn liên quan. Baseline P00/P01.01–P01.03 hoàn tất. Nếu task đã được upstream làm hoặc dependency/interface còn thiếu, báo tình trạng; không viết lớp trùng hoặc tự chế hợp đồng.
+Chỉ sửa allowlist của task. Không sửa migrations, lockfiles/dependency, .env, TestDatabaseGuard, Money/Cost/BusinessClock, enum backing value, Customer/Admin Resource guards, roles/auth/OTP, inventory/ledger/outbox, checkout/payment/refund/RMA service hoặc shared routes/bootstrap/app.js/CSS/home đang chạy. Cần ngoại lệ thì đề xuất trong PR body, không lén mở rộng. Không sửa docs/reference/legacy-ui hay public/legacy; giữ layout, Montserrat, Cena, ảnh/nội dung gốc, port Blade/Tailwind3/Alpine3, không React/Next/JWT/Stripe. Không tạo endpoint/seed/thành công giả. Escape dữ liệu, không lộ cost/proof path/internal note cho Customer.
+PREP chỉ là module/component chuẩn bị, không hoàn thành phase và không tích hợp vào app đang chạy. WAIT_CONTRACT chỉ bắt đầu code khi API/DTO/service/dependency ghi trong task đã merge và được owner xác nhận. Các EXT dependencies cũng phải merge trước khi import chúng; không làm48task trong một PR.
+Kiểm narrow tests hành vi cần thiết, real MySQL8.4 cena_store_test bằng cena_test/cena_ci cho feature có DB; mỗi môi trường test riêng, không SQLite/root/dev DB hoặc chạy song song chung schema. PHP mới dùng Artisan --no-interaction, PHPUnit chuẩn project, type hints/return types và Pint. UI: npm run build, render/visual/keyboard phù hợp; không test mirror class/markup. JS thuần dùng Node22 node --test, không thêm dependency. Không thể chạy thì ghi NOT RUN chính xác, không bịa log/screenshot/test pass.
+Hoàn thành trên branch codex/ext-NNN-short-name của fork, commit các file đúng task, push fork và tạo DRAFT PR về upstream main. PR ghi taskID/phase,BASE_SHA,behavior,phụ thuộc,files,commands/results và giới hạn. Không merge, force-push main, đổi workflow/guard để xanh hoặc cập nhật nhật ký chung. Nếu môi trường không có terminal/GitHub write, xuất patch đầy đủ + PR body và lệnh để người có quyền áp dụng; không nói đã tạo PR nếu chưa có URL thật.
+
+TASK EXT-042: Customer RMA create form theo unit
+Phase canonical: P09.02 UI
+Trạng thái: WAIT_CONTRACT
+Dependency/gate: P09.01/P09.02 eligibility DTO/allowed types/URLs đã merge.
+Allowlist:
+- resources/views/components/after-sales/create-form.blade.php
+- tests/Feature/AfterSalesFormPresentationTest.php
+Tham chiếu bắt buộc: WF-20/WF-21; AfterSalesRequest schema
+Công việc cụ thể:
+1. Chọn đúng một order_item_unit; SIZE_EXCHANGE/WARRANTY_REPAIR/DEFECT_RETURN từ allowed options server.
+2. Target variant đổisize phải được server cấp; không cho đổicolor/product hoặc nhập quantity nhiều đôi.
+3. File input private JPEG/PNG/WebP metadata UI, CSRF, note escape; không giả eligibility/đếm deadline bằngJS.
+Nghiệm thu/task checks:
+- Test form không có quantity/status/returned_cost/refund_amount tùy ý.
+- Không render raw bank/private path hoặc nội bộ; error per field rõ.
+- Backend custody/reserve/refund/unique RMA/concurrency do owner.
+
+Đầu ra bắt buộc: code/patch đúng allowlist; lệnh/kết quả thật hoặc NOT RUN; DRAFT PR URL thật (nếu tạo được) và dependencies/limitations. Không merge PR.
+
+====================================================================================
+EXT-043 — PROMPT COPY NGUYÊN KHỐI
+====================================================================================
+Bạn là cộng tác viên của Cena Store, làm trên fork GitHub của bạn; repo upstream https://github.com/httrung0308/cena-store-laravel, base main. Chỉ thực hiện TASK bên dưới, không triển khai toàn dự án.
+Trước code: fetch main mới nhất, ghi BASE_SHA thật; đọc AGENTS.md, CONTRIBUTING.md, docs/specification.md đúng phase/WF, docs/architecture/decisions.md, docs/ai-progress.md và file nguồn liên quan. Baseline P00/P01.01–P01.03 hoàn tất. Nếu task đã được upstream làm hoặc dependency/interface còn thiếu, báo tình trạng; không viết lớp trùng hoặc tự chế hợp đồng.
+Chỉ sửa allowlist của task. Không sửa migrations, lockfiles/dependency, .env, TestDatabaseGuard, Money/Cost/BusinessClock, enum backing value, Customer/Admin Resource guards, roles/auth/OTP, inventory/ledger/outbox, checkout/payment/refund/RMA service hoặc shared routes/bootstrap/app.js/CSS/home đang chạy. Cần ngoại lệ thì đề xuất trong PR body, không lén mở rộng. Không sửa docs/reference/legacy-ui hay public/legacy; giữ layout, Montserrat, Cena, ảnh/nội dung gốc, port Blade/Tailwind3/Alpine3, không React/Next/JWT/Stripe. Không tạo endpoint/seed/thành công giả. Escape dữ liệu, không lộ cost/proof path/internal note cho Customer.
+PREP chỉ là module/component chuẩn bị, không hoàn thành phase và không tích hợp vào app đang chạy. WAIT_CONTRACT chỉ bắt đầu code khi API/DTO/service/dependency ghi trong task đã merge và được owner xác nhận. Các EXT dependencies cũng phải merge trước khi import chúng; không làm48task trong một PR.
+Kiểm narrow tests hành vi cần thiết, real MySQL8.4 cena_store_test bằng cena_test/cena_ci cho feature có DB; mỗi môi trường test riêng, không SQLite/root/dev DB hoặc chạy song song chung schema. PHP mới dùng Artisan --no-interaction, PHPUnit chuẩn project, type hints/return types và Pint. UI: npm run build, render/visual/keyboard phù hợp; không test mirror class/markup. JS thuần dùng Node22 node --test, không thêm dependency. Không thể chạy thì ghi NOT RUN chính xác, không bịa log/screenshot/test pass.
+Hoàn thành trên branch codex/ext-NNN-short-name của fork, commit các file đúng task, push fork và tạo DRAFT PR về upstream main. PR ghi taskID/phase,BASE_SHA,behavior,phụ thuộc,files,commands/results và giới hạn. Không merge, force-push main, đổi workflow/guard để xanh hoặc cập nhật nhật ký chung. Nếu môi trường không có terminal/GitHub write, xuất patch đầy đủ + PR body và lệnh để người có quyền áp dụng; không nói đã tạo PR nếu chưa có URL thật.
+
+TASK EXT-043: Customer RMA detail/history/attachments
+Phase canonical: P09.06 UI
+Trạng thái: PREP
+Dependency/gate: EXT-040 nếu dùng timeline; integration chờ P09.06.
+Allowlist:
+- resources/views/components/after-sales/customer-detail.blade.php
+- tests/Feature/AfterSalesDetailPresentationTest.php
+Tham chiếu bắt buộc: Customer AfterSalesRequest/History/Attachment resources
+Công việc cụ thể:
+1. Đọc Customer AfterSalesRequestResource đã lọc owner/visibility; render type/status/deadline/safe history.
+2. Attachment chỉ link qua URL authorized được controller cấp; Resource hiện không trả raw path nên không tự dựngstorage URL.
+3. Nút cancel/update do allowed actions server cung cấp; không suy ra các transition từ enumlist.
+Nghiệm thu/task checks:
+- Test INTERNAL history/private path/financial cost không xuất hiện khi DTO có cột lạ.
+- Không hiện ảnh RMA ở public tracking, không thay resource guard.
+- Hiển thị empty/historylong/attachmentmissing với fallback rõ.
+
+Đầu ra bắt buộc: code/patch đúng allowlist; lệnh/kết quả thật hoặc NOT RUN; DRAFT PR URL thật (nếu tạo được) và dependencies/limitations. Không merge PR.
+
+====================================================================================
+EXT-044 — PROMPT COPY NGUYÊN KHỐI
+====================================================================================
+Bạn là cộng tác viên của Cena Store, làm trên fork GitHub của bạn; repo upstream https://github.com/httrung0308/cena-store-laravel, base main. Chỉ thực hiện TASK bên dưới, không triển khai toàn dự án.
+Trước code: fetch main mới nhất, ghi BASE_SHA thật; đọc AGENTS.md, CONTRIBUTING.md, docs/specification.md đúng phase/WF, docs/architecture/decisions.md, docs/ai-progress.md và file nguồn liên quan. Baseline P00/P01.01–P01.03 hoàn tất. Nếu task đã được upstream làm hoặc dependency/interface còn thiếu, báo tình trạng; không viết lớp trùng hoặc tự chế hợp đồng.
+Chỉ sửa allowlist của task. Không sửa migrations, lockfiles/dependency, .env, TestDatabaseGuard, Money/Cost/BusinessClock, enum backing value, Customer/Admin Resource guards, roles/auth/OTP, inventory/ledger/outbox, checkout/payment/refund/RMA service hoặc shared routes/bootstrap/app.js/CSS/home đang chạy. Cần ngoại lệ thì đề xuất trong PR body, không lén mở rộng. Không sửa docs/reference/legacy-ui hay public/legacy; giữ layout, Montserrat, Cena, ảnh/nội dung gốc, port Blade/Tailwind3/Alpine3, không React/Next/JWT/Stripe. Không tạo endpoint/seed/thành công giả. Escape dữ liệu, không lộ cost/proof path/internal note cho Customer.
+PREP chỉ là module/component chuẩn bị, không hoàn thành phase và không tích hợp vào app đang chạy. WAIT_CONTRACT chỉ bắt đầu code khi API/DTO/service/dependency ghi trong task đã merge và được owner xác nhận. Các EXT dependencies cũng phải merge trước khi import chúng; không làm48task trong một PR.
+Kiểm narrow tests hành vi cần thiết, real MySQL8.4 cena_store_test bằng cena_test/cena_ci cho feature có DB; mỗi môi trường test riêng, không SQLite/root/dev DB hoặc chạy song song chung schema. PHP mới dùng Artisan --no-interaction, PHPUnit chuẩn project, type hints/return types và Pint. UI: npm run build, render/visual/keyboard phù hợp; không test mirror class/markup. JS thuần dùng Node22 node --test, không thêm dependency. Không thể chạy thì ghi NOT RUN chính xác, không bịa log/screenshot/test pass.
+Hoàn thành trên branch codex/ext-NNN-short-name của fork, commit các file đúng task, push fork và tạo DRAFT PR về upstream main. PR ghi taskID/phase,BASE_SHA,behavior,phụ thuộc,files,commands/results và giới hạn. Không merge, force-push main, đổi workflow/guard để xanh hoặc cập nhật nhật ký chung. Nếu môi trường không có terminal/GitHub write, xuất patch đầy đủ + PR body và lệnh để người có quyền áp dụng; không nói đã tạo PR nếu chưa có URL thật.
+
+TASK EXT-044: Trang thẻ kho chỉ đọc không lộ cost cho Staff
+Phase canonical: P04.02 UI
+Trạng thái: WAIT_CONTRACT
+Dependency/gate: P04.01/P04.02 read DTO và permission contract đã merge.
+Allowlist:
+- resources/views/components/inventory/summary.blade.php
+- resources/views/components/inventory/movements.blade.php
+- tests/Feature/InventoryPresentationTest.php
+Tham chiếu bắt buộc: WF-08; InventoryMovementResource và scope Admin/Staff
+Công việc cụ thể:
+1. Hiển thị stock/reserved/available/quarantine là các bucket riêng theo DTO server.
+2. Thẻ kho before/after/delta/action/time, không update số dư hoặc suy ra nghiệp vụ bằng dấu delta.
+3. Staff view không có average_cost/cogs/profit; nếu cần tài chính phải có Admin template/DTO riêng do owner duyệt.
+Nghiệm thu/task checks:
+- Test reserved không bị trừ lại khỏi stock trong display; quarantine không cộng available.
+- Test financial/private field lạ không tự render qua foreach toàn DTO.
+- Không sửa InventoryService/ledger/Reconcile command hoặc thêm adjustment endpoint.
+
+Đầu ra bắt buộc: code/patch đúng allowlist; lệnh/kết quả thật hoặc NOT RUN; DRAFT PR URL thật (nếu tạo được) và dependencies/limitations. Không merge PR.
+
+====================================================================================
+EXT-045 — PROMPT COPY NGUYÊN KHỐI
+====================================================================================
+Bạn là cộng tác viên của Cena Store, làm trên fork GitHub của bạn; repo upstream https://github.com/httrung0308/cena-store-laravel, base main. Chỉ thực hiện TASK bên dưới, không triển khai toàn dự án.
+Trước code: fetch main mới nhất, ghi BASE_SHA thật; đọc AGENTS.md, CONTRIBUTING.md, docs/specification.md đúng phase/WF, docs/architecture/decisions.md, docs/ai-progress.md và file nguồn liên quan. Baseline P00/P01.01–P01.03 hoàn tất. Nếu task đã được upstream làm hoặc dependency/interface còn thiếu, báo tình trạng; không viết lớp trùng hoặc tự chế hợp đồng.
+Chỉ sửa allowlist của task. Không sửa migrations, lockfiles/dependency, .env, TestDatabaseGuard, Money/Cost/BusinessClock, enum backing value, Customer/Admin Resource guards, roles/auth/OTP, inventory/ledger/outbox, checkout/payment/refund/RMA service hoặc shared routes/bootstrap/app.js/CSS/home đang chạy. Cần ngoại lệ thì đề xuất trong PR body, không lén mở rộng. Không sửa docs/reference/legacy-ui hay public/legacy; giữ layout, Montserrat, Cena, ảnh/nội dung gốc, port Blade/Tailwind3/Alpine3, không React/Next/JWT/Stripe. Không tạo endpoint/seed/thành công giả. Escape dữ liệu, không lộ cost/proof path/internal note cho Customer.
+PREP chỉ là module/component chuẩn bị, không hoàn thành phase và không tích hợp vào app đang chạy. WAIT_CONTRACT chỉ bắt đầu code khi API/DTO/service/dependency ghi trong task đã merge và được owner xác nhận. Các EXT dependencies cũng phải merge trước khi import chúng; không làm48task trong một PR.
+Kiểm narrow tests hành vi cần thiết, real MySQL8.4 cena_store_test bằng cena_test/cena_ci cho feature có DB; mỗi môi trường test riêng, không SQLite/root/dev DB hoặc chạy song song chung schema. PHP mới dùng Artisan --no-interaction, PHPUnit chuẩn project, type hints/return types và Pint. UI: npm run build, render/visual/keyboard phù hợp; không test mirror class/markup. JS thuần dùng Node22 node --test, không thêm dependency. Không thể chạy thì ghi NOT RUN chính xác, không bịa log/screenshot/test pass.
+Hoàn thành trên branch codex/ext-NNN-short-name của fork, commit các file đúng task, push fork và tạo DRAFT PR về upstream main. PR ghi taskID/phase,BASE_SHA,behavior,phụ thuộc,files,commands/results và giới hạn. Không merge, force-push main, đổi workflow/guard để xanh hoặc cập nhật nhật ký chung. Nếu môi trường không có terminal/GitHub write, xuất patch đầy đủ + PR body và lệnh để người có quyền áp dụng; không nói đã tạo PR nếu chưa có URL thật.
+
+TASK EXT-045: Email Blade order/RMA/refund từ snapshot
+Phase canonical: P10.02
+Trạng thái: WAIT_CONTRACT
+Dependency/gate: P10.02 hoặc owner công bố versioned safe mail payload; không tự đoán outbox contract.
+Allowlist:
+- resources/views/mail/order-status.blade.php
+- resources/views/mail/after-sales-status.blade.php
+- resources/views/mail/refund-status.blade.php
+- tests/Feature/NotificationTemplateTest.php
+Tham chiếu bắt buộc: WF-23; P10.02; OutboxService contract tương lai
+Công việc cụ thể:
+1. Template branded Cena đơn giản, snapshot code/status/amount và link authorized server đã cấp.
+2. Escape nội dung tên/note, không đính kèm raw bank/proof/OTP/credential hoặc Staff note.
+3. Không gửi SMTP/dispatch job/tạo outbox từ template; không email dữ liệu thật trong test.
+Nghiệm thu/task checks:
+- Render Mailable hoặc view thật với payload hợp lệ/thiếuoptional/XSS; tiền và Unicode đúng.
+- Test text/html không private/cost hoặc đường file trênmáy tác giả.
+- Worker lease/retry/aftercommit và encrypted OTP do owner; task không bao gồm OTP mail.
+
+Đầu ra bắt buộc: code/patch đúng allowlist; lệnh/kết quả thật hoặc NOT RUN; DRAFT PR URL thật (nếu tạo được) và dependencies/limitations. Không merge PR.
+
+====================================================================================
+EXT-046 — PROMPT COPY NGUYÊN KHỐI
+====================================================================================
+Bạn là cộng tác viên của Cena Store, làm trên fork GitHub của bạn; repo upstream https://github.com/httrung0308/cena-store-laravel, base main. Chỉ thực hiện TASK bên dưới, không triển khai toàn dự án.
+Trước code: fetch main mới nhất, ghi BASE_SHA thật; đọc AGENTS.md, CONTRIBUTING.md, docs/specification.md đúng phase/WF, docs/architecture/decisions.md, docs/ai-progress.md và file nguồn liên quan. Baseline P00/P01.01–P01.03 hoàn tất. Nếu task đã được upstream làm hoặc dependency/interface còn thiếu, báo tình trạng; không viết lớp trùng hoặc tự chế hợp đồng.
+Chỉ sửa allowlist của task. Không sửa migrations, lockfiles/dependency, .env, TestDatabaseGuard, Money/Cost/BusinessClock, enum backing value, Customer/Admin Resource guards, roles/auth/OTP, inventory/ledger/outbox, checkout/payment/refund/RMA service hoặc shared routes/bootstrap/app.js/CSS/home đang chạy. Cần ngoại lệ thì đề xuất trong PR body, không lén mở rộng. Không sửa docs/reference/legacy-ui hay public/legacy; giữ layout, Montserrat, Cena, ảnh/nội dung gốc, port Blade/Tailwind3/Alpine3, không React/Next/JWT/Stripe. Không tạo endpoint/seed/thành công giả. Escape dữ liệu, không lộ cost/proof path/internal note cho Customer.
+PREP chỉ là module/component chuẩn bị, không hoàn thành phase và không tích hợp vào app đang chạy. WAIT_CONTRACT chỉ bắt đầu code khi API/DTO/service/dependency ghi trong task đã merge và được owner xác nhận. Các EXT dependencies cũng phải merge trước khi import chúng; không làm48task trong một PR.
+Kiểm narrow tests hành vi cần thiết, real MySQL8.4 cena_store_test bằng cena_test/cena_ci cho feature có DB; mỗi môi trường test riêng, không SQLite/root/dev DB hoặc chạy song song chung schema. PHP mới dùng Artisan --no-interaction, PHPUnit chuẩn project, type hints/return types và Pint. UI: npm run build, render/visual/keyboard phù hợp; không test mirror class/markup. JS thuần dùng Node22 node --test, không thêm dependency. Không thể chạy thì ghi NOT RUN chính xác, không bịa log/screenshot/test pass.
+Hoàn thành trên branch codex/ext-NNN-short-name của fork, commit các file đúng task, push fork và tạo DRAFT PR về upstream main. PR ghi taskID/phase,BASE_SHA,behavior,phụ thuộc,files,commands/results và giới hạn. Không merge, force-push main, đổi workflow/guard để xanh hoặc cập nhật nhật ký chung. Nếu môi trường không có terminal/GitHub write, xuất patch đầy đủ + PR body và lệnh để người có quyền áp dụng; không nói đã tạo PR nếu chưa có URL thật.
+
+TASK EXT-046: Chart.js adapter chỉ vẽ báo cáo server
+Phase canonical: P10.01 UI
+Trạng thái: WAIT_CONTRACT
+Dependency/gate: P10.01 ReportQuery/role-specific DTO đã merge; Chart.js hiện đã cài.
+Allowlist:
+- resources/js/report-charts.js
+- resources/views/components/reports/charts.blade.php
+- tests/JavaScript/report-charts.test.mjs
+Tham chiếu bắt buộc: WF-22; P10.01; Chart.js4 dependency có sẵn
+Công việc cụ thể:
+1. Vẽ series/labels server chuẩn bị, không cộng trừ doanhthu/refund/cogs/profit trongbrowser.
+2. Destroy chart trước redraw, empty/error state và accessible bảng số liệu cùngdata.
+3. Không đưa profit/cost vào HTML Staff rồi chỉ ẩn bằngCSS; chỉ consume whitelisted role DTO.
+Nghiệm thu/task checks:
+- Node test lifecycle/redraw/data không bị mutate; không yêu cầu thêm chart package.
+- Không parseFloat VND từ chuỗi đãformat, không dùng WAC hiện tại để dựng lịch sử.
+- Owner giữ ReportQuery/ledger math/date UTC/querypermissions; screenshot/number table khi tích hợp.
+
+Đầu ra bắt buộc: code/patch đúng allowlist; lệnh/kết quả thật hoặc NOT RUN; DRAFT PR URL thật (nếu tạo được) và dependencies/limitations. Không merge PR.
+
+====================================================================================
+EXT-047 — PROMPT COPY NGUYÊN KHỐI
+====================================================================================
+Bạn là cộng tác viên của Cena Store, làm trên fork GitHub của bạn; repo upstream https://github.com/httrung0308/cena-store-laravel, base main. Chỉ thực hiện TASK bên dưới, không triển khai toàn dự án.
+Trước code: fetch main mới nhất, ghi BASE_SHA thật; đọc AGENTS.md, CONTRIBUTING.md, docs/specification.md đúng phase/WF, docs/architecture/decisions.md, docs/ai-progress.md và file nguồn liên quan. Baseline P00/P01.01–P01.03 hoàn tất. Nếu task đã được upstream làm hoặc dependency/interface còn thiếu, báo tình trạng; không viết lớp trùng hoặc tự chế hợp đồng.
+Chỉ sửa allowlist của task. Không sửa migrations, lockfiles/dependency, .env, TestDatabaseGuard, Money/Cost/BusinessClock, enum backing value, Customer/Admin Resource guards, roles/auth/OTP, inventory/ledger/outbox, checkout/payment/refund/RMA service hoặc shared routes/bootstrap/app.js/CSS/home đang chạy. Cần ngoại lệ thì đề xuất trong PR body, không lén mở rộng. Không sửa docs/reference/legacy-ui hay public/legacy; giữ layout, Montserrat, Cena, ảnh/nội dung gốc, port Blade/Tailwind3/Alpine3, không React/Next/JWT/Stripe. Không tạo endpoint/seed/thành công giả. Escape dữ liệu, không lộ cost/proof path/internal note cho Customer.
+PREP chỉ là module/component chuẩn bị, không hoàn thành phase và không tích hợp vào app đang chạy. WAIT_CONTRACT chỉ bắt đầu code khi API/DTO/service/dependency ghi trong task đã merge và được owner xác nhận. Các EXT dependencies cũng phải merge trước khi import chúng; không làm48task trong một PR.
+Kiểm narrow tests hành vi cần thiết, real MySQL8.4 cena_store_test bằng cena_test/cena_ci cho feature có DB; mỗi môi trường test riêng, không SQLite/root/dev DB hoặc chạy song song chung schema. PHP mới dùng Artisan --no-interaction, PHPUnit chuẩn project, type hints/return types và Pint. UI: npm run build, render/visual/keyboard phù hợp; không test mirror class/markup. JS thuần dùng Node22 node --test, không thêm dependency. Không thể chạy thì ghi NOT RUN chính xác, không bịa log/screenshot/test pass.
+Hoàn thành trên branch codex/ext-NNN-short-name của fork, commit các file đúng task, push fork và tạo DRAFT PR về upstream main. PR ghi taskID/phase,BASE_SHA,behavior,phụ thuộc,files,commands/results và giới hạn. Không merge, force-push main, đổi workflow/guard để xanh hoặc cập nhật nhật ký chung. Nếu môi trường không có terminal/GitHub write, xuất patch đầy đủ + PR body và lệnh để người có quyền áp dụng; không nói đã tạo PR nếu chưa có URL thật.
+
+TASK EXT-047: Hướng dẫn cài sạch Linux/Codex Cloud từ lockfiles
+Phase canonical: P11.04 hỗ trợ cộng tác
+Trạng thái: PREP
+Dependency/gate: Không phụ thuộc EXT khác; đọc workflow CI hiện có trước khi viết.
+Allowlist:
+- docs/collaboration/cloud-setup.md
+Tham chiếu bắt buộc: README; .github/workflows/ci.yml; official Cloud docs
+Công việc cụ thể:
+1. Tài liệu các yêu cầu PHP8.4 extensions,Node22>=22.12,MySQL8.4,Composer2.9.4, hai DB/user riêng và build/test.
+2. Dùng cấu hình instance disposable mới, không copy env tác giả; configure-env --ci chỉ khi CI=true và server trắng/riêng.
+3. Nếu có cloud shell thật thì thực hiện cài sạch và ghi lệnh/kết quả thực; nếu thiếuMySQL8.4 ghi blocker, không chuyểnSQLite hoặc giả log.
+Nghiệm thu/task checks:
+- Không sửa runtime scripts/CI/lockfiles trong PR này, không dùng --ignore-platform-reqs/--force.
+- Hướng dẫn fork/BASE_SHA và cách giữ secret trong environment, không paste token vào chat/source.
+- Có checklist dịch vụ readiness và recovery không drop DB dùng chung.
+
+Đầu ra bắt buộc: code/patch đúng allowlist; lệnh/kết quả thật hoặc NOT RUN; DRAFT PR URL thật (nếu tạo được) và dependencies/limitations. Không merge PR.
+
+====================================================================================
+EXT-048 — PROMPT COPY NGUYÊN KHỐI
+====================================================================================
+Bạn là cộng tác viên của Cena Store, làm trên fork GitHub của bạn; repo upstream https://github.com/httrung0308/cena-store-laravel, base main. Chỉ thực hiện TASK bên dưới, không triển khai toàn dự án.
+Trước code: fetch main mới nhất, ghi BASE_SHA thật; đọc AGENTS.md, CONTRIBUTING.md, docs/specification.md đúng phase/WF, docs/architecture/decisions.md, docs/ai-progress.md và file nguồn liên quan. Baseline P00/P01.01–P01.03 hoàn tất. Nếu task đã được upstream làm hoặc dependency/interface còn thiếu, báo tình trạng; không viết lớp trùng hoặc tự chế hợp đồng.
+Chỉ sửa allowlist của task. Không sửa migrations, lockfiles/dependency, .env, TestDatabaseGuard, Money/Cost/BusinessClock, enum backing value, Customer/Admin Resource guards, roles/auth/OTP, inventory/ledger/outbox, checkout/payment/refund/RMA service hoặc shared routes/bootstrap/app.js/CSS/home đang chạy. Cần ngoại lệ thì đề xuất trong PR body, không lén mở rộng. Không sửa docs/reference/legacy-ui hay public/legacy; giữ layout, Montserrat, Cena, ảnh/nội dung gốc, port Blade/Tailwind3/Alpine3, không React/Next/JWT/Stripe. Không tạo endpoint/seed/thành công giả. Escape dữ liệu, không lộ cost/proof path/internal note cho Customer.
+PREP chỉ là module/component chuẩn bị, không hoàn thành phase và không tích hợp vào app đang chạy. WAIT_CONTRACT chỉ bắt đầu code khi API/DTO/service/dependency ghi trong task đã merge và được owner xác nhận. Các EXT dependencies cũng phải merge trước khi import chúng; không làm48task trong một PR.
+Kiểm narrow tests hành vi cần thiết, real MySQL8.4 cena_store_test bằng cena_test/cena_ci cho feature có DB; mỗi môi trường test riêng, không SQLite/root/dev DB hoặc chạy song song chung schema. PHP mới dùng Artisan --no-interaction, PHPUnit chuẩn project, type hints/return types và Pint. UI: npm run build, render/visual/keyboard phù hợp; không test mirror class/markup. JS thuần dùng Node22 node --test, không thêm dependency. Không thể chạy thì ghi NOT RUN chính xác, không bịa log/screenshot/test pass.
+Hoàn thành trên branch codex/ext-NNN-short-name của fork, commit các file đúng task, push fork và tạo DRAFT PR về upstream main. PR ghi taskID/phase,BASE_SHA,behavior,phụ thuộc,files,commands/results và giới hạn. Không merge, force-push main, đổi workflow/guard để xanh hoặc cập nhật nhật ký chung. Nếu môi trường không có terminal/GitHub write, xuất patch đầy đủ + PR body và lệnh để người có quyền áp dụng; không nói đã tạo PR nếu chưa có URL thật.
+
+TASK EXT-048: Kịch bản demo team và smoke matrix trung thực
+Phase canonical: P10.03/P11.01 hỗ trợ
+Trạng thái: PREP
+Dependency/gate: Không phụ thuộc EXT khác; quan sát baseline P01.03 hiện có.
+Allowlist:
+- docs/collaboration/team-preview.md
+- docs/collaboration/manual-smoke-matrix.csv
+Tham chiếu bắt buộc: ai-progress; specification workflow/gates; UIreference
+Công việc cụ thể:
+1. Viết script demo5–10phút hiện trạng:home/UI, schema41 bảng, models/resources/helpers, chạy test chọnlọc và xemCI thật.
+2. Tách thao tác đã chạy với dự kiến:không nói đăng nhập/cart/payment/RMA hoạt động ở baseline này.
+3. Matrix theo Customer/Staff/Admin/Guest và WF-01..24 để team test khi tương lai từnggatexong; cột NOT_IMPLEMENTED/NOT_RUN/PASS phải riêng.
+Nghiệm thu/task checks:
+- Mọi URL hiện demo tồn tại; homepage/up okay, /shoes/login chưa có phảighi rõ chưa triển khai.
+- Không invent doanhthu/đơn hàng/số dư hoặc ảnhchức năng chưa làm.
+- Không đánh dấu phase P10/P11 xong chỉ vì có tài liệu hoặc673foundation tests.
+
+Đầu ra bắt buộc: code/patch đúng allowlist; lệnh/kết quả thật hoặc NOT RUN; DRAFT PR URL thật (nếu tạo được) và dependencies/limitations. Không merge PR.

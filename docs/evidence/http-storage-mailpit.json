@@ -1,0 +1,148 @@
+{
+  "http": [
+    {
+      "path": "/",
+      "status": 200
+    },
+    {
+      "path": "/up",
+      "status": 200
+    },
+    {
+      "path": "/products",
+      "status": 404
+    },
+    {
+      "path": "/legacy/img/main.jpg",
+      "status": 200
+    },
+    {
+      "path": "/legacy/img/men.jpg",
+      "status": 200
+    },
+    {
+      "path": "/legacy/img/women.jpg",
+      "status": 200
+    },
+    {
+      "path": "/legacy/img/kid.jpg",
+      "status": 200
+    },
+    {
+      "path": "/legacy/img/unisex.jpg",
+      "status": 200
+    },
+    {
+      "path": "/legacy/favicon.ico",
+      "status": 200
+    },
+    {
+      "path": "/build/assets/app-B-U76gVL.js",
+      "status": 200
+    },
+    {
+      "path": "/build/assets/app-BlCPJdJ0.css",
+      "status": 200
+    },
+    {
+      "path": "/build/assets/montserrat-latin-400-normal-BLhwKU8k.woff2",
+      "status": 200
+    },
+    {
+      "path": "/build/assets/montserrat-latin-400-normal-xItZbAXg.woff",
+      "status": 200
+    },
+    {
+      "path": "/build/assets/montserrat-latin-500-normal-DRFEGfly.woff2",
+      "status": 200
+    },
+    {
+      "path": "/build/assets/montserrat-latin-500-normal-Dok2oTci.woff",
+      "status": 200
+    },
+    {
+      "path": "/build/assets/montserrat-latin-600-normal-CdhFl4lI.woff",
+      "status": 200
+    },
+    {
+      "path": "/build/assets/montserrat-latin-600-normal-UVxSCcoG.woff2",
+      "status": 200
+    },
+    {
+      "path": "/build/assets/montserrat-latin-700-normal-BWkrl476.woff",
+      "status": 200
+    },
+    {
+      "path": "/build/assets/montserrat-latin-700-normal-BdjcYUrC.woff2",
+      "status": 200
+    },
+    {
+      "path": "/build/assets/montserrat-latin-800-normal-C3dfDxXV.woff",
+      "status": 200
+    },
+    {
+      "path": "/build/assets/montserrat-latin-800-normal-axpkC1rd.woff2",
+      "status": 200
+    },
+    {
+      "path": "/build/assets/montserrat-vietnamese-400-normal-BeEscFYY.woff",
+      "status": 200
+    },
+    {
+      "path": "/build/assets/montserrat-vietnamese-400-normal-D4oHqQTd.woff2",
+      "status": 200
+    },
+    {
+      "path": "/build/assets/montserrat-vietnamese-500-normal-DpeZlV_K.woff",
+      "status": 200
+    },
+    {
+      "path": "/build/assets/montserrat-vietnamese-500-normal-NT-t8RG1.woff2",
+      "status": 200
+    },
+    {
+      "path": "/build/assets/montserrat-vietnamese-600-normal-DKe6qT_E.woff2",
+      "status": 200
+    },
+    {
+      "path": "/build/assets/montserrat-vietnamese-600-normal-SJ-HTWuM.woff",
+      "status": 200
+    },
+    {
+      "path": "/build/assets/montserrat-vietnamese-700-normal-C0x1De3p.woff2",
+      "status": 200
+    },
+    {
+      "path": "/build/assets/montserrat-vietnamese-700-normal-DnwGT2D9.woff",
+      "status": 200
+    },
+    {
+      "path": "/build/assets/montserrat-vietnamese-800-normal-BDwqwvSG.woff2",
+      "status": 200
+    },
+    {
+      "path": "/build/assets/montserrat-vietnamese-800-normal-Chy8GRiB.woff",
+      "status": 200
+    },
+    {
+      "path": "/storage/p00-6c26732324c44147a1130a48dac07b6a.txt",
+      "status": 200
+    },
+    {
+      "path": "/storage/p00-6c26732324c44147a1130a48dac07b6a.txt",
+      "status": 404
+    },
+    {
+      "path": "/storage/private/p00-6c26732324c44147a1130a48dac07b6a.txt",
+      "status": 404
+    }
+  ],
+  "private_proof_file_removed": true,
+  "public_proof_file_removed": true,
+  "mailpit_ui": 200,
+  "smtp_ehlo": 250,
+  "smtp_noop": 250,
+  "email_sent": false,
+  "php_syntax_files": 33,
+  "php_syntax_result": "PASS"
+}
