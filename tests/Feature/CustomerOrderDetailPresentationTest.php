@@ -62,5 +62,4 @@ class CustomerOrderDetailPresentationTest extends TestCase
             $this->assertStringNotContainsString('unexpected-array', $html);
         }
     }
-
 }
