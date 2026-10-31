@@ -1,6 +1,9 @@
 ﻿CENA STORE — PHÂN CÔNG 48 TASK CHO BÊN CỘNG TÁC DÙNG CHATGPT WEB
 Ngày lập:31/10/2026, giờ Việt Nam. Tác giả tích hợp/chủ repo: httrung0308.
 Repo công khai: https://github.com/httrung0308/cena-store-laravel
+Baseline code P01.03 đã publish tại commit 795f371cd8d7bb90d991edf733e7737c54e457a6.
+CI GitHub Linux của baseline: PASS — https://github.com/httrung0308/cena-store-laravel/actions/runs/41180343375
+Khi bắt đầu vẫn phải fetch upstream/main mới nhất và ghi BASE_SHA thực của PR, không cố định vào commit lịch sử trên.
 Nhánh đích PR: main. Không cấp quyền push main cho bên ngoài; fork→branch→DraftPR→CI→owner review→merge.
 
 A. HIỆN TRẠNG VÀ MỐC DEMO
