@@ -245,7 +245,7 @@ Yêu cầu mới: tiếp tục các phần độc lập chưa giao bên kia, gi�
 - Full Pint và `--dirty --format agent`: PASS sau format. PHP syntax **15 file PHP** mới/thay đổi PASS. Không thay dependencies/lockfiles/migrations/Resources hoặc backing values của enum hiện hữu.
 - Đối chiếu **19 file** thay đổi/mới với allowlist48EXT:0xungđột. SHA256:320file source cũ và32file UI/dependency/migration protected giữ nguyên; spec/reference/TXTtask không sửa. Home/up200, không đổi giao diện hoặc route.
 - Development MySQL vẫn41bảng;roles3/users0/order-payment-refund-ledger-outbox-inventory movement/import đều0. Không chạy service mới trên database development, không ghi dữ liệu tiền/kho hoặc gửi thông báo thật. Test-only fixtures không được coi kịch bản bán hàng đã hoàn thành.
-- Nhánh `codex/p01-05-ledger-outbox-primitives` dựa trên `codex/p01-04-foundation-core`; PR PREP sẽ target nhánh core để diff không trộn phần đã có trong PR#1. Không merge main hoặc PR bên ngoài. Remote CI chỉ được báo PASS sau khi có run thật.
+- Nhánh `codex/p01-05-ledger-outbox-primitives` dựa trên `codex/p01-04-foundation-core`; PR PREP sẽ target nhánh core để diff không trộn phần đã có trong PR#1. Không merge main hoặc PR bên ngoài. Draft PR thật: https://github.com/httrung0308/cena-store-laravel/pull/2 . GitHub Linux/MySQL8.4 CI cho code commit c88f1b2 **PASS** cả push và pull_request: https://github.com/httrung0308/cena-store-laravel/actions/runs/41185512309 và https://github.com/httrung0308/cena-store-laravel/actions/runs/41185516682 . Log PR run xác nhận743tests/7272assertions. Đây là run remote thật; gói vẫn PREP, không đóng phase gate.
 
 ### Gate và phần giữ lại
 
