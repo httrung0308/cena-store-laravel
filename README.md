@@ -4,6 +4,8 @@ Project mới tách biệt với `Shoe-Store_HQTCSDL`. Đã triển khai nền t
 
 ## Trạng thái hiện tại
 
+> **Tổng hợp tiến độ mới nhất (31/10/2026): [docs/STATUS.md](docs/STATUS.md)** — 6/51 task đã trên `main`; P01.04/P01.05 đang ở PR Draft [#1](https://github.com/httrung0308/cena-store-laravel/pull/1) → [#2](https://github.com/httrung0308/cena-store-laravel/pull/2) → [#4](https://github.com/httrung0308/cena-store-laravel/pull/4); component UI bên cộng tác ở [#3](https://github.com/httrung0308/cena-store-laravel/pull/3). Đang chờ EXT-001/002 (dataset + validator địa giới).
+
 - Laravel13/PHP8.4, MySQL8.4; Blade/Vite/Tailwind3.4/Alpine3/Chart.js4/DomPDF, dependency lock đầy đủ.
 - Homepage và shell menu/cart theo thiết kế gốc; font Montserrat tự phục vụ, ảnh gốc có hash/giấy phép. Đây chưa phải catalog/giỏ hàng/đăng nhập thật: nút nghiệp vụ hiển thị thông báo sắp mở, drawer chỉ là trạng thái trống.
 - Schema P01.01 có34 bảng miền +6 bảng hạ tầng + `migrations` =41 bảng thực tế,70 FK,4 generated unique helpers và110 CHECK. P01.02 có34 model miền, custom pivot, casts,31 string enums,34 factory cấu trúc và Resource whitelist tách Customer/Admin. Tài liệu: `docs/database/schema.md`. Chưa seed user demo/admin hoặc triển khai workflow bán hàng.
@@ -81,7 +83,7 @@ Repo công khai: [httrung0308/cena-store-laravel](https://github.com/httrung0308
 
 ## Tiếp theo
 
-P01.03 đã hoàn thành Money/clock/enum labels/exception contract. Task tiếp theo: **P01.04 — Foundation seed, factories và dataset địa chỉ**. Auth/catalog/cart/payment/ledger services chưa được triển khai. Các model chứng từ, role, stock/cost và trạng thái tiền được guard; service phải gán thuộc tính đã kiểm tra một cách tường minh, không truyền request.all() vào forceFill. Mọi màn hình chuyển sau tiếp tục dùng giao diện source gốc; không tự thiết kế lại UI.
+P01.03 đã hoàn thành Money/clock/enum labels/exception contract. Đang làm **P01.04 — Foundation seed, factories và dataset địa chỉ** (core ở PR #1, chờ EXT-001/002) và chuẩn bị **P01.05** (ledger/outbox ở PR #2, InventoryService ở PR #4). Auth/catalog/cart/payment chưa được triển khai. Xem [docs/STATUS.md](docs/STATUS.md). Các model chứng từ, role, stock/cost và trạng thái tiền được guard; service phải gán thuộc tính đã kiểm tra một cách tường minh, không truyền request.all() vào forceFill. Mọi màn hình chuyển sau tiếp tục dùng giao diện source gốc; không tự thiết kế lại UI.
 
 ## Nguồn tham chiếu
 
