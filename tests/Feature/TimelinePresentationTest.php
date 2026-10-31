@@ -55,5 +55,4 @@ class TimelinePresentationTest extends TestCase
         $this->assertStringContainsString('19:00:00.123456', $html);
         $this->assertTrue(strpos($html, 'UTC') < strpos($html, 'Offset'));
     }
-
 }
