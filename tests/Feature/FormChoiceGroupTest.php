@@ -62,5 +62,4 @@ class FormChoiceGroupTest extends TestCase
         $this->assertDoesNotMatchRegularExpression('/value="1"[^>]*checked/', $html);
         $this->assertStringContainsString('rounded-full', $html);
     }
-
 }
