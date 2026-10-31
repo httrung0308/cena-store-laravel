@@ -10,7 +10,7 @@ class LoginFormPresentationTest extends TestCase
     public function test_login_form_has_post_csrf_empty_password_and_escapes_email(): void
     {
         request()->setLaravelSession(session()->driver());
-        session()->flashInput(['email' => '\"><img src=x onerror=alert(1)>', 'password' => 'SECRET_DO_NOT_RENDER']);
+        session()->flashInput(['email' => '"><img src=x onerror=alert(1)>', 'password' => 'SECRET_DO_NOT_RENDER']);
         $html = Blade::render('<x-auth.login-form action="/auth/login" />');
         $this->assertStringContainsString('method="POST"', $html);
         $this->assertStringContainsString('name="_token"', $html);
