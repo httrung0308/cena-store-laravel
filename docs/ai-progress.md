@@ -11,6 +11,7 @@
 | P01.02 — Models/relationships/casts/Resource whitelist | **Hoàn thành** |34 model miền + DomainModel,147 quan hệ typed,31 enums,34 factory cấu trúc,19 Customer +34 Admin Resources;423 test mới qua; toàn suite558 tests/5808 assertions PASS |
 | P01.03 — Money/clock/enums/exception contract | **Hoàn thành** |115 test mới; toàn suite673 tests/6848 assertions PASS trên MySQL, random order;214 file PHP syntax PASS; nguồn cũ/UI/schema giữ nguyên |
 | P01.04 — Foundation seed/factories/dataset | **Đang làm: core, chờ EXT-001/002** | Core roles/demo/config/factory:700tests/7067assertions PASS; dataset/validator/import và code ship chờ EXT-001/002; chưa chuyển P01.05 |
+| P01.05 — Ledger/outbox chuẩn bị độc lập | **PREP, gate chưa mở** | Chưa vượt P01.04; 743tests/7272assertions PASS; persistence/lease/retry trên nhánh riêng, chưa InventoryService hoặc kích hoạt nghiệp vụ |
 
 **Gate P00: PASS**, xem [biên bản nghiệm thu](evidence/p00-verification.md) và JSON/log/ảnh trong `evidence`. Tại thời điểm nghiệm thu P00/P01.03 chưa có commit/remote; việc công bố GitHub được người dùng ủy quyền sau đó, xem mục cộng tác cuối nhật ký. Không gắn kết quả local thành CI remote hoặc sửa source cũ. Chưa có các chức năng auth/catalog/checkout/kho/payment/RMA thật; menu/cart hiện là shell giao diện.
 
@@ -179,14 +180,14 @@ Người dùng yêu cầu đưa project lên GitHub, cho phép commit/push và c
 - Không sửa PHP/Blade/CSS/JS runtime hoặc dependencies/schema của baseline673test/6848assertions. CI full đã chạy trên checkout GitHub Linux thành công, xem run thật bên dưới.
 
 ### Kết quả công bố đã kiểm chứng
-+
-+- Push baseline thành công: main tracking origin/main, commit `795f371cd8d7bb90d991edf733e7737c54e457a6`,386 tệp source/docs/reference, repository PUBLIC. Không thay runtime PHP/Blade/CSS/JS của baseline.
-+- GitHub Actions Linux/MySQL8.4 **SUCCESS**: https://github.com/httrung0308/cena-store-laravel/actions/runs/41180343375 . Job foundation chạy checkout sạch, Composer validate/install/platform, npm ci/build, migrate hai DB, toàn suite và Pint/git diff thành công. Đây là run remote thật, khác với evidence local P00 trước đây.
-+- Main protection: required status `foundation`, branch up-to-date, ít nhất1 approval và code-owner review `httrung0308`, dismiss review cũ khi đổi commit, resolve conversations, linear history; chặn force-push/delete. Chỉ squash merge, auto-merge tắt. Chủ repo vẫn giữ admin bypass tiêu chuẩn để quản lý baseline; bên ngoài chỉ fork/PR, không được cấp write vào main.
-+- Staged diff check PASS; frozen specification và75 UI reference có checksum đúng cả trong Git index. Giữ nguyên formatting/line-ending của tài liệu nguồn, reference và terminal log cũ bằng gitattributes hẹp, không sửa byte source để làm sạch whitespace của snapshot.
-+- Đối chiếu sau publish:320 source cũ và32 tệp UI/dependency/migration protected giữ nguyên SHA256. Homepage và /up vẫn200. Bản project giải nén lồng, env, local credentials, vendor/node_modules/build không có trong Git tree.
-+- Bản TXT Downloads khớp nội dung bản project;48 task có allowlist/dependency/checks/prompt/fork-PR workflow và phân vai.38 PREP không có nghĩa có thể làm cùng lúc hoặc vượt phase;10 WAIT_CONTRACT chỉ bắt đầu khi API/DTO upstream có thật.
-+- Đánh giá tiến độ:6/51 task canonical xong,45 còn lại; task tiếp theo vẫn P01.04. Demo tối31/10 hiện chỉ là nền tảng/UI/test, chưa có login/cart/checkout thật; các mốc và ước lượng có điều kiện ghi trong TXT. Không triển khai hoặc tuyên bố hoàn tất P01.04/P02+ trong lần chuẩn bị cộng tác này.
+
+- Push baseline thành công: main tracking origin/main, commit `795f371cd8d7bb90d991edf733e7737c54e457a6`,386 tệp source/docs/reference, repository PUBLIC. Không thay runtime PHP/Blade/CSS/JS của baseline.
+- GitHub Actions Linux/MySQL8.4 **SUCCESS**: https://github.com/httrung0308/cena-store-laravel/actions/runs/41180343375 . Job foundation chạy checkout sạch, Composer validate/install/platform, npm ci/build, migrate hai DB, toàn suite và Pint/git diff thành công. Đây là run remote thật, khác với evidence local P00 trước đây.
+- Main protection: required status `foundation`, branch up-to-date, ít nhất1 approval và code-owner review `httrung0308`, dismiss review cũ khi đổi commit, resolve conversations, linear history; chặn force-push/delete. Chỉ squash merge, auto-merge tắt. Chủ repo vẫn giữ admin bypass tiêu chuẩn để quản lý baseline; bên ngoài chỉ fork/PR, không được cấp write vào main.
+- Staged diff check PASS; frozen specification và75 UI reference có checksum đúng cả trong Git index. Giữ nguyên formatting/line-ending của tài liệu nguồn, reference và terminal log cũ bằng gitattributes hẹp, không sửa byte source để làm sạch whitespace của snapshot.
+- Đối chiếu sau publish:320 source cũ và32 tệp UI/dependency/migration protected giữ nguyên SHA256. Homepage và /up vẫn200. Bản project giải nén lồng, env, local credentials, vendor/node_modules/build không có trong Git tree.
+- Bản TXT Downloads khớp nội dung bản project;48 task có allowlist/dependency/checks/prompt/fork-PR workflow và phân vai.38 PREP không có nghĩa có thể làm cùng lúc hoặc vượt phase;10 WAIT_CONTRACT chỉ bắt đầu khi API/DTO upstream có thật.
+- Đánh giá tiến độ:6/51 task canonical xong,45 còn lại; task tiếp theo vẫn P01.04. Demo tối31/10 hiện chỉ là nền tảng/UI/test, chưa có login/cart/checkout thật; các mốc và ước lượng có điều kiện ghi trong TXT. Không triển khai hoặc tuyên bố hoàn tất P01.04/P02+ trong lần chuẩn bị cộng tác này.
 
 ## P01.04 — Core không chồng lấn với bên cộng tác (31/10/2026)
 
@@ -208,13 +209,44 @@ Người dùng yêu cầu tiếp tục, giữ các phần đã giao cho bên kia
 - Full Pint và dirty Pint đã chạy sau test hẹp; suite random và đối chiếu nguồn đều PASS.
 
 ### Kết quả kiểm tra core cuối
-+
-+- `php artisan test --compact --order-by=random --random-order-seed=20261031`: **700tests/7067assertions PASS**,100,587 giây; gồm27test core mới và673test nền/schema/model/helper hiện hữu. MySQL test riêng đã guard, không chạy các process test cùng schema đồng thời.
-+- PHP syntax7 file PHP thay đổi/mới PASS; full Pint và `--dirty --format agent` PASS. Dependencies/lockfiles/migrations không thay đổi. Không cần build lại UI vì không sửa frontend.
-+- `db:seed --class=CoreFoundationSeeder --no-interaction` chạy local2lần, cưỡng chế demo flagfalse chỉ trong process. `db:show --counts`:41 bảng,roles3,users0/user_roles0/carts0/administrative_units0, toàn kho/đơn/thu-hoàn/ledger/outbox0. Không in/lưu demo password, env thật giữ nguyên.
-+- SHA256:320/320 file source cũ và32/32 UI/dependency/migration protected giữ nguyên; frozen specification/reference/48-task TXT không sửa. So14 file thay đổi/mới với allowlist của cả48EXT: **0 xung đột đường dẫn**. Homepage và /up200.
-+- Nhánh làm việc `codex/p01-04-foundation-core`, không sửa main trực tiếp. Core sẵn sàng review độc lập nhưng toàn task P01.04 vẫn chưa PASS. Draft PR thật: https://github.com/httrung0308/cena-store-laravel/pull/1 . CI GitHub Linux cho commit code2fcdcd7 PASS cả push và pull_request: https://github.com/httrung0308/cena-store-laravel/actions/runs/41182926397 và https://github.com/httrung0308/cena-store-laravel/actions/runs/41182932890 . Đây là run remote thật; PR vẫn draft, không tự merge hoặc báo P01.04 hoàn thành.
+
+- `php artisan test --compact --order-by=random --random-order-seed=20261031`: **700tests/7067assertions PASS**,100,587 giây; gồm27test core mới và673test nền/schema/model/helper hiện hữu. MySQL test riêng đã guard, không chạy các process test cùng schema đồng thời.
+- PHP syntax7 file PHP thay đổi/mới PASS; full Pint và `--dirty --format agent` PASS. Dependencies/lockfiles/migrations không thay đổi. Không cần build lại UI vì không sửa frontend.
+- `db:seed --class=CoreFoundationSeeder --no-interaction` chạy local2lần, cưỡng chế demo flagfalse chỉ trong process. `db:show --counts`:41 bảng,roles3,users0/user_roles0/carts0/administrative_units0, toàn kho/đơn/thu-hoàn/ledger/outbox0. Không in/lưu demo password, env thật giữ nguyên.
+- SHA256:320/320 file source cũ và32/32 UI/dependency/migration protected giữ nguyên; frozen specification/reference/48-task TXT không sửa. So14 file thay đổi/mới với allowlist của cả48EXT: **0 xung đột đường dẫn**. Homepage và /up200.
+- Nhánh làm việc `codex/p01-04-foundation-core`, không sửa main trực tiếp. Core sẵn sàng review độc lập nhưng toàn task P01.04 vẫn chưa PASS. Draft PR thật: https://github.com/httrung0308/cena-store-laravel/pull/1 . CI GitHub Linux cho commit code2fcdcd7 PASS cả push và pull_request: https://github.com/httrung0308/cena-store-laravel/actions/runs/41182926397 và https://github.com/httrung0308/cena-store-laravel/actions/runs/41182932890 . Đây là run remote thật; PR vẫn draft, không tự merge hoặc báo P01.04 hoàn thành.
 
 ### Phần chưa hoàn tất
 
 EXT-001 cần giao proposal dataset/manifest/sources/codes thật; EXT-002 cần validator đã chốt API và test; owner review, tạo adapter/importer/canonical files, nối HCM code/version và FoundationSeeder/DatabaseSeeder rồi chạy full seed hai lần. P01.04 hiện WIP, số task canonical hoàn tất vẫn6/51; P01.05 chưa bắt đầu. EXT-003/004 và các task còn lại vẫn do bên kia nhận theo dependency.
+
+## Chuẩn bị ledger/outbox độc lập trong lúc chờ EXT (31/10/2026)
+
+Yêu cầu mới: tiếp tục các phần độc lập chưa giao bên kia, giữ source cũ/UI, kiểm đủ và cập nhật nhật ký, không báo cáo riêng. Chọn phần persistence của P01.05 để PREP trên nhánh codex/p01-05-ledger-outbox-primitives, xếp sau core PR#1. Đây không phải hoàn tất P01.05 hoặc nới gate; P01.04 vẫn chờ EXT-001/002.
+
+### Tệp và hành vi đã chuẩn bị
+
+- SalesLedgerService.postUnique: insert/replay trong transaction, signed integer VND, whitelist source/delta, shape7types và source chain. Key giống/intent khác bị conflict; sửa sai phải entry bù. Không thay validation delivered/paid/refund budget/Policy/locks của các service tương lai.
+- OutboxService.enqueue cùng transaction, aggregate ID thật và alias đóng; canonical dedup, không reset SENT/retry metadata. JSON scalar/array strict, chặn known secrets/float/object/UTF8/depth/size lỗi; producer tương lai vẫn phải safe DTO whitelist.
+- OutboxLease readonly, registry/transport interface, safe failure enum và ProcessOutbox. FOR UPDATE claim, lease120s/timeout60s, max10attempt, retry backoff cap3600s, ACK/fail token bảo vệ lease mới, exact-expiry reclaim, poison/attempt exhaustion terminal. Chưa đăng ký transport thật, producer, scheduler hoặc route; thiếu handler thành FAILED, không success giả.
+- OperationKey validator và registry singleton trong AppServiceProvider; không đổi schema/dependencies/enum backing cũ/Resources/UI. Không tạo InventoryService, không giả gateway/SMTP hoặc làm phần EXT-045.
+- Test AtomicInfrastructure/OutboxDelivery/AtomicConcurrency + committed fixture base và guarded worker fixture. Test dùng hai process MySQL riêng với barrier sau missing-key read, không chỉ mô phỏng request tuần tự. Fixture xóa đúng namespace/IDs của test, không reset schema development hoặc chạy suite song song.
+
+### Kiểm tra theo yêu cầu
+
+- Nhóm mới43tests/197assertions PASS trước format: canonical replay/different intent/signed bounds/shape/source/rollback; dedup không hồi sinh sự kiện; strict payload; after-commit; lease/retry/exhaustion/poison; handler thiếu/fail không báo gửi; registry replacement; serialization chỉ eventID.5test race dùng SQL/process thật, có cả hai intent khác nhau và lease claimant.
+- Hai test đầu đọc model instance cũ sau update worker nên expected retry/attempt sai; đã refresh fixture đúng thời điểm và chạy lại cả nhóm. Không nới guard, lease rule hoặc lỗi nghiệp vụ để làm test qua.
+- Full Pint và dirty Pint đã chạy trước full random suite; suite và đối chiếu nguồn đã PASS.
+
+### Kết quả kiểm tra cuối của gói PREP
+
+- `php artisan test --compact tests/Feature/AtomicInfrastructureTest.php tests/Feature/OutboxDeliveryTest.php tests/Feature/AtomicConcurrencyTest.php`: **43tests/197assertions PASS**. Barrier concurrency ép cả hai connection đã đọc key chưa tồn tại trước insert; test khác intent có đúng1winner/1IDEMPOTENCY_MISMATCH. Hai worker claim chỉ1lease sống. Đây là race SQL thật, không phải mock query builder hoặc HTTP tuần tự.
+- `php artisan test --compact --order-by=random --random-order-seed=20261031`: **743tests/7272assertions PASS**,147,483giây; gồm700test cũ/core và43test mới. Các committed fixtures cleanup theo namespace/IDs và child process guard đều hoạt động cùng migration lifecycle/random order.
+- Full Pint và `--dirty --format agent`: PASS sau format. PHP syntax **15 file PHP** mới/thay đổi PASS. Không thay dependencies/lockfiles/migrations/Resources hoặc backing values của enum hiện hữu.
+- Đối chiếu **19 file** thay đổi/mới với allowlist48EXT:0xungđột. SHA256:320file source cũ và32file UI/dependency/migration protected giữ nguyên; spec/reference/TXTtask không sửa. Home/up200, không đổi giao diện hoặc route.
+- Development MySQL vẫn41bảng;roles3/users0/order-payment-refund-ledger-outbox-inventory movement/import đều0. Không chạy service mới trên database development, không ghi dữ liệu tiền/kho hoặc gửi thông báo thật. Test-only fixtures không được coi kịch bản bán hàng đã hoàn thành.
+- Nhánh `codex/p01-05-ledger-outbox-primitives` dựa trên `codex/p01-04-foundation-core`; PR PREP sẽ target nhánh core để diff không trộn phần đã có trong PR#1. Không merge main hoặc PR bên ngoài. Remote CI chỉ được báo PASS sau khi có run thật.
+
+### Gate và phần giữ lại
+
+Số task canonical hoàn thành vẫn6/51. P01.04 chờ dataset/validator/import/shipping review; P01.05 chưa complete vì chưa có InventoryService/stock movement primitives và chưa tích hợp qua prerequisite đầy đủ. Không có sales/delivery/payment/RMA/notification thật được kích hoạt; không đưa code mới lên main hoặc tự merge PR ngoài. Giữ toàn bộ phạm vi48EXT cho bên kia.
