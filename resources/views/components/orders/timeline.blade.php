@@ -1,10 +1,15 @@
 @props(['entries' => []])
-@php($timeZone = new \DateTimeZone('Asia/Ho_Chi_Minh'))
+@php
+    $timeZone = new \DateTimeZone('Asia/Ho_Chi_Minh');
+    $visibleEntries = array_values(array_filter((array) $entries, static fn ($entry) => is_array($entry) && ($entry['visibility'] ?? null) === 'CUSTOMER'));
+@endphp
 <section aria-label="Lịch sử trạng thái" class="space-y-4">
     <h2 class="text-lg font-semibold">Lịch sử cập nhật</h2>
     <ol class="relative space-y-5 border-l border-zinc-200 pl-5">
-        @forelse ($entries as $entry)
-            @if (is_array($entry) && ($entry['visibility'] ?? null) === 'CUSTOMER')
+        @if (count($visibleEntries) === 0)
+            <li class="text-sm text-zinc-500">Chưa có lịch sử công khai.</li>
+        @else
+            @foreach ($visibleEntries as $entry)
                 @php
                     $date = null;
                     try {
@@ -19,7 +24,7 @@
                     @if (isset($entry['actor_name_snapshot']))<p class="text-zinc-600">{{ $entry['actor_name_snapshot'] }}</p>@endif
                     @if (isset($entry['note']))<p>{{ $entry['note'] }}</p>@endif
                 </li>
-            @endif
-        @empty<li class="text-sm text-zinc-500">Chưa có lịch sử công khai.</li>@endforelse
+            @endforeach
+        @endif
     </ol>
 </section>
