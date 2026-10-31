@@ -213,7 +213,7 @@ Người dùng yêu cầu tiếp tục, giữ các phần đã giao cho bên kia
 +- PHP syntax7 file PHP thay đổi/mới PASS; full Pint và `--dirty --format agent` PASS. Dependencies/lockfiles/migrations không thay đổi. Không cần build lại UI vì không sửa frontend.
 +- `db:seed --class=CoreFoundationSeeder --no-interaction` chạy local2lần, cưỡng chế demo flagfalse chỉ trong process. `db:show --counts`:41 bảng,roles3,users0/user_roles0/carts0/administrative_units0, toàn kho/đơn/thu-hoàn/ledger/outbox0. Không in/lưu demo password, env thật giữ nguyên.
 +- SHA256:320/320 file source cũ và32/32 UI/dependency/migration protected giữ nguyên; frozen specification/reference/48-task TXT không sửa. So14 file thay đổi/mới với allowlist của cả48EXT: **0 xung đột đường dẫn**. Homepage và /up200.
-+- Nhánh làm việc `codex/p01-04-foundation-core`, không sửa main trực tiếp. Core sẵn sàng review độc lập nhưng toàn task P01.04 vẫn chưa PASS. PR/CI remote sẽ xác nhận bằng URL thật khi được tạo, không lấy kết quả local làm remote PASS.
++- Nhánh làm việc `codex/p01-04-foundation-core`, không sửa main trực tiếp. Core sẵn sàng review độc lập nhưng toàn task P01.04 vẫn chưa PASS. Draft PR thật: https://github.com/httrung0308/cena-store-laravel/pull/1 . CI GitHub Linux cho commit code2fcdcd7 PASS cả push và pull_request: https://github.com/httrung0308/cena-store-laravel/actions/runs/41182926397 và https://github.com/httrung0308/cena-store-laravel/actions/runs/41182932890 . Đây là run remote thật; PR vẫn draft, không tự merge hoặc báo P01.04 hoàn thành.
 
 ### Phần chưa hoàn tất
 
