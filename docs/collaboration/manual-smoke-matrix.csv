@@ -1,0 +1,97 @@
+WF,Actor,Scenario,Implementation_status_on_main_2026-10-31,Execution_status,Result,Owner_evidence_required
+WF-01,Guest,"Đăng ký, đăng nhập, đăng xuất",NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-01,Customer,"Đăng ký, đăng nhập, đăng xuất",NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-01,Staff,"Đăng ký, đăng nhập, đăng xuất",NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-01,Admin,"Đăng ký, đăng nhập, đăng xuất",NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-02,Guest,OTP reset mật khẩu,NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-02,Customer,OTP reset mật khẩu,NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-02,Staff,OTP reset mật khẩu,NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-02,Admin,OTP reset mật khẩu,NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-03,Guest,"Hồ sơ, role và Admin cuối",NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-03,Customer,"Hồ sơ, role và Admin cuối",NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-03,Staff,"Hồ sơ, role và Admin cuối",NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-03,Admin,"Hồ sơ, role và Admin cuối",NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-04,Guest,Địa giới và sổ địa chỉ,NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-04,Customer,Địa giới và sổ địa chỉ,NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-04,Staff,Địa giới và sổ địa chỉ,NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-04,Admin,Địa giới và sổ địa chỉ,NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-05,Guest,"Category, sản phẩm, phối màu, size và ảnh",NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-05,Customer,"Category, sản phẩm, phối màu, size và ảnh",NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-05,Staff,"Category, sản phẩm, phối màu, size và ảnh",NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-05,Admin,"Category, sản phẩm, phối màu, size và ảnh",NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-06,Guest,Catalog lọc và màu/size,NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-06,Customer,Catalog lọc và màu/size,NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-06,Staff,Catalog lọc và màu/size,NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-06,Admin,Catalog lọc và màu/size,NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-07,Guest,Nhập kho và giá vốn,NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-07,Customer,Nhập kho và giá vốn,NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-07,Staff,Nhập kho và giá vốn,NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-07,Admin,Nhập kho và giá vốn,NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-08,Guest,"Ledger, giữ và kiểm kê",NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-08,Customer,"Ledger, giữ và kiểm kê",NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-08,Staff,"Ledger, giữ và kiểm kê",NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-08,Admin,"Ledger, giữ và kiểm kê",NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-09,Guest,Guest cart / user cart merge,NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-09,Customer,Guest cart / user cart merge,NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-09,Staff,Guest cart / user cart merge,NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-09,Admin,Guest cart / user cart merge,NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-10,Guest,Quote/coupon/ship,NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-10,Customer,Quote/coupon/ship,NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-10,Staff,Quote/coupon/ship,NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-10,Admin,Quote/coupon/ship,NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-11,Guest,Checkout/order,NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-11,Customer,Checkout/order,NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-11,Staff,Checkout/order,NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-11,Admin,Checkout/order,NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-12,Guest,Payment methods,NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-12,Customer,Payment methods,NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-12,Staff,Payment methods,NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-12,Admin,Payment methods,NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-13,Guest,Payment callbacks,NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-13,Customer,Payment callbacks,NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-13,Staff,Payment callbacks,NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-13,Admin,Payment callbacks,NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-14,Guest,Order lifecycle,NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-14,Customer,Order lifecycle,NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-14,Staff,Order lifecycle,NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-14,Admin,Order lifecycle,NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-15,Guest,Shipments,NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-15,Customer,Shipments,NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-15,Staff,Shipments,NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-15,Admin,Shipments,NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-16,Guest,COD / receipts,NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-16,Customer,COD / receipts,NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-16,Staff,COD / receipts,NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-16,Admin,COD / receipts,NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-17,Guest,Refund,NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-17,Customer,Refund,NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-17,Staff,Refund,NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-17,Admin,Refund,NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-18,Guest,Reporting ownership,NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-18,Customer,Reporting ownership,NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-18,Staff,Reporting ownership,NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-18,Admin,Reporting ownership,NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-19,Guest,Reviews,NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-19,Customer,Reviews,NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-19,Staff,Reviews,NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-19,Admin,Reviews,NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-20,Guest,RMA flows,NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-20,Customer,RMA flows,NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-20,Staff,RMA flows,NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-20,Admin,RMA flows,NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-21,Guest,Đổi size/bảo hành/trả lỗi,NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-21,Customer,Đổi size/bảo hành/trả lỗi,NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-21,Staff,Đổi size/bảo hành/trả lỗi,NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-21,Admin,Đổi size/bảo hành/trả lỗi,NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-22,Guest,Doanh thu/dòng tiền/lợi nhuận,NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-22,Customer,Doanh thu/dòng tiền/lợi nhuận,NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-22,Staff,Doanh thu/dòng tiền/lợi nhuận,NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-22,Admin,Doanh thu/dòng tiền/lợi nhuận,NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-23,Guest,Chứng từ/thông báo/tracking,NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-23,Customer,Chứng từ/thông báo/tracking,NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-23,Staff,Chứng từ/thông báo/tracking,NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-23,Admin,Chứng từ/thông báo/tracking,NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-24,Guest,Seed/demo/reset,NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-24,Customer,Seed/demo/reset,NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-24,Staff,Seed/demo/reset,NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
+WF-24,Admin,Seed/demo/reset,NOT_IMPLEMENTED,NOT_RUN,NOT_RUN,Verify canonical phase + actual endpoint/permissions/MySQL evidence before marking PASS
