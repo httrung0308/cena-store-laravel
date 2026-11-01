@@ -101,3 +101,21 @@ Demo chỉ bật có chủ đích trong local/testing bằng STORE_DEMO_USERS=tr
 Palette config tái sử dụng12 key của source: red/blue/green/yellow/black/white/gray/pink/purple/orange/brown/lime. Không có bảng palette mới. Shipping giữ30k/40k và ngưỡng2triệu VND; HCM province code/dataset version chưa thiết lập cho tới khi dữ liệu được duyệt. Đây chưa phải PricingService. Factory wardOf chỉ là fixture synthetic cho test, không được dùng làm địa giới demo thật.
 
 Hợp đồng với bên cộng tác: [administrative-data-contract.md](docs/collaboration/administrative-data-contract.md). Giữ nguyên48 allowlist và prompt đã giao; owner không tự làm lại EXT-001/002/003/004.
+
+## Chuẩn bị độc lập ledger/outbox trong lúc chờ EXT
+
+Nhánh codex/p01-05-ledger-outbox-primitives chuẩn bị phần persistence của P01.05, dựa trên core PR#1. P01.04 vẫn chờ dataset/validator; chưa đóng gate P01.05, chưa có InventoryService hoặc workflow checkout/delivery/refund thật. Không thay routes/UI/schema/lockfiles, không có producer/scheduler/transport được bật và không gửi email thật.
+
+SalesLedgerService::postUnique nhận operation key, enum type, signed VND deltas, source IDs và occurredAt snapshot; chỉ gọi trong transaction nghiệp vụ. Service kiểm whitelist/type/range/shape/source chain và insert hoặc replay đúng intent; sửa sai bằng entry bù mới. Nó không thay kiểm tra paid/delivered/refund budget/Policy/row locks của service nghiệp vụ tương lai. Không truyền request.all() vào service.
+
+OutboxService::enqueue phải cùng transaction nghiệp vụ, dedup key chỉ dùng cho đúng một intent. Payload chỉ có JSON scalar/array đã whitelist phía producer; known password/OTP/token/bank credential keys, float/object/depth/UTF8/size lỗi bị chặn. Cần message DTO theo event ở P10; kiểm key chung không chứng minh một chuỗi bất kỳ không chứa bí mật. Replay không đổi payload, schedule hoặc trạng thái đã gửi.
+
+ProcessOutbox chỉ mang event ID và afterCommit=true. Claim/delivery/ACK không được chạy trong transaction nghiệp vụ. Lease mặc định120giây, job timeout60giây, tối đa10lần thử, backoff30giây tăng đến3600giây; stale/expired worker không thể ACK/fail lease mới. Registry mặc định rỗng: handler thiếu thành FAILED chứ không success giả. Chỉ đăng ký transport thông báo từ code server đã review, không chọn class từ payload và không chạy lại tiền/kho trong delivery. Chưa nối scheduler/worker CLI hoặc mail templates của EXT-045. Email là ít-nhất-một-lần; crash sau provider send trước ACK có thể gửi lặp, transport nên dùng dedup_key khi provider hỗ trợ.
+
+Kiểm tra trọng tâm:
+
+```powershell
+.\scripts\php.ps1 artisan test --compact tests/Feature/AtomicInfrastructureTest.php tests/Feature/OutboxDeliveryTest.php tests/Feature/AtomicConcurrencyTest.php
+```
+
+Concurrency test dùng hai PHP process/MySQL connection thật và barrier ép cả hai đọc key chưa tồn tại trước insert. Worker fixture tự kiểm TestDatabaseGuard; credential truyền qua process env, không argv/output. Committed fixtures được xóa theo namespace/IDs của chính test; không dùng migrate:fresh, không chạy song song các test suite dùng chung schema. Đây là bằng chứng cho primitive, chưa phải race gate payment/inventory của các phase sau.

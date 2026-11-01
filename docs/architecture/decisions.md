@@ -188,3 +188,25 @@ Người dùng yêu cầu tiếp tục phần owner, chừa phạm vi đã giao 
 CoreFoundationSeeder bao transaction roles/demo identity, không thay DatabaseSeeder hoặc công bố task hoàn thành. Roles upsert theo slug, giữ ID/timestamps để không đứt FK. DemoUsersSeeder opt-in qua config, chỉ local/testing; password private12..72 bytes và không default. Chỉ tạo user mới từ config .test đã kiểm; user hiện hữu chỉ được coi replay khi còn active/notdeleted, password match và đúng một role. Không sửa profile/password/quyền/active của user cũ, không tái cấp Admin đã revoke; conflict rollback cả batch. Cart trống thiếu có thể tạo lại cho demo account đã được kiểm, không sửa giỏ đã có. UserRole vẫn fully guarded, seed gán server attributes tường minh. Không gửi mail/đụng kho/tiền/ledger.
 
 Palette nằm trong config vì canonical không có bảng màu riêng. Giữ đúng12 key và màu Tailwind gốc, gồm brown=amber900 và lime=lime400. Shipping config có ngưỡng2triệu/fee30k-40k, code/version chưa đặt trước review dataset. Factory wardOf là synthetic fixture, liên kết parent province/version/date, không dataset production.
+
+## ADR-011 — Chuẩn bị ledger/outbox độc lập, không đóng gate trước dataset
+
+Người dùng yêu cầu tiếp tục phần chưa giao trong lúc chờ EXT. Cho phép chuẩn bị/test module độc lập như các PREP component, vẫn giữ gate P01.04/P01.05 pending. Nhánh mới xếp sau PR core#1; source cũ/UI/các allowlist EXT không sửa. Không thay canonical specification hoặc schema.
+
+### Ledger persistence
+
+postUnique yêu cầu transaction của caller; nested savepoint giúp insert/replay tách biệt mà không commit nghiệp vụ sớm. Deltas chỉ bốn cột signed BIGINT VND, strict int/digit string, kể cả PHP_INT_MIN/MAX; không float/abs(min)/money cent. Sources chỉ năm FK nullable/int dương. Kiểm shape7 loại bút toán và quan hệ unit→order/RMA/refund; không hardcode ID hoặc lấy catalog price/WAC hiện tại. OccurredAt do caller truyền từ snapshot, chuẩn UTC microsecond.
+
+Same operation_key+canonical intent trả row gốc, không update timestamps/amount/date. Khác type/source/delta/occurredAt/key case trả IDEMPOTENCY_MISMATCH. Unique index MySQL là lớp bảo vệ race cuối; duplicate insert rollback savepoint rồi locking-read row thắng để không đọc lại snapshot cũ của REPEATABLE READ. Caller phải để conflict/DB exception đi ra ngoài transaction để rollback toàn nghiệp vụ. Deadlock retry của caller chỉ bọc SQL, không I/O ngoài DB.
+
+Service là persistence primitive, không xác nhận delivered/paid/refund limits hoặc thay Policy/locks workflow. Caller phải kiểm các điều kiện đó trước post. Append-only là API service (không có update/delete); không tuyên bố có DB trigger cấm mọi SQL edit. Các bút toán bù dùng key mới và delta signed, giữ lịch sử gốc.
+
+### Outbox persistence và delivery
+
+Enqueue chỉ trong transaction, aggregate alias đóng ORDER/RMA/REFUND/USER và ID có thật. Dedup identity gồm exact key/event/alias/ID/canonical payload; available_at ban đầu và trạng thái vận hành không tham gia replay identity, lần đầu wins, không dùng key cũ để reschedule/đổi payload. Payload không nhận object/float, giới hạn depth32/64KiB, UTF8/known secret keys được kiểm. Producer tương lai phải whitelist safe DTO; generic key validation không thay security review từng message.
+
+Worker claim chỉ khi transactionLevel0, root transaction có retry SQL3lần và FOR UPDATE. PENDING/FAILED đã tới available_at hoặc PROCESSING hết lease mới claim; SENT không claim. available_at inclusive, lease_until exclusive. Lease token là tuple(id,attempt,lease_until), ACK/fail conditional theo tuple và lease còn hạn nên worker cũ không sửa lease mới. Attempts tối đa10, timeout job60<queue retry90<lease120 mặc định; reclaim crash hết10attempt thành terminal FAILED. Payload poison từ ngoài service được đánh dấu INVALID_PAYLOAD và không giao.
+
+Transport nằm ngoài transaction; registry singleton mặc định không handler, chỉ server code được đăng ký OutboxDelivery. ProcessOutbox chỉ serialize event ID và dispatch after commit. Missing handler/transport failure lưu mã lỗi tĩnh, không exception message/SQL/OTP/path. Failure retry backoff30×2^(attempt−1) cap3600, terminal reason không lặp vô hạn. Chưa có scheduler scan/dispatch hoặc transport thực; P10 sẽ nối các phần đó sau prerequisite và EXT mail template contract.
+
+Không hứa exactly-once SMTP: crash sau send trước ACK có thể lặp. Ledger/stock uniqueness độc lập việc gửi mail. Outbox handler chỉ giao thông báo, không chạy lại nghiệp vụ tiền/kho. Không đăng ký transport động từ class name/payload hoặc báo success khi chưa gửi.
