@@ -180,3 +180,11 @@ RequestId middleware tạo UUID server cho mỗi request, không tin header X-Re
 Blade DomainException409/422 redirect back với error bag, flash error/error_code và old input đã bỏ password/OTP/token/bank account. ValidationException Blade dùng error bag/redirect chuẩn Laravel với dontFlash tương ứng;403/404/419/500 giữ status, không biến thành success. Browser auth redirect route login khi tồn tại; AJAX/API luôn401. Hiện chưa thêm màn hình/toast mới hoặc endpoint auth/cart/quote: các phase sau nối các slot flash/envelope này vào giao diện gốc.
 
 Tham chiếu implementation: Laravel13 Exceptions/JsonResource trong vendor đã cài; [Laravel13 errors](https://laravel.com/docs/13.x/errors), [PHP BCMath](https://www.php.net/manual/en/book.bc.php). Không thêm package mới.
+
+## ADR-010 — P01.04 core và phân chia công việc song song
+
+Người dùng yêu cầu tiếp tục phần owner, chừa phạm vi đã giao bên khác. Dataset proposal/validator thuộc EXT-001/002; UI map/form thuộc EXT-003/004 và các allowlist48EXT được giữ nguyên. Hợp đồng boundary địa giới xem ../collaboration/administrative-data-contract.md. Không seed địa giới giả hoặc chuyển sang P01.05 chỉ vì core identity đã chạy.
+
+CoreFoundationSeeder bao transaction roles/demo identity, không thay DatabaseSeeder hoặc công bố task hoàn thành. Roles upsert theo slug, giữ ID/timestamps để không đứt FK. DemoUsersSeeder opt-in qua config, chỉ local/testing; password private12..72 bytes và không default. Chỉ tạo user mới từ config .test đã kiểm; user hiện hữu chỉ được coi replay khi còn active/notdeleted, password match và đúng một role. Không sửa profile/password/quyền/active của user cũ, không tái cấp Admin đã revoke; conflict rollback cả batch. Cart trống thiếu có thể tạo lại cho demo account đã được kiểm, không sửa giỏ đã có. UserRole vẫn fully guarded, seed gán server attributes tường minh. Không gửi mail/đụng kho/tiền/ledger.
+
+Palette nằm trong config vì canonical không có bảng màu riêng. Giữ đúng12 key và màu Tailwind gốc, gồm brown=amber900 và lime=lime400. Shipping config có ngưỡng2triệu/fee30k-40k, code/version chưa đặt trước review dataset. Factory wardOf là synthetic fixture, liên kết parent province/version/date, không dataset production.
