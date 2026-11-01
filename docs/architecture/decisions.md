@@ -180,3 +180,49 @@ RequestId middleware tạo UUID server cho mỗi request, không tin header X-Re
 Blade DomainException409/422 redirect back với error bag, flash error/error_code và old input đã bỏ password/OTP/token/bank account. ValidationException Blade dùng error bag/redirect chuẩn Laravel với dontFlash tương ứng;403/404/419/500 giữ status, không biến thành success. Browser auth redirect route login khi tồn tại; AJAX/API luôn401. Hiện chưa thêm màn hình/toast mới hoặc endpoint auth/cart/quote: các phase sau nối các slot flash/envelope này vào giao diện gốc.
 
 Tham chiếu implementation: Laravel13 Exceptions/JsonResource trong vendor đã cài; [Laravel13 errors](https://laravel.com/docs/13.x/errors), [PHP BCMath](https://www.php.net/manual/en/book.bc.php). Không thêm package mới.
+
+## ADR-010 — P01.04 core và phân chia công việc song song
+
+Người dùng yêu cầu tiếp tục phần owner, chừa phạm vi đã giao bên khác. Dataset proposal/validator thuộc EXT-001/002; UI map/form thuộc EXT-003/004 và các allowlist48EXT được giữ nguyên. Hợp đồng boundary địa giới xem ../collaboration/administrative-data-contract.md. Không seed địa giới giả hoặc chuyển sang P01.05 chỉ vì core identity đã chạy.
+
+CoreFoundationSeeder bao transaction roles/demo identity, không thay DatabaseSeeder hoặc công bố task hoàn thành. Roles upsert theo slug, giữ ID/timestamps để không đứt FK. DemoUsersSeeder opt-in qua config, chỉ local/testing; password private12..72 bytes và không default. Chỉ tạo user mới từ config .test đã kiểm; user hiện hữu chỉ được coi replay khi còn active/notdeleted, password match và đúng một role. Không sửa profile/password/quyền/active của user cũ, không tái cấp Admin đã revoke; conflict rollback cả batch. Cart trống thiếu có thể tạo lại cho demo account đã được kiểm, không sửa giỏ đã có. UserRole vẫn fully guarded, seed gán server attributes tường minh. Không gửi mail/đụng kho/tiền/ledger.
+
+Palette nằm trong config vì canonical không có bảng màu riêng. Giữ đúng12 key và màu Tailwind gốc, gồm brown=amber900 và lime=lime400. Shipping config có ngưỡng2triệu/fee30k-40k, code/version chưa đặt trước review dataset. Factory wardOf là synthetic fixture, liên kết parent province/version/date, không dataset production.
+
+## ADR-011 — Chuẩn bị ledger/outbox độc lập, không đóng gate trước dataset
+
+Người dùng yêu cầu tiếp tục phần chưa giao trong lúc chờ EXT. Cho phép chuẩn bị/test module độc lập như các PREP component, vẫn giữ gate P01.04/P01.05 pending. Nhánh mới xếp sau PR core#1; source cũ/UI/các allowlist EXT không sửa. Không thay canonical specification hoặc schema.
+
+### Ledger persistence
+
+postUnique yêu cầu transaction của caller; nested savepoint giúp insert/replay tách biệt mà không commit nghiệp vụ sớm. Deltas chỉ bốn cột signed BIGINT VND, strict int/digit string, kể cả PHP_INT_MIN/MAX; không float/abs(min)/money cent. Sources chỉ năm FK nullable/int dương. Kiểm shape7 loại bút toán và quan hệ unit→order/RMA/refund; không hardcode ID hoặc lấy catalog price/WAC hiện tại. OccurredAt do caller truyền từ snapshot, chuẩn UTC microsecond.
+
+Same operation_key+canonical intent trả row gốc, không update timestamps/amount/date. Khác type/source/delta/occurredAt/key case trả IDEMPOTENCY_MISMATCH. Unique index MySQL là lớp bảo vệ race cuối; duplicate insert rollback savepoint rồi locking-read row thắng để không đọc lại snapshot cũ của REPEATABLE READ. Caller phải để conflict/DB exception đi ra ngoài transaction để rollback toàn nghiệp vụ. Deadlock retry của caller chỉ bọc SQL, không I/O ngoài DB.
+
+Service là persistence primitive, không xác nhận delivered/paid/refund limits hoặc thay Policy/locks workflow. Caller phải kiểm các điều kiện đó trước post. Append-only là API service (không có update/delete); không tuyên bố có DB trigger cấm mọi SQL edit. Các bút toán bù dùng key mới và delta signed, giữ lịch sử gốc.
+
+### Outbox persistence và delivery
+
+Enqueue chỉ trong transaction, aggregate alias đóng ORDER/RMA/REFUND/USER và ID có thật. Dedup identity gồm exact key/event/alias/ID/canonical payload; available_at ban đầu và trạng thái vận hành không tham gia replay identity, lần đầu wins, không dùng key cũ để reschedule/đổi payload. Payload không nhận object/float, giới hạn depth32/64KiB, UTF8/known secret keys được kiểm. Producer tương lai phải whitelist safe DTO; generic key validation không thay security review từng message.
+
+Worker claim chỉ khi transactionLevel0, root transaction có retry SQL3lần và FOR UPDATE. PENDING/FAILED đã tới available_at hoặc PROCESSING hết lease mới claim; SENT không claim. available_at inclusive, lease_until exclusive. Lease token là tuple(id,attempt,lease_until), ACK/fail conditional theo tuple và lease còn hạn nên worker cũ không sửa lease mới. Attempts tối đa10, timeout job60<queue retry90<lease120 mặc định; reclaim crash hết10attempt thành terminal FAILED. Payload poison từ ngoài service được đánh dấu INVALID_PAYLOAD và không giao.
+
+Transport nằm ngoài transaction; registry singleton mặc định không handler, chỉ server code được đăng ký OutboxDelivery. ProcessOutbox chỉ serialize event ID và dispatch after commit. Missing handler/transport failure lưu mã lỗi tĩnh, không exception message/SQL/OTP/path. Failure retry backoff30×2^(attempt−1) cap3600, terminal reason không lặp vô hạn. Chưa có scheduler scan/dispatch hoặc transport thực; P10 sẽ nối các phần đó sau prerequisite và EXT mail template contract.
+
+Không hứa exactly-once SMTP: crash sau send trước ACK có thể lặp. Ledger/stock uniqueness độc lập việc gửi mail. Outbox handler chỉ giao thông báo, không chạy lại nghiệp vụ tiền/kho. Không đăng ký transport động từ class name/payload hoặc báo success khi chưa gửi.
+
+## ADR-012 — InventoryService PREP, sở hữu bucket và lịch sử giá vốn
+
+Theo yêu cầu mới, chuẩn bị InventoryService độc lập của P01.05 trên nhánh xếp sau ledger/outbox PR#2. Đây không đóng gate P01.04/P01.05, không tích hợp PR EXT hoặc bật giao diện/routes/workflows. Schema/model/enum gốc giữ nguyên.
+
+InventoryChange là intent readonly do server dựng; service tự tính delta theo action đóng, không nhận arbitrary counter updates. Caller giữ transaction và khóa actor/role, roots/items/units theo canonical trước khi gọi; service khóa toàn bộ variant IDs tăng dần, locking-read source/history hiện hành và ghi movement+balances+companion loss trong savepoint. Nếu một intent lỗi thì toàn batch rollback, kể cả khi caller bắt DomainException. Root transaction retry SQL-only do caller; không retry riêng một nửa thao tác đổi size hoặc I/O. Wrapper chỉ nhận nhóm action phù hợp; applyBatch phục vụ đa SKU/đổi size.
+
+Bucket INT UNSIGNED cho phép4294967295 nhưng delta INT signed giới hạn quantity2147483647 mỗi movement. Kiểm bounds trước SQL và reserved<=stock. Reserve/release không đổi stock, dispatch giảm cả stock/reserved. Chỉ lấy held reserve của đúng Order/RMA; cumulative dispatched và held không vượt source quantity. Quarantine thuộc receipt nguồn, mỗi shipment-return-item/RMA tối đa một đôi đã nhận, không dựa một số dư toàn cục để dispose. RMA WarrantyRepair không sở hữu hàng cửa hàng; không movement. Manual quarantine writeoff yêu cầu nguồn thực, current Admin/reason và RMA đã đóng; open RMA không bị rút hàng bằng adjustment tùy ý.
+
+Import/WAC/restock dùng Cost BCMath4; stock bao gồm reserve, quarantine không tham gia WAC. Outgoing basis là WAC tại lúc xuất; restock/writeoff dùng basis của receipt cách ly đã ghi, không lấy lại giá catalog hoặc snapshot đã sửa. Stock0 giữ last WAC. MANUAL_ADJUST_OUT tạo INVENTORY_LOSS một lần với key dẫn xuất SHA256 của operation key, source movement, order null, signed expense VND làm tròn tổng một lần; lỗi ledger/overflow rollback cả số dư/movement. Các disposition hậu mãi/giao trả cần workflow quyết định ledger để không double expense.
+
+Operation key UNIQUE theo schema. Replay so exact key/action/variant/ref/quantity/input basis/actor/reason chuẩn hóa, trả row gốc không đổi timestamp/actor snapshot/basis đã dẫn xuất. Replay được xét trước current status/actor/catalog và kiểm drift vì không viết mới; không phục hồi quyền hoặc tạo thêm tài sản. Different intent, kể cả key đổi case trên collation case-insensitive, là IDEMPOTENCY_MISMATCH. Duplicate insert rollback savepoint trước current-read/replay; deadlock đi ra outer SQL transaction để retry toàn nghiệp vụ.
+
+Reconciliation trước mỗi write reconstruct ba bucket, ownership reserve/quarantine và cost chain từ0, so current variant; mismatch chặn STATE_CONFLICT, không sửa lịch sử hoặc tạo movement bù tự động. Đây là correctness-first implementation đọc toàn history dưới lock: chưa tối ưu volume lớn, chưa thay scheduled report P04. Không có database trigger cấm mọi SQL edit; append-only là hợp đồng service và quyền ứng dụng.
+
+Tests dùng MySQL thật. Ngoài transactional fixtures, InventoryConcurrencyTest giữ variant locks ở parent và chờ cả hai guarded child worker tới locking-read rồi nhả; mỗi child tạo snapshot cũ trước service. Kiểm oversell/replay/khác intent/cùng key khác SKU/batch đảo thứ tự/release-vs-dispatch với connection IDs khác nhau. Join/stop child trước cleanup chính xác fixture IDs; credential chỉ process env. Không cho phép suite độc lập chạy song song cùng test schema.
