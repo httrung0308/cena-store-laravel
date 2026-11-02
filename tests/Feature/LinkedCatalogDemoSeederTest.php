@@ -86,4 +86,35 @@ class LinkedCatalogDemoSeederTest extends TestCase
         $this->expectException(LogicException::class);
         $this->seed(LinkedCatalogDemoSeeder::class);
     }
+
+    public function test_several_links_build_an_album_and_a_rerun_resyncs_it_without_touching_stock_or_price(): void
+    {
+        $base = 'https://static.example.test/a/images/f_auto,c_scale/';
+        file_put_contents($this->file, "men | Album Runner | {$base}side.png {$base}top.png {$base}sole.png | white | 2500000
+");
+        $this->seed(LinkedCatalogDemoSeeder::class);
+
+        $product = Product::query()->where('slug', 'demo-album-runner')->sole();
+        $color = $product->colors->sole();
+        $album = fn () => ProductImage::query()->where('product_color_id', $color->id)->orderBy('display_order')->get();
+        $this->assertSame([$base.'side.png', $base.'top.png', $base.'sole.png'], $album()->pluck('external_url')->all());
+        $this->assertSame([true, false, false], $album()->pluck('is_thumbnail')->all());
+        $stock = ProductVariant::query()->where('product_color_id', $color->id)->orderBy('id')->pluck('stock_qty')->all();
+
+        $this->get(route('shoes.show', $product->slug))->assertOk()
+            ->assertSee('data-gallery-zoom', false)
+            ->assertViewHas('albums', fn (array $albums) => array_column($albums[(string) $color->id], 'url') === [$base.'side.png', $base.'top.png', $base.'sole.png']
+                && $albums[(string) $color->id][2]['alt'] === 'Album Runner — góc 3');
+
+        $firstId = $album()->first()->id;
+        file_put_contents($this->file, "men | Album Runner | {$base}side.png {$base}back.png | white | 9900000
+");
+        $this->seed(LinkedCatalogDemoSeeder::class);
+
+        $this->assertSame([$base.'side.png', $base.'back.png'], $album()->pluck('external_url')->all());
+        $this->assertSame($firstId, $album()->first()->id, 'Unchanged links keep their image row.');
+        $this->assertSame(2_500_000, $product->fresh()->base_price, 'A re-run never reprices an existing product.');
+        $this->assertSame($stock, ProductVariant::query()->where('product_color_id', $color->id)->orderBy('id')->pluck('stock_qty')->all());
+        $this->assertSame(1, StockImport::query()->count());
+    }
 }
