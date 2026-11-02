@@ -124,6 +124,8 @@ final class CatalogQueryService
                 'category' => $product->category->name,
                 'warranty_months' => $product->warranty_months,
                 'exchange_days' => $product->exchange_days,
+                'rating_avg' => (float) $product->rating_avg,
+                'reviews_count' => (int) $product->reviews_count,
                 'price_label' => $this->formatVnd(min(array_column($variants, 'effective_price'))),
             ],
             'colors' => $colors,

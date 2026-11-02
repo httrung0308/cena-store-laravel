@@ -11,6 +11,7 @@
         ['route' => 'admin.products.index', 'label' => 'Sản phẩm'],
         ['route' => 'admin.stock-imports.index', 'label' => 'Nhập kho'],
         ['route' => 'admin.orders.index', 'label' => 'Đơn hàng'],
+        ['route' => 'admin.reviews.index', 'label' => 'Đánh giá'],
     ];
     if (auth()->user()?->hasRole(App\Enums\RoleSlug::Admin)) {
         $sections[] = ['route' => 'admin.users.index', 'label' => 'Người dùng'];

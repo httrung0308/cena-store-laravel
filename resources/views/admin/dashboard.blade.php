@@ -11,6 +11,7 @@
         ['route' => 'admin.products.index', 'label' => 'Quản lý sản phẩm', 'description' => 'Sản phẩm, phối màu, size và ảnh'],
         ['route' => 'admin.stock-imports.index', 'label' => 'Phiếu nhập kho', 'description' => 'Tạo phiếu nháp, ghi sổ để cộng tồn kho'],
         ['route' => 'admin.orders.index', 'label' => 'Quản lý đơn hàng', 'description' => 'Xác nhận, đóng gói, giao hàng, thu COD và hủy đơn'],
+        ['route' => 'admin.reviews.index', 'label' => 'Quản lý đánh giá', 'description' => 'Phản hồi, ẩn hoặc hiện đánh giá của khách'],
     ];
     $isAdmin = $user->hasRole(App\Enums\RoleSlug::Admin);
 @endphp

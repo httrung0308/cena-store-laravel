@@ -7,6 +7,7 @@
     $tz = (string) config('store.business_timezone');
     $address = $order->shipping_address_snapshot ?? [];
     $justPlaced = session('status') !== null && $order->order_status === App\Enums\OrderStatus::Pending;
+    $canReview = $order->order_status === App\Enums\OrderStatus::Delivered && $order->payment_status === App\Enums\OrderPaymentStatus::Paid;
 @endphp
 
 @section('content')
@@ -55,6 +56,35 @@
                             <p class="text-base font-semibold">{{ $item->product_name_snapshot }}</p>
                             <p class="text-zinc-600">{{ $item->color_name_snapshot }} · Size {{ $item->size_value_snapshot }} · SL {{ $item->quantity }} × {{ $vnd($item->unit_price) }}</p>
                             <p class="mt-1 font-semibold">{{ $vnd($item->net_amount) }}</p>
+                            @if ($canReview)
+                                @foreach ($item->units as $unit)
+                                    @php($review = $unit->review)
+                                    <details class="mt-3 rounded-lg border border-zinc-200 p-3" @if ($errors->any() && (int) old('unit_id') === $unit->id) open @endif>
+                                        <summary class="cursor-pointer text-sm font-semibold">
+                                            Đôi #{{ $unit->unit_no }} ·
+                                            @if ($review) <x-reviews.stars :rating="$review->rating" class="align-middle" /> Sửa đánh giá @if (! $review->is_visible)<span class="text-xs text-zinc-500">(đang bị ẩn)</span>@endif
+                                            @else Viết đánh giá @endif
+                                        </summary>
+                                        <form method="POST" action="{{ route('account.reviews.store') }}" class="mt-3 space-y-2">
+                                            @csrf
+                                            <input type="hidden" name="unit_id" value="{{ $unit->id }}">
+                                            <label class="block text-xs font-semibold">Số sao
+                                                <select name="rating" class="input mt-1 block border-zinc-300">
+                                                    @foreach (array_reverse(App\Http\Requests\Account\ReviewRequest::RATINGS) as $value)
+                                                        <option value="{{ $value }}" @selected(old('unit_id') == $unit->id ? old('rating') === $value : ($review ? number_format((float) $review->rating, 1, '.', '') === $value : $value === '5.0'))>{{ rtrim(rtrim(str_replace('.', ',', $value), '0'), ',') }} sao</option>
+                                                    @endforeach
+                                                </select>
+                                            </label>
+                                            <label class="block text-xs font-semibold">Nhận xét
+                                                <textarea name="comment" rows="3" minlength="10" maxlength="2000" required class="input mt-1 w-full border-zinc-300 font-normal" placeholder="Giày đi có êm không, size có chuẩn không...">{{ old('unit_id') == $unit->id ? old('comment') : $review?->comment }}</textarea>
+                                            </label>
+                                            @if ((int) old('unit_id') === $unit->id)@foreach ($errors->all() as $error)<p class="text-xs text-red-500">{{ $error }}</p>@endforeach @endif
+                                            @if ($review?->admin_reply)<p class="rounded bg-zinc-50 p-2 text-xs"><span class="font-semibold">Cửa hàng phản hồi:</span> {{ $review->admin_reply }}</p>@endif
+                                            <button type="submit" class="rounded-full bg-black px-4 py-2 text-xs font-semibold text-white">{{ $review ? 'Cập nhật đánh giá' : 'Gửi đánh giá' }}</button>
+                                        </form>
+                                    </details>
+                                @endforeach
+                            @endif
                         </div>
                     </div>
                 @endforeach
