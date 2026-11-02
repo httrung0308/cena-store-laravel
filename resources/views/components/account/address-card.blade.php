@@ -6,6 +6,9 @@
     </div>
     <p>{{ $address['phone'] ?? '' }}</p>
     <p>{{ $address['street_address'] ?? '' }}, {{ $address['ward_name_snapshot'] ?? '' }}, {{ $address['province_name_snapshot'] ?? '' }}</p>
+    @if (($address['outdated'] ?? false) === true)
+        <p role="status" class="text-xs text-amber-700">Địa chỉ được lưu theo danh mục địa giới cũ. Vui lòng sửa và chọn lại tỉnh / phường.</p>
+    @endif
     <div class="flex flex-wrap gap-3">
         @if ($editUrl)<a href="{{ $editUrl }}" class="text-sm underline">Sửa</a>@endif
         @if ($deleteUrl)<form action="{{ $deleteUrl }}" method="POST">@csrf @method('DELETE')<button type="submit" class="underline">Xóa</button></form>@endif

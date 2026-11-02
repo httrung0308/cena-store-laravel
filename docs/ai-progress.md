@@ -333,3 +333,15 @@ Nguồn người dùng chọn: Địa Chỉ Việt (diachiviet.com, CC BY 4.0), 
 - Nền ngoại lệ đã merge riêng trong PR-X0 (#10): TestDatabaseGuard chỉ thêm cặp chính xác cena_store_test_codex/cena_test_codex, chặn cross-pair/cache/root/SQLite. User Codex chỉ có quyền trên schema Codex. .env riêng và PHPUnit config riêng ngoài Git vượt force-name của phpunit.xml chung; không sửa phpunit.xml/credential/schema của Claude.
 - Kiểm tra hẹp:25tests/93assertions PASS, gồm12 test nghiệp vụ/quyền và13 test guard. Build npm PASS; full Pint và dirty Pint PASS; desktop1440x900/mobile360x800 đã kiểm trực tiếp danh mục/NCC, thao tác và form giữ style Cena. Lần đầu thiếu build manifest và expected locked403 không còn đúng sau C1 (trả401): đã build asset và sửa expected theo middleware hiện hành, không nới quyền.
 - Fixture browser chỉ trong schema Codex, dừng server riêng rồi reset đúng schema Codex có guard, không reset schema Claude/dev. CI toàn suite phải xanh trước squash merge; không tự sửa các phần Claude đang làm.
+## Đợt 7 chức năng — PR-C3 sổ địa chỉ (02/11/2026, Claude)
+
+Theo WF-04 / P02.05 ở mức tối thiểu.
+
+- `AddressService`: thêm, sửa, xóa mềm, đặt mặc định. Mọi thao tác khóa dòng user trước, nên hai yêu cầu đặt mặc định cùng lúc chạy tuần tự; DB còn chặn thêm bằng cột `default_owner_id` unique. Địa chỉ đầu tiên tự thành mặc định; bỏ tick mặc định của địa chỉ mặc định duy nhất bị bỏ qua; xóa địa chỉ mặc định thì bỏ cờ trước rồi chuyển mặc định cho địa chỉ còn lại có id nhỏ nhất.
+- Tỉnh/phường phải thuộc snapshot hiện hành và phường đúng tỉnh; lưu `province_id/ward_id` + snapshot mã, tên, `dataset_version`. Địa chỉ của snapshot cũ hiện cảnh báo cần chọn lại.
+- Chủ sở hữu luôn lấy từ phiên; địa chỉ người khác hoặc đã xóa trả 404 cho xem/sửa/xóa/đặt mặc định.
+- `App\Support\PhoneNumber` chuẩn hóa SĐT (bỏ dấu cách/chấm/gạch, `+84` → `0`), dùng chung cho đăng ký và địa chỉ.
+- Giao diện `/account/addresses` (danh sách, thêm, sửa) trong layout cửa hàng; ô chọn tỉnh → phường của EXT-019 được nối với API `locations.wards` qua prop `wardsUrl`, giữ lựa chọn cũ khi lỗi nhập; ô "Đặt làm mặc định" dùng `choice-group`. Panel tài khoản tự hiện "Sổ địa chỉ".
+- Test `AddressBookTest` 9 ca: khách bị chuyển đăng nhập, địa chỉ đầu tiên mặc định + snapshot, phường sai tỉnh/snapshot cũ/sai định dạng bị chặn, đổi mặc định chỉ còn 1, sửa chụp lại snapshot, xóa mặc định chuyển sang id nhỏ nhất, địa chỉ người khác 404, DB chặn 2 mặc định, trang escape dữ liệu và hiện cảnh báo snapshot cũ.
+- Trình duyệt (DB dev, dữ liệu thật): chưa đăng nhập bị chuyển login rồi quay về sổ địa chỉ; chọn TP.HCM tải 168 phường; thêm địa chỉ thành công, tự mặc định; trang sửa chọn sẵn đúng tỉnh/phường.
+- Giới hạn: chưa có test hai tiến trình MySQL cho đặt mặc định đồng thời — dựa vào khóa dòng user và ràng buộc unique của DB (có test).
