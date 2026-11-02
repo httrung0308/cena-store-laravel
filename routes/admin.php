@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\CategoryController;
+use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\SupplierController;
 use Illuminate\Support\Facades\Route;
 
@@ -18,3 +19,6 @@ Route::patch('categories/{category}/deactivate', [CategoryController::class, 'de
 
 Route::resource('suppliers', SupplierController::class)->except(['show', 'destroy']);
 Route::patch('suppliers/{supplier}/deactivate', [SupplierController::class, 'deactivate'])->name('suppliers.deactivate');
+
+Route::resource('products', ProductController::class)->except(['show', 'destroy']);
+Route::patch('products/{product}/deactivate', [ProductController::class, 'deactivate'])->name('products.deactivate');
