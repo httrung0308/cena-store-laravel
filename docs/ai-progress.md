@@ -448,3 +448,11 @@ Theo WF-09 / P05.02–P05.04 ở mức tối thiểu (chưa có checkout).
 - Test: `UserManagementTest` 6 ca (phân quyền + tìm/lọc + escape, khóa đăng xuất phiên và mở khóa, chặn tự khóa/tự bỏ Admin + Admin cuối, vai trò theo tập, hồ sơ không đổi email/quyền, đổi mật khẩu sai/đúng + đăng nhập lại). Full suite MySQL `cena_store_test`: **1062/1062 tests, 8871 assertions PASS**. Build, Pint PASS.
 - Browser (DB dev): Staff vào `/admin/users` bị 403; Admin thấy danh sách người dùng và trang cài đặt tài khoản.
 - Giới hạn: chưa có ảnh đại diện; chưa có nhật ký audit riêng cho thay đổi quyền (ngoài `assigned_by`/`auth_version`).
+
+## Bổ sung chức năng như bản demo — PR-D quên mật khẩu bằng OTP (02/11/2026, Claude)
+
+- `PasswordResetService` theo WF-02/DB-04: một challenge mỗi người dùng; OTP 6 số từ `random_int`, chỉ lưu hash; hạn 15 phút; chờ 60 giây giữa hai lần gửi; tối đa 5 lần sai (đếm và commit ngay, lần thứ 6 không kiểm hash nữa); challenge gắn với trình duyệt đã yêu cầu bằng token ngẫu nhiên (DB lưu hash). Email không tồn tại nhận cùng thông điệp và token giả, không gửi mail. Đặt lại dùng challenge đúng một lần, đổi mật khẩu, tăng `auth_version`, đổi remember_token, bắt đăng nhập lại. Gửi lại mã làm mã cũ hết hiệu lực; đổi mật khẩu ở trang tài khoản cũng vô hiệu mã đang chờ.
+- Mail gửi đồng bộ ngay sau commit, không đưa mã vào URL/log; lỗi gửi mail chỉ ghi log chung, trang vẫn nói "đã tiếp nhận". Giới hạn tần suất theo email + IP.
+- Giao diện như bản demo (nền video): link "Quên mật khẩu?" ở trang đăng nhập, `/forgot-password`, `/reset-password` (nhập mã + gửi lại, rồi mật khẩu mới).
+- Test: `PasswordResetTest` 5 ca (luồng đủ + dùng lại bị chặn, email lạ cùng thông điệp không gửi mail, 5 lần sai khóa cả mã đúng, gắn trình duyệt + chờ gửi lại + hết hạn, đổi mật khẩu vô hiệu mã). Full suite MySQL `cena_store_test`: **1067/1067 tests, 8926 assertions PASS**. Build, Pint PASS.
+- Browser (DB dev + Mailpit local): tài khoản thử đăng ký → Quên mật khẩu → mã tới Mailpit → xác nhận → đặt mật khẩu mới → về đăng nhập với thông báo.

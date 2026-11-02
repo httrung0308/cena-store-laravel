@@ -7,5 +7,5 @@
 @endsection
 
 @section('content')
-    <x-auth.login-form :action="route('login.store')" />
+    <x-auth.login-form :action="route('login.store')" :forgot-url="route('password.request')" />
 @endsection

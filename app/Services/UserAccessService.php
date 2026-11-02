@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\ErrorCode;
 use App\Enums\RoleSlug;
 use App\Exceptions\DomainException;
+use App\Models\PasswordResetChallenge;
 use App\Models\Role;
 use App\Models\User;
 use App\Models\UserRole;
@@ -46,6 +47,8 @@ final class UserAccessService
             $user->auth_version += 1;
             $user->updated_at = $this->clock->now();
             $user->save();
+            PasswordResetChallenge::query()->where('user_id', $user->id)->whereNull('used_at')->whereNull('invalidated_at')
+                ->update(['invalidated_at' => $this->clock->now(), 'updated_at' => $this->clock->now()]);
 
             return $user;
         });
