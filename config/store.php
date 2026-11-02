@@ -36,6 +36,7 @@ return [
     'demo' => [
         'enabled' => env('STORE_DEMO_USERS', false),
         'password' => env('STORE_DEMO_PASSWORD'),
+        'catalog_file' => env('STORE_DEMO_CATALOG_FILE'),
         'accounts' => [
             'admin' => ['email' => 'admin@demo.cena.test', 'full_name' => 'Nike Demo Admin'],
             'staff' => ['email' => 'staff@demo.cena.test', 'full_name' => 'Nike Demo Staff'],
