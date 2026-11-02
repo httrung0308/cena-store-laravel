@@ -29,8 +29,8 @@ class SharedFoundationTest extends TestCase
     {
         $this->get(route('shoes.index', ['gender' => 'men']))
             ->assertOk()
-            ->assertViewIs('storefront.coming-soon')
-            ->assertSee('Sắp ra mắt')
+            ->assertViewIs('catalog.index')
+            ->assertSee('Shoes')
             ->assertSee('aria-controls="cart-panel"', false)
             ->assertSee('Shop by')
             ->assertDontSee('legacy-navigation', false);
