@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Account\AdministrativeUnitController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\Auth\RegisterController;
@@ -18,3 +19,8 @@ Route::middleware('guest')->group(function (): void {
 });
 
 Route::post('/logout', LogoutController::class)->middleware('auth')->name('logout');
+
+Route::middleware('throttle:120,1')->prefix('api/locations')->name('locations.')->group(function (): void {
+    Route::get('/provinces', [AdministrativeUnitController::class, 'provinces'])->name('provinces');
+    Route::get('/provinces/{provinceCode}/wards', [AdministrativeUnitController::class, 'wards'])->name('wards');
+});

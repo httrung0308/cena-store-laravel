@@ -304,6 +304,19 @@ Theo WF-01/P02.01 ở mức tối thiểu của đợt này (chưa làm OTP, qu�
 - Test `AuthFlowTest` 14 ca: tạo user + role + giỏ, chặn chèn role, lỗi nhập, race email trùng, thiếu role rollback, đổi session ID, chuyển hướng theo vai trò, sai mật khẩu/khóa/đã xóa, chặn lần thứ 6, khóa hoặc đổi version chặn phiên cũ, đăng xuất, trang guest, navbar escape tên. `ApiContractTest` dùng route `login` thật thay route tạm.
 - Đã thử trên trình duyệt: đăng ký báo lỗi nhập lại mật khẩu, đăng ký thành công tự đăng nhập, panel tài khoản, đăng xuất, đăng nhập sai báo lỗi. Ghi chú: ô checkbox "Ghi nhớ đăng nhập" của form EXT bị CSS gốc ẩn, chỉ thấy nhãn (bấm nhãn vẫn chọn được).
 
+## Đợt 7 chức năng — PR-C2 dữ liệu tỉnh/phường (02/11/2026, Claude)
+
+Nguồn người dùng chọn: Địa Chỉ Việt (diachiviet.com, CC BY 4.0), dựng 30/10/2026, theo văn bản có hiệu lực đến 20/09/2026. Đây là P01.04 phần dataset (thay EXT-001/002).
+
+- Tải `tinh.json`, `xa.json`, `giay-phep.txt` ngày 02/11/2026 ra thư mục ngoài repo; SHA256 lưu trong `manifest.source_sha256`. Kiểm cấu trúc: 34 tỉnh/thành, 3.321 xã/phường/đặc khu, số xã từng tỉnh khớp `so_don_vi_cap_xa`, không trùng mã, không mồ côi, mã 79 = Thành phố Hồ Chí Minh.
+- Khác tài liệu EXT-001: `xa.json` **không có cột `ten_day_du`**; cột `ten` đã gồm loại đơn vị ("Phường …", "Xã …", "Đặc khu …") nên dùng `ten` cho xã, `ten_day_du` cho tỉnh. Không sửa tên/mã nào.
+- `scripts/build-administrative-dataset.php` tái tạo `database/data/administrative_units.json` + `manifest.json` (contract v1). Giá trị chốt: `dataset_version=dvc-20260920`, `effective_as_of=2026-09-20` (văn bản mới nhất nguồn đã áp dụng), `hcm_province_code=79`. `.gitattributes` giữ nguyên bytes `database/data/*.json` để checksum không đổi khi checkout.
+- `App\Support\AdministrativeDataset` kiểm manifest (đúng 15 field + `source_sha256` tùy chọn, kiểu, URL HTTPS, ngày, đếm), checksum file, từng bản ghi (đúng 8 field, mã chuỗi 2/5 chữ số giữ số 0 đầu, chỉ PROVINCE/WARD, parent tồn tại, cùng version/ngày, `is_active === true`). Chỉ kiểm cấu trúc, không chứng minh đúng pháp lý.
+- `AdministrativeUnitSeeder` thêm bản ghi thiếu theo `(dataset_version, code)`, gán `parent_id`; bản ghi đã có mà khác dữ liệu thì dừng, không tự sửa. `FoundationSeeder` = Roles → AdministrativeUnit → DemoUsers; `DatabaseSeeder` gọi nó. `store.shipping.hcm_province_code` / `dataset_version` mặc định lấy từ manifest (env vẫn ghi đè được).
+- API tra cứu cho ô chọn địa chỉ: `GET /api/locations/provinces`, `GET /api/locations/provinces/{code}/wards` — chỉ snapshot hiện hành, chỉ `code/name/parent_code/dataset_version`, mã sai dạng hoặc không có → 404, giới hạn 120 request/phút.
+- Test `AdministrativeDatasetTest`: snapshot thật đủ 34/3.355, checksum bị sửa bị chặn, 15 kiểu dữ liệu sai bị chặn, seeder idempotent + giữ parent, không tự sửa bản ghi đã nhập, seed toàn bộ 2 lần không trùng, API đúng version và giữ số 0 đầu.
+- DB dev: `db:seed --class=FoundationSeeder` chạy 2 lần → 34 tỉnh, 3.321 xã, 1 version, 3 role.
+
 ## Đợt 7 chức năng — PR-X1 danh mục/NCC (02/11/2026, Codex)
 
 - Nhánh feat/x1-categories-suppliers, worktree cena-codex-x1, base f137ff39ee6f07038b78a3a4dbcdc24dbefda34c; đã fetch/merge origin/main trước kiểm tra. Chỉ phạm vi Codex và hai ngoại lệ guard/test được người dùng cho phép; không thay source cũ, layouts/navigation, models/enums/migrations/Resources/helper tiền-kho hoặc lockfiles.

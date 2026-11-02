@@ -17,3 +17,6 @@ CHANGELOG.md export-ignore
 # Preserve terminal padding and the unused upstream Laravel welcome template.
 /docs/evidence/*.txt whitespace=-blank-at-eol
 /resources/views/welcome.blade.php whitespace=-blank-at-eol
+
+# Province/ward snapshot: bytes are checksummed in manifest.json.
+/database/data/*.json -text
