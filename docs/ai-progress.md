@@ -323,6 +323,16 @@ Nguồn người dùng chọn: Địa Chỉ Việt (diachiviet.com, CC BY 4.0), 
 - Chặn tài khoản dùng sai schema, root/app user, SQLite và config cache. Không nới whitelist tên gần giống hoặc dùng wildcard database. Không thay phpunit.xml, CI, schema/model/migration hoặc credential trong Git.
 - Schema/user Codex được provision riêng ngoài Git, chỉ grant schema Codex; PHPUnit config riêng ngoài Git vì config chung force tên cena_store_test. Không chạy test trên schema Claude.
 - Unit guard:13 tests/10 assertions; kiểm positive pair và negative cross-pair/cache. Pint và diff check được chạy trước push; chờ CI xanh trước squash merge. Các phần X1 giữ ở worktree riêng tới khi nền X0 vào main.
+
+## Đợt 7 chức năng — PR-X1 danh mục/NCC (02/11/2026, Codex)
+
+- Nhánh feat/x1-categories-suppliers, worktree cena-codex-x1, base f137ff39ee6f07038b78a3a4dbcdc24dbefda34c; đã fetch/merge origin/main trước kiểm tra. Chỉ phạm vi Codex và hai ngoại lệ guard/test được người dùng cho phép; không thay source cũ, layouts/navigation, models/enums/migrations/Resources/helper tiền-kho hoặc lockfiles.
+- Danh mục: CRUD tạo/sửa/ẩn, search/phân trang, slug unique kể cả bản soft-delete, cây tối đa2cấp cùng gender, chặn self/cycle/cấp3/đổi nhóm root còn child. Hide giữ nguyên nhánh/product để catalog kiểm ancestor visibility; không có route hard-delete.
+- NCC: tạo/sửa/search/ngừng hợp tác, code unique, validate phone/email; giữ chứng từ và snapshot đã dùng. Admin/Staff dùng chung auth+role middleware và service kiểm current actor/quyền trước ghi; guest/customer/locked/revoked bị chặn.
+- Dùng EXT-021/022 và layout chung. Bỏ input contact_name vì schema không có cột này; không thêm cột. ProductDemoTaxonomySeeder chỉ local/testing, cần Admin chủ động tạo trước;4root+3NCC theo slug/code, replay giữID và không hồi sinh bản đã ngừng, không tạo tồn/ledger.
+- Nền ngoại lệ đã merge riêng trong PR-X0 (#10): TestDatabaseGuard chỉ thêm cặp chính xác cena_store_test_codex/cena_test_codex, chặn cross-pair/cache/root/SQLite. User Codex chỉ có quyền trên schema Codex. .env riêng và PHPUnit config riêng ngoài Git vượt force-name của phpunit.xml chung; không sửa phpunit.xml/credential/schema của Claude.
+- Kiểm tra hẹp:25tests/93assertions PASS, gồm12 test nghiệp vụ/quyền và13 test guard. Build npm PASS; full Pint và dirty Pint PASS; desktop1440x900/mobile360x800 đã kiểm trực tiếp danh mục/NCC, thao tác và form giữ style Cena. Lần đầu thiếu build manifest và expected locked403 không còn đúng sau C1 (trả401): đã build asset và sửa expected theo middleware hiện hành, không nới quyền.
+- Fixture browser chỉ trong schema Codex, dừng server riêng rồi reset đúng schema Codex có guard, không reset schema Claude/dev. CI toàn suite phải xanh trước squash merge; không tự sửa các phần Claude đang làm.
 ## Đợt 7 chức năng — PR-C3 sổ địa chỉ (02/11/2026, Claude)
 
 Theo WF-04 / P02.05 ở mức tối thiểu.
