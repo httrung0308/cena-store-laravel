@@ -345,3 +345,15 @@ Theo WF-04 / P02.05 ở mức tối thiểu.
 - Test `AddressBookTest` 9 ca: khách bị chuyển đăng nhập, địa chỉ đầu tiên mặc định + snapshot, phường sai tỉnh/snapshot cũ/sai định dạng bị chặn, đổi mặc định chỉ còn 1, sửa chụp lại snapshot, xóa mặc định chuyển sang id nhỏ nhất, địa chỉ người khác 404, DB chặn 2 mặc định, trang escape dữ liệu và hiện cảnh báo snapshot cũ.
 - Trình duyệt (DB dev, dữ liệu thật): chưa đăng nhập bị chuyển login rồi quay về sổ địa chỉ; chọn TP.HCM tải 168 phường; thêm địa chỉ thành công, tự mặc định; trang sửa chọn sẵn đúng tỉnh/phường.
 - Giới hạn: chưa có test hai tiến trình MySQL cho đặt mặc định đồng thời — dựa vào khóa dòng user và ràng buộc unique của DB (có test).
+
+## Đợt 7 chức năng — PR-C4 giỏ hàng (02/11/2026, Claude)
+
+Theo WF-09 / P05.02–P05.04 ở mức tối thiểu (chưa có checkout).
+
+- `CartService`: giỏ khách tìm bằng hash của token ngẫu nhiên lưu trong session (DB chỉ giữ hash, hết hạn 30 ngày); giỏ tài khoản theo `user_id`. Không nhận owner/giá/cart_id từ client. Thêm cộng dồn tối đa min(còn bán = stock − reserved, 10) mỗi size, tối đa 50 dòng; sửa là số tuyệt đối 1–10 (giảm luôn được, tăng phải còn hàng); xóa dòng và xóa hết là thao tác riêng. Mỗi thay đổi khóa giỏ, kiểm `version` (sai → 409 `CART_STALE` kèm giỏ hiện tại) rồi tăng version. **Không giữ hàng** khi thêm giỏ.
+- Giá hiệu lực = giá riêng của size → giá khuyến mãi → giá gốc (VND nguyên). Món ngừng bán/hết hàng/vượt tồn vẫn hiện trong giỏ kèm cảnh báo và không tính vào tạm tính.
+- Gộp giỏ khi đăng nhập/đăng ký (sau khi đổi session, token được giữ): khóa hai giỏ theo id tăng, cộng theo variant rồi cắt theo tồn/10, bỏ món không còn bán, báo lại các món bị giảm/bỏ; xóa giỏ khách trong cùng transaction (lỗi → giữ nguyên cả hai); gọi lại lần hai không làm gì. Đăng xuất → khách mới có giỏ trống.
+- API JSON `cart.show`, `cart.items.store|update|destroy`, `cart.clear` (60 request/phút); item của giỏ khác → 404.
+- Giao diện: `resources/js/components/cart.js` (Alpine store `cart`): chỉ đổi số sau khi server trả lời, mỗi lúc chỉ một thao tác, xử lý 401/419/409/422/429/404/mất mạng; khung giỏ trong `panels` (ảnh, màu, size, giá, +/−, xóa, tạm tính, ghi chú "kiểm tra lại khi đặt hàng"), số đôi trên icon giỏ, meta CSRF. Nút nào có `data-add-to-cart data-variant-id` (trang chi tiết của PR-X4) sẽ tự thêm vào giỏ và mở khung giỏ.
+- Test: `CartTest` 10 ca, `CartMergeTest` 4 ca, `tests/JavaScript/cart.test.mjs` 7 ca. Toàn bộ suite local **940 tests PASS**; Node 28/28.
+- Giới hạn: chưa kiểm luồng thêm giỏ trên trình duyệt với sản phẩm thật vì DB dev chưa có sản phẩm (đợi PR-X2/X3/X4); pane trình duyệt bị ẩn nên không xem được hiệu ứng mở khung giỏ, dữ liệu khung giỏ đã kiểm bằng JS. Nút "Đặt hàng" để trạng thái "sắp có".

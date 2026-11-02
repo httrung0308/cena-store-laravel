@@ -14,7 +14,7 @@
             @else
                 <a href="{{ route('login') }}" class="btn-icon" aria-label="Đăng nhập"><x-storefront.icon name="user"/></a>
             @endauth
-            <button type="button" class="btn-icon relative ml-3" aria-label="Cart" @click="openPanel('cart')" :aria-expanded="(panel === 'cart').toString()" aria-controls="cart-panel"><x-storefront.icon name="cart"/></button>
+            <button type="button" class="btn-icon relative ml-3" aria-label="Cart" @click="openPanel('cart')" :aria-expanded="(panel === 'cart').toString()" aria-controls="cart-panel"><x-storefront.icon name="cart"/><span x-cloak x-show="$store.cart.count > 0" x-text="$store.cart.count" class="absolute -right-2 -top-2 min-w-[1.25rem] rounded-full bg-black px-1 text-center text-xs font-semibold leading-5 text-white" aria-label="Số đôi trong giỏ"></span></button>
             <button type="button" class="btn-icon ml-3 inline md:hidden" aria-label="Menu" @click="openPanel('menu')" :aria-expanded="(panel === 'menu').toString()" aria-controls="mobile-menu"><x-storefront.icon name="menu"/></button>
         </div>
     </nav>

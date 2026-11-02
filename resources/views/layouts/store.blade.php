@@ -6,13 +6,14 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ $pageTitle }} — Cena</title>
     <link rel="icon" href="{{ asset('legacy/favicon.ico') }}">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @stack('head')
 </head>
 <body class="font-montserrat bg-white text-black">
-    <div id="storefront" x-data="storefrontShell" @keydown.escape.window="closePanel()" @mousemove.window="pointerX = $event.clientX; pointerY = $event.clientY">
+    <div id="storefront" x-data="storefrontShell" @cart-open.window="openPanel('cart')" @keydown.escape.window="closePanel()" @mousemove.window="pointerX = $event.clientX; pointerY = $event.clientY">
         <div :inert="panel !== null" :aria-hidden="panel !== null ? 'true' : null" class="flex min-h-screen flex-col">
             <x-storefront.navigation :animated="false"/>
             <main class="w-full flex-1 px-3 pt-16 pb-10 sm:px-10 xl:px-24 2xl:px-48">
