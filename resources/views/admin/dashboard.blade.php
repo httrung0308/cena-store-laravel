@@ -12,6 +12,7 @@
         ['route' => 'admin.stock-imports.index', 'label' => 'Phiếu nhập kho', 'description' => 'Tạo phiếu nháp, ghi sổ để cộng tồn kho'],
         ['route' => 'admin.orders.index', 'label' => 'Quản lý đơn hàng', 'description' => 'Xác nhận, đóng gói, giao hàng, thu COD và hủy đơn'],
     ];
+    $isAdmin = $user->hasRole(App\Enums\RoleSlug::Admin);
 @endphp
 
 @section('content')
@@ -60,6 +61,17 @@
                         </a>
                     @endif
                 @endforeach
+                @if ($isAdmin)
+                    <a href="{{ route('admin.users.index') }}" class="rounded-full border border-zinc-200 bg-white px-6 py-4 text-left font-semibold transition hover:border-zinc-900 hover:bg-zinc-50">
+                        <span class="block text-lg">Quản lý người dùng</span>
+                        <span class="mt-1 block text-sm font-normal text-zinc-500">Tài khoản, vai trò và khóa/mở khóa</span>
+                    </a>
+                @else
+                    <span class="cursor-not-allowed rounded-full border border-zinc-100 bg-zinc-50 px-6 py-4 text-left font-semibold opacity-50" aria-disabled="true">
+                        <span class="block text-lg">Quản lý người dùng</span>
+                        <span class="mt-1 block text-sm font-normal text-zinc-500">Tài khoản, vai trò và khóa/mở khóa (chỉ Admin)</span>
+                    </span>
+                @endif
             </div>
         </div>
     </div>

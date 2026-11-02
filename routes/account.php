@@ -3,6 +3,7 @@
 use App\Http\Controllers\Account\AccountController;
 use App\Http\Controllers\Account\AddressController;
 use App\Http\Controllers\Account\AdministrativeUnitController;
+use App\Http\Controllers\Account\SettingsController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\Auth\RegisterController;
@@ -22,6 +23,11 @@ Route::middleware('guest')->group(function (): void {
 
 Route::post('/logout', LogoutController::class)->middleware('auth')->name('logout');
 Route::get('/account', AccountController::class)->middleware('auth')->name('account.index');
+Route::middleware('auth')->prefix('account/settings')->group(function (): void {
+    Route::get('/', [SettingsController::class, 'edit'])->name('account.settings');
+    Route::patch('/profile', [SettingsController::class, 'updateProfile'])->name('account.profile.update');
+    Route::patch('/password', [SettingsController::class, 'updatePassword'])->middleware('throttle:5,1')->name('account.password.update');
+});
 
 Route::middleware('auth')->prefix('account/addresses')->name('account.addresses.')->whereNumber('address')->group(function (): void {
     Route::get('/', [AddressController::class, 'index'])->name('index');
