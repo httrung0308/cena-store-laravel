@@ -29,7 +29,7 @@ class OrderController extends Controller
     public function show(Request $request, string $orderCode): View
     {
         $order = Order::query()->where('user_id', $request->user()->id)->where('order_code', $orderCode)
-            ->with(['items.units', 'statusHistories' => fn ($query) => $query->orderBy('created_at')->orderBy('id')])
+            ->with(['items.units.review', 'statusHistories' => fn ($query) => $query->orderBy('created_at')->orderBy('id')])
             ->firstOrFail();
 
         return view('account.orders.show', ['order' => $order]);

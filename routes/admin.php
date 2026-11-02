@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\ProductController;
+use App\Http\Controllers\Admin\ReviewController;
 use App\Http\Controllers\Admin\StockImportController;
 use App\Http\Controllers\Admin\SupplierController;
 use App\Http\Controllers\Admin\UserController;
@@ -42,3 +43,7 @@ Route::middleware('role:admin')->prefix('users')->name('users.')->whereNumber('u
     Route::patch('/{user}/active', [UserController::class, 'active'])->name('active');
     Route::put('/{user}/roles', [UserController::class, 'roles'])->name('roles');
 });
+
+Route::get('reviews', [ReviewController::class, 'index'])->name('reviews.index');
+Route::patch('reviews/{review}/reply', [ReviewController::class, 'reply'])->whereNumber('review')->name('reviews.reply');
+Route::patch('reviews/{review}/visibility', [ReviewController::class, 'visibility'])->whereNumber('review')->name('reviews.visibility');
