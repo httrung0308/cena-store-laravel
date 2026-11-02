@@ -10,6 +10,7 @@
         ['route' => 'admin.suppliers.index', 'label' => 'Nhà cung cấp'],
         ['route' => 'admin.products.index', 'label' => 'Sản phẩm'],
         ['route' => 'admin.stock-imports.index', 'label' => 'Nhập kho'],
+        ['route' => 'admin.orders.index', 'label' => 'Đơn hàng'],
     ];
     $onDashboard = request()->routeIs('admin.dashboard');
 @endphp
