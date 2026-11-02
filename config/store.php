@@ -1,5 +1,10 @@
 <?php
 
+// HCM code and dataset version default to the reviewed province/ward snapshot (database/data/manifest.json).
+$locationManifestPath = dirname(__DIR__).'/database/data/manifest.json';
+$locationManifest = is_file($locationManifestPath) ? json_decode((string) file_get_contents($locationManifestPath), true) : null;
+$locationManifest = is_array($locationManifest) ? $locationManifest : [];
+
 return [
     'currency' => 'VND',
     'money_scale' => 0,
@@ -25,8 +30,8 @@ return [
         'free_threshold' => 2_000_000,
         'hcm_fee' => 30_000,
         'other_fee' => 40_000,
-        'hcm_province_code' => env('STORE_HCM_PROVINCE_CODE'),
-        'dataset_version' => env('STORE_LOCATION_DATASET_VERSION'),
+        'hcm_province_code' => env('STORE_HCM_PROVINCE_CODE') ?: ($locationManifest['hcm_province_code'] ?? null),
+        'dataset_version' => env('STORE_LOCATION_DATASET_VERSION') ?: ($locationManifest['dataset_version'] ?? null),
     ],
     'demo' => [
         'enabled' => env('STORE_DEMO_USERS', false),
