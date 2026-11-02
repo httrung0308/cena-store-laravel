@@ -317,6 +317,12 @@ Nguồn người dùng chọn: Địa Chỉ Việt (diachiviet.com, CC BY 4.0), 
 - Test `AdministrativeDatasetTest`: snapshot thật đủ 34/3.355, checksum bị sửa bị chặn, 15 kiểu dữ liệu sai bị chặn, seeder idempotent + giữ parent, không tự sửa bản ghi đã nhập, seed toàn bộ 2 lần không trùng, API đúng version và giữ số 0 đầu.
 - DB dev: `db:seed --class=FoundationSeeder` chạy 2 lần → 34 tỉnh, 3.321 xã, 1 version, 3 role.
 
+## Đợt 7 chức năng — PR-X0 schema test Codex (02/11/2026, Codex)
+
+- Ngoại lệ hai file guard/test đã được người dùng cho phép; kế hoạch trên main yêu cầu tách PR-X0 trước X1. Chỉ thêm cặp chính xác cena_store_test_codex/cena_test_codex; các cặp cena_store_test/cena_test và cena_ci hiện hữu giữ nguyên.
+- Chặn tài khoản dùng sai schema, root/app user, SQLite và config cache. Không nới whitelist tên gần giống hoặc dùng wildcard database. Không thay phpunit.xml, CI, schema/model/migration hoặc credential trong Git.
+- Schema/user Codex được provision riêng ngoài Git, chỉ grant schema Codex; PHPUnit config riêng ngoài Git vì config chung force tên cena_store_test. Không chạy test trên schema Claude.
+- Unit guard:13 tests/10 assertions; kiểm positive pair và negative cross-pair/cache. Pint và diff check được chạy trước push; chờ CI xanh trước squash merge. Các phần X1 giữ ở worktree riêng tới khi nền X0 vào main.
 ## Đợt 7 chức năng — PR-C3 sổ địa chỉ (02/11/2026, Claude)
 
 Theo WF-04 / P02.05 ở mức tối thiểu.
