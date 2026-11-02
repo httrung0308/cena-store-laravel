@@ -1,6 +1,6 @@
 @props(['product' => [], 'categories' => [], 'action' => null, 'method' => 'POST'])
 @php($product = is_array($product) ? $product : [])
-<form @if ($action) action="{{ $action }}" @endif method="POST" class="space-y-5">
+<form @if ($action) action="{{ $action }}" @endif method="POST" enctype="multipart/form-data" class="space-y-5">
     @csrf
     @if (in_array(strtoupper($method), ['PATCH', 'PUT'], true)) @method(strtoupper($method)) @endif
     <x-forms.text-field name="name" label="Tên sản phẩm" :value="$product['name'] ?? ''" required />
@@ -13,6 +13,7 @@
     @foreach (['base_price' => 'Giá gốc (VND)', 'promotion_price' => 'Giá khuyến mãi (VND)', 'warranty_months' => 'Bảo hành (tháng)', 'exchange_days' => 'Đổi size (ngày)'] as $field => $label)
         <div><label for="product-{{ $field }}" class="text-lg font-semibold">{{ $label }}</label><input id="product-{{ $field }}" type="text" inputmode="numeric" pattern="[0-9]*" name="{{ $field }}" class="input block w-full" value="{{ old($field, $product[$field] ?? '') }}"><x-forms.field-error :name="$field" /></div>
     @endforeach
+    {{ $slot ?? '' }}
     <x-ui.button type="submit" :disabled="! $action">Lưu sản phẩm</x-ui.button>
     @unless ($action)<p role="status">Chưa thể lưu sản phẩm.</p>@endunless
 </form>
