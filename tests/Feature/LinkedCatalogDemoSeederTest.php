@@ -103,6 +103,7 @@ class LinkedCatalogDemoSeederTest extends TestCase
 
         $this->get(route('shoes.show', $product->slug))->assertOk()
             ->assertSee('data-gallery-zoom', false)
+            ->assertSee('images.slice(0, 4)', false)->assertSee('grid-cols-4', false)->assertDontSee('Tiếp →')
             ->assertViewHas('albums', fn (array $albums) => array_column($albums[(string) $color->id], 'url') === [$base.'side.png', $base.'top.png', $base.'sole.png']
                 && $albums[(string) $color->id][2]['alt'] === 'Album Runner — góc 3');
 
