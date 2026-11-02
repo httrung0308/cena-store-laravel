@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Admin\CategoryController;
+use App\Http\Controllers\Admin\SupplierController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -10,3 +12,9 @@ use Illuminate\Support\Facades\Route;
  * admin.suppliers.index, admin.products.index, admin.stock-imports.index.
  */
 Route::view('/', 'admin.dashboard')->name('dashboard');
+
+Route::resource('categories', CategoryController::class)->except(['show', 'destroy']);
+Route::patch('categories/{category}/deactivate', [CategoryController::class, 'deactivate'])->name('categories.deactivate');
+
+Route::resource('suppliers', SupplierController::class)->except(['show', 'destroy']);
+Route::patch('suppliers/{supplier}/deactivate', [SupplierController::class, 'deactivate'])->name('suppliers.deactivate');
