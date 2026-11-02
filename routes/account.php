@@ -6,6 +6,7 @@ use App\Http\Controllers\Account\AdministrativeUnitController;
 use App\Http\Controllers\Account\SettingsController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\LogoutController;
+use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegisterController;
 use Illuminate\Support\Facades\Route;
 
@@ -19,6 +20,13 @@ Route::middleware('guest')->group(function (): void {
     Route::post('/login', [LoginController::class, 'store'])->name('login.store');
     Route::get('/register', [RegisterController::class, 'create'])->name('register');
     Route::post('/register', [RegisterController::class, 'store'])->middleware('throttle:10,1')->name('register.store');
+
+    Route::get('/forgot-password', [PasswordResetController::class, 'create'])->name('password.request');
+    Route::post('/forgot-password', [PasswordResetController::class, 'store'])->middleware('throttle:10,1')->name('password.email');
+    Route::post('/forgot-password/resend', [PasswordResetController::class, 'resend'])->middleware('throttle:3,1')->name('password.resend');
+    Route::get('/reset-password', [PasswordResetController::class, 'verifyForm'])->name('password.reset');
+    Route::post('/reset-password/verify', [PasswordResetController::class, 'verify'])->middleware('throttle:10,1')->name('password.verify');
+    Route::post('/reset-password', [PasswordResetController::class, 'update'])->middleware('throttle:10,1')->name('password.update');
 });
 
 Route::post('/logout', LogoutController::class)->middleware('auth')->name('logout');
