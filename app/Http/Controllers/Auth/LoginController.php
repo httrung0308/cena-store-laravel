@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Services\AuthService;
+use App\Services\CartService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\ValidationException;
@@ -19,7 +20,7 @@ class LoginController extends Controller
         return view('auth.login');
     }
 
-    public function store(LoginRequest $request, AuthService $auth): RedirectResponse
+    public function store(LoginRequest $request, AuthService $auth, CartService $carts): RedirectResponse
     {
         $key = $request->throttleKey();
         if (RateLimiter::tooManyAttempts($key, self::MAX_ATTEMPTS)) {
@@ -38,6 +39,7 @@ class LoginController extends Controller
         RateLimiter::clear($key);
         $request->session()->regenerate();
         $request->session()->put(AuthService::SESSION_AUTH_VERSION, $user->auth_version);
+        $carts->mergeGuestCart($user, $request->session());
 
         return $auth->isBackOffice($user)
             ? redirect()->intended(route('admin.dashboard'))
