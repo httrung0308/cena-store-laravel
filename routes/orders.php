@@ -13,4 +13,5 @@ Route::middleware('auth')->group(function (): void {
 
     Route::get('/account/orders', [OrderController::class, 'index'])->name('orders.index');
     Route::get('/account/orders/{orderCode}', [OrderController::class, 'show'])->where('orderCode', 'ORD-[0-9]{8}-[0-9A-Z]{26}')->name('orders.show');
+    Route::post('/account/orders/{orderCode}/cancel', [OrderController::class, 'cancel'])->where('orderCode', 'ORD-[0-9]{8}-[0-9A-Z]{26}')->middleware('throttle:10,1')->name('orders.cancel');
 });

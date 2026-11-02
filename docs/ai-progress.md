@@ -428,3 +428,14 @@ Theo WF-09 / P05.02–P05.04 ở mức tối thiểu (chưa có checkout).
 - Browser (DB dev): khách demo chọn size 40.5 → "Mua ngay" → trang thanh toán → thêm địa chỉ TP.HCM → quay lại (ship 30.000 ₫, tổng 1.530.000 ₫) → đặt hàng → trang thành công; DB: stock 7, reserved 1, đơn PENDING/UNPAID, 1 movement ORDER_RESERVED.
 - Sự cố trong lúc QA: junction `public/storage` của worktree tạm trỏ vào storage của `cena-demo`; khi worktree tạm bị xóa, thư mục ảnh demo bị xóa theo. Đã khôi phục 8 ảnh từ ảnh gốc `legacy/img` theo đúng tên trong `product_images`; từ nay worktree tạm chỉ dùng bản chép ảnh, không dùng junction.
 - Giới hạn: chưa có coupon, VietQR/VNPay; tự hủy đơn COD quá hạn 24 giờ cần scheduler (chưa có).
+
+## Bổ sung chức năng như bản demo — PR-B quản lý đơn hàng (02/11/2026, Claude)
+
+- `OrderWorkflowService` theo WF-15/WF-16 (COD): mỗi chuyển trạng thái khóa đơn, so trạng thái người dùng đã thấy (`expected_status`), ghi lịch sử một lần theo command key (bấm hai lần không lặp lịch sử/kho). Cạnh hợp lệ: PENDING→CONFIRMED→PACKING→ON_DELIVERY→DELIVERED/FAILED; hủy từ PENDING/CONFIRMED/PACKING (khách chỉ hủy đơn PENDING của chính mình).
+- Giao vận chuyển: `InventoryService` ORDER_DISPATCHED (trừ stock + reserved đúng một lần), chốt `cost_unit_snapshot`/COGS dòng và chia COGS từng đôi bằng `Money::allocate`; tạo shipment IN_TRANSIT (đơn vị + mã vận đơn).
+- Giao thành công: bắt buộc mã phiếu thu COD (không dùng lại cho đơn khác), payment SUCCEEDED/APPLIED, order PAID + paid_amount, shipment DELIVERED, đôi giày OWNED_BY_CUSTOMER với hạn đổi/bảo hành từ snapshot; ghi sổ SALE_RECOGNIZED từng đôi + SHIPPING_RECOGNIZED qua `SalesLedgerService`.
+- Hủy: ORDER_RELEASED nhả hàng giữ, đôi giày CANCELLED, COD attempt FAILED, lưu lý do. Giao thất bại: shipment RETURNING, không cộng lại kho (nhận hàng hoàn là quy trình riêng, chưa làm).
+- Giao diện như bản demo: `/admin/orders` (tìm mã/tên/SĐT, lọc trạng thái, bảng bo tròn, badge), chi tiết đơn (sản phẩm, từng đôi, tổng tiền, đã thu, lịch sử, thao tác hợp lệ theo trạng thái, vận chuyển/thanh toán); mục "Đơn hàng" trong menu admin và bảng điều khiển; form tự hủy đơn ở trang chi tiết đơn của khách.
+- Test: `OrderWorkflowTest` 6 ca (luồng đủ đến giao thành công + COGS bất biến khi nhập giá mới + ledger, hủy nhả hàng, khách chỉ hủy PENDING của mình, cạnh cấm + double click, phiếu thu trùng + giao thất bại, phân quyền + escape). Full suite MySQL `cena_store_test`: **1056/1056 tests, 8821 assertions PASS**. Build, Pint PASS.
+- Browser (DB dev, tài khoản nhân viên demo): đơn của khách demo → Xác nhận → Đóng gói → Giao (GHN) → Giao thành công với phiếu thu; DB: stock 7→6, reserved 0, DELIVERED/PAID, 2 dòng sổ doanh thu.
+- Giới hạn: chưa có nhận hàng hoàn/thất lạc, hoàn tiền, scheduler tự hủy COD quá 24 giờ, VietQR/VNPay.

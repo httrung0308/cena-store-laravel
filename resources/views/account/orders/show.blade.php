@@ -55,7 +55,6 @@
                             <p class="text-base font-semibold">{{ $item->product_name_snapshot }}</p>
                             <p class="text-zinc-600">{{ $item->color_name_snapshot }} · Size {{ $item->size_value_snapshot }} · SL {{ $item->quantity }} × {{ $vnd($item->unit_price) }}</p>
                             <p class="mt-1 font-semibold">{{ $vnd($item->net_amount) }}</p>
-                            @stack('order-item-'.$item->id)
                         </div>
                     </div>
                 @endforeach
@@ -79,7 +78,24 @@
             </ol>
         </section>
 
-        @stack('order-actions')
+        @if ($order->order_status === App\Enums\OrderStatus::Pending)
+            <section class="rounded-lg border border-red-200 bg-white p-6 shadow-sm" x-data="{ open: {{ $errors->has('reason') ? 'true' : 'false' }} }">
+                <h2 class="text-xl font-semibold">Hủy đơn hàng</h2>
+                <p class="mt-1 text-sm text-zinc-600">Bạn có thể tự hủy khi đơn còn chờ cửa hàng xác nhận.</p>
+                <button type="button" class="mt-4 rounded-full border border-red-300 px-5 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-50" x-show="!open" x-on:click="open = true">Hủy đơn này</button>
+                <form method="POST" action="{{ route('orders.cancel', $order->order_code) }}" class="mt-4 space-y-3" x-cloak x-show="open">
+                    @csrf
+                    <input type="hidden" name="expected_status" value="{{ $order->order_status->value }}">
+                    <label for="cancel-reason" class="block text-sm font-semibold">Lý do hủy</label>
+                    <textarea id="cancel-reason" name="reason" rows="2" minlength="5" maxlength="500" required class="input w-full border-zinc-300" placeholder="Ví dụ: đặt nhầm size">{{ old('reason') }}</textarea>
+                    @error('reason')<p class="text-sm text-red-500">{{ $message }}</p>@enderror
+                    <div class="flex gap-3">
+                        <button type="submit" class="rounded-full bg-red-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-red-700">Xác nhận hủy</button>
+                        <button type="button" class="rounded-full border border-zinc-300 px-5 py-2 text-sm font-semibold" x-on:click="open = false">Không hủy</button>
+                    </div>
+                </form>
+            </section>
+        @endif
 
         <div class="flex flex-wrap justify-center gap-4">
             <a href="{{ route('orders.index') }}" class="rounded-full border border-zinc-900 px-6 py-3 font-semibold transition hover:bg-zinc-900 hover:text-white">Xem đơn hàng của tôi</a>

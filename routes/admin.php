@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\CategoryController;
+use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\StockImportController;
 use App\Http\Controllers\Admin\SupplierController;
@@ -27,3 +28,8 @@ Route::patch('products/{product}/deactivate', [ProductController::class, 'deacti
 Route::resource('stock-imports', StockImportController::class)->except('destroy');
 Route::post('stock-imports/{stock_import}/post', [StockImportController::class, 'post'])->name('stock-imports.post');
 Route::post('stock-imports/{stock_import}/cancel', [StockImportController::class, 'cancel'])->name('stock-imports.cancel');
+
+Route::get('orders', [OrderController::class, 'index'])->name('orders.index');
+Route::get('orders/{order}', [OrderController::class, 'show'])->whereNumber('order')->name('orders.show');
+Route::post('orders/{order}/{action}', [OrderController::class, 'transition'])->whereNumber('order')
+    ->whereIn('action', ['confirm', 'pack', 'ship', 'deliver', 'cancel', 'fail'])->middleware('throttle:30,1')->name('orders.transition');
