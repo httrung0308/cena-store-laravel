@@ -1,10 +1,42 @@
 @extends('layouts.admin')
-@section('title','Sản phẩm')
+@section('title', 'Sản phẩm')
+@section('eyebrow', 'Quản lý sản phẩm')
+@section('actions')
+    <a class="btn-pill-dark" href="{{ route('admin.products.create') }}">+ Thêm sản phẩm</a>
+@endsection
+@php($images = app(App\Services\CatalogQueryService::class))
 @section('content')
-<a class="btn inline-block" href="{{ route('admin.products.create') }}">Thêm sản phẩm</a>
-<form class="my-4 flex gap-2" method="GET"><label class="sr-only" for="product-search">Tìm sản phẩm</label><input class="input flex-1" id="product-search" name="search" value="{{ request('search') }}"><button class="btn">Tìm</button></form>
-<div class="overflow-x-auto"><table class="w-full text-left"><thead><tr><th>Tên</th><th>Danh mục</th><th>Giá gốc</th><th>Trạng thái</th><th>Thao tác</th></tr></thead><tbody>
-@forelse($products as $product)<tr class="border-b"><td class="p-3">{{ $product->name }}</td><td>{{ $product->category?->name }}</td><td>{{ number_format($product->base_price,0,',','.') }} ₫</td><td>{{ $product->is_active ? 'Đang bán':'Đã ẩn' }}</td><td><a class="underline" href="{{ route('admin.products.edit',$product) }}">Sửa</a><form method="POST" action="{{ route('admin.products.deactivate',$product) }}">@csrf @method('PATCH')<button class="underline">Ngừng bán</button></form></td></tr>
-@empty<tr><td colspan="5">Chưa có sản phẩm.</td></tr>@endforelse</tbody></table></div>
-<x-ui.pagination :paginator="$products" />
+    <div class="space-y-6">
+        <x-admin.search-form :action="route('admin.products.index')" id="product-search" label="Tìm sản phẩm" placeholder="Tìm sản phẩm..." :value="request('search', '')" />
+        <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Ảnh</th><th>Sản phẩm</th><th>Danh mục</th><th>Giá</th><th>Size</th><th>Tồn kho</th><th>Trạng thái</th><th>Ngày tạo</th><th>Thao tác</th></tr></thead><tbody>
+        @forelse ($products as $product)
+            @php($thumbnail = $product->colors->first()?->thumbnail)
+            @php($stock = (int) ($product->total_stock ?? 0))
+            <tr>
+                <td>@if ($thumbnail)<img src="{{ $images->imageUrl($thumbnail) }}" alt="{{ $product->name }}" class="h-16 w-16 rounded-lg object-cover" loading="lazy">@else<div class="flex h-16 w-16 items-center justify-center rounded-lg bg-zinc-100 text-xs text-zinc-400">Chưa có ảnh</div>@endif</td>
+                <td class="min-w-[12rem]"><span class="font-semibold text-zinc-900">{{ $product->name }}</span><span class="block text-xs text-zinc-500">{{ $product->slug }}</span></td>
+                <td>{{ $product->category?->name }}</td>
+                <td class="whitespace-nowrap">
+                    @if ($product->promotion_price !== null && $product->promotion_price < $product->base_price)
+                        <span class="block font-semibold text-zinc-900">{{ number_format($product->promotion_price, 0, ',', '.') }} ₫</span>
+                        <span class="block text-xs text-zinc-500 line-through">{{ number_format($product->base_price, 0, ',', '.') }} ₫</span>
+                    @else
+                        <span class="font-semibold text-zinc-900">{{ number_format($product->base_price, 0, ',', '.') }} ₫</span>
+                    @endif
+                </td>
+                <td class="text-center">{{ $product->variants_count }}</td>
+                <td><span @class(['badge', 'bg-green-100 text-green-600' => $stock > 0, 'bg-red-100 text-red-600' => $stock <= 0])>{{ $stock }}</span></td>
+                <td>@if ($product->is_active)<span class="badge bg-green-100 text-green-600">Đang bán</span>@else<span class="badge bg-zinc-100 text-zinc-600">Đã ẩn</span>@endif</td>
+                <td class="whitespace-nowrap">{{ $product->created_at?->setTimezone(config('store.business_timezone'))->format('d/m/Y') }}</td>
+                <td><div class="flex flex-wrap gap-2">
+                    <a class="btn-pill" href="{{ route('admin.products.edit', $product) }}">Sửa</a>
+                    @if ($product->is_active)<form method="POST" action="{{ route('admin.products.deactivate', $product) }}">@csrf @method('PATCH')<button class="btn-pill">Ngừng bán</button></form>@endif
+                </div></td>
+            </tr>
+        @empty
+            <tr><td colspan="9" class="py-20 text-center text-zinc-500">Chưa có sản phẩm.</td></tr>
+        @endforelse
+        </tbody></table></div>
+        <x-ui.pagination :paginator="$products" />
+    </div>
 @endsection

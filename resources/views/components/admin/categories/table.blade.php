@@ -1,16 +1,24 @@
 @props(['categories' => [], 'search' => '', 'searchUrl' => null, 'paginator' => null])
-<section class="space-y-4">
-    <h2 class="text-xl font-semibold">Danh mục</h2>
+@php($groups = collect(App\Enums\GenderGroup::cases())->mapWithKeys(fn ($group) => [$group->value => $group->label()]))
+<section class="space-y-6" aria-label="Danh mục">
     @if ($searchUrl)
-        <form action="{{ $searchUrl }}" method="GET" class="flex flex-wrap gap-2">
-            <label class="sr-only" for="category-search">Tìm danh mục</label><input class="input flex-1" id="category-search" name="search" value="{{ $search }}">
-            <x-ui.button type="submit">Tìm</x-ui.button>
-        </form>
+        <x-admin.search-form :action="$searchUrl" id="category-search" label="Tìm danh mục" placeholder="Tìm danh mục..." :value="$search" />
     @endif
-    <div class="overflow-x-auto"><table class="w-full border-collapse text-left text-sm"><thead><tr class="border-b"><th class="p-2">Tên</th><th class="p-2">Nhóm</th><th class="p-2">Trạng thái</th><th class="p-2">Thứ tự</th><th class="p-2">Thao tác</th></tr></thead><tbody>
+    <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Tên</th><th>Nhóm</th><th>Thứ tự</th><th>Trạng thái</th><th>Thao tác</th></tr></thead><tbody>
     @forelse ($categories as $category)
-        <tr class="border-b"><td class="p-2">{{ $category['name'] ?? '' }}</td><td class="p-2">{{ $category['gender_group'] ?? '' }}</td><td class="p-2">{{ ($category['is_active'] ?? false) ? 'Đang hiển thị' : 'Đang ẩn' }}</td><td class="p-2">{{ $category['display_order'] ?? '' }}</td><td class="p-2">@if ($category['editUrl'] ?? null)<a class="underline" href="{{ $category['editUrl'] }}">Sửa</a>@endif @if ($category['deactivateUrl'] ?? null)<form method="POST" action="{{ $category['deactivateUrl'] }}">@csrf @method('PATCH')<button class="underline" type="submit">Ẩn</button></form>@endif</td></tr>
-    @empty <tr><td class="p-4 text-zinc-500" colspan="5">Chưa có danh mục.</td></tr> @endforelse
+        <tr>
+            <td><span class="font-semibold text-zinc-900">{{ $category['name'] ?? '' }}</span><span class="block text-xs text-zinc-500">{{ $category['slug'] ?? '' }}</span></td>
+            <td>{{ $groups[$category['gender_group'] ?? ''] ?? ($category['gender_group'] ?? '') }}</td>
+            <td>{{ $category['display_order'] ?? '' }}</td>
+            <td>@if ($category['is_active'] ?? false)<span class="badge bg-green-100 text-green-600">Đang hiển thị</span>@else<span class="badge bg-zinc-100 text-zinc-600">Đang ẩn</span>@endif</td>
+            <td><div class="flex flex-wrap gap-2">
+                @if ($category['editUrl'] ?? null)<a class="btn-pill" href="{{ $category['editUrl'] }}">Sửa</a>@endif
+                @if ($category['deactivateUrl'] ?? null)<form method="POST" action="{{ $category['deactivateUrl'] }}">@csrf @method('PATCH')<button class="btn-pill" type="submit">Ẩn</button></form>@endif
+            </div></td>
+        </tr>
+    @empty
+        <tr><td class="py-20 text-center text-zinc-500" colspan="5">Chưa có danh mục.</td></tr>
+    @endforelse
     </tbody></table></div>
     @if ($paginator)<x-ui.pagination :paginator="$paginator" />@endif
 </section>

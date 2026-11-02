@@ -3,12 +3,13 @@
 @section('title', $address ? 'Sửa địa chỉ' : 'Thêm địa chỉ')
 
 @section('content')
-    <section class="mx-auto max-w-xl space-y-6">
-        <div>
-            <a href="{{ route('account.addresses.index') }}" class="text-sm underline">← Sổ địa chỉ</a>
-            <h1 class="mt-2 text-3xl font-extrabold">{{ $address ? 'Sửa địa chỉ' : 'Thêm địa chỉ' }}</h1>
+    <section class="mx-auto max-w-2xl space-y-8 py-10">
+        <div class="space-y-4">
+            <a href="{{ route('account.addresses.index') }}" class="inline-flex items-center gap-2 font-semibold text-zinc-600 transition hover:text-zinc-900">← Quản lý địa chỉ</a>
+            <p class="text-sm uppercase tracking-[0.35em] text-zinc-400">Tài khoản</p>
+            <h1 class="text-4xl font-bold sm:text-5xl">{{ $address ? 'Sửa địa chỉ' : 'Thêm địa chỉ' }}</h1>
         </div>
-        <form method="POST" action="{{ $address ? route('account.addresses.update', $address->id) : route('account.addresses.store') }}" class="flex flex-col gap-5" novalidate>
+        <form method="POST" action="{{ $address ? route('account.addresses.update', $address->id) : route('account.addresses.store') }}" class="flex flex-col gap-5 rounded-3xl border border-zinc-200 p-6 shadow-sm sm:p-10" novalidate>
             @csrf
             @if ($address)
                 @method('PUT')
@@ -24,7 +25,10 @@
             @unless ($address?->is_default)
                 <x-forms.choice-group name="is_default" label="Tùy chọn" :options="[['value' => '1', 'label' => 'Đặt làm địa chỉ mặc định']]" />
             @endunless
-            <button type="submit" class="btn w-full">{{ $address ? 'Lưu thay đổi' : 'Thêm địa chỉ' }}</button>
+            <div class="flex gap-4">
+                <a href="{{ route('account.addresses.index') }}" class="flex-1 rounded-full border border-zinc-300 py-4 text-center text-lg font-semibold transition hover:bg-zinc-100">Hủy</a>
+                <button type="submit" class="btn flex-1 rounded-full py-4 text-lg font-semibold">{{ $address ? 'Lưu thay đổi' : 'Thêm địa chỉ' }}</button>
+            </div>
         </form>
     </section>
 @endsection

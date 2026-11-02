@@ -65,9 +65,8 @@
         <h2 id="account-title" class="pr-8 text-lg font-semibold">{{ auth()->user()->full_name }}</h2>
         <p class="truncate text-sm text-zinc-500">{{ auth()->user()->email }}</p>
         <nav class="mt-5 flex flex-col gap-3 text-sm" aria-label="Tài khoản">
-            @if (Route::has('account.addresses.index'))
-                <a href="{{ route('account.addresses.index') }}" class="hover:underline">Sổ địa chỉ</a>
-            @endif
+            <a href="{{ route('account.index') }}" class="hover:underline">Tài khoản của tôi</a>
+            <a href="{{ route('account.addresses.index') }}" class="hover:underline">Sổ địa chỉ</a>
             @if (auth()->user()->roles()->whereIn('slug', ['admin', 'staff'])->exists())
                 <a href="{{ route('admin.dashboard') }}" class="hover:underline">Trang quản trị</a>
             @endif

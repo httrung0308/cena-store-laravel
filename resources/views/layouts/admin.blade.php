@@ -1,5 +1,7 @@
-{{-- Back-office shell. Use @extends('layouts.admin') + @section('title') / @section('content').
-     Sidebar links appear only once their route exists, so Codex's PRs light them up without editing this file. --}}
+{{-- Back-office shell inside the storefront frame (navbar, panels, footer), styled like the management pages
+     of the original store: eyebrow + large heading, rounded cards and pill buttons.
+     Use @extends('layouts.admin') + @section('title') / @section('eyebrow') / @section('actions') / @section('content').
+     Module links appear only once their route exists. --}}
 @php
     $pageTitle = $title ?? trim($__env->yieldContent('title', 'Quản trị'));
     $sections = [
@@ -9,6 +11,7 @@
         ['route' => 'admin.products.index', 'label' => 'Sản phẩm'],
         ['route' => 'admin.stock-imports.index', 'label' => 'Nhập kho'],
     ];
+    $onDashboard = request()->routeIs('admin.dashboard');
 @endphp
 <!doctype html>
 <html lang="vi">
@@ -16,55 +19,62 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="robots" content="noindex">
-    <title>{{ $pageTitle }} — Quản trị Cena</title>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>{{ $pageTitle }} — Quản trị Nike</title>
     <link rel="icon" href="{{ asset('legacy/favicon.ico') }}">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @stack('head')
 </head>
-<body class="font-montserrat bg-zinc-50 text-black">
-    <div class="flex min-h-screen flex-col md:flex-row">
-        <aside class="w-full shrink-0 bg-black text-white md:w-60" aria-label="Menu quản trị">
-            <div class="flex items-center justify-between px-6 py-5">
-                <a href="{{ route('admin.dashboard') }}" class="text-xl font-bold">Cena Admin</a>
-                <a href="{{ route('home') }}" class="text-xs text-zinc-400 hover:text-white hover:underline">Xem cửa hàng</a>
-            </div>
-            <nav class="flex gap-1 overflow-x-auto px-3 pb-4 md:flex-col md:overflow-visible">
-                @foreach ($sections as $section)
-                    @if (Route::has($section['route']))
-                        <a href="{{ route($section['route']) }}"
-                           @class([
-                               'whitespace-nowrap rounded px-3 py-2 text-sm transition',
-                               'bg-white font-semibold text-black' => request()->routeIs(str_replace('.index', '.*', $section['route'])),
-                               'text-zinc-300 hover:bg-zinc-800 hover:text-white' => ! request()->routeIs(str_replace('.index', '.*', $section['route'])),
-                           ])
-                           @if (request()->routeIs(str_replace('.index', '.*', $section['route']))) aria-current="page" @endif>{{ $section['label'] }}</a>
-                    @else
-                        <span class="whitespace-nowrap px-3 py-2 text-sm text-zinc-600" aria-disabled="true">{{ $section['label'] }}</span>
+<body class="font-montserrat bg-white text-black">
+    <div id="storefront" x-data="storefrontShell" @cart-open.window="openPanel('cart')" @keydown.escape.window="closePanel()" @mousemove.window="pointerX = $event.clientX; pointerY = $event.clientY">
+        <div :inert="panel !== null" :aria-hidden="panel !== null ? 'true' : null" class="flex min-h-screen flex-col">
+            <x-storefront.navigation :animated="false"/>
+            <main class="w-full flex-1 px-4 pb-10 pt-20 sm:px-8">
+                <div class="mx-auto flex max-w-7xl flex-col gap-8">
+                    <div class="space-y-4">
+                        @unless ($onDashboard)
+                            <a href="{{ route('admin.dashboard') }}" class="inline-flex items-center gap-2 font-semibold text-zinc-600 transition hover:text-zinc-900">
+                                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M19 12H5m7 7-7-7 7-7"/></svg>
+                                Về trang quản trị
+                            </a>
+                        @endunless
+                        <p class="text-sm uppercase tracking-[0.35em] text-zinc-400">@yield('eyebrow', 'Quản trị cửa hàng')</p>
+                        <div class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+                            <h1 class="break-words text-4xl font-bold sm:text-5xl">{{ $pageTitle }}</h1>
+                            <div class="flex flex-wrap gap-2">@yield('actions')</div>
+                        </div>
+                    </div>
+                    <nav class="flex gap-2 overflow-x-auto pb-1" aria-label="Menu quản trị">
+                        @foreach ($sections as $section)
+                            @php($active = request()->routeIs(str_replace('.index', '.*', $section['route'])))
+                            @if (Route::has($section['route']))
+                                <a href="{{ route($section['route']) }}" @class([
+                                    'whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold transition',
+                                    'bg-black text-white' => $active,
+                                    'border border-zinc-200 hover:border-zinc-900' => ! $active,
+                                ]) @if ($active) aria-current="page" @endif>{{ $section['label'] }}</a>
+                            @else
+                                <span class="whitespace-nowrap rounded-full border border-zinc-100 px-4 py-2 text-sm text-zinc-400" aria-disabled="true">{{ $section['label'] }}</span>
+                            @endif
+                        @endforeach
+                    </nav>
+                    @if (session('status'))
+                        <div role="status" class="rounded-3xl border border-green-200 bg-green-50 p-4 text-sm text-green-700">{{ session('status') }}</div>
                     @endif
-                @endforeach
-            </nav>
-        </aside>
-        <div class="flex min-w-0 flex-1 flex-col">
-            <header class="flex items-center justify-between border-b border-zinc-200 bg-white px-6 py-4">
-                <h1 class="text-xl font-semibold">{{ $pageTitle }}</h1>
-                <div class="flex items-center gap-4 text-sm">
-                    <span class="text-zinc-600">{{ auth()->user()?->full_name }}</span>
-                    @if (Route::has('logout'))
-                        <form method="POST" action="{{ route('logout') }}">
-                            @csrf
-                            <button type="submit" class="font-semibold hover:underline">Đăng xuất</button>
-                        </form>
+                    @if ($errors->any())
+                        <div role="alert" class="rounded-3xl border border-red-200 bg-red-50 p-4 text-sm text-red-600">
+                            <ul class="list-inside list-disc space-y-1">@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul>
+                        </div>
                     @endif
+                    <div class="min-w-0">
+                        {{ $slot ?? '' }}
+                        @yield('content')
+                    </div>
                 </div>
-            </header>
-            <main class="flex-1 p-6">
-                @if (session('status'))
-                    <div role="status" class="mb-4 rounded border border-green-300 bg-green-50 px-4 py-3 text-sm text-green-800">{{ session('status') }}</div>
-                @endif
-                {{ $slot ?? '' }}
-                @yield('content')
             </main>
+            <x-storefront.footer/>
         </div>
+        <x-storefront.panels/>
     </div>
     @stack('scripts')
 </body>

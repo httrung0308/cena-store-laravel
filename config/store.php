@@ -37,9 +37,9 @@ return [
         'enabled' => env('STORE_DEMO_USERS', false),
         'password' => env('STORE_DEMO_PASSWORD'),
         'accounts' => [
-            'admin' => ['email' => 'admin@demo.cena.test', 'full_name' => 'Cena Demo Admin'],
-            'staff' => ['email' => 'staff@demo.cena.test', 'full_name' => 'Cena Demo Staff'],
-            'customer' => ['email' => 'customer@demo.cena.test', 'full_name' => 'Cena Demo Customer'],
+            'admin' => ['email' => 'admin@demo.cena.test', 'full_name' => 'Nike Demo Admin'],
+            'staff' => ['email' => 'staff@demo.cena.test', 'full_name' => 'Nike Demo Staff'],
+            'customer' => ['email' => 'customer@demo.cena.test', 'full_name' => 'Nike Demo Customer'],
         ],
     ],
     'limits' => [

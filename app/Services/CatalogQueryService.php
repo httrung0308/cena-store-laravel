@@ -298,7 +298,8 @@ final class CatalogQueryService
         ];
     }
 
-    private function imageUrl(?ProductImage $image): string
+    /** Safe public URL of a stored or HTTPS image, else the local fallback asset. */
+    public function imageUrl(?ProductImage $image): string
     {
         if ($image?->source_type === ProductImageSourceType::ExternalUrl && is_string($image->external_url)
             && filter_var($image->external_url, FILTER_VALIDATE_URL) && parse_url($image->external_url, PHP_URL_SCHEME) === 'https'

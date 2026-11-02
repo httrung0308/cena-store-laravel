@@ -26,6 +26,6 @@ class RegisterController extends Controller
         $request->session()->put(AuthService::SESSION_AUTH_VERSION, $user->auth_version);
         $carts->mergeGuestCart($user, $request->session());
 
-        return redirect()->intended(route('home'))->with('status', 'Đăng ký thành công. Chào mừng bạn đến với Cena!');
+        return redirect()->intended(route('home'))->with('status', 'Đăng ký thành công. Chào mừng bạn đến với Nike!');
     }
 }

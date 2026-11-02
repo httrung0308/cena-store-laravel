@@ -1,27 +1,34 @@
-@php($pageTitle = $title ?? trim($__env->yieldContent('title', 'Cena Store')))
+{{-- Full-screen sign-in / sign-up shell: looping video background, no navbar or footer, Nike logo back to home.
+     Sections: title, heading, subheading (optional), switch (link to the other form), content (the form). --}}
+@php($pageTitle = $title ?? trim($__env->yieldContent('title', 'Nike Store')))
 <!doctype html>
 <html lang="vi">
 <head>
     <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ $pageTitle }} — Cena</title>
+    <title>{{ $pageTitle }} — Nike</title>
+    <link rel="icon" href="{{ asset('legacy/favicon.ico') }}">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="font-montserrat bg-white text-black">
-    <div class="relative flex min-h-screen flex-col lg:flex-row">
-        <aside class="relative min-h-52 overflow-hidden text-white lg:w-1/2" aria-label="Cena Store">
-            <x-auth.background />
-            <div class="relative z-10 flex h-full flex-col justify-between p-6 lg:p-12">
-                <a href="{{ route('home') }}" class="text-3xl font-bold focus-visible:ring-4">Cena</a>
-                <p class="mt-10 max-w-md text-3xl font-semibold">Sport, the smart choice.</p>
+<body class="font-montserrat bg-black text-white">
+    <x-auth.background />
+    <a href="{{ route('home') }}" class="absolute left-6 top-6 z-10 text-2xl font-bold text-white focus-visible:ring-4 sm:left-10" aria-label="Về trang chủ">Nike</a>
+    <main class="relative flex min-h-screen flex-col items-center justify-center pb-12 pt-24">
+        <div class="w-full p-4 sm:p-7">
+            <h1 class="text-center text-4xl font-semibold leading-tight xl:text-6xl">@yield('heading', $pageTitle)</h1>
+            @hasSection('subheading')
+                <p class="hidden text-center text-xl sm:block xl:text-2xl">@yield('subheading')</p>
+            @endif
+            <div class="w-full text-center">@yield('switch')</div>
+            @if (session('status'))
+                <p role="status" class="mx-auto mt-6 max-w-[40rem] rounded-md bg-white/20 px-4 py-3 text-sm">{{ session('status') }}</p>
+            @endif
+            <div class="mt-10 flex w-full justify-center">
+                <div class="w-full max-w-[40rem]">
+                    {{ $slot ?? '' }}
+                    @yield('content')
+                </div>
             </div>
-        </aside>
-        <main class="flex w-full flex-1 items-center justify-center px-5 py-10 sm:px-10 lg:w-1/2 lg:p-16">
-            <div class="w-full max-w-lg">
-                <h1 class="mb-6 text-3xl font-semibold">{{ $pageTitle }}</h1>
-                {{ $slot ?? '' }}
-                @yield('content')
-            </div>
-        </main>
-    </div>
+        </div>
+    </main>
 </body>
 </html>

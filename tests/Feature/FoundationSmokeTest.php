@@ -17,7 +17,7 @@ class FoundationSmokeTest extends TestCase
             ->assertSee('the smart choice.')
             ->assertSee('legacy/img/main.jpg')
             ->assertSee('Fresh summer collection avaible now')
-            ->assertSee('Shop by')
+            ->assertSee('Mua sắm')
             ->assertSee('/build/assets/', false)
             ->assertSee('aria-controls="cart-panel"', false);
     }
