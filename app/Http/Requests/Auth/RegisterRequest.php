@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Auth;
 
+use App\Support\PhoneNumber;
 use Closure;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -21,7 +22,7 @@ class RegisterRequest extends FormRequest
         $this->merge([
             'full_name' => is_string($this->input('full_name')) ? preg_replace('/\s+/u', ' ', trim($this->input('full_name'))) : $this->input('full_name'),
             'email' => is_string($this->input('email')) ? mb_strtolower(trim($this->input('email'))) : $this->input('email'),
-            'phone' => is_string($this->input('phone')) && trim($this->input('phone')) !== '' ? preg_replace('/[\s.-]/', '', $this->input('phone')) : null,
+            'phone' => PhoneNumber::normalize($this->input('phone')),
         ]);
     }
 
@@ -33,7 +34,7 @@ class RegisterRequest extends FormRequest
         return [
             'full_name' => ['required', 'string', 'min:2', 'max:100'],
             'email' => ['required', 'string', 'email:rfc', 'max:255', Rule::unique('users', 'email')],
-            'phone' => ['nullable', 'string', 'regex:/^(0|\+84)[0-9]{9,10}$/'],
+            'phone' => ['nullable', 'string', 'regex:'.PhoneNumber::PATTERN],
             'password' => ['required', 'string', 'min:8', 'confirmed', self::passwordFitsHash(...)],
         ];
     }

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Account\AddressController;
 use App\Http\Controllers\Account\AdministrativeUnitController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\LogoutController;
@@ -19,6 +20,16 @@ Route::middleware('guest')->group(function (): void {
 });
 
 Route::post('/logout', LogoutController::class)->middleware('auth')->name('logout');
+
+Route::middleware('auth')->prefix('account/addresses')->name('account.addresses.')->whereNumber('address')->group(function (): void {
+    Route::get('/', [AddressController::class, 'index'])->name('index');
+    Route::get('/create', [AddressController::class, 'create'])->name('create');
+    Route::post('/', [AddressController::class, 'store'])->name('store');
+    Route::get('/{address}/edit', [AddressController::class, 'edit'])->name('edit');
+    Route::put('/{address}', [AddressController::class, 'update'])->name('update');
+    Route::delete('/{address}', [AddressController::class, 'destroy'])->name('destroy');
+    Route::patch('/{address}/default', [AddressController::class, 'makeDefault'])->name('default');
+});
 
 Route::middleware('throttle:120,1')->prefix('api/locations')->name('locations.')->group(function (): void {
     Route::get('/provinces', [AdministrativeUnitController::class, 'provinces'])->name('provinces');

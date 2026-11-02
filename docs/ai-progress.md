@@ -316,3 +316,16 @@ Nguồn người dùng chọn: Địa Chỉ Việt (diachiviet.com, CC BY 4.0), 
 - API tra cứu cho ô chọn địa chỉ: `GET /api/locations/provinces`, `GET /api/locations/provinces/{code}/wards` — chỉ snapshot hiện hành, chỉ `code/name/parent_code/dataset_version`, mã sai dạng hoặc không có → 404, giới hạn 120 request/phút.
 - Test `AdministrativeDatasetTest`: snapshot thật đủ 34/3.355, checksum bị sửa bị chặn, 15 kiểu dữ liệu sai bị chặn, seeder idempotent + giữ parent, không tự sửa bản ghi đã nhập, seed toàn bộ 2 lần không trùng, API đúng version và giữ số 0 đầu.
 - DB dev: `db:seed --class=FoundationSeeder` chạy 2 lần → 34 tỉnh, 3.321 xã, 1 version, 3 role.
+
+## Đợt 7 chức năng — PR-C3 sổ địa chỉ (02/11/2026, Claude)
+
+Theo WF-04 / P02.05 ở mức tối thiểu.
+
+- `AddressService`: thêm, sửa, xóa mềm, đặt mặc định. Mọi thao tác khóa dòng user trước, nên hai yêu cầu đặt mặc định cùng lúc chạy tuần tự; DB còn chặn thêm bằng cột `default_owner_id` unique. Địa chỉ đầu tiên tự thành mặc định; bỏ tick mặc định của địa chỉ mặc định duy nhất bị bỏ qua; xóa địa chỉ mặc định thì bỏ cờ trước rồi chuyển mặc định cho địa chỉ còn lại có id nhỏ nhất.
+- Tỉnh/phường phải thuộc snapshot hiện hành và phường đúng tỉnh; lưu `province_id/ward_id` + snapshot mã, tên, `dataset_version`. Địa chỉ của snapshot cũ hiện cảnh báo cần chọn lại.
+- Chủ sở hữu luôn lấy từ phiên; địa chỉ người khác hoặc đã xóa trả 404 cho xem/sửa/xóa/đặt mặc định.
+- `App\Support\PhoneNumber` chuẩn hóa SĐT (bỏ dấu cách/chấm/gạch, `+84` → `0`), dùng chung cho đăng ký và địa chỉ.
+- Giao diện `/account/addresses` (danh sách, thêm, sửa) trong layout cửa hàng; ô chọn tỉnh → phường của EXT-019 được nối với API `locations.wards` qua prop `wardsUrl`, giữ lựa chọn cũ khi lỗi nhập; ô "Đặt làm mặc định" dùng `choice-group`. Panel tài khoản tự hiện "Sổ địa chỉ".
+- Test `AddressBookTest` 9 ca: khách bị chuyển đăng nhập, địa chỉ đầu tiên mặc định + snapshot, phường sai tỉnh/snapshot cũ/sai định dạng bị chặn, đổi mặc định chỉ còn 1, sửa chụp lại snapshot, xóa mặc định chuyển sang id nhỏ nhất, địa chỉ người khác 404, DB chặn 2 mặc định, trang escape dữ liệu và hiện cảnh báo snapshot cũ.
+- Trình duyệt (DB dev, dữ liệu thật): chưa đăng nhập bị chuyển login rồi quay về sổ địa chỉ; chọn TP.HCM tải 168 phường; thêm địa chỉ thành công, tự mặc định; trang sửa chọn sẵn đúng tỉnh/phường.
+- Giới hạn: chưa có test hai tiến trình MySQL cho đặt mặc định đồng thời — dựa vào khóa dòng user và ràng buộc unique của DB (có test).
