@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\ProductController;
+use App\Http\Controllers\Admin\StockImportController;
 use App\Http\Controllers\Admin\SupplierController;
 use Illuminate\Support\Facades\Route;
 
@@ -22,3 +23,7 @@ Route::patch('suppliers/{supplier}/deactivate', [SupplierController::class, 'dea
 
 Route::resource('products', ProductController::class)->except(['show', 'destroy']);
 Route::patch('products/{product}/deactivate', [ProductController::class, 'deactivate'])->name('products.deactivate');
+
+Route::resource('stock-imports', StockImportController::class)->except('destroy');
+Route::post('stock-imports/{stock_import}/post', [StockImportController::class, 'post'])->name('stock-imports.post');
+Route::post('stock-imports/{stock_import}/cancel', [StockImportController::class, 'cancel'])->name('stock-imports.cancel');

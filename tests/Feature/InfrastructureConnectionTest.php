@@ -12,8 +12,12 @@ class InfrastructureConnectionTest extends TestCase
     public function test_mysql_uses_only_dedicated_test_database_and_utc(): void
     {
         $actual = DB::selectOne('SELECT DATABASE() AS db, CURRENT_USER() AS account, VERSION() AS version, @@session.time_zone AS timezone');
-        $this->assertSame('cena_store_test', $actual->db);
-        $this->assertContains(explode('@', $actual->account)[0], ['cena_test', 'cena_ci']);
+        $accountsByDatabase = [
+            'cena_store_test' => ['cena_test', 'cena_ci'],
+            'cena_store_test_codex' => ['cena_test_codex'],
+        ];
+        $this->assertArrayHasKey($actual->db, $accountsByDatabase);
+        $this->assertContains(explode('@', $actual->account)[0], $accountsByDatabase[$actual->db]);
         $this->assertStringStartsWith('8.4.', $actual->version);
         $this->assertSame('+00:00', $actual->timezone);
     }
