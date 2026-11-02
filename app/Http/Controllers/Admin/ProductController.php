@@ -17,7 +17,7 @@ class ProductController extends Controller
     public function index(Request $request): View
     {
         $data = $request->validate(['search' => ['nullable', 'string', 'max:150']]);
-        $products = Product::with('category')->when($data['search'] ?? null, fn ($q, $s) => $q->where('name', 'like', '%'.$s.'%'))->orderByDesc('id')->paginate(15)->withQueryString();
+        $products = Product::with(['category', 'colors' => fn ($q) => $q->orderBy('display_order')->orderBy('id'), 'colors.thumbnail'])->withCount('variants')->withSum('variants as total_stock', 'stock_qty')->when($data['search'] ?? null, fn ($q, $s) => $q->where('name', 'like', '%'.$s.'%'))->orderByDesc('id')->paginate(15)->withQueryString();
 
         return view('admin.products.index', compact('products'));
     }

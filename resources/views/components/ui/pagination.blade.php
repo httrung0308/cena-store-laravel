@@ -9,25 +9,25 @@
     @endphp
     <nav aria-label="Phân trang" {{ $attributes->class(['flex flex-wrap items-center justify-center gap-2 py-4 text-sm']) }}>
         @if ($paginator->onFirstPage())
-            <span class="px-3 py-2 text-zinc-400" aria-disabled="true">Trước</span>
+            <span class="rounded-full border border-zinc-200 px-4 py-2 font-semibold opacity-30" aria-disabled="true">Trước</span>
         @else
-            <a href="{{ $paginator->previousPageUrl() }}" rel="prev" class="px-3 py-2 underline focus-visible:ring-4">Trước</a>
+            <a href="{{ $paginator->previousPageUrl() }}" rel="prev" class="rounded-full border border-zinc-200 px-4 py-2 font-semibold transition hover:border-zinc-900 focus-visible:ring-4">Trước</a>
         @endif
         @foreach ($pages as $page)
             @if ($previousPage !== null && $page > $previousPage + 1)
                 <span aria-hidden="true">…</span>
             @endif
             @if ($page === $current)
-                <span aria-current="page" class="bg-black px-3 py-2 text-white">{{ $page }}</span>
+                <span aria-current="page" class="rounded-full bg-black px-4 py-2 font-semibold text-white">{{ $page }}</span>
             @else
-                <a href="{{ $paginator->url($page) }}" aria-label="Trang {{ $page }}" class="px-3 py-2 underline focus-visible:ring-4">{{ $page }}</a>
+                <a href="{{ $paginator->url($page) }}" aria-label="Trang {{ $page }}" class="rounded-full border border-zinc-200 px-4 py-2 font-semibold transition hover:border-zinc-900 focus-visible:ring-4">{{ $page }}</a>
             @endif
             @php($previousPage = $page)
         @endforeach
         @if ($paginator->hasMorePages())
-            <a href="{{ $paginator->nextPageUrl() }}" rel="next" class="px-3 py-2 underline focus-visible:ring-4">Tiếp</a>
+            <a href="{{ $paginator->nextPageUrl() }}" rel="next" class="rounded-full border border-zinc-200 px-4 py-2 font-semibold transition hover:border-zinc-900 focus-visible:ring-4">Tiếp</a>
         @else
-            <span class="px-3 py-2 text-zinc-400" aria-disabled="true">Tiếp</span>
+            <span class="rounded-full border border-zinc-200 px-4 py-2 font-semibold opacity-30" aria-disabled="true">Tiếp</span>
         @endif
     </nav>
 @endif

@@ -32,7 +32,7 @@ class SharedFoundationTest extends TestCase
             ->assertViewIs('catalog.index')
             ->assertSee('Shoes')
             ->assertSee('aria-controls="cart-panel"', false)
-            ->assertSee('Shop by')
+            ->assertSee('Mua sắm')
             ->assertDontSee('legacy-navigation', false);
     }
 
@@ -114,7 +114,7 @@ class SharedFoundationTest extends TestCase
         $html = Blade::render("@extends('layouts.store')\n@section('title', \$title)\n@section('content')<p>Nội dung</p>@endsection", ['title' => '<script>x</script>']);
 
         $this->assertStringContainsString('<p>Nội dung</p>', $html);
-        $this->assertStringContainsString('&lt;script&gt;x&lt;/script&gt; — Cena', $html);
+        $this->assertStringContainsString('&lt;script&gt;x&lt;/script&gt; — Nike', $html);
         $this->assertStringNotContainsString('<script>x</script>', $html);
     }
 }

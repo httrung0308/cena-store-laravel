@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Account\AccountController;
 use App\Http\Controllers\Account\AddressController;
 use App\Http\Controllers\Account\AdministrativeUnitController;
 use App\Http\Controllers\Auth\LoginController;
@@ -8,7 +9,7 @@ use App\Http\Controllers\Auth\RegisterController;
 use Illuminate\Support\Facades\Route;
 
 /*
- * Sign-in, registration, sign-out, address book and the province/ward lookup API
+ * Sign-in, registration, sign-out, account overview, address book and the province/ward lookup API
  * (owner: Claude, PR-C1..C3). The route named "login" must live here: guests hitting
  * an "auth" route are redirected to it.
  */
@@ -20,6 +21,7 @@ Route::middleware('guest')->group(function (): void {
 });
 
 Route::post('/logout', LogoutController::class)->middleware('auth')->name('logout');
+Route::get('/account', AccountController::class)->middleware('auth')->name('account.index');
 
 Route::middleware('auth')->prefix('account/addresses')->name('account.addresses.')->whereNumber('address')->group(function (): void {
     Route::get('/', [AddressController::class, 'index'])->name('index');
