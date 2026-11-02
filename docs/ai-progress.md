@@ -291,3 +291,15 @@ Leader giao 7 chức năng tối thiểu (tỉnh/phường, đăng nhập, sổ 
 - Layout `layouts/store` (navbar + panels + footer gốc, tắt hiệu ứng mở đầu của trang chủ) và `layouts/admin` (menu trái tự hiện mục khi route tồn tại). Navbar, menu mobile và nút Explore trỏ về `/shoes?gender=men|women|kids|unisex`.
 - `app.js` đăng ký một lần 8 component Alpine đã có của EXT. Factory `User` thêm `staff()`, `customer()`, `withRole()`.
 - Test `SharedFoundationTest`: khách vào `/admin` bị 401, customer/không vai trò/bị khóa/đã xóa bị 403, admin và staff vào được, thu hồi vai trò có hiệu lực ngay, `role:admin` chặn staff, escape tên và tiêu đề, liên kết theo giới tính.
+
+## Đợt 7 chức năng — PR-C1 đăng ký, đăng nhập, đăng xuất (02/11/2026, Claude)
+
+Theo WF-01/P02.01 ở mức tối thiểu của đợt này (chưa làm OTP, quản trị user).
+
+- `AuthService::register`: một transaction tạo user active (mật khẩu băm), gán vai trò `customer` theo slug, tạo giỏ rỗng; thiếu role thì báo lỗi cấu hình và rollback; trùng email do race chuyển thành lỗi 422. Không nhận role/is_active/auth_version từ request.
+- `RegisterRequest`: họ tên 2–100, email chuẩn hóa chữ thường, SĐT tùy chọn, mật khẩu ≥8 và **≤72 byte** (giới hạn của bcrypt, giống `DemoUsersSeeder`; đặc tả ghi 128 nhưng bcrypt bỏ phần sau byte 72 nên chặn rõ thay vì cắt ngầm). Thông báo lỗi tiếng Việt.
+- Đăng nhập: chỉ tài khoản active, chưa xóa; cùng một thông báo cho sai mật khẩu và tài khoản khóa; khóa 60 giây sau 5 lần sai theo email + IP; đổi session ID sau khi đăng nhập; lưu `auth_version` vào phiên; admin/staff vào `/admin`, khách quay lại trang định vào.
+- `EnsureUserIsActive` (nhóm web): mỗi request kiểm user còn active và `auth_version` trong phiên khớp DB, sai thì đăng xuất, hủy phiên, đổi CSRF token, chuyển về trang đăng nhập (AJAX nhận 401). Phiên từ cookie "ghi nhớ" nhận version hiện tại.
+- Đăng xuất chỉ bằng POST có CSRF. Trang `/login`, `/register` dùng layout và form EXT-012/013/014 (thêm ô SĐT). Navbar: khách thấy liên kết đăng nhập; đã đăng nhập thấy panel tên, email, (Trang quản trị nếu là admin/staff), Đăng xuất.
+- Test `AuthFlowTest` 14 ca: tạo user + role + giỏ, chặn chèn role, lỗi nhập, race email trùng, thiếu role rollback, đổi session ID, chuyển hướng theo vai trò, sai mật khẩu/khóa/đã xóa, chặn lần thứ 6, khóa hoặc đổi version chặn phiên cũ, đăng xuất, trang guest, navbar escape tên. `ApiContractTest` dùng route `login` thật thay route tạm.
+- Đã thử trên trình duyệt: đăng ký báo lỗi nhập lại mật khẩu, đăng ký thành công tự đăng nhập, panel tài khoản, đăng xuất, đăng nhập sai báo lỗi. Ghi chú: ô checkbox "Ghi nhớ đăng nhập" của form EXT bị CSS gốc ẩn, chỉ thấy nhãn (bấm nhãn vẫn chọn được).

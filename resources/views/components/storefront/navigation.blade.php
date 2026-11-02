@@ -9,7 +9,11 @@
             @endforeach
         </div>
         <div class="flex shrink-0 items-center">
-            <button type="button" class="btn-icon" aria-label="Account" @click="openNotice('Account')"><x-storefront.icon name="user"/></button>
+            @auth
+                <button type="button" class="btn-icon" aria-label="Tài khoản" @click="openPanel('account')" :aria-expanded="(panel === 'account').toString()" aria-controls="account-panel"><x-storefront.icon name="user"/></button>
+            @else
+                <a href="{{ route('login') }}" class="btn-icon" aria-label="Đăng nhập"><x-storefront.icon name="user"/></a>
+            @endauth
             <button type="button" class="btn-icon relative ml-3" aria-label="Cart" @click="openPanel('cart')" :aria-expanded="(panel === 'cart').toString()" aria-controls="cart-panel"><x-storefront.icon name="cart"/></button>
             <button type="button" class="btn-icon ml-3 inline md:hidden" aria-label="Menu" @click="openPanel('menu')" :aria-expanded="(panel === 'menu').toString()" aria-controls="mobile-menu"><x-storefront.icon name="menu"/></button>
         </div>

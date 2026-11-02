@@ -10,6 +10,25 @@
     <div class="overflow-overlay -mr-1 flex flex-1 flex-col gap-5 overflow-x-hidden p-1"></div>
     <div><div class="mb-2 flex w-full items-center justify-between"><h3 class="text-xl font-semibold">Total: 0₫</h3></div><button type="button" class="btn block w-full text-center" @click="openNotice('Checkout')">Login to Checkout</button></div>
 </section>
+@auth
+    <section id="account-panel" x-cloak x-show="panel === 'account'" x-transition.opacity class="fixed right-4 top-20 z-40 w-[calc(100%-2rem)] max-w-xs bg-white p-6 shadow-xl" role="dialog" aria-modal="true" aria-labelledby="account-title" @keydown.tab="trapFocus($event)">
+        <button type="button" class="btn-icon absolute right-3 top-3" @click="closePanel()" aria-label="Đóng"><x-storefront.icon name="close"/></button>
+        <h2 id="account-title" class="pr-8 text-lg font-semibold">{{ auth()->user()->full_name }}</h2>
+        <p class="truncate text-sm text-zinc-500">{{ auth()->user()->email }}</p>
+        <nav class="mt-5 flex flex-col gap-3 text-sm" aria-label="Tài khoản">
+            @if (Route::has('account.addresses.index'))
+                <a href="{{ route('account.addresses.index') }}" class="hover:underline">Sổ địa chỉ</a>
+            @endif
+            @if (auth()->user()->roles()->whereIn('slug', ['admin', 'staff'])->exists())
+                <a href="{{ route('admin.dashboard') }}" class="hover:underline">Trang quản trị</a>
+            @endif
+        </nav>
+        <form method="POST" action="{{ route('logout') }}" class="mt-6">
+            @csrf
+            <button type="submit" class="btn w-full">Đăng xuất</button>
+        </form>
+    </section>
+@endauth
 <section id="notice-panel" x-cloak x-show="panel === 'notice'" x-transition.opacity class="fixed left-1/2 top-1/2 z-40 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 bg-white p-8" role="dialog" aria-modal="true" aria-labelledby="notice-title" @keydown.tab="trapFocus($event)">
     <button type="button" class="btn-icon absolute right-3 top-3" @click="closePanel()" aria-label="Close notification"><x-storefront.icon name="close"/></button>
     <h2 id="notice-title" class="mb-4 text-xl font-semibold" x-text="noticeTitle"></h2>

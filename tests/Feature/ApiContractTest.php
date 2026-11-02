@@ -116,10 +116,8 @@ class ApiContractTest extends TestCase
 
     public function test_browser_auth_redirects_to_the_named_login_route_while_ajax_still_gets_401(): void
     {
-        Route::get('/__contract/login', fn () => 'Login')->name('login');
-        Route::getRoutes()->refreshNameLookups();
         Route::middleware('auth')->get('/__contract/guarded', fn () => 'PRIVATE');
-        $this->get('/__contract/guarded')->assertRedirect('/__contract/login');
+        $this->get('/__contract/guarded')->assertRedirect(route('login'));
         $this->withHeader('X-Requested-With', 'XMLHttpRequest')->withHeader('Accept', 'text/html')
             ->get('/__contract/guarded')->assertUnauthorized()->assertJsonPath('code', 'UNAUTHENTICATED');
     }
