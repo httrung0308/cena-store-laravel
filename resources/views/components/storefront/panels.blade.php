@@ -53,9 +53,9 @@
         <div class="flex w-full items-center justify-between"><h3 class="text-xl font-semibold">Tạm tính</h3><p class="text-xl font-semibold" x-text="$store.cart.price($store.cart.subtotal)">0 ₫</p></div>
         <p class="text-xs text-zinc-500" x-text="$store.cart.checkoutNote"></p>
         @auth
-            <button type="button" class="btn block w-full text-center opacity-60" disabled aria-disabled="true">Đặt hàng (sắp có)</button>
+            <a href="{{ route('checkout.show') }}" class="btn block w-full text-center" x-bind:class="$store.cart.count === 0 && 'pointer-events-none opacity-50'" x-bind:aria-disabled="($store.cart.count === 0).toString()">Đặt hàng</a>
         @else
-            <a href="{{ route('login') }}" class="btn block w-full text-center">Đăng nhập để đặt hàng</a>
+            <a href="{{ route('checkout.show') }}" class="btn block w-full text-center">Đăng nhập để đặt hàng</a>
         @endauth
     </div>
 </section>
@@ -66,6 +66,7 @@
         <p class="truncate text-sm text-zinc-500">{{ auth()->user()->email }}</p>
         <nav class="mt-5 flex flex-col gap-3 text-sm" aria-label="Tài khoản">
             <a href="{{ route('account.index') }}" class="hover:underline">Tài khoản của tôi</a>
+            <a href="{{ route('orders.index') }}" class="hover:underline">Đơn hàng của tôi</a>
             <a href="{{ route('account.addresses.index') }}" class="hover:underline">Sổ địa chỉ</a>
             @if (auth()->user()->roles()->whereIn('slug', ['admin', 'staff'])->exists())
                 <a href="{{ route('admin.dashboard') }}" class="hover:underline">Trang quản trị</a>

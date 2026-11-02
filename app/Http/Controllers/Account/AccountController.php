@@ -3,11 +3,12 @@
 namespace App\Http\Controllers\Account;
 
 use App\Http\Controllers\Controller;
+use App\Models\Order;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
 
 /**
- * Account overview: profile summary and the default address, linking to the address book.
+ * Account overview: profile summary, the default address and the latest orders.
  */
 class AccountController extends Controller
 {
@@ -19,6 +20,7 @@ class AccountController extends Controller
             'user' => $user,
             'defaultAddress' => $user->addresses()->where('is_default', true)->first(),
             'addressCount' => $user->addresses()->count(),
+            'recentOrders' => Order::query()->where('user_id', $user->id)->with('items')->orderByDesc('created_at')->orderByDesc('id')->limit(3)->get(),
         ]);
     }
 }

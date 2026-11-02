@@ -8,7 +8,7 @@
             <div class="space-y-4">
                 <p class="text-sm uppercase tracking-[0.35em] text-zinc-400">Tài khoản</p>
                 <h1 class="break-words text-4xl font-bold sm:text-5xl">Xin chào {{ $user->full_name }}!</h1>
-                <p class="text-base text-zinc-500">Quản lý thông tin cá nhân và sổ địa chỉ giao hàng.</p>
+                <p class="text-base text-zinc-500">Quản lý thông tin cá nhân, địa chỉ và theo dõi đơn hàng.</p>
                 @if (session('status'))
                     <p role="status" class="rounded-3xl border border-green-200 bg-green-50 p-4 text-sm text-green-700">{{ session('status') }}</p>
                 @endif
@@ -44,6 +44,21 @@
                         @endif
                     </div>
                     <a href="{{ route('account.addresses.index') }}" class="mt-4 inline-block rounded-full border border-zinc-200 px-4 py-2 text-sm font-semibold transition hover:border-zinc-900 hover:bg-zinc-900 hover:text-white">Quản lý địa chỉ</a>
+                </article>
+
+                <article class="rounded-3xl border border-zinc-200 p-6 shadow-sm md:col-span-2">
+                    <h2 class="text-lg font-semibold">Các đơn hàng gần đây</h2>
+                    <div class="mt-5 space-y-3">
+                        @forelse ($recentOrders as $order)
+                            <a href="{{ route('orders.show', $order->order_code) }}" class="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-zinc-200 p-4 transition hover:border-zinc-900">
+                                <span class="min-w-0"><span class="block break-all font-semibold">{{ $order->order_code }}</span><span class="text-sm text-zinc-500">{{ $order->created_at->setTimezone((string) config('store.business_timezone'))->format('d/m/Y') }} · {{ $order->items->sum('quantity') }} đôi</span></span>
+                                <span class="flex items-center gap-3"><x-orders.status-badge :status="$order->order_status" /><span class="font-semibold">{{ number_format($order->total_amount, 0, ',', '.') }} ₫</span></span>
+                            </a>
+                        @empty
+                            <p class="text-sm text-zinc-500">Chưa có đơn hàng nào</p>
+                        @endforelse
+                    </div>
+                    <a href="{{ route('orders.index') }}" class="mt-4 inline-block rounded-full border border-zinc-200 px-4 py-2 text-sm font-semibold transition hover:border-zinc-900 hover:bg-zinc-900 hover:text-white">Xem tất cả đơn hàng</a>
                 </article>
             </div>
         </div>
