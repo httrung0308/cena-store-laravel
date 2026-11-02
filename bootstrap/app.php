@@ -2,6 +2,7 @@
 
 use App\Exceptions\DomainException;
 use App\Http\Middleware\EnsureUserHasRole;
+use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\RequestId;
 use App\Support\ExceptionRenderer;
 use Illuminate\Foundation\Application;
@@ -20,7 +21,9 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->prepend(RequestId::class);
         $middleware->alias(['role' => EnsureUserHasRole::class]);
+        $middleware->web(append: [EnsureUserIsActive::class]);
         $middleware->redirectGuestsTo(fn (Request $request): ?string => ExceptionRenderer::wantsJson($request) || ! Route::has('login') ? null : route('login'));
+        $middleware->redirectUsersTo(fn (): string => route('home'));
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->dontReport(DomainException::class);

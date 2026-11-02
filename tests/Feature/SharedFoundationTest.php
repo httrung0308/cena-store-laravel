@@ -38,7 +38,7 @@ class SharedFoundationTest extends TestCase
 
     public function test_guest_cannot_open_admin(): void
     {
-        $this->get('/admin')->assertUnauthorized();
+        $this->get('/admin')->assertRedirect(route('login'));
         $this->getJson('/admin')->assertUnauthorized();
     }
 
@@ -64,7 +64,7 @@ class SharedFoundationTest extends TestCase
     public function test_customer_inactive_or_deleted_staff_and_user_without_role_are_forbidden(): void
     {
         $this->actingAs(User::factory()->customer()->create())->get('/admin')->assertForbidden();
-        $this->actingAs(User::factory()->staff()->inactive()->create())->get('/admin')->assertForbidden();
+        $this->actingAs(User::factory()->staff()->inactive()->create())->get('/admin')->assertRedirect(route('login'));
         $this->actingAs(User::factory()->create())->get('/admin')->assertForbidden();
 
         $deleted = User::factory()->administrator()->create();
