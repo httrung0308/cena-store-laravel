@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\StockImportController;
 use App\Http\Controllers\Admin\SupplierController;
+use App\Http\Controllers\Admin\UserController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -33,3 +34,11 @@ Route::get('orders', [OrderController::class, 'index'])->name('orders.index');
 Route::get('orders/{order}', [OrderController::class, 'show'])->whereNumber('order')->name('orders.show');
 Route::post('orders/{order}/{action}', [OrderController::class, 'transition'])->whereNumber('order')
     ->whereIn('action', ['confirm', 'pack', 'ship', 'deliver', 'cancel', 'fail'])->middleware('throttle:30,1')->name('orders.transition');
+
+Route::middleware('role:admin')->prefix('users')->name('users.')->whereNumber('user')->group(function (): void {
+    Route::get('/', [UserController::class, 'index'])->name('index');
+    Route::get('/{user}', [UserController::class, 'show'])->name('show');
+    Route::patch('/{user}', [UserController::class, 'update'])->name('update');
+    Route::patch('/{user}/active', [UserController::class, 'active'])->name('active');
+    Route::put('/{user}/roles', [UserController::class, 'roles'])->name('roles');
+});

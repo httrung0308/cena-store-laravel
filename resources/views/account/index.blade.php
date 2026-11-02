@@ -29,6 +29,7 @@
                     @if ($user->phone)
                         <p class="text-sm text-zinc-500">Điện thoại: <span class="text-zinc-900">{{ $user->phone }}</span></p>
                     @endif
+                    <a href="{{ route('account.settings') }}" class="mt-4 inline-block rounded-full border border-zinc-200 px-4 py-2 text-sm font-semibold transition hover:border-zinc-900 hover:bg-zinc-900 hover:text-white">Sửa thông tin / Đổi mật khẩu</a>
                 </article>
 
                 <article class="rounded-3xl border border-zinc-200 p-6 shadow-sm">

@@ -12,6 +12,9 @@
         ['route' => 'admin.stock-imports.index', 'label' => 'Nhập kho'],
         ['route' => 'admin.orders.index', 'label' => 'Đơn hàng'],
     ];
+    if (auth()->user()?->hasRole(App\Enums\RoleSlug::Admin)) {
+        $sections[] = ['route' => 'admin.users.index', 'label' => 'Người dùng'];
+    }
     $onDashboard = request()->routeIs('admin.dashboard');
 @endphp
 <!doctype html>

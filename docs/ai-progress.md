@@ -439,3 +439,12 @@ Theo WF-09 / P05.02–P05.04 ở mức tối thiểu (chưa có checkout).
 - Test: `OrderWorkflowTest` 6 ca (luồng đủ đến giao thành công + COGS bất biến khi nhập giá mới + ledger, hủy nhả hàng, khách chỉ hủy PENDING của mình, cạnh cấm + double click, phiếu thu trùng + giao thất bại, phân quyền + escape). Full suite MySQL `cena_store_test`: **1056/1056 tests, 8821 assertions PASS**. Build, Pint PASS.
 - Browser (DB dev, tài khoản nhân viên demo): đơn của khách demo → Xác nhận → Đóng gói → Giao (GHN) → Giao thành công với phiếu thu; DB: stock 7→6, reserved 0, DELIVERED/PAID, 2 dòng sổ doanh thu.
 - Giới hạn: chưa có nhận hàng hoàn/thất lạc, hoàn tiền, scheduler tự hủy COD quá 24 giờ, VietQR/VNPay.
+
+## Bổ sung chức năng như bản demo — PR-C đổi mật khẩu + quản lý người dùng (02/11/2026, Claude)
+
+- `UserAccessService` (WF-03): mọi thay đổi quyền khóa hàng vai trò admin làm mutex trước, nên hai request đồng thời không thể khóa/bỏ quyền Admin cuối cùng đang hoạt động; Admin không tự khóa hay tự bỏ quyền Admin; khóa/mở khóa và đổi vai trò tăng `auth_version` (người bị đổi bị đăng xuất ở request kế tiếp nhờ `EnsureUserIsActive`); vai trò thay theo tập, cần ít nhất một, vai trò chưa khởi tạo bị báo lỗi thay vì bỏ qua; ghi `assigned_by`.
+- Đổi mật khẩu cần mật khẩu hiện tại, mật khẩu mới theo quy tắc đăng ký và khác mật khẩu cũ; đổi xong tăng `auth_version`, đăng xuất và bắt đăng nhập lại. Hồ sơ chỉ sửa họ tên/SĐT (chuẩn hóa +84), không nhận email/vai trò/trạng thái.
+- Giao diện như bản demo: `/account/settings` (thông tin cá nhân + đổi mật khẩu), nút "Sửa thông tin / Đổi mật khẩu" ở `/account`; `/admin/users` (chỉ Admin: tìm tên/email/SĐT, lọc vai trò/trạng thái) và chi tiết người dùng (sửa thông tin, vai trò, khóa/mở khóa); mục "Người dùng" chỉ hiện với Admin, Staff thấy mô-đun bị làm mờ "(chỉ Admin)".
+- Test: `UserManagementTest` 6 ca (phân quyền + tìm/lọc + escape, khóa đăng xuất phiên và mở khóa, chặn tự khóa/tự bỏ Admin + Admin cuối, vai trò theo tập, hồ sơ không đổi email/quyền, đổi mật khẩu sai/đúng + đăng nhập lại). Full suite MySQL `cena_store_test`: **1062/1062 tests, 8871 assertions PASS**. Build, Pint PASS.
+- Browser (DB dev): Staff vào `/admin/users` bị 403; Admin thấy danh sách người dùng và trang cài đặt tài khoản.
+- Giới hạn: chưa có ảnh đại diện; chưa có nhật ký audit riêng cho thay đổi quyền (ngoài `assigned_by`/`auth_version`).
