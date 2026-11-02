@@ -281,3 +281,13 @@ Yêu cầu người dùng: tiếp tục phần InventoryService độc lập, gi
 ### Gate sau gói Inventory
 
 Inventory primitives đã được triển khai và kiểm độc lập. Số task canonical hoàn tất vẫn6/51: P01.04 chờ dataset/validator/import/shipping review; toàn P01.05 chờ prerequisite và tích hợp workflow đúng gate. Không coi tests primitive là checkout/delivery/payment/RMA đã hoàn thiện, không merge PR owner/external tự động. Nhật ký/README/ADR/AGENTS hiện có được cập nhật; không tạo báo cáo nghiệm thu riêng.
+
+## Đợt 7 chức năng — PR-0 nền chung (02/11/2026, Claude)
+
+Leader giao 7 chức năng tối thiểu (tỉnh/phường, đăng nhập, sổ địa chỉ, quản lý sản phẩm, nhập kho, trang sản phẩm, giỏ hàng). Chia hai luồng Claude/Codex theo `docs/collaboration/PLAN_7_CHUC_NANG.md`; PR-0 tạo các file dùng chung để hai bên không sửa trùng file.
+
+- Route tách theo khu vực: `routes/storefront.php` (Codex), `routes/admin.php` (Codex, tự có prefix `/admin`, tên `admin.`, middleware `auth` + `role:admin,staff`), `routes/account.php` và `routes/cart.php` (Claude). `/shoes` (`shoes.index`) tạm hiện trang "Sắp ra mắt".
+- Middleware `role` (`EnsureUserHasRole`): chỉ user còn active, chưa xóa và đang giữ một trong các vai trò được nêu; đọc lại vai trò mỗi request nên thu hồi quyền có hiệu lực ngay request sau.
+- Layout `layouts/store` (navbar + panels + footer gốc, tắt hiệu ứng mở đầu của trang chủ) và `layouts/admin` (menu trái tự hiện mục khi route tồn tại). Navbar, menu mobile và nút Explore trỏ về `/shoes?gender=men|women|kids|unisex`.
+- `app.js` đăng ký một lần 8 component Alpine đã có của EXT. Factory `User` thêm `staff()`, `customer()`, `withRole()`.
+- Test `SharedFoundationTest`: khách vào `/admin` bị 401, customer/không vai trò/bị khóa/đã xóa bị 403, admin và staff vào được, thu hồi vai trò có hiệu lực ngay, `role:admin` chặn staff, escape tên và tiêu đề, liên kết theo giới tính.

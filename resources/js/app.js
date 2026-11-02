@@ -1,6 +1,25 @@
 import Alpine from 'alpinejs';
 import { Chart } from 'chart.js/auto';
 
+import { addressSelector } from './components/address-selector';
+import { colorVariants } from './components/color-variants';
+import { dialogController } from './components/dialog';
+import { galleryController } from './components/gallery';
+import { passwordField } from './components/password-field';
+import { productImages } from './components/product-images';
+import { toastsController } from './components/toasts';
+import { variantPicker } from './components/variant-picker';
+
+// Shared Blade components use these names in x-data, e.g. x-data="variantPicker({...})".
+Alpine.data('addressSelector', addressSelector);
+Alpine.data('colorVariants', colorVariants);
+Alpine.data('dialogController', dialogController);
+Alpine.data('galleryController', galleryController);
+Alpine.data('passwordField', passwordField);
+Alpine.data('productImages', productImages);
+Alpine.data('toastsController', toastsController);
+Alpine.data('variantPicker', variantPicker);
+
 Alpine.data('storefrontShell', () => ({
     panel: null,
     noticeTitle: '',
