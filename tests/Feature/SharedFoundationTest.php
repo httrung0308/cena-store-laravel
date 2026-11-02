@@ -58,7 +58,7 @@ class SharedFoundationTest extends TestCase
             ->assertViewIs('admin.dashboard')
             ->assertSee('href="'.route('admin.dashboard').'"', false)
             ->assertSee('Nhân sự &lt;b&gt;Cena&lt;/b&gt;', false)
-            ->assertSee('<span class="whitespace-nowrap px-3 py-2 text-sm text-zinc-600" aria-disabled="true">Sản phẩm</span>', false);
+            ->assertSee('href="'.route('admin.products.index').'"', false);
     }
 
     public function test_customer_inactive_or_deleted_staff_and_user_without_role_are_forbidden(): void
