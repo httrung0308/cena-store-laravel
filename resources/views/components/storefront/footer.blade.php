@@ -7,9 +7,13 @@
         ['href' => route('shoes.index', ['gender' => 'unisex']), 'label' => 'Unisex'],
         ['href' => route('shoes.index'), 'label' => 'Tất cả sản phẩm'],
     ];
+    $isAdminAccount = auth()->user()?->hasRole(App\Enums\RoleSlug::Admin) ?? false;
     $accountLinks = auth()->check()
         ? [['href' => route('account.index'), 'label' => 'Tài khoản của tôi'], ['href' => route('orders.index'), 'label' => 'Theo dõi đơn hàng'], ['href' => route('account.addresses.index'), 'label' => 'Sổ địa chỉ']]
         : [['href' => route('login'), 'label' => 'Đăng nhập'], ['href' => route('register'), 'label' => 'Đăng ký']];
+    if ($isAdminAccount) {
+        $accountLinks = [['href' => route('account.index'), 'label' => 'Tài khoản của tôi'], ['href' => route('admin.dashboard'), 'label' => 'Trang quản trị']];
+    }
     $policies = ['Thanh toán khi nhận hàng (COD)', 'Miễn phí vận chuyển mọi đơn', 'Đổi size trong 7 ngày', 'Bảo hành keo, đế 6 tháng'];
     $icon = 'h-4 w-4 shrink-0';
 @endphp

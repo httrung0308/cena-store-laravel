@@ -1,3 +1,4 @@
+@php($isAdminAccount = auth()->user()?->hasRole(App\Enums\RoleSlug::Admin) ?? false)
 <div x-cloak x-show="panel" class="fixed inset-0 z-30 bg-black/50" @click="closePanel()" x-transition.opacity></div>
 <section id="mobile-menu" x-cloak x-show="panel === 'menu'" x-transition.opacity role="dialog" aria-modal="true" aria-label="Menu" class="fixed inset-0 z-40 flex flex-col items-center justify-center gap-5 bg-white" @keydown.tab="trapFocus($event)">
     <button type="button" class="btn-icon absolute right-10 top-5" @click="closePanel()" aria-label="Close menu"><x-storefront.icon name="close"/></button>
@@ -5,6 +6,7 @@
         <a href="{{ route('shoes.index', ['gender' => $gender]) }}" class="text-2xl font-semibold" @click="closePanel()">{{ $label }}</a>
     @endforeach
 </section>
+@unless ($isAdminAccount)
 <section id="cart-panel" x-cloak x-show="panel === 'cart'" x-transition:enter="transition-transform duration-300" x-transition:enter-start="translate-x-full" x-transition:enter-end="translate-x-0" x-transition:leave="transition-transform duration-300" x-transition:leave-start="translate-x-0" x-transition:leave-end="translate-x-full" class="fixed right-0 top-0 z-40 flex h-full w-full flex-col gap-5 bg-white p-5 sm:w-[32rem] sm:p-10 lg:w-[36rem]" role="dialog" aria-modal="true" aria-label="Giỏ hàng" @keydown.tab="trapFocus($event)"
     x-init="$store.cart.configure(@js(['show' => route('cart.show'), 'add' => route('cart.items.store'), 'item' => route('cart.items.update', ['item' => '__ID__']), 'clear' => route('cart.clear')])); $store.cart.load()">
     <div class="flex w-full items-center justify-between">
@@ -59,6 +61,15 @@
         @endauth
     </div>
 </section>
+@else
+<section id="cart-panel" x-cloak x-show="panel === 'cart'" class="fixed right-0 top-0 z-40 flex h-full w-full flex-col gap-5 bg-white p-5 sm:w-[32rem] sm:p-10 lg:w-[36rem]" role="dialog" aria-modal="true" aria-label="Tài khoản quản trị" @keydown.tab="trapFocus($event)"
+    x-init="$store.cart.configure(@js(['show' => route('cart.show'), 'add' => route('cart.items.store'), 'item' => route('cart.items.update', ['item' => '__ID__']), 'clear' => route('cart.clear')]))">
+    <button type="button" class="btn-icon self-end" @click="closePanel()" aria-label="Đóng thông báo"><x-storefront.icon name="close"/></button>
+    <h2 class="text-xl font-semibold">Tài khoản quản trị</h2>
+    <p>Tài khoản quản trị không dùng để mua sắm. Vui lòng đăng nhập bằng tài khoản khách hàng để đặt hàng.</p>
+    <a href="{{ route('admin.dashboard') }}" class="btn text-center">Về trang quản trị</a>
+</section>
+@endunless
 @auth
     <section id="account-panel" x-cloak x-show="panel === 'account'" x-transition.opacity class="fixed right-4 top-20 z-40 w-[calc(100%-2rem)] max-w-xs bg-white p-6 shadow-xl" role="dialog" aria-modal="true" aria-labelledby="account-title" @keydown.tab="trapFocus($event)">
         <button type="button" class="btn-icon absolute right-3 top-3" @click="closePanel()" aria-label="Đóng"><x-storefront.icon name="close"/></button>
@@ -66,8 +77,10 @@
         <p class="truncate text-sm text-zinc-500">{{ auth()->user()->email }}</p>
         <nav class="mt-5 flex flex-col gap-3 text-sm" aria-label="Tài khoản">
             <a href="{{ route('account.index') }}" class="hover:underline">Tài khoản của tôi</a>
+            @unless ($isAdminAccount)
             <a href="{{ route('orders.index') }}" class="hover:underline">Đơn hàng của tôi</a>
             <a href="{{ route('account.addresses.index') }}" class="hover:underline">Sổ địa chỉ</a>
+            @endunless
             @if (auth()->user()->roles()->whereIn('slug', ['admin', 'staff'])->exists())
                 <a href="{{ route('admin.dashboard') }}" class="hover:underline">Trang quản trị</a>
             @endif

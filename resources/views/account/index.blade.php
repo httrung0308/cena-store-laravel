@@ -8,7 +8,7 @@
             <div class="space-y-4">
                 <p class="text-sm uppercase tracking-[0.35em] text-zinc-400">Tài khoản</p>
                 <h1 class="break-words text-4xl font-bold sm:text-5xl">Xin chào {{ $user->full_name }}!</h1>
-                <p class="text-base text-zinc-500">Quản lý thông tin cá nhân, địa chỉ và theo dõi đơn hàng.</p>
+                <p class="text-base text-zinc-500">{{ $isAdminAccount ? 'Quản lý thông tin tài khoản quản trị.' : 'Quản lý thông tin cá nhân, địa chỉ và theo dõi đơn hàng.' }}</p>
                 @if (session('status'))
                     <p role="status" class="rounded-3xl border border-green-200 bg-green-50 p-4 text-sm text-green-700">{{ session('status') }}</p>
                 @endif
@@ -17,7 +17,11 @@
                         @csrf
                         <button type="submit" class="btn rounded-full px-6 py-3">Đăng xuất</button>
                     </form>
+                    @if ($isAdminAccount)
+                        <a href="{{ route('admin.dashboard') }}" class="rounded-full border border-zinc-900 px-6 py-3 font-semibold transition hover:bg-zinc-900 hover:text-white">Về trang quản trị</a>
+                    @else
                     <a href="{{ route('shoes.index') }}" class="rounded-full border border-zinc-900 px-6 py-3 font-semibold transition hover:bg-zinc-900 hover:text-white">Xem danh sách các sản phẩm</a>
+                    @endif
                 </div>
             </div>
 
@@ -32,6 +36,13 @@
                     <a href="{{ route('account.settings') }}" class="mt-4 inline-block rounded-full border border-zinc-200 px-4 py-2 text-sm font-semibold transition hover:border-zinc-900 hover:bg-zinc-900 hover:text-white">Sửa thông tin / Đổi mật khẩu</a>
                 </article>
 
+                @if ($isAdminAccount)
+                    <article class="rounded-3xl border border-zinc-200 p-6 shadow-sm">
+                        <h2 class="text-lg font-semibold">Quản trị cửa hàng</h2>
+                        <p class="mt-3 text-sm text-zinc-500">Tài khoản này dùng để quản lý cửa hàng. Khi cần mua sắm, hãy đăng nhập bằng tài khoản khách hàng.</p>
+                        <a href="{{ route('admin.orders.index') }}" class="mt-4 inline-block rounded-full border border-zinc-200 px-4 py-2 text-sm font-semibold transition hover:border-zinc-900 hover:bg-zinc-900 hover:text-white">Quản lý đơn hàng của khách</a>
+                    </article>
+                @else
                 <article class="rounded-3xl border border-zinc-200 p-6 shadow-sm">
                     <h2 class="text-lg font-semibold">Địa chỉ đã lưu</h2>
                     <div class="mt-3 min-h-[80px] text-sm text-zinc-500">
@@ -61,6 +72,7 @@
                     </div>
                     <a href="{{ route('orders.index') }}" class="mt-4 inline-block rounded-full border border-zinc-200 px-4 py-2 text-sm font-semibold transition hover:border-zinc-900 hover:bg-zinc-900 hover:text-white">Xem tất cả đơn hàng</a>
                 </article>
+                @endif
             </div>
         </div>
     </section>
