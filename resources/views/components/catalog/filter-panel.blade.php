@@ -14,6 +14,7 @@
     <x-forms.text-field name="min_price" label="Giá tối thiểu (VND)" :value="$filters['min_price'] ?? ''" />
     <x-forms.text-field name="max_price" label="Giá tối đa (VND)" :value="$filters['max_price'] ?? ''" />
     <label class="flex items-center gap-2"><input type="checkbox" name="promotion" value="1" @checked(($filters['promotion'] ?? false) === true || ($filters['promotion'] ?? '') === '1')> Khuyến mãi</label>
+    <label class="flex items-center gap-2"><input type="checkbox" name="in_stock" value="1" @checked(($filters['in_stock'] ?? false) === true || ($filters['in_stock'] ?? '') === '1')> Chỉ còn hàng</label>
     <div><label for="catalog-sort" class="text-lg font-semibold">Sắp xếp</label><select id="catalog-sort" name="sort" class="input block w-full">
         @foreach ($sortOptions as $key => $display)<option value="{{ $key }}" @selected(($filters['sort'] ?? 'newest') === $key)>{{ $display }}</option>@endforeach
     </select></div>
