@@ -36,7 +36,10 @@ Alpine.data('storefrontShell', () => ({
         if (!this.panel) this.returnFocus = document.activeElement;
         this.hoverImage = null;
         this.panel = panel;
-        this.$nextTick(() => document.querySelector(`#${panel === 'menu' ? 'mobile-menu' : `${panel}-panel`} button`)?.focus());
+        this.$nextTick(() => {
+            const root = document.querySelector(`#${panel === 'menu' ? 'mobile-menu' : `${panel}-panel`}`);
+            (root?.querySelector('[data-autofocus]') ?? root?.querySelector('button'))?.focus();
+        });
     },
     openNotice(title) {
         this.noticeTitle = title;

@@ -89,4 +89,23 @@ class StorefrontRedesignTest extends TestCase
             ->assertOk()
             ->assertDontSee('Địa chỉ của người khác');
     }
+
+    public function test_account_menu_drops_down_under_the_icon_with_profile_header_and_items(): void
+    {
+        $customer = User::factory()->customer()->create(['full_name' => 'minh <b>Nguyễn</b>']);
+        $this->actingAs($customer)->get(route('home'))->assertOk()
+            ->assertSee('id="account-panel"', false)
+            ->assertSee('origin-top-right', false)
+            ->assertSee('data-autofocus', false)
+            ->assertSee('minh &lt;b&gt;Nguyễn&lt;/b&gt;', false)
+            ->assertSee('>M</span>', false)
+            ->assertSee('href="'.route('orders.index').'"', false)
+            ->assertSee('href="'.route('account.settings').'"', false)
+            ->assertSee('action="'.route('logout').'"', false)
+            ->assertDontSee('href="'.route('admin.dashboard').'"', false);
+
+        $this->actingAs(User::factory()->administrator()->create())->get(route('home'))
+            ->assertSee('href="'.route('admin.dashboard').'"', false)
+            ->assertDontSee('href="'.route('orders.index').'"', false);
+    }
 }
