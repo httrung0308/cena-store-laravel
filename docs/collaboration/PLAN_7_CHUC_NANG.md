@@ -59,6 +59,8 @@ Quy định giữ nguyên từ AGENTS.md: không thêm thư viện, không sửa
 
 **Tránh đụng schema test:** khi cả hai bên cùng chạy test, mỗi bên phải dùng **schema test riêng**. Claude dùng `cena_store_test`; Codex tạo schema `cena_store_test_codex` + user riêng theo README và trỏ `.env.testing` của worktree Codex vào đó. Nếu chưa làm được thì báo người dùng để chạy test luân phiên.
 
+**Ngoại lệ đã duyệt (02/11/2026):** Codex được sửa `app/Support/TestDatabaseGuard.php` và `tests/Unit/TestDatabaseGuardTest.php` trong một PR riêng (PR-X0) để thêm đúng cặp cố định `cena_store_test_codex` + `cena_test_codex`; không sửa `phpunit.xml`, `.env*`, CI; cấu hình PHPUnit riêng của Codex để ngoài Git.
+
 ---
 
 ## 3. PR-0 — Nền chung (Claude làm trước, ~0,5 ngày) — ĐÃ CÓ TRÊN MAIN

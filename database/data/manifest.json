@@ -1,0 +1,31 @@
+{
+    "schema_version": 1,
+    "dataset_version": "dvc-20260920",
+    "hcm_province_code": "79",
+    "effective_as_of": "2026-09-20",
+    "retrieved_at": "2026-11-02",
+    "source_urls": [
+        "https://diachiviet.com/wp-content/uploads/dvc/open-data/tinh.json",
+        "https://diachiviet.com/wp-content/uploads/dvc/open-data/xa.json",
+        "https://diachiviet.com/wp-content/uploads/dvc/open-data/giay-phep.txt"
+    ],
+    "legal_basis_urls": [
+        "https://vanban.chinhphu.vn/?docid=214409&pageid=27160",
+        "https://vanban.chinhphu.vn/?classid=1&docid=218009&pageid=27160",
+        "https://vanban.chinhphu.vn/?classid=1&docid=219325&orggroupid=1&pageid=27160",
+        "https://vanban.chinhphu.vn/?docid=219328&pageid=27160"
+    ],
+    "license": "CC BY 4.0",
+    "license_url": "https://creativecommons.org/licenses/by/4.0/",
+    "attribution": "Nguồn: Địa Chỉ Việt (diachiviet.com), dữ liệu mở đơn vị hành chính, CC BY 4.0 — https://diachiviet.com/du-lieu-mo/. Cena Store chỉ chuyển đổi định dạng, không sửa tên/mã.",
+    "province_count": 34,
+    "ward_count": 3321,
+    "record_count": 3355,
+    "file": "administrative_units.json",
+    "sha256": "bc190ebe3eed53dd6a04fd0555b792f72f2871a303ed92608107f4d322f409a1",
+    "source_sha256": {
+        "tinh.json": "a22b7b4f55e33dd79c0eec8189d5d8e3a155f738f9ea9e155452ecfea3ec4cf9",
+        "xa.json": "a42705adbb87dc9e968ecd952810c8883d387c9069ad412c579790c352d9fb52",
+        "giay-phep.txt": "5c9e7cb057097b34bbaee1794ebd25ebc2662a348e04a73300eda428998d0940"
+    }
+}
