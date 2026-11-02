@@ -6,6 +6,6 @@
     <div @class(['mt-10 flex flex-col', 'items-end text-right' => $right, 'items-start text-left' => ! $right])>
         <h2 class="-mb-2 text-3xl font-bold sm:text-5xl">{{ $title }}</h2>
         <h3 class="w-2/3 text-sm">{{ $subtitle }}</h3>
-        <button type="button" class="btn mt-2 w-max" @click="openNotice('{{ $title }} collection')">Explore</button>
+        <a href="{{ route('shoes.index', ['gender' => $id === 'kid' ? 'kids' : $id]) }}" class="btn mt-2 w-max">Explore</a>
     </div>
 </section>

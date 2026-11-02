@@ -38,9 +38,25 @@ class UserFactory extends Factory
 
     public function administrator(): static
     {
-        return $this->afterCreating(function (User $user): void {
-            $role = Role::query()->where('slug', RoleSlug::Admin)->first()
-                ?? Role::factory()->create(['slug' => RoleSlug::Admin, 'name' => 'Admin']);
+        return $this->withRole(RoleSlug::Admin);
+    }
+
+    public function staff(): static
+    {
+        return $this->withRole(RoleSlug::Staff);
+    }
+
+    public function customer(): static
+    {
+        return $this->withRole(RoleSlug::Customer);
+    }
+
+    /** Assigns the canonical role (created on demand) after the user is saved. */
+    public function withRole(RoleSlug $slug): static
+    {
+        return $this->afterCreating(function (User $user) use ($slug): void {
+            $role = Role::query()->where('slug', $slug)->first()
+                ?? Role::factory()->create(['slug' => $slug, 'name' => $slug->label()]);
             UserRole::factory()->create(['user_id' => $user->id, 'role_id' => $role->id, 'assigned_at' => now()]);
         });
     }
