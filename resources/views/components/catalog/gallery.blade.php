@@ -14,11 +14,11 @@
             class="h-full w-full object-contain transition-transform duration-200 ease-out motion-reduce:transition-none"></template>
         <p x-show="!selected" class="p-4 text-sm text-zinc-500">Chưa có ảnh sản phẩm.</p>
     </div>
-    <div class="flex justify-between" x-show="images.length > 1"><button type="button" x-on:click="step(-1)" class="underline" aria-label="Ảnh trước">← Trước</button><button type="button" x-on:click="step(1)" class="underline" aria-label="Ảnh tiếp">Tiếp →</button></div>
-    <div x-on:keydown="onKeydown($event)" class="flex gap-2 overflow-x-auto pb-1" role="group" aria-label="Chọn ảnh">
-        <template x-for="(image, index) in images" :key="image.id"><button type="button" x-on:click="choose(image.id)" x-on:mouseenter="choose(image.id)" x-bind:aria-pressed="(selectedId===image.id).toString()" x-bind:aria-label="'Ảnh ' + (index + 1)"
+    {{-- Up to four angles, sharing the width of the main image. --}}
+    <div x-on:keydown="onKeydown($event)" x-show="images.length > 1" class="grid grid-cols-4 gap-2" role="group" aria-label="Chọn ảnh">
+        <template x-for="(image, index) in images.slice(0, 4)" :key="image.id"><button type="button" x-on:click="choose(image.id)" x-on:mouseenter="choose(image.id)" x-bind:aria-pressed="(selectedId===image.id).toString()" x-bind:aria-label="'Ảnh ' + (index + 1)"
             x-bind:class="selectedId === image.id ? 'border-black' : 'border-zinc-200 hover:border-zinc-400'"
-            class="h-20 w-20 shrink-0 overflow-hidden border-2 bg-zinc-100 transition focus-visible:ring-4"><img x-bind:src="image.url" x-bind:alt="image.alt || 'Ảnh thu nhỏ'" x-on:error="$el.src !== @js($fallbackImage) && ($el.src = @js($fallbackImage))" class="h-full w-full object-contain"></button></template>
+            class="aspect-square w-full overflow-hidden border-2 bg-zinc-100 transition focus-visible:ring-4"><img x-bind:src="image.url" x-bind:alt="image.alt || 'Ảnh thu nhỏ'" x-on:error="$el.src !== @js($fallbackImage) && ($el.src = @js($fallbackImage))" class="h-full w-full object-contain"></button></template>
     </div>
-    <p class="text-xs text-zinc-500">Rê chuột lên ảnh để phóng to; dùng phím mũi tên trái/phải để chuyển ảnh.</p>
+    <p class="text-xs text-zinc-500">Rê chuột lên ảnh để phóng to.</p>
 </section>
