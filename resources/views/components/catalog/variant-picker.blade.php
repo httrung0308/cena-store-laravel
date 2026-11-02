@@ -25,5 +25,10 @@
     </fieldset>
     <p class="text-2xl" x-show="priceAvailable" aria-live="polite"><span x-text="selected?.price_label"></span> <span class="text-base text-zinc-500 line-through" x-show="selected?.base_price_label" x-text="selected?.base_price_label"></span></p>
     <p class="text-sm text-zinc-500" x-show="!selected">Chọn size còn hàng để thêm vào giỏ.</p>
-    <button type="button" disabled data-add-to-cart x-bind:data-variant-id="selected?.id ?? ''" x-bind:disabled="!selected || !priceAvailable || $store.cart.isBusy()" class="btn disabled:cursor-not-allowed disabled:opacity-50">Thêm vào giỏ</button>
+    <div class="flex flex-wrap gap-3">
+        <button type="button" disabled data-add-to-cart x-bind:data-variant-id="selected?.id ?? ''" x-bind:disabled="!selected || !priceAvailable || $store.cart.isBusy()" class="btn disabled:cursor-not-allowed disabled:opacity-50">Thêm vào giỏ</button>
+        @if (Route::has('checkout.show'))
+            <button type="button" disabled data-add-to-cart data-buy-now="{{ parse_url(route('checkout.show'), PHP_URL_PATH) }}" x-bind:data-variant-id="selected?.id ?? ''" x-bind:disabled="!selected || !priceAvailable || $store.cart.isBusy()" class="rounded-none border-2 border-black px-5 py-3 font-semibold transition-all hover:scale-105 disabled:cursor-not-allowed disabled:opacity-50">Mua ngay</button>
+        @endif
+    </div>
 </section>

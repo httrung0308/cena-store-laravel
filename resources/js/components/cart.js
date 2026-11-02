@@ -157,7 +157,8 @@ export function cartStore({ fetcher = globalThis.fetch?.bind(globalThis), csrfTo
 
 /**
  * Any button with data-add-to-cart and data-variant-id (product page, PR-X4) adds that variant.
- * data-quantity is optional. On success the "cart-open" window event opens the drawer.
+ * data-quantity is optional. On success the "cart-open" window event opens the drawer; a button that also
+ * carries data-buy-now="<same-origin path>" goes there instead ("Mua ngay" → checkout).
  */
 export function bindAddToCartButtons(store, root = globalThis.document, target = globalThis.window) {
     root?.addEventListener('click', async (event) => {
@@ -166,14 +167,22 @@ export function bindAddToCartButtons(store, root = globalThis.document, target =
         event.preventDefault();
         const variantId = Number.parseInt(button.dataset.variantId ?? '', 10);
         const quantity = Number.parseInt(button.dataset.quantity ?? '1', 10);
+        const buyNow = typeof button.dataset.buyNow === 'string' && button.dataset.buyNow.startsWith('/') && !button.dataset.buyNow.startsWith('//')
+            ? button.dataset.buyNow
+            : null;
         button.disabled = true;
         button.setAttribute('aria-busy', 'true');
+        let added = false;
         try {
-            await store.add(Number.isInteger(variantId) ? variantId : 0, Number.isInteger(quantity) ? quantity : 1);
+            added = await store.add(Number.isInteger(variantId) ? variantId : 0, Number.isInteger(quantity) ? quantity : 1);
         } finally {
             button.disabled = false;
             button.removeAttribute('aria-busy');
-            target?.dispatchEvent(new CustomEvent('cart-open'));
+            if (added === true && buyNow !== null) {
+                target?.location?.assign(buyNow);
+            } else {
+                target?.dispatchEvent(new CustomEvent('cart-open'));
+            }
         }
     });
 }

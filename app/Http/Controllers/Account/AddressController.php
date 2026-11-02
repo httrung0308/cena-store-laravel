@@ -48,7 +48,10 @@ class AddressController extends Controller
 
     public function store(AddressRequest $request): RedirectResponse
     {
-        $this->addresses->create($request->user(), $request->address());
+        $address = $this->addresses->create($request->user(), $request->address());
+        if ($request->input('return_to') === 'checkout') {
+            return redirect()->route('checkout.show', ['address' => $address->id])->with('status', 'Đã thêm địa chỉ.');
+        }
 
         return redirect()->route('account.addresses.index')->with('status', 'Đã thêm địa chỉ.');
     }

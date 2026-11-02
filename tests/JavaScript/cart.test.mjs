@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { cartStore, formatVnd } from '../../resources/js/components/cart.js';
+import { bindAddToCartButtons, cartStore, formatVnd } from '../../resources/js/components/cart.js';
 
 const cart = (overrides = {}) => ({ version: 3, count: 2, subtotal: 3580000, items: [{ id: 7, variant_id: 11, quantity: 2, max_quantity: 5 }], notices: [], checkout_note: 'note', ...overrides });
 
@@ -92,4 +92,33 @@ test('a missing item reloads the cart; adding without a size asks for one', asyn
 test('formatVnd keeps integer VND', () => {
   assert.equal(formatVnd(1790000).replace(/\s/g, ' '), '1.790.000 ₫');
   assert.equal(formatVnd(1.5).replace(/\s/g, ' '), '0 ₫');
+});
+
+function clickHarness(dataset, addResult) {
+  let handler;
+  const root = { addEventListener: (type, fn) => { handler = fn; } };
+  const events = [];
+  const assigned = [];
+  const target = { dispatchEvent: (event) => events.push(event.type), location: { assign: (url) => assigned.push(url) } };
+  const button = { dataset, disabled: false, setAttribute() {}, removeAttribute() {}, closest: () => button };
+  bindAddToCartButtons({ add: async () => addResult }, root, target);
+
+  return { click: () => handler({ target: button, preventDefault() {} }), events, assigned };
+}
+
+test('"Mua ngay" goes to checkout only after the item was added', async () => {
+  const ok = clickHarness({ variantId: '9', buyNow: '/checkout' }, true);
+  await ok.click();
+  assert.deepEqual(ok.assigned, ['/checkout']);
+  assert.deepEqual(ok.events, []);
+
+  const failed = clickHarness({ variantId: '9', buyNow: '/checkout' }, false);
+  await failed.click();
+  assert.deepEqual(failed.assigned, []);
+  assert.deepEqual(failed.events, ['cart-open']);
+
+  const foreign = clickHarness({ variantId: '9', buyNow: '//evil.test/x' }, true);
+  await foreign.click();
+  assert.deepEqual(foreign.assigned, []);
+  assert.deepEqual(foreign.events, ['cart-open']);
 });

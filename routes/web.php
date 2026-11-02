@@ -11,6 +11,7 @@ Route::view('/', 'storefront.home')->name('home');
 require __DIR__.'/storefront.php';
 require __DIR__.'/account.php';
 require __DIR__.'/cart.php';
+require __DIR__.'/orders.php';
 
 Route::middleware(['auth', 'role:admin,staff'])
     ->prefix('admin')

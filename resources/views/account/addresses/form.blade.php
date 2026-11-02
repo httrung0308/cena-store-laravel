@@ -13,6 +13,8 @@
             @csrf
             @if ($address)
                 @method('PUT')
+            @elseif (request()->query('return_to') === 'checkout')
+                <input type="hidden" name="return_to" value="checkout">
             @endif
             <x-forms.text-field name="recipient_name" id="address-recipient" label="Tên người nhận" autocomplete="name" :value="$address?->recipient_name" required />
             <x-forms.text-field name="phone" id="address-phone" label="Số điện thoại" type="tel" autocomplete="tel" :value="$address?->phone" required />
