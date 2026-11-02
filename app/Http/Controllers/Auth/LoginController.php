@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Enums\RoleSlug;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Services\AuthService;
@@ -39,6 +40,15 @@ class LoginController extends Controller
         RateLimiter::clear($key);
         $request->session()->regenerate();
         $request->session()->put(AuthService::SESSION_AUTH_VERSION, $user->auth_version);
+        if ($user->hasRole(RoleSlug::Admin)) {
+            // Admin accounts never shop: no guest-cart merge and never sent back to a shopping page.
+            $intended = (string) $request->session()->pull('url.intended', '');
+            $path = (string) parse_url($intended, PHP_URL_PATH);
+
+            return $intended !== '' && ! preg_match('#^/(checkout|cart|account/orders|account/reviews)(/|$)#', $path)
+                ? redirect()->to($intended)
+                : redirect()->route('admin.dashboard');
+        }
         $carts->mergeGuestCart($user, $request->session());
 
         return $auth->isBackOffice($user)

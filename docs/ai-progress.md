@@ -456,3 +456,11 @@ Theo WF-09 / P05.02–P05.04 ở mức tối thiểu (chưa có checkout).
 - Giao diện như bản demo (nền video): link "Quên mật khẩu?" ở trang đăng nhập, `/forgot-password`, `/reset-password` (nhập mã + gửi lại, rồi mật khẩu mới).
 - Test: `PasswordResetTest` 5 ca (luồng đủ + dùng lại bị chặn, email lạ cùng thông điệp không gửi mail, 5 lần sai khóa cả mã đúng, gắn trình duyệt + chờ gửi lại + hết hạn, đổi mật khẩu vô hiệu mã). Full suite MySQL `cena_store_test`: **1067/1067 tests, 8926 assertions PASS**. Build, Pint PASS.
 - Browser (DB dev + Mailpit local): tài khoản thử đăng ký → Quên mật khẩu → mã tới Mailpit → xác nhận → đặt mật khẩu mới → về đăng nhập với thông báo.
+
+## Sửa ảnh xem trước đi theo con trỏ + tách tài khoản Admin khỏi mua sắm (02/11/2026, Codex bắt đầu, Claude hoàn thiện)
+
+- Nguyên nhân lỗi ảnh đi theo con trỏ: khung xem trước dùng `:style` dạng chuỗi nên mỗi lần chuột di chuyển Alpine ghi đè cả thuộc tính `style`, xóa `display:none` của `x-show`; khung (ảnh rỗng/lỗi) vì thế luôn bám theo chuột. Đã đổi sang `:style` dạng object (chỉ cập nhật `transform`). Giữ phần Codex đã làm: ảnh chỉ hiện sau khi tải xong, lỗi thì tắt; tắt khi click, cuộn, Esc, mất focus, rời trang; thêm tắt khi chuột rời cụm Men/Women/Kids/Unisex; ẩn trên mobile.
+- Admin không dùng để mua sắm (Codex): middleware `EnsureNonAdminShopping` chặn Admin ở giỏ, thanh toán, đơn cá nhân, hủy đơn, đánh giá (403, không tạo dữ liệu); ẩn icon giỏ, "Đơn hàng của tôi", sổ địa chỉ trong menu/footer/`/account`; `/account` của Admin chỉ còn thông tin cá nhân + lối vào quản lý đơn của khách. Đơn cũ vẫn giữ nguyên và xem được ở `/admin/orders`. Staff và khách giữ nguyên hành vi.
+- Claude bổ sung: trang sản phẩm thay nút "Thêm vào giỏ"/"Mua ngay" bằng thông báo khi là Admin; đăng nhập Admin không gộp giỏ khách vãng lai và không quay về trang mua sắm (vào `/admin` thay vì 403).
+- Test: `NavigationAccountSeparationTest` 20 lượt (Codex 19 + 1 ca mới) và assertion `:style` dạng object. Full suite MySQL `cena_store_test`: **1090/1090 tests, 9125 assertions PASS**. Build, Pint PASS.
+- Browser (DB dev, 1280px và 360px): rê "Men" ảnh hiện cạnh chuột, rời chuột ảnh tắt và không bám theo khi tiếp tục di chuyển; Admin đăng nhập từ `/checkout` vào `/admin`, không có icon giỏ, trang sản phẩm hiện thông báo thay nút mua, `/account` không còn đơn/địa chỉ; không tràn ngang trên mobile.

@@ -3,12 +3,13 @@
 use App\Http\Controllers\Account\OrderController;
 use App\Http\Controllers\Account\ReviewController;
 use App\Http\Controllers\Storefront\CheckoutController;
+use App\Http\Middleware\EnsureNonAdminShopping;
 use Illuminate\Support\Facades\Route;
 
 /*
  * Checkout (COD) and the customer's own orders. Loaded from web.php.
  */
-Route::middleware('auth')->group(function (): void {
+Route::middleware(['auth', EnsureNonAdminShopping::class])->group(function (): void {
     Route::get('/checkout', [CheckoutController::class, 'show'])->name('checkout.show');
     Route::post('/checkout', [CheckoutController::class, 'store'])->middleware('throttle:10,1')->name('checkout.store');
 
