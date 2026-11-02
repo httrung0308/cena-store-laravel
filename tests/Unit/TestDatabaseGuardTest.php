@@ -21,6 +21,12 @@ class TestDatabaseGuardTest extends TestCase
         $this->expectNotToPerformAssertions();
     }
 
+    public function test_isolated_codex_pair_is_accepted(): void
+    {
+        TestDatabaseGuard::assertSafe('mysql', 'cena_store_test_codex', 'cena_test_codex');
+        $this->expectNotToPerformAssertions();
+    }
+
     #[DataProvider('unsafeConnections')]
     public function test_unsafe_connection_is_rejected_before_database_operations(string $driver, string $database, string $username, bool $cached): void
     {
@@ -32,6 +38,10 @@ class TestDatabaseGuardTest extends TestCase
     public static function unsafeConnections(): array
     {
         return [
+            'Codex account on shared schema' => ['mysql', 'cena_store_test', 'cena_test_codex', false],
+            'shared account on Codex schema' => ['mysql', 'cena_store_test_codex', 'cena_test', false],
+            'CI account on Codex schema' => ['mysql', 'cena_store_test_codex', 'cena_ci', false],
+            'Codex cached' => ['mysql', 'cena_store_test_codex', 'cena_test_codex', true],
             'development database' => ['mysql', 'cena_store', 'cena_test', false],
             'similar database name' => ['mysql', 'cena_store_test_backup', 'cena_test', false],
             'SQLite' => ['sqlite', 'cena_store_test', 'cena_test', false],
