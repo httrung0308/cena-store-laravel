@@ -5,7 +5,6 @@ namespace Tests\Feature;
 use App\Models\ProductVariant;
 use App\Models\StockImport;
 use App\Models\User;
-use App\Support\SpreadsheetReader;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Http\UploadedFile;
 use Tests\TestCase;
@@ -27,23 +26,6 @@ class StockImportSpreadsheetTest extends TestCase
         foreach (['XLS-RUN-40', 'XLS-RUN-41', 'XLS-RUN-42'] as $sku) {
             $this->variants[$sku] = ProductVariant::factory()->create(['sku' => $sku]);
         }
-    }
-
-    public function test_template_lists_active_sizes_with_blank_quantity_and_cost(): void
-    {
-        $this->variants['XLS-RUN-42']->forceFill(['is_active' => false])->save();
-
-        $response = $this->actingAs($this->staff)->get(route('admin.stock-imports.template'))->assertOk()
-            ->assertDownload('mau-phieu-nhap-kho.xlsx');
-        $rows = SpreadsheetReader::rows($response->baseResponse->getFile()->getPathname(), 'xlsx');
-
-        $this->assertSame(['SKU', 'Sản phẩm', 'Màu', 'Size', 'Số lượng', 'Giá nhập/đôi (₫)'], $rows[0]);
-        $skus = array_column(array_slice($rows, 1), 0);
-        $this->assertContains('XLS-RUN-40', $skus);
-        $this->assertNotContains('XLS-RUN-42', $skus);
-        $line = collect($rows)->first(fn (array $row) => $row[0] === 'XLS-RUN-40');
-        $this->assertSame((string) $this->variants['XLS-RUN-40']->size_value, $line[3]);
-        $this->assertCount(4, $line, 'Quantity and cost stay empty.');
     }
 
     public function test_excel_file_fills_the_draft_form_without_saving_anything(): void
@@ -103,13 +85,12 @@ class StockImportSpreadsheetTest extends TestCase
         $upload = fn (string $name, string $content) => $this->followingRedirects()
             ->post(route('admin.stock-imports.spreadsheet'), ['file' => UploadedFile::fake()->createWithContent($name, $content)])->assertOk();
         $upload('hong.xlsx', 'not a zip')->assertSee('File không phải bảng tính Excel (.xlsx) hợp lệ.');
-        $upload('lech.csv', "Mã;Tên\nA;B\n")->assertSee('Không tìm thấy dòng tiêu đề có các cột SKU, Số lượng và Giá nhập. Hãy dùng file mẫu.');
+        $upload('lech.csv', "Mã;Tên\nA;B\n")->assertSee('Không tìm thấy dòng tiêu đề có đủ 3 cột SKU, Số lượng và Giá nhập.');
         $upload('dai.csv', "SKU,Số lượng,Giá nhập\n".str_repeat("XLS-RUN-40,1,1000\n", 101))
             ->assertSee('File có 101 dòng, mỗi phiếu nhập tối đa 100 dòng. Hãy tách thành nhiều file.');
         $this->assertSame(0, StockImport::query()->count());
 
         $this->actingAs(User::factory()->customer()->create());
-        $this->get(route('admin.stock-imports.template'))->assertForbidden();
         $this->post(route('admin.stock-imports.spreadsheet'), ['file' => UploadedFile::fake()->createWithContent('x.csv', 'a')])->assertForbidden();
     }
 

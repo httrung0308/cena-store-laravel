@@ -30,7 +30,6 @@ Route::patch('suppliers/{supplier}/deactivate', [SupplierController::class, 'dea
 Route::resource('products', ProductController::class)->except(['show', 'destroy']);
 Route::patch('products/{product}/deactivate', [ProductController::class, 'deactivate'])->name('products.deactivate');
 
-Route::get('stock-imports/template', [StockImportController::class, 'template'])->name('stock-imports.template');
 Route::post('stock-imports/spreadsheet', [StockImportController::class, 'spreadsheet'])->name('stock-imports.spreadsheet');
 Route::resource('stock-imports', StockImportController::class)->except('destroy');
 Route::post('stock-imports/{stock_import}/post', [StockImportController::class, 'post'])->name('stock-imports.post');

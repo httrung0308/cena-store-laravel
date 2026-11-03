@@ -14,7 +14,6 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
-use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class StockImportController extends Controller
 {
@@ -43,15 +42,6 @@ class StockImportController extends Controller
         return view('admin.inventory.imports.form', ['import' => $import, 'commandKey' => (string) Str::uuid(), 'suppliers' => Supplier::orderBy('name')->get(),
             'variants' => ProductVariant::with('color.product')->orderBy('sku')->get(),
             'items' => $import->exists ? $import->items()->orderBy('variant_id')->get()->map(fn ($i) => ['variant_id' => $i->variant_id, 'quantity' => $i->quantity, 'unit_cost_amount' => $i->unit_cost_amount])->all() : [['variant_id' => '', 'quantity' => 1, 'unit_cost_amount' => '']]]);
-    }
-
-    /** Excel template listing every active size, with quantity and cost left blank. */
-    public function template(StockImportSpreadsheet $spreadsheet): BinaryFileResponse
-    {
-        $path = (string) tempnam(sys_get_temp_dir(), 'stock-import');
-        $spreadsheet->template($path);
-
-        return response()->download($path, 'mau-phieu-nhap-kho.xlsx', ['Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'])->deleteFileAfterSend();
     }
 
     /**

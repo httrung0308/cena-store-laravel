@@ -4,21 +4,17 @@ namespace App\Services;
 
 use App\Models\ProductVariant;
 use App\Support\SpreadsheetReader;
-use App\Support\XlsxWriter;
 use Illuminate\Support\Str;
 use RuntimeException;
 
 /**
- * Turns an uploaded .xlsx/.csv sheet into stock-import lines for the draft form, and builds the matching template.
- * Columns are found by header name (SKU, Số lượng, Giá nhập/đôi); any other column is ignored, so the template's
- * product/colour/size columns can stay. Rows without a quantity and a cost are skipped, so an untouched template
- * line is not an error. Nothing is saved here: the lines go back into the form for review.
+ * Turns an uploaded .xlsx/.csv sheet into stock-import lines for the draft form. Columns are found by header name
+ * (SKU, Số lượng, Giá nhập); any other column, such as product name or size, is ignored. Rows without a quantity
+ * and a cost are skipped. Nothing is saved here: the lines go back into the form for review.
  */
 class StockImportSpreadsheet
 {
     public const MAX_LINES = 100;
-
-    public const HEADER = ['SKU', 'Sản phẩm', 'Màu', 'Size', 'Số lượng', 'Giá nhập/đôi (₫)'];
 
     /** @var array<string, list<string>> Normalised header spellings accepted for each field. */
     private const ALIASES = [
@@ -40,7 +36,7 @@ class StockImportSpreadsheet
 
         [$headerIndex, $columns] = $this->header($rows);
         if ($headerIndex === null) {
-            return ['items' => [], 'errors' => ['Không tìm thấy dòng tiêu đề có các cột SKU, Số lượng và Giá nhập. Hãy dùng file mẫu.']];
+            return ['items' => [], 'errors' => ['Không tìm thấy dòng tiêu đề có đủ 3 cột SKU, Số lượng và Giá nhập.']];
         }
 
         $lines = [];
@@ -96,22 +92,6 @@ class StockImportSpreadsheet
         }
 
         return ['items' => $items, 'errors' => $errors];
-    }
-
-    /** Writes the template: every active size with its product, colour and size, quantity and cost left blank. */
-    public function template(string $path): void
-    {
-        $rows = ProductVariant::query()
-            ->join('product_colors', 'product_colors.id', '=', 'product_variants.product_color_id')
-            ->join('products', 'products.id', '=', 'product_colors.product_id')
-            ->where('product_variants.is_active', true)->whereNull('product_variants.deleted_at')
-            ->whereNull('product_colors.deleted_at')->whereNull('products.deleted_at')
-            ->orderBy('products.name')->orderBy('product_colors.color_name')->orderBy('product_variants.size_numeric')->orderBy('product_variants.id')
-            ->get(['product_variants.sku', 'products.name', 'product_colors.color_name', 'product_variants.size_value'])
-            ->map(fn (ProductVariant $variant): array => [$variant->sku, $variant->name, $variant->color_name, (string) $variant->size_value, null, null])
-            ->all();
-
-        XlsxWriter::write($path, 'Phiếu nhập', self::HEADER, $rows, [24, 34, 22, 8, 12, 18]);
     }
 
     /**
