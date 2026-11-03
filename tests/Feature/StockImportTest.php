@@ -223,7 +223,8 @@ class StockImportTest extends TestCase
         $this->assertDatabaseCount('stock_imports', 2);
         $this->assertDatabaseCount('inventory_movements', 48);
         $this->assertSame(168, (int) ProductVariant::sum('stock_qty'));
-        $this->assertSame(['357142.8571'], ProductVariant::distinct()->pluck('average_cost')->all());
+        // (5 × 1.080.000 + 2 × 1.140.000) / 7: a realistic cost for a shoe sold at 1.500.000 ₫.
+        $this->assertSame(['1097142.8571'], ProductVariant::distinct()->pluck('average_cost')->all());
         $this->assertSame(2, StockImport::where('status', 'POSTED')->count());
         $this->assertDatabaseCount('sales_ledger_entries', 0);
     }

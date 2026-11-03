@@ -84,7 +84,7 @@ class LinkedCatalogDemoSeeder extends Seeder
                 'command_key' => (string) Str::uuid(),
                 'supplier_id' => $supplier->id,
                 'note' => 'Nhập kho demo cho '.$entry['name'],
-                'items' => $variants->map(fn (ProductVariant $variant): array => ['variant_id' => $variant->id, 'quantity' => 8, 'unit_cost_amount' => intdiv($entry['base_price'] * 45, 100)])->all(),
+                'items' => $variants->map(fn (ProductVariant $variant): array => ['variant_id' => $variant->id, 'quantity' => 8, 'unit_cost_amount' => intdiv($entry['base_price'] * 68, 100_000) * 1_000])->all(),
             ]);
             $imports->post($actor, $import);
             $created++;
