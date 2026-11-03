@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Admin;
 
 use App\Enums\ArticleStatus;
+use App\Models\Article;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -23,9 +24,25 @@ class ArticleRequest extends FormRequest
             'title' => ['required', 'string', 'max:200', self::NO_HTML],
             'summary' => ['required', 'string', 'max:500', self::NO_HTML],
             'body' => ['required', 'string', 'max:20000', self::NO_HTML],
-            'status' => ['required', Rule::in([ArticleStatus::Draft->value, ArticleStatus::Published->value])],
+            'status' => ['required', Rule::in($this->allowedStatuses())],
             'cover' => [$this->route('article') === null ? 'required' : 'nullable', 'file', 'mimetypes:image/jpeg,image/png,image/webp', 'max:5120'],
         ];
+    }
+
+    /**
+     * Draft or published; an article that is already hidden may also stay hidden while it is edited.
+     *
+     * @return list<string>
+     */
+    private function allowedStatuses(): array
+    {
+        $statuses = [ArticleStatus::Draft->value, ArticleStatus::Published->value];
+        $article = $this->route('article');
+        if ($article instanceof Article && $article->status === ArticleStatus::Hidden) {
+            $statuses[] = ArticleStatus::Hidden->value;
+        }
+
+        return $statuses;
     }
 
     /** @return array<string, string> */

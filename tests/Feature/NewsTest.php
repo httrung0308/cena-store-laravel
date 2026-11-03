@@ -5,6 +5,8 @@ namespace Tests\Feature;
 use App\Enums\ArticleStatus;
 use App\Models\Article;
 use App\Models\User;
+use App\Support\BusinessClock;
+use Database\Seeders\NewsDemoSeeder;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -127,6 +129,66 @@ class NewsTest extends TestCase
         $page = $this->get(route('news.index'))->assertOk()->assertSee('Bài số 10')->assertDontSee('Bài số 1<', false);
         $this->assertSame(9, substr_count($page->getContent(), 'data-news-card'));
         $this->get(route('news.index', ['page' => 2]))->assertOk()->assertSee('Bài số 1');
+    }
+
+    public function test_editing_a_hidden_article_keeps_it_hidden_unless_admin_publishes_it(): void
+    {
+        $hidden = Article::factory()->hidden()->create(['title' => 'Bài đã ẩn']);
+        $draft = Article::factory()->create();
+        $this->actingAs($this->admin);
+
+        $this->get(route('admin.articles.edit', $hidden))->assertOk()
+            ->assertSee('value="HIDDEN" class="accent-black" checked', false)->assertSee('Giữ ẩn');
+        $this->put(route('admin.articles.update', $hidden), $this->fields(['title' => 'Sửa chính tả', 'status' => 'HIDDEN']))->assertRedirect();
+        $this->assertSame([ArticleStatus::Hidden, 'Sửa chính tả'], [$hidden->fresh()->status, $hidden->fresh()->title]);
+
+        $this->get(route('admin.articles.edit', $draft))->assertOk()->assertDontSee('Giữ ẩn');
+        $this->put(route('admin.articles.update', $draft), $this->fields(['status' => 'HIDDEN']))->assertSessionHasErrors('status');
+        $this->assertSame(ArticleStatus::Draft, $draft->fresh()->status, 'Hiding goes through the hide action, not the form.');
+
+        $this->put(route('admin.articles.update', $hidden), $this->fields(['status' => 'PUBLISHED']))->assertRedirect();
+        $this->assertSame(ArticleStatus::Published, $hidden->fresh()->status);
+        $this->get(route('news.show', $hidden->slug))->assertOk();
+    }
+
+    public function test_an_article_suggests_the_latest_other_published_articles(): void
+    {
+        $current = Article::factory()->published()->create(['title' => 'Bài đang đọc', 'published_at' => now()->subDays(5)]);
+        foreach (['Cũ nhất' => 4, 'Thứ ba' => 3, 'Thứ hai' => 2, 'Mới nhất' => 1] as $title => $days) {
+            Article::factory()->published()->create(['title' => $title, 'published_at' => now()->subDays($days)]);
+        }
+        Article::factory()->create(['title' => 'Nháp không gợi ý']);
+        Article::factory()->hidden()->create(['title' => 'Ẩn không gợi ý']);
+
+        $this->get(route('news.show', $current->slug))->assertOk()
+            ->assertViewHas('related', fn ($related) => $related->pluck('title')->all() === ['Mới nhất', 'Thứ hai', 'Thứ ba'])
+            ->assertSee('Bài viết khác')->assertDontSee('Nháp không gợi ý')->assertDontSee('Ẩn không gợi ý');
+
+        Article::query()->whereKeyNot($current->id)->delete();
+        $this->get(route('news.show', $current->slug))->assertOk()->assertDontSee('data-related-articles', false);
+    }
+
+    public function test_demo_seeder_writes_shop_articles_through_the_service_once(): void
+    {
+        config(['store.demo.enabled' => true]);
+        app(BusinessClock::class)->freeze('2026-11-03 05:00:00');
+        $this->seed(NewsDemoSeeder::class);
+        $this->seed(NewsDemoSeeder::class);
+
+        $articles = Article::query()->orderBy('published_at')->get();
+        $this->assertCount(9, $articles, 'Running twice does not duplicate.');
+        $published = $articles->where('status', ArticleStatus::Published);
+        $this->assertCount(8, $published);
+        $this->assertSame(ArticleStatus::Draft, $articles->firstWhere('published_at', null)->status);
+        $this->assertGreaterThan(50, $published->first()->published_at->diffInDays($published->last()->published_at));
+        foreach ($articles as $article) {
+            $this->assertMatchesRegularExpression('~^articles/[A-Za-z0-9]{40}\.jpg$~', $article->cover_path);
+            Storage::disk('public')->assertExists($article->cover_path);
+            $this->assertGreaterThanOrEqual(2, count(preg_split('/\R{2,}/', $article->body)));
+        }
+        $this->assertNotNull(Article::query()->where('slug', 'air-force-1-07-vi-sao-40-nam-van-ban-chay')->first());
+
+        $this->get(route('news.index'))->assertOk()->assertSee('Air Max 90: biểu tượng đệm khí trở lại')->assertDontSee('Lịch hàng về tháng tới');
     }
 
     /** @return array<string, mixed> */

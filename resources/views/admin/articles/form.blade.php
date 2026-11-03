@@ -5,7 +5,8 @@
     <a class="btn-pill" href="{{ route('admin.articles.index') }}">Quay lại danh sách</a>
 @endsection
 @php
-    $status = old('status', $article->status === App\Enums\ArticleStatus::Published ? 'PUBLISHED' : 'DRAFT');
+    $isHidden = $article->status === App\Enums\ArticleStatus::Hidden;
+    $status = old('status', $article->exists ? $article->status->value : 'DRAFT');
 @endphp
 @section('content')
     <form action="{{ $article->exists ? route('admin.articles.update', $article) : route('admin.articles.store') }}" method="POST" enctype="multipart/form-data" class="admin-card max-w-3xl space-y-5">
@@ -35,10 +36,13 @@
         <fieldset>
             <legend class="admin-label">Trạng thái</legend>
             <div class="flex flex-wrap gap-4">
+                @if ($isHidden)
+                    <label class="flex items-center gap-2 text-sm font-semibold"><input type="radio" name="status" value="HIDDEN" class="accent-black" @checked($status === 'HIDDEN')> Giữ ẩn</label>
+                @endif
                 <label class="flex items-center gap-2 text-sm font-semibold"><input type="radio" name="status" value="DRAFT" class="accent-black" @checked($status === 'DRAFT')> Nháp</label>
-                <label class="flex items-center gap-2 text-sm font-semibold"><input type="radio" name="status" value="PUBLISHED" class="accent-black" @checked($status === 'PUBLISHED')> Đăng ngay</label>
+                <label class="flex items-center gap-2 text-sm font-semibold"><input type="radio" name="status" value="PUBLISHED" class="accent-black" @checked($status === 'PUBLISHED')> {{ $article->published_at ? 'Đăng' : 'Đăng ngay' }}</label>
             </div>
-            @if ($article->status === App\Enums\ArticleStatus::Hidden)<p class="mt-1 text-xs text-zinc-500">Bài đang ẩn; chọn "Đăng ngay" để hiện lại.</p>@endif
+            @if ($isHidden)<p class="mt-1 text-xs text-zinc-500">Bài đang ẩn. Chọn "Đăng" để hiện lại cho khách.</p>@endif
             @error('status')<p role="alert" class="mt-1 text-sm text-red-500">{{ $message }}</p>@enderror
         </fieldset>
         <button type="submit" class="btn-pill-dark">Lưu bài viết</button>

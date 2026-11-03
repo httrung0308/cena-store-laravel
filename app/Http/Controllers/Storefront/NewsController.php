@@ -9,6 +9,9 @@ use Illuminate\Contracts\View\View;
 /** Public news pages: only published articles; drafts and hidden articles answer 404. */
 class NewsController extends Controller
 {
+    /** Latest other published articles shown under an article. */
+    private const RELATED_COUNT = 3;
+
     public function index(): View
     {
         return view('storefront.news.index', [
@@ -18,8 +21,12 @@ class NewsController extends Controller
 
     public function show(string $slug): View
     {
+        $article = Article::query()->published()->where('slug', $slug)->firstOrFail();
+
         return view('storefront.news.show', [
-            'article' => Article::query()->published()->where('slug', $slug)->firstOrFail(),
+            'article' => $article,
+            'related' => Article::query()->published()->whereKeyNot($article->id)
+                ->orderByDesc('published_at')->orderByDesc('id')->limit(self::RELATED_COUNT)->get(),
         ]);
     }
 }
