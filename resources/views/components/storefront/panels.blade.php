@@ -8,6 +8,7 @@
     @foreach (['Men' => 'men', 'Women' => 'women', 'Kids' => 'kids', 'Unisex' => 'unisex'] as $label => $gender)
         <a href="{{ route('shoes.index', ['gender' => $gender]) }}" class="text-2xl font-semibold" @click="closePanel()">{{ $label }}</a>
     @endforeach
+    <a href="{{ route('news.index') }}" class="text-2xl font-semibold" @click="closePanel()">Tin tức</a>
 </section>
 @unless ($isAdminAccount)
 <section id="cart-panel" x-cloak x-show="panel === 'cart'" x-transition:enter="transition-transform duration-300" x-transition:enter-start="translate-x-full" x-transition:enter-end="translate-x-0" x-transition:leave="transition-transform duration-300" x-transition:leave-start="translate-x-0" x-transition:leave-end="translate-x-full" class="fixed right-0 top-0 z-40 flex h-full w-full flex-col gap-5 bg-white p-5 sm:w-[32rem] sm:p-10 lg:w-[36rem]" role="dialog" aria-modal="true" aria-label="Giỏ hàng" @keydown.tab="trapFocus($event)"

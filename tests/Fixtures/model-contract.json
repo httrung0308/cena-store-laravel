@@ -976,5 +976,26 @@
         "USER"
       ]
     }
+  },
+  "articles": {
+    "class": "App\\Models\\Article",
+    "belongs_to": [
+      {
+        "column": "author_id",
+        "relation": "author",
+        "class": "App\\Models\\User",
+        "history": true
+      }
+    ],
+    "enums": {
+      "status": "App\\Enums\\ArticleStatus"
+    },
+    "enum_cases": {
+      "status": [
+        "DRAFT",
+        "PUBLISHED",
+        "HIDDEN"
+      ]
+    }
   }
 }

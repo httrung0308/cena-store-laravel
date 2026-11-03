@@ -4331,6 +4331,104 @@
         "outbox_events_status_allowed_check",
         "outbox_events_aggregate_type_allowed_check"
       ]
+    },
+    "articles": {
+      "number": 35,
+      "columns": {
+        "id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": true
+        },
+        "author_id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "title": {
+          "type": "varchar(200)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "slug": {
+          "type": "varchar(220)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "summary": {
+          "type": "varchar(500)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "body": {
+          "type": "text",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "cover_path": {
+          "type": "varchar(500)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "status": {
+          "type": "varchar(20)",
+          "nullable": false,
+          "default": "DRAFT",
+          "auto_increment": false
+        },
+        "published_at": {
+          "type": "datetime(6)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "created_at": {
+          "type": "datetime(6)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "updated_at": {
+          "type": "datetime(6)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        }
+      },
+      "foreign_keys": [
+        {
+          "column": "author_id",
+          "table": "users",
+          "references": "id",
+          "on_delete": "RESTRICT"
+        }
+      ],
+      "indexes": [
+        {
+          "columns": [
+            "slug"
+          ],
+          "unique": true
+        },
+        {
+          "columns": [
+            "status",
+            "published_at"
+          ],
+          "unique": false
+        }
+      ],
+      "checks": [
+        "articles_published_at_check",
+        "articles_status_allowed_check"
+      ]
     }
   }
 }

@@ -10,6 +10,7 @@
             @foreach ($genderLinks as $label => [$gender, $image])
                 <a href="{{ route('shoes.index', ['gender' => $gender]) }}" class="transition-all hover:underline" @mouseenter="hoverImage = '{{ asset('legacy/img/'.$image.'.jpg') }}'" @mouseleave="hoverImage = null" @focus="hoverImage = null">{{ $label }}</a>
             @endforeach
+            <a href="{{ route('news.index') }}" class="transition-all hover:underline">Tin tức</a>
         </div>
         <div class="flex shrink-0 items-center">
             @auth

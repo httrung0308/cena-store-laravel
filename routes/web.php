@@ -12,6 +12,7 @@ require __DIR__.'/storefront.php';
 require __DIR__.'/account.php';
 require __DIR__.'/cart.php';
 require __DIR__.'/orders.php';
+require __DIR__.'/news.php';
 
 Route::middleware(['auth', 'role:admin,staff'])
     ->prefix('admin')
