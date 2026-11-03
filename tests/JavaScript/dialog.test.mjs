@@ -90,3 +90,14 @@ test('backdrop and Escape cannot close busy dialog', () => {
     dialog.onBackdrop({ target: backdrop, currentTarget: backdrop });
     assert.equal(dialog.opened, false);
 });
+
+test('Escape still closes when every call arrives through a different proxy, as Alpine does', () => {
+    const { dialog, body, trigger } = fixture();
+    const viaAlpine = () => new Proxy(dialog, {});
+    viaAlpine().attach({ panel: dialog.panel, trigger, document: dialog.doc, body });
+    viaAlpine().openDialog();
+    viaAlpine().onKeydown({ key: 'Escape', preventDefault() {} });
+    assert.equal(dialog.opened, false);
+    assert.equal(body.style.overflow, 'scroll');
+    assert.equal(trigger.focused, 1);
+});

@@ -46,7 +46,8 @@ class StockImportDemoSeeder extends Seeder
         if ($variants->count() !== count($skus)) {
             throw new LogicException('Demo catalog changed; review instead of silently repairing.');
         }
-        foreach ([[1, 5, 300000], [2, 2, 500000]] as [$number,$quantity,$cost]) {
+        // Cost sits near what an authorised reseller pays for a 2.000.000 ₫ shoe sold at 1.500.000 ₫; the second lot costs a little more.
+        foreach ([[1, 5, 1080000], [2, 2, 1140000]] as [$number,$quantity,$cost]) {
             $import = $imports->saveDraft($actor, null, ['command_key' => '70000000-0000-4000-8000-'.str_pad((string) $number, 12, '0', STR_PAD_LEFT),
                 'supplier_id' => Supplier::where('code', 'DEMO-NCC-'.$number)->firstOrFail()->id, 'note' => 'Phiếu nhập mẫu qua service — lần '.$number,
                 'items' => $variants->map(fn ($v) => ['variant_id' => $v->id, 'quantity' => $quantity, 'unit_cost_amount' => $cost])->all()]);
