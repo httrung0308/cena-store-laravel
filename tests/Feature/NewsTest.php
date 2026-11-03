@@ -128,7 +128,9 @@ class NewsTest extends TestCase
         $this->get(route('home'))->assertSee('href="'.route('news.index').'"', false);
         $page = $this->get(route('news.index'))->assertOk()->assertSee('Bài số 10')->assertDontSee('Bài số 1<', false);
         $this->assertSame(9, substr_count($page->getContent(), 'data-news-card'));
-        $this->get(route('news.index', ['page' => 2]))->assertOk()->assertSee('Bài số 1');
+        $this->assertSame(1, substr_count($page->getContent(), 'data-news-featured'));
+        $this->assertMatchesRegularExpression('~data-news-featured>.*?Bài số 10.*?Đọc bài~s', $page->getContent(), 'The newest article leads the first page.');
+        $this->get(route('news.index', ['page' => 2]))->assertOk()->assertSee('Bài số 1')->assertDontSee('data-news-featured', false);
     }
 
     public function test_editing_a_hidden_article_keeps_it_hidden_unless_admin_publishes_it(): void

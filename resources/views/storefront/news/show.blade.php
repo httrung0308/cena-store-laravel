@@ -21,7 +21,7 @@
         </div>
     </article>
     @if ($related->isNotEmpty())
-        <section class="border-t border-zinc-200 px-4 py-12 sm:px-10 xl:px-24 2xl:px-48" aria-labelledby="related-title" data-related-articles>
+        <section class="border-t border-zinc-200 py-12" aria-labelledby="related-title" data-related-articles>
             <div class="flex items-baseline justify-between gap-4">
                 <h2 id="related-title" class="text-2xl font-bold">Bài viết khác</h2>
                 <a href="{{ route('news.index') }}" class="text-sm font-semibold text-zinc-600 hover:text-zinc-900">Xem tất cả →</a>
