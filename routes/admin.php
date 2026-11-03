@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\ArticleController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\ProductController;
@@ -49,3 +50,8 @@ Route::middleware('role:admin')->prefix('users')->name('users.')->whereNumber('u
 Route::get('reviews', [ReviewController::class, 'index'])->name('reviews.index');
 Route::patch('reviews/{review}/reply', [ReviewController::class, 'reply'])->whereNumber('review')->name('reviews.reply');
 Route::patch('reviews/{review}/visibility', [ReviewController::class, 'visibility'])->whereNumber('review')->name('reviews.visibility');
+
+Route::middleware('role:admin')->group(function (): void {
+    Route::resource('articles', ArticleController::class)->except(['show', 'destroy']);
+    Route::patch('articles/{article}/hide', [ArticleController::class, 'hide'])->name('articles.hide');
+});
