@@ -6,6 +6,7 @@
 @php
     $user = auth()->user();
     $modules = [
+        ['route' => 'admin.reports.index', 'label' => 'Dashboard và báo cáo', 'description' => 'Doanh thu, giá vốn, lợi nhuận, bán chạy và cảnh báo tồn kho'],
         ['route' => 'admin.categories.index', 'label' => 'Quản lý danh mục', 'description' => 'Danh mục hai cấp theo nhóm Nam, Nữ, Trẻ em, Unisex'],
         ['route' => 'admin.suppliers.index', 'label' => 'Quản lý nhà cung cấp', 'description' => 'Thông tin liên hệ và trạng thái hợp tác'],
         ['route' => 'admin.products.index', 'label' => 'Quản lý sản phẩm', 'description' => 'Sản phẩm, phối màu, size và ảnh'],

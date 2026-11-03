@@ -6,6 +6,7 @@
     $pageTitle = $title ?? trim($__env->yieldContent('title', 'Quản trị'));
     $sections = [
         ['route' => 'admin.dashboard', 'label' => 'Tổng quan'],
+        ['route' => 'admin.reports.index', 'label' => 'Báo cáo'],
         ['route' => 'admin.categories.index', 'label' => 'Danh mục'],
         ['route' => 'admin.suppliers.index', 'label' => 'Nhà cung cấp'],
         ['route' => 'admin.products.index', 'label' => 'Sản phẩm'],

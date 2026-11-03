@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\ProductController;
+use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\ReviewController;
 use App\Http\Controllers\Admin\StockImportController;
 use App\Http\Controllers\Admin\SupplierController;
@@ -17,6 +18,7 @@ use Illuminate\Support\Facades\Route;
  * admin.suppliers.index, admin.products.index, admin.stock-imports.index.
  */
 Route::view('/', 'admin.dashboard')->name('dashboard');
+Route::get('reports', [ReportController::class, 'index'])->name('reports.index');
 
 Route::resource('categories', CategoryController::class)->except(['show', 'destroy']);
 Route::patch('categories/{category}/deactivate', [CategoryController::class, 'deactivate'])->name('categories.deactivate');
