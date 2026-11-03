@@ -11,7 +11,8 @@
     $topPairs = max([1, ...array_column($bestSellers, 'pairs')]);
     $pairsSold = array_sum(array_column($operations, 'pairs'));
     $ordersPlaced = array_sum($orderCounts);
-    $weekly = count($operations) > 31;
+    $rangeDays = count($operations);
+    $weekly = $rangeDays > 31;
     $periodWord = $weekly ? 'tuần' : 'ngày';
     $legend = fn (string $color, string $label): string => '<span class="flex items-center gap-1.5"><span class="inline-block h-2.5 w-2.5 rounded-sm" style="background: '.$color.'"></span>'.e($label).'</span>';
 
@@ -59,10 +60,10 @@
             @php
                 $margin = $money['revenue'] > 0 ? $money['profit'] / $money['revenue'] * 100 : null;
                 $cards = [
-                    ['label' => 'Doanh thu', 'spark' => 'revenue', 'value' => $money['revenue'], 'previous' => $previousMoney['revenue'], 'higherIsBetter' => true, 'note' => 'Hàng '.$vnd($money['merchandise']).' · phí ship '.$vnd($money['shipping'])],
-                    ['label' => 'Giá vốn', 'spark' => 'cogs', 'value' => $money['cogs'], 'previous' => $previousMoney['cogs'], 'higherIsBetter' => null, 'note' => 'Giá vốn hàng đã giao'],
-                    ['label' => 'Chi phí khác', 'spark' => 'expense', 'value' => $money['expense'], 'previous' => $previousMoney['expense'], 'higherIsBetter' => false, 'note' => 'Bảo hành, hao hụt kho'],
-                    ['label' => 'Lợi nhuận', 'spark' => 'profit', 'value' => $money['profit'], 'previous' => $previousMoney['profit'], 'higherIsBetter' => true, 'note' => $margin === null ? 'Doanh thu − giá vốn − chi phí' : 'Biên lợi nhuận '.$percent($margin)],
+                    ['label' => 'Doanh thu', 'spark' => 'revenue', 'value' => $money['revenue'], 'previous' => $previousMoney['revenue'], 'higherIsBetter' => true, 'note' => $money['shipping'] > 0 ? 'Gồm '.$vnd($money['shipping']).' phí ship' : 'Tiền bán giày đã giao'],
+                    ['label' => 'Giá vốn', 'spark' => 'cogs', 'value' => $money['cogs'], 'previous' => $previousMoney['cogs'], 'higherIsBetter' => null, 'note' => 'Tiền nhập của số giày đã bán'],
+                    ['label' => 'Chi phí khác', 'spark' => 'expense', 'value' => $money['expense'], 'previous' => $previousMoney['expense'], 'higherIsBetter' => false, 'note' => 'Bảo hành, mất hàng'],
+                    ['label' => 'Lợi nhuận', 'spark' => 'profit', 'value' => $money['profit'], 'previous' => $previousMoney['profit'], 'higherIsBetter' => true, 'note' => $margin === null ? 'Doanh thu trừ giá vốn và chi phí' : 'Lãi '.$percent($margin).' trên doanh thu'],
                 ];
             @endphp
             <section aria-label="Tài chính" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -77,12 +78,12 @@
                         <p class="mt-1 text-xs text-zinc-500">{{ $card['note'] }}</p>
                         <p class="mt-3 flex items-center gap-1 text-xs">
                             @if ($delta === null)
-                                <span class="text-zinc-400">Kỳ trước chưa có số liệu</span>
+                                <span class="text-zinc-400">Chưa có số để so sánh</span>
                             @else
                                 <span @class(['badge !px-2 !py-0.5 tabular-nums', 'bg-emerald-50 text-emerald-700' => $good === true, 'bg-red-50 text-red-600' => $good === false, 'bg-zinc-100 text-zinc-600' => $good === null])>
                                     <span aria-hidden="true">{{ $delta >= 0 ? '▲' : '▼' }}</span> {{ $percent(abs($delta)) }}
                                 </span>
-                                <span class="text-zinc-500">{{ $delta >= 0 ? 'tăng' : 'giảm' }} so với kỳ trước</span>
+                                <span class="text-zinc-500">so với {{ $rangeDays }} ngày trước đó</span>
                             @endif
                         </p>
                         <div class="relative mt-3 h-10" aria-hidden="true"><canvas data-sparkline="{{ $card['spark'] }}"></canvas></div>
@@ -168,26 +169,62 @@
             <article class="admin-card">
                 <h2 class="text-sm font-semibold text-zinc-500">Đơn mới đặt</h2>
                 <p class="mt-2 text-2xl font-bold tabular-nums">{{ number_format($ordersPlaced, 0, ',', '.') }}</p>
-                <p class="mt-1 text-xs text-zinc-500">Đặt trong khoảng ngày đã chọn</p>
                 <div class="relative mt-3 h-10" aria-hidden="true"><canvas data-sparkline="orders"></canvas></div>
             </article>
             <article class="admin-card">
                 <h2 class="text-sm font-semibold text-zinc-500">Đôi đã giao</h2>
                 <p class="mt-2 text-2xl font-bold tabular-nums">{{ number_format($pairsSold, 0, ',', '.') }} đôi</p>
-                <p class="mt-1 text-xs text-zinc-500">{{ $orderCounts[App\Enums\OrderStatus::Delivered->value] }} đơn đặt trong kỳ đã giao xong</p>
                 <div class="relative mt-3 h-10" aria-hidden="true"><canvas data-sparkline="pairs"></canvas></div>
             </article>
             <article class="admin-card">
                 <h2 class="text-sm font-semibold text-zinc-500">Tồn kho còn bán được</h2>
                 <p class="mt-2 text-2xl font-bold tabular-nums" data-sellable>{{ number_format($inventory['sellable'], 0, ',', '.') }} đôi</p>
-                <p class="mt-1 text-xs text-zinc-500">Tồn trừ {{ $inventory['reserved'] }} đôi đang giữ · không tính {{ $inventory['quarantine'] }} đôi cách ly · {{ $inventory['variants'] }} size</p>
+                @if ($inventory['reserved'] > 0)
+                    <p class="mt-1 text-xs text-zinc-500">Đã trừ {{ $inventory['reserved'] }} đôi khách đặt chưa giao</p>
+                @endif
             </article>
-            <article class="admin-card">
-                <h2 class="text-sm font-semibold text-zinc-500">Sắp hết hàng</h2>
-                <p @class(['mt-2 text-2xl font-bold tabular-nums', 'text-red-600' => $inventory['low'] !== []])>{{ count($inventory['low']) }}</p>
-                <p class="mt-1 text-xs text-zinc-500">Size còn ≤ {{ $lowStockThreshold }} đôi (tối đa 10 dòng)</p>
-            </article>
+            <button type="button" x-on:click="$dispatch('open-low-stock', { trigger: $el })" aria-haspopup="dialog" aria-controls="low-stock-dialog" data-low-stock-card
+                    class="admin-card text-left transition hover:border-zinc-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-zinc-900">
+                <span class="flex items-center justify-between gap-2 text-sm font-semibold text-zinc-500">Sắp hết hàng <span aria-hidden="true">→</span></span>
+                <span @class(['mt-2 block text-2xl font-bold tabular-nums', 'text-red-600' => $inventory['low'] !== []])>{{ count($inventory['low']) }} size</span>
+                <span class="mt-1 block text-xs text-zinc-500">Còn {{ $lowStockThreshold }} đôi trở xuống · bấm để xem</span>
+            </button>
         </section>
+
+        <div x-data="dialogController()" x-init="attach({ panel: $refs.panel, body: document.body, document, scheduleFocus: (callback) => $nextTick(callback) })"
+             x-on:open-low-stock.window="openDialog($event.detail?.trigger)">
+            <div x-cloak x-show="opened" x-on:keydown="onKeydown($event)" x-on:click.self="onBackdrop($event)" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" role="presentation">
+                <section x-ref="panel" id="low-stock-dialog" role="dialog" aria-modal="true" aria-labelledby="low-stock-dialog-title" tabindex="-1" class="flex max-h-[85vh] w-full max-w-2xl flex-col rounded-3xl bg-white shadow-lg">
+                    <header class="flex items-start justify-between gap-4 border-b border-zinc-100 p-6">
+                        <div>
+                            <h2 id="low-stock-dialog-title" class="text-xl font-semibold">Size sắp hết hàng ({{ count($inventory['low']) }})</h2>
+                            <p class="mt-1 text-sm text-zinc-500">Còn {{ $lowStockThreshold }} đôi trở xuống, ít nhất xếp trước</p>
+                        </div>
+                        <button type="button" x-on:click="closeDialog()" class="btn-pill !px-3" aria-label="Đóng">✕</button>
+                    </header>
+                    <div class="overflow-y-auto px-6 py-2">
+                        <table class="admin-table">
+                            <thead class="sticky top-0"><tr><th>Sản phẩm</th><th>Màu · size</th><th class="text-right">Còn lại</th></tr></thead>
+                            <tbody>
+                                @forelse ($inventory['low'] as $row)
+                                    <tr data-low-stock-all>
+                                        <td class="font-semibold text-zinc-900">{{ $row['product'] }}<span class="block text-xs font-normal text-zinc-500">{{ $row['sku'] }}</span></td>
+                                        <td>{{ $row['color'] }} · {{ $row['size'] }}</td>
+                                        <td class="text-right"><span @class(['badge', 'bg-red-100 text-red-600' => $row['sellable'] <= 0, 'bg-yellow-100 text-yellow-700' => $row['sellable'] > 0])>{{ $row['sellable'] <= 0 ? 'Hết hàng' : $row['sellable'].' đôi' }}</span></td>
+                                    </tr>
+                                @empty
+                                    <tr><td colspan="3" class="py-10 text-center text-zinc-500">Không có size nào sắp hết.</td></tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                    <footer class="flex justify-end gap-3 border-t border-zinc-100 p-6">
+                        <button type="button" x-on:click="closeDialog()" class="btn-pill">Đóng</button>
+                        <a href="{{ route('admin.stock-imports.create') }}" class="btn-pill-dark">Tạo phiếu nhập hàng</a>
+                    </footer>
+                </section>
+            </div>
+        </div>
 
         <section class="admin-card" aria-labelledby="operations-title">
             <div class="flex flex-wrap items-start justify-between gap-3">
@@ -266,9 +303,9 @@
 
             <section class="admin-card" aria-labelledby="low-title">
                 <h2 id="low-title" class="text-xl font-semibold">Cảnh báo sắp hết hàng</h2>
-                <p class="mt-1 text-xs text-zinc-500">Size còn bán được ≤ {{ $lowStockThreshold }} đôi, ít nhất xếp trước</p>
-                <div class="admin-table-wrap mt-4"><table class="admin-table"><thead><tr><th>Sản phẩm</th><th>Màu / size</th><th>Còn bán được</th></tr></thead><tbody>
-                    @forelse ($inventory['low'] as $row)
+                <p class="mt-1 text-xs text-zinc-500">Còn {{ $lowStockThreshold }} đôi trở xuống, ít nhất xếp trước</p>
+                <div class="admin-table-wrap mt-4"><table class="admin-table"><thead><tr><th>Sản phẩm</th><th>Màu / size</th><th>Còn lại</th></tr></thead><tbody>
+                    @forelse (array_slice($inventory['low'], 0, 5) as $row)
                         <tr data-low-stock>
                             <td class="font-semibold text-zinc-900">{{ $row['product'] }}<span class="block text-xs font-normal text-zinc-500">{{ $row['sku'] }}</span></td>
                             <td>{{ $row['color'] }} · {{ $row['size'] }}</td>
@@ -278,6 +315,9 @@
                         <tr><td colspan="3" class="py-10 text-center text-zinc-500">Không có size nào sắp hết.</td></tr>
                     @endforelse
                 </tbody></table></div>
+                @if (count($inventory['low']) > 5)
+                    <button type="button" x-on:click="$dispatch('open-low-stock', { trigger: $el })" class="btn-pill mt-4">Xem tất cả {{ count($inventory['low']) }} size</button>
+                @endif
             </section>
         </div>
 

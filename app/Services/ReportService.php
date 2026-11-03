@@ -135,10 +135,11 @@ final class ReportService
 
     /**
      * Sellable stock (on hand minus reserved; quarantined pairs are a separate bucket and never count).
+     * Every low size is listed, fewest pairs first.
      *
      * @return array{sellable: int, reserved: int, quarantine: int, variants: int, low: list<array{product: string, color: string, size: string, sku: string, sellable: int}>}
      */
-    public function inventory(int $threshold = self::LOW_STOCK_THRESHOLD, int $limit = 10): array
+    public function inventory(int $threshold = self::LOW_STOCK_THRESHOLD): array
     {
         $variants = DB::table('product_variants')
             ->join('product_colors', 'product_colors.id', '=', 'product_variants.product_color_id')
@@ -151,7 +152,7 @@ final class ReportService
             ->whereRaw('product_variants.stock_qty - product_variants.reserved_qty <= ?', [$threshold])
             ->selectRaw('products.name AS product, product_colors.color_name AS color, product_variants.size_value AS size, product_variants.sku AS sku, product_variants.stock_qty - product_variants.reserved_qty AS sellable')
             ->orderBy('sellable')->orderBy('products.name')->orderBy('product_variants.id')
-            ->limit($limit)->get()
+            ->get()
             ->map(fn (object $row): array => ['product' => (string) $row->product, 'color' => (string) $row->color, 'size' => (string) $row->size, 'sku' => (string) $row->sku, 'sellable' => (int) $row->sellable])
             ->all();
 

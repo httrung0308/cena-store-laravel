@@ -120,7 +120,8 @@ class ReportDashboardTest extends TestCase
                 && collect($inventory['low'])->firstWhere('product', 'Almost Gone')['sellable'] === 4
                 && $inventory['reserved'] === $before['reserved'] + 2
                 && $inventory['quarantine'] === $before['quarantine'] + 3)
-            ->assertSee('Cảnh báo sắp hết hàng');
+            ->assertSee('Cảnh báo sắp hết hàng')->assertSee('data-low-stock-card', false)->assertSee('Size sắp hết hàng')
+            ->assertSee('Almost Gone')->assertSee('Đã trừ '.($before['reserved'] + 2).' đôi khách đặt chưa giao');
     }
 
     public function test_admin_compares_with_the_previous_period_of_the_same_length(): void
@@ -136,7 +137,7 @@ class ReportDashboardTest extends TestCase
             ->assertViewHas('money', fn (array $money) => $money['merchandise'] === 1_600_000 && $money['cogs'] === 1_120_000)
             ->assertViewHas('previousMoney', fn (array $money) => $money['merchandise'] === 800_000 && $money['cogs'] === 560_000)
             ->assertViewHas('presets', fn (array $presets) => $presets[0] === ['label' => '7 ngày', 'from' => '2026-10-26', 'to' => '2026-11-01'])
-            ->assertSee('so với kỳ trước')->assertSee('Mỗi 100 đồng doanh thu')->assertSee('Biên lợi nhuận');
+            ->assertSee('so với 1 ngày trước đó')->assertSee('Lãi 31,7% trên doanh thu')->assertSee('Mỗi 100 đồng doanh thu')->assertSee('Biên lợi nhuận');
     }
 
     public function test_staff_sees_operational_figures_only_and_customers_are_kept_out(): void
