@@ -1,5 +1,8 @@
 const scrollLocks = new WeakMap();
+// body -> { token, controller } of the dialog that owns focus. Alpine calls methods through a fresh proxy each
+// time, so ownership is checked by a per-dialog token instead of comparing `this`.
 const focusOwners = new WeakMap();
+const owns = (dialog) => !dialog.body || focusOwners.get(dialog.body)?.token === dialog.token;
 
 function lockScroll(body) {
     if (!body || !body.style) return;
@@ -30,6 +33,7 @@ export function dialogController() {
         scheduleFocus: null,
         focusEpoch: 0,
         destroyed: false,
+        token: null,
         attach({ panel, trigger, document: doc, body, scheduleFocus } = {}) {
             this.panel = panel;
             this.trigger = trigger;
@@ -41,13 +45,14 @@ export function dialogController() {
             if (this.opened || this.destroyed) return;
             this.previousFocus = trigger || this.doc?.activeElement || null;
             this.opened = true;
+            this.token ??= Symbol('dialog');
             this.previousOwner = this.body ? focusOwners.get(this.body) || null : null;
-            if (this.body) focusOwners.set(this.body, this);
+            if (this.body) focusOwners.set(this.body, { token: this.token, controller: this });
             lockScroll(this.body);
             const epoch = ++this.focusEpoch;
             const focusAfterShow = () => {
                 if (!this.opened || this.destroyed || this.focusEpoch !== epoch) return;
-                if (this.body && focusOwners.get(this.body) !== this) return;
+                if (!owns(this)) return;
                 const focusable = this._focusable();
                 (focusable[0] || this.panel)?.focus?.();
             };
@@ -56,7 +61,7 @@ export function dialogController() {
         },
         closeDialog() {
             if (!this.opened || this.busy) return;
-            const ownsFocus = !this.body || focusOwners.get(this.body) === this;
+            const ownsFocus = owns(this);
             this._cleanup();
             if (ownsFocus) this.previousFocus?.focus?.();
         },
@@ -64,7 +69,7 @@ export function dialogController() {
             return Array.from(this.panel?.querySelectorAll?.('a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])') || []).filter(el => !el.hidden && el.tabIndex !== -1);
         },
         onKeydown(event) {
-            if (!this.opened || (this.body && focusOwners.get(this.body) !== this)) return;
+            if (!this.opened || !owns(this)) return;
             if (event.key === 'Escape') {
                 if (!this.busy) { event.preventDefault(); this.closeDialog(); }
                 return;
@@ -86,8 +91,8 @@ export function dialogController() {
             if (!this.opened) return;
             this.opened = false;
             ++this.focusEpoch;
-            if (this.body && focusOwners.get(this.body) === this) {
-                if (this.previousOwner?.opened) focusOwners.set(this.body, this.previousOwner);
+            if (this.body && owns(this)) {
+                if (this.previousOwner?.controller.opened) focusOwners.set(this.body, this.previousOwner);
                 else focusOwners.delete(this.body);
             }
             this.previousOwner = null;

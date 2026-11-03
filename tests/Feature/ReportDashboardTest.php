@@ -54,8 +54,8 @@ class ReportDashboardTest extends TestCase
 
     public function test_money_comes_from_the_ledger_for_delivered_orders_only_and_sums_reversals(): void
     {
-        $runner = $this->variant('Runner <Một>', stock: 10, cost: 300_000);
-        $court = $this->variant('Court Hai', stock: 10, cost: 200_000);
+        $runner = $this->variant('Runner <Một>', stock: 10, cost: 560_000);
+        $court = $this->variant('Court Hai', stock: 10, cost: 540_000);
         $this->freeze('2026-11-01 03:00:00');
         $delivered = $this->deliver($this->placeOrder($runner, 3));
         $small = $this->deliver($this->placeOrder($court, 1));
@@ -67,22 +67,23 @@ class ReportDashboardTest extends TestCase
 
         $unit = $delivered->items->sole()->units->first();
         DB::transaction(fn () => app(SalesLedgerService::class)->postUnique('test:reverse:'.$unit->id, SalesLedgerType::SaleReversed,
-            ['merchandise_revenue_delta' => -$unit->net_amount, 'cogs_delta' => -300_000], ['order_id' => $delivered->id, 'order_item_unit_id' => $unit->id], '2026-11-01 04:00:00'));
+            ['merchandise_revenue_delta' => -$unit->net_amount, 'cogs_delta' => -560_000], ['order_id' => $delivered->id, 'order_item_unit_id' => $unit->id], '2026-11-01 04:00:00'));
 
         // 3 x 800k + 1 x 800k merchandise with one pair reversed; the 2.4M order ships free, the small one pays 40k.
         $merchandise = 4 * 800_000 - $unit->net_amount;
         $shipping = $delivered->shipping_fee + $small->shipping_fee;
         $this->assertSame([0, 40_000], [$delivered->shipping_fee, $small->shipping_fee]);
-        $cogs = 3 * 300_000 + 200_000 - 300_000;
+        $cogs = 3 * 560_000 + 540_000 - 560_000;
         $ledgerRows = SalesLedgerEntry::query()->count();
         $stock = ProductVariant::query()->orderBy('id')->get(['stock_qty', 'reserved_qty'])->toArray();
 
         $this->actingAs($this->admin)->get(route('admin.reports.index', ['from' => '2026-11-01', 'to' => '2026-11-01']))->assertOk()
             ->assertViewHas('money', ['revenue' => $merchandise + $shipping, 'merchandise' => $merchandise, 'shipping' => $shipping, 'cogs' => $cogs, 'expense' => 0, 'profit' => $merchandise + $shipping - $cogs])
             ->assertViewHas('bestSellers', fn (array $rows) => array_column($rows, 'pairs') === [3, 1] && $rows[0]['name'] === 'Runner <Một>')
-            ->assertViewHas('daily', fn (array $days) => $days === [['day' => '2026-11-01', 'revenue' => $merchandise + $shipping, 'profit' => $merchandise + $shipping - $cogs]])
+            ->assertViewHas('daily', fn (array $days) => $days === [['day' => '2026-11-01', 'revenue' => $merchandise + $shipping, 'cogs' => $cogs, 'profit' => $merchandise + $shipping - $cogs]])
+            ->assertViewHas('operations', [['day' => '2026-11-01', 'orders' => 5, 'pairs' => 4]])
             ->assertSee('Runner &lt;Một&gt;', false)->assertDontSee('Runner <Một>', false)
-            ->assertSee('Giá vốn')->assertSee('Lợi nhuận')->assertSee('data-report-chart', false);
+            ->assertSee('Giá vốn')->assertSee('Lợi nhuận')->assertSee('data-report-chart', false)->assertSee('data-margin-chart', false);
 
         $this->assertSame($ledgerRows, SalesLedgerEntry::query()->count(), 'The dashboard never writes to the ledger.');
         $this->assertSame($stock, ProductVariant::query()->orderBy('id')->get(['stock_qty', 'reserved_qty'])->toArray(), 'The dashboard never touches stock.');
@@ -90,7 +91,7 @@ class ReportDashboardTest extends TestCase
 
     public function test_days_follow_vietnamese_time(): void
     {
-        $shoe = $this->variant('Night Runner', stock: 5, cost: 100_000);
+        $shoe = $this->variant('Night Runner', stock: 5, cost: 580_000);
         // 17:30 UTC on 31/10 is 00:30 on 01/11 in Vietnam.
         $this->freeze('2026-10-31 17:30:00');
         $this->deliver($this->placeOrder($shoe, 1));
@@ -106,8 +107,8 @@ class ReportDashboardTest extends TestCase
 
     public function test_stock_counts_sellable_pairs_and_warns_about_low_sizes(): void
     {
-        $plenty = $this->variant('Plenty', stock: 20, cost: 100_000);
-        $low = $this->variant('Almost Gone', stock: 6, cost: 100_000);
+        $plenty = $this->variant('Plenty', stock: 20, cost: 580_000);
+        $low = $this->variant('Almost Gone', stock: 6, cost: 580_000);
         $before = app(ReportService::class)->inventory();
         $this->placeOrder($low, 2);
         $plenty->forceFill(['quarantine_qty' => 3])->save();
@@ -116,19 +117,40 @@ class ReportDashboardTest extends TestCase
             ->assertViewHas('inventory', fn (array $inventory) => $inventory['sellable'] === $before['sellable'] - 2
                 && in_array('Almost Gone', array_column($inventory['low'], 'product'), true)
                 && ! in_array('Plenty', array_column($inventory['low'], 'product'), true)
-                && collect($inventory['low'])->firstWhere('product', 'Almost Gone')['sellable'] === 4)
-            ->assertSee('Cảnh báo sắp hết hàng');
+                && collect($inventory['low'])->firstWhere('product', 'Almost Gone')['sellable'] === 4
+                && $inventory['reserved'] === $before['reserved'] + 2
+                && $inventory['quarantine'] === $before['quarantine'] + 3)
+            ->assertSee('Cảnh báo sắp hết hàng')->assertSee('data-low-stock-card', false)->assertSee('Size sắp hết hàng')
+            ->assertSee('Almost Gone')->assertSee('Đã trừ '.($before['reserved'] + 2).' đôi khách đặt chưa giao');
+    }
+
+    public function test_admin_compares_with_the_previous_period_of_the_same_length(): void
+    {
+        $shoe = $this->variant('Trend Runner', stock: 10, cost: 560_000);
+        // 10:00 on 31/10 and 01/11 in Vietnam: one pair the day before, two pairs on the selected day.
+        $this->freeze('2026-10-31 03:00:00');
+        $this->deliver($this->placeOrder($shoe, 1));
+        $this->freeze('2026-11-01 03:00:00');
+        $this->deliver($this->placeOrder($shoe, 2));
+
+        $this->actingAs($this->admin)->get(route('admin.reports.index', ['from' => '2026-11-01', 'to' => '2026-11-01']))->assertOk()
+            ->assertViewHas('money', fn (array $money) => $money['merchandise'] === 1_600_000 && $money['cogs'] === 1_120_000)
+            ->assertViewHas('previousMoney', fn (array $money) => $money['merchandise'] === 800_000 && $money['cogs'] === 560_000)
+            ->assertViewHas('presets', fn (array $presets) => $presets[0] === ['label' => '7 ngày', 'from' => '2026-10-26', 'to' => '2026-11-01'])
+            ->assertSee('so với 1 ngày trước đó')->assertSee('Lãi 31,7% trên doanh thu')->assertSee('Mỗi 100 đồng doanh thu')->assertSee('Biên lợi nhuận');
     }
 
     public function test_staff_sees_operational_figures_only_and_customers_are_kept_out(): void
     {
-        $shoe = $this->variant('Staff View', stock: 5, cost: 123_457);
+        $shoe = $this->variant('Staff View', stock: 5, cost: 563_457);
         $this->deliver($this->placeOrder($shoe, 1));
 
         $this->actingAs($this->staff)->get(route('admin.reports.index'))->assertOk()
-            ->assertViewHas('money', null)->assertViewHas('daily', [])
-            ->assertSee('Sản phẩm bán chạy')->assertSee('Staff View')->assertSee('Tồn kho còn bán được')
-            ->assertDontSee('data-metric', false)->assertDontSee('data-report-chart', false)->assertDontSee('123.457');
+            ->assertViewHas('money', null)->assertViewHas('previousMoney', null)->assertViewHas('daily', [])
+            ->assertViewHas('operations', fn (array $days) => array_sum(array_column($days, 'pairs')) === 1)
+            ->assertSee('Sản phẩm bán chạy')->assertSee('Staff View')->assertSee('Tồn kho còn bán được')->assertSee('data-orders-heatmap', false)->assertSee('Lịch số đơn mỗi ngày')
+            ->assertDontSee('data-metric', false)->assertDontSee('data-report-chart', false)->assertDontSee('data-margin-chart', false)->assertDontSee('563.457')
+            ->assertDontSee('&quot;revenue&quot;', false)->assertDontSee('"revenue"', false)->assertDontSee('Mỗi 100 đồng doanh thu');
         $this->actingAs($this->staff)->get(route('admin.dashboard'))->assertSee('href="'.route('admin.reports.index').'"', false);
 
         $this->actingAs($this->customer)->get(route('admin.reports.index'))->assertForbidden();

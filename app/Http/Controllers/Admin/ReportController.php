@@ -17,6 +17,8 @@ class ReportController extends Controller
 {
     private const MAX_DAYS = 366;
 
+    private const PRESET_DAYS = [7, 30, 90];
+
     public function __construct(private readonly ReportService $reports) {}
 
     public function index(Request $request): View
@@ -39,13 +41,40 @@ class ReportController extends Controller
         return view('admin.reports.index', [
             'from' => $from,
             'to' => $to,
+            'presets' => $this->presets($today),
             'isAdmin' => $isAdmin,
             'money' => $isAdmin ? $this->reports->money($start, $end) : null,
+            'previousMoney' => $isAdmin ? $this->previousMoney($from, $to) : null,
             'daily' => $isAdmin ? $this->reports->daily($start, $end) : [],
+            'operations' => $this->reports->dailyOperations($start, $end),
             'orderCounts' => $this->reports->orderCounts($start, $end),
-            'bestSellers' => $this->reports->bestSellers($start, $end),
+            'bestSellers' => $this->reports->bestSellers($start, $end, 8),
             'inventory' => $this->reports->inventory(),
             'lowStockThreshold' => ReportService::LOW_STOCK_THRESHOLD,
         ]);
+    }
+
+    /**
+     * Money for the period of the same length right before the selected one, to show the trend.
+     *
+     * @return array{revenue: int, merchandise: int, shipping: int, cogs: int, expense: int, profit: int}
+     */
+    private function previousMoney(string $from, string $to): array
+    {
+        $first = CarbonImmutable::parse($from);
+        $length = $first->diffInDays(CarbonImmutable::parse($to)) + 1;
+        ['start' => $start, 'end' => $end] = $this->reports->range($first->subDays($length)->format('Y-m-d'), $first->subDay()->format('Y-m-d'));
+
+        return $this->reports->money($start, $end);
+    }
+
+    /** @return list<array{label: string, from: string, to: string}> */
+    private function presets(string $today): array
+    {
+        $last = CarbonImmutable::parse($today);
+        $presets = array_map(fn (int $days): array => ['label' => $days.' ngày', 'from' => $last->subDays($days - 1)->format('Y-m-d'), 'to' => $today], self::PRESET_DAYS);
+        $presets[] = ['label' => 'Tháng này', 'from' => $last->startOfMonth()->format('Y-m-d'), 'to' => $today];
+
+        return $presets;
     }
 }

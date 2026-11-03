@@ -8,6 +8,7 @@ import { dialogController } from './components/dialog';
 import { galleryController } from './components/gallery';
 import { passwordField } from './components/password-field';
 import { productImages } from './components/product-images';
+import { reportCharts } from './components/report-charts';
 import { toastsController } from './components/toasts';
 import { variantPicker } from './components/variant-picker';
 
@@ -18,6 +19,7 @@ Alpine.data('dialogController', dialogController);
 Alpine.data('galleryController', galleryController);
 Alpine.data('passwordField', passwordField);
 Alpine.data('productImages', productImages);
+Alpine.data('reportCharts', reportCharts);
 Alpine.data('toastsController', toastsController);
 Alpine.data('variantPicker', variantPicker);
 
