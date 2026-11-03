@@ -6,6 +6,31 @@
 @endsection
 @section('content')
 <div class="max-w-5xl">
+@unless ($import->exists)
+    <section class="admin-card mb-8 space-y-4" aria-labelledby="spreadsheet-title" data-spreadsheet-import>
+        <div class="flex flex-wrap items-start justify-between gap-3">
+            <div>
+                <h2 id="spreadsheet-title" class="text-xl font-semibold">Nhập nhanh từ file Excel</h2>
+                <p class="mt-1 text-sm text-zinc-500">Tải file mẫu, điền số lượng và giá nhập cho các size cần nhập (bỏ trống các dòng không nhập), rồi tải lên. Các dòng sẽ được điền vào phiếu bên dưới để bạn kiểm tra trước khi lưu.</p>
+            </div>
+            <a class="btn-pill" href="{{ route('admin.stock-imports.template') }}">Tải file mẫu (.xlsx)</a>
+        </div>
+        <form method="POST" action="{{ route('admin.stock-imports.spreadsheet') }}" enctype="multipart/form-data" class="flex flex-wrap items-center gap-3">
+            @csrf
+            <label for="spreadsheet-file" class="sr-only">File Excel hoặc CSV</label>
+            <input id="spreadsheet-file" type="file" name="file" accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv" required
+                   class="block w-full max-w-md text-sm text-zinc-600 file:mr-3 file:rounded-full file:border-0 file:bg-zinc-100 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-zinc-900 hover:file:bg-zinc-200">
+            <button type="submit" class="btn-pill-dark">Đọc file</button>
+        </form>
+        <p class="text-xs text-zinc-500">Nhận .xlsx hoặc .csv, tối đa 2 MB và {{ App\Services\StockImportSpreadsheet::MAX_LINES }} dòng. Cần các cột SKU, Số lượng, Giá nhập/đôi; cột khác được bỏ qua.</p>
+        @if ($errors->spreadsheet->any())
+            <div role="alert" class="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700" data-spreadsheet-errors>
+                <p class="font-semibold">Chưa nhập được phần sau. Sửa trong file rồi tải lại, hoặc thêm tay ở phiếu bên dưới:</p>
+                <ul class="mt-2 list-inside list-disc space-y-1">@foreach ($errors->spreadsheet->all() as $error)<li>{{ $error }}</li>@endforeach</ul>
+            </div>
+        @endif
+    </section>
+@endunless
 <form method="POST" action="{{ $import->exists ? route('admin.stock-imports.update', $import) : route('admin.stock-imports.store') }}" class="space-y-8" x-data="{rows:@js(is_array(old('items', $items)) ? array_values(old('items', $items)) : [])}">
     @csrf @if ($import->exists) @method('PUT') @else<input type="hidden" name="command_key" value="{{ old('command_key', $commandKey) }}">@endif
     <section class="admin-card space-y-4">
