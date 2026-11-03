@@ -9,6 +9,7 @@ use App\Models\ProductVariant;
 use App\Models\StockImport;
 use App\Models\Supplier;
 use App\Services\StockImportService;
+use App\Services\StockImportSpreadsheet;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -41,6 +42,31 @@ class StockImportController extends Controller
         return view('admin.inventory.imports.form', ['import' => $import, 'commandKey' => (string) Str::uuid(), 'suppliers' => Supplier::orderBy('name')->get(),
             'variants' => ProductVariant::with('color.product')->orderBy('sku')->get(),
             'items' => $import->exists ? $import->items()->orderBy('variant_id')->get()->map(fn ($i) => ['variant_id' => $i->variant_id, 'quantity' => $i->quantity, 'unit_cost_amount' => $i->unit_cost_amount])->all() : [['variant_id' => '', 'quantity' => 1, 'unit_cost_amount' => '']]]);
+    }
+
+    /**
+     * Reads an uploaded .xlsx/.csv and sends its lines back to the new-draft form for review; nothing is saved
+     * until the user submits that form. Rows that cannot be used are listed under the upload box.
+     */
+    public function spreadsheet(Request $request, StockImportSpreadsheet $spreadsheet): RedirectResponse
+    {
+        $data = $request->validate(['file' => ['required', 'file', 'max:2048', 'extensions:xlsx,csv']], [
+            'file.required' => 'Chọn file Excel (.xlsx) hoặc .csv để nhập.',
+            'file.max' => 'File tối đa 2 MB.',
+            'file.extensions' => 'Chỉ nhận file .xlsx hoặc .csv. Với file .xls cũ, hãy mở bằng Excel và lưu lại thành .xlsx.',
+        ]);
+        $file = $data['file'];
+        $result = $spreadsheet->parse((string) $file->getRealPath(), $file->getClientOriginalExtension());
+
+        $redirect = to_route('admin.stock-imports.create')->withInput($result['items'] === [] ? [] : ['items' => $result['items']]);
+        if ($result['errors'] !== []) {
+            $redirect->withErrors($result['errors'], 'spreadsheet');
+        }
+        if ($result['items'] !== []) {
+            $redirect->with('status', 'Đã đọc '.count($result['items']).' dòng từ '.$file->getClientOriginalName().'. Chọn nhà cung cấp, kiểm tra lại rồi bấm “Lưu phiếu nháp”.');
+        }
+
+        return $redirect;
     }
 
     public function show(StockImport $stock_import): View
