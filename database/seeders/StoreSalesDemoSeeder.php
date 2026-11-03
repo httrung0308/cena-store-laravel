@@ -40,6 +40,9 @@ class StoreSalesDemoSeeder extends Seeder
 
     private const RESTOCK_DAY = 42;
 
+    /** Best sellers whose mid-period lot never arrived, so their sizes run low. */
+    private const BACKORDERED = ['Nike Dunk Low Retro', 'Air Jordan 1 Low'];
+
     private const RANDOM_SEED = 20261103;
 
     /** @var array<string, list<string>> */
@@ -315,8 +318,10 @@ class StoreSalesDemoSeeder extends Seeder
     }
 
     /**
-     * Expected pairs per variant decide each lot: about 60% of the period's demand up front and the rest mid-way,
-     * so slow sizes run low by the end. The second lot costs slightly more, which moves the weighted average cost.
+     * Expected pairs per variant decide each lot: every size opens with at least 8 pairs (about 70% of the period's
+     * demand for busy sizes) and the mid-way lot covers the rest with a small buffer, so most sizes end comfortably
+     * stocked. The two hottest models miss the mid-way lot (supplier backorder), which is what the low-stock warning
+     * should catch. The second lot costs slightly more, which moves the weighted average cost.
      */
     private function importStock(StockImportService $imports, User $admin, array $catalog, array $plan, string $note, int $lot): void
     {
@@ -328,10 +333,13 @@ class StoreSalesDemoSeeder extends Seeder
         }
         $suppliers = Supplier::whereIn('code', ['DEMO-NCC-1', 'DEMO-NCC-2', 'DEMO-NCC-3'])->orderBy('code')->pluck('id')->all();
         foreach ($catalog as $index => $shoe) {
+            if ($lot === 1 && in_array($shoe['product'], self::BACKORDERED, true)) {
+                continue;
+            }
             $items = [];
             foreach ($shoe['variants'] as $variant) {
                 $expected = $demand[$variant['id']] ?? 0;
-                $quantity = $lot === 0 ? (int) ceil($expected * 0.62) + 2 : (int) ceil($expected * 0.5);
+                $quantity = $lot === 0 ? max(8, (int) ceil($expected * 0.7) + 4) : (int) ceil($expected * 0.55) + 2;
                 if ($quantity > 0) {
                     $items[] = ['variant_id' => $variant['id'], 'quantity' => $quantity, 'unit_cost_amount' => $lot === 0 ? $shoe['cost'] : intdiv($shoe['cost'] * 103, 100_000) * 1_000];
                 }

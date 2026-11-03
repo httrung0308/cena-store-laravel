@@ -88,7 +88,11 @@ class StoreSalesDemoSeederTest extends TestCase
         $money = $report->money($start, $end);
         $this->assertSame((int) DB::table('sales_ledger_entries')->sum(DB::raw('merchandise_revenue_delta + shipping_revenue_delta')), $money['revenue']);
         $this->assertGreaterThan(0, $money['profit']);
-        $this->assertNotSame([], $report->inventory()['low']);
+        // A few sizes run low (mostly the backordered best sellers), not a third of the shop.
+        $inventory = $report->inventory();
+        $this->assertNotSame([], $inventory['low']);
+        $this->assertLessThan(0.15 * $inventory['variants'], count($inventory['low']));
+        $this->assertContains('Nike Dunk Low Retro', array_column($inventory['low'], 'product'));
 
         $this->actingAs($this->admin)->get(route('admin.reports.index', ['from' => '2026-08-06', 'to' => '2026-11-03']))->assertOk()
             ->assertSee("Nike Air Force 1 '07");
