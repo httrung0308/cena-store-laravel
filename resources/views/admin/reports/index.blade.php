@@ -11,6 +11,24 @@
     $topPairs = max([1, ...array_column($bestSellers, 'pairs')]);
     $pairsSold = array_sum(array_column($operations, 'pairs'));
     $ordersPlaced = array_sum($orderCounts);
+    $weekly = count($operations) > 31;
+    $periodWord = $weekly ? 'tuần' : 'ngày';
+    $legend = fn (string $color, string $label): string => '<span class="flex items-center gap-1.5"><span class="inline-block h-2.5 w-2.5 rounded-sm" style="background: '.$color.'"></span>'.e($label).'</span>';
+
+    /*
+     * Orders heatmap: rows are weekdays (Monday first), columns are weeks; cells outside the range stay empty.
+     * Five steps of one blue hue, scaled to the busiest day of the range.
+     */
+    $heatPeak = max([1, ...array_column($operations, 'orders')]);
+    $heatSteps = ['#f4f4f5', '#d6e6f8', '#a5c8ef', '#5f9fe3', '#2a78d6', '#1d5aa6'];
+    $heatLead = $operations === [] ? 0 : \Carbon\CarbonImmutable::parse($operations[0]['day'])->dayOfWeekIso - 1;
+    $heatWeeks = (int) ceil(($heatLead + count($operations)) / 7);
+    $heatCells = array_fill(0, 7, array_fill(0, $heatWeeks, null));
+    foreach ($operations as $index => $row) {
+        $position = $heatLead + $index;
+        $heatCells[$position % 7][intdiv($position, 7)] = $row;
+    }
+    $heatColor = fn (int $orders): string => $heatSteps[$orders === 0 ? 0 : min(5, (int) ceil($orders / $heatPeak * 5))];
 @endphp
 
 @section('content')
@@ -41,10 +59,10 @@
             @php
                 $margin = $money['revenue'] > 0 ? $money['profit'] / $money['revenue'] * 100 : null;
                 $cards = [
-                    ['label' => 'Doanh thu', 'value' => $money['revenue'], 'previous' => $previousMoney['revenue'], 'higherIsBetter' => true, 'note' => 'Hàng '.$vnd($money['merchandise']).' · phí ship '.$vnd($money['shipping'])],
-                    ['label' => 'Giá vốn', 'value' => $money['cogs'], 'previous' => $previousMoney['cogs'], 'higherIsBetter' => null, 'note' => 'Giá vốn hàng đã giao'],
-                    ['label' => 'Chi phí khác', 'value' => $money['expense'], 'previous' => $previousMoney['expense'], 'higherIsBetter' => false, 'note' => 'Bảo hành, hao hụt kho'],
-                    ['label' => 'Lợi nhuận', 'value' => $money['profit'], 'previous' => $previousMoney['profit'], 'higherIsBetter' => true, 'note' => $margin === null ? 'Doanh thu − giá vốn − chi phí' : 'Biên lợi nhuận '.$percent($margin)],
+                    ['label' => 'Doanh thu', 'spark' => 'revenue', 'value' => $money['revenue'], 'previous' => $previousMoney['revenue'], 'higherIsBetter' => true, 'note' => 'Hàng '.$vnd($money['merchandise']).' · phí ship '.$vnd($money['shipping'])],
+                    ['label' => 'Giá vốn', 'spark' => 'cogs', 'value' => $money['cogs'], 'previous' => $previousMoney['cogs'], 'higherIsBetter' => null, 'note' => 'Giá vốn hàng đã giao'],
+                    ['label' => 'Chi phí khác', 'spark' => 'expense', 'value' => $money['expense'], 'previous' => $previousMoney['expense'], 'higherIsBetter' => false, 'note' => 'Bảo hành, hao hụt kho'],
+                    ['label' => 'Lợi nhuận', 'spark' => 'profit', 'value' => $money['profit'], 'previous' => $previousMoney['profit'], 'higherIsBetter' => true, 'note' => $margin === null ? 'Doanh thu − giá vốn − chi phí' : 'Biên lợi nhuận '.$percent($margin)],
                 ];
             @endphp
             <section aria-label="Tài chính" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -67,22 +85,40 @@
                                 <span class="text-zinc-500">{{ $delta >= 0 ? 'tăng' : 'giảm' }} so với kỳ trước</span>
                             @endif
                         </p>
+                        <div class="relative mt-3 h-10" aria-hidden="true"><canvas data-sparkline="{{ $card['spark'] }}"></canvas></div>
                     </article>
                 @endforeach
             </section>
 
             <div class="grid gap-6 xl:grid-cols-3">
                 <section class="admin-card xl:col-span-2" aria-labelledby="chart-title">
-                    <h2 id="chart-title" class="text-xl font-semibold">Doanh thu, giá vốn và lợi nhuận theo ngày</h2>
-                    <p class="mt-1 text-xs text-zinc-500">{{ $day($from) }} – {{ $day($to) }} · rê chuột lên biểu đồ để xem số từng ngày</p>
-                    <div class="relative mt-4 h-80" data-report-chart>
-                        <canvas x-ref="money" role="img" aria-label="Biểu đồ doanh thu, giá vốn và lợi nhuận theo ngày từ {{ $day($from) }} đến {{ $day($to) }}"></canvas>
+                    <div class="flex flex-wrap items-start justify-between gap-3">
+                        <div>
+                            <h2 id="chart-title" class="text-xl font-semibold">Doanh thu theo {{ $periodWord }}</h2>
+                            <p class="mt-1 text-xs text-zinc-500">Mỗi cột là doanh thu một {{ $periodWord }}, chia thành giá vốn, chi phí khác và lợi nhuận · rê chuột để xem số</p>
+                        </div>
+                        <p class="flex flex-wrap gap-4 text-xs text-zinc-600">{!! $legend('#b4b2a9', 'Giá vốn') !!}{!! $legend('#eb6834', 'Chi phí khác') !!}{!! $legend('#1baf7a', 'Lợi nhuận') !!}</p>
+                    </div>
+                    <div class="relative mt-4 h-72" data-report-chart>
+                        <canvas x-ref="money" role="img" aria-label="Biểu đồ cột chồng doanh thu theo {{ $periodWord }} từ {{ $day($from) }} đến {{ $day($to) }}: giá vốn, chi phí khác và lợi nhuận"></canvas>
+                    </div>
+                    <div class="mt-6 border-t border-zinc-100 pt-5">
+                        <div class="flex flex-wrap items-start justify-between gap-3">
+                            <div>
+                                <h3 class="font-semibold">Biên lợi nhuận theo {{ $periodWord }}</h3>
+                                <p class="mt-1 text-xs text-zinc-500">Lợi nhuận chia doanh thu; đường đứt là mức trung bình cả kỳ</p>
+                            </div>
+                            <p class="flex flex-wrap gap-4 text-xs text-zinc-600">{!! $legend('#1baf7a', 'Biên lợi nhuận') !!}{!! $legend('#a1a1aa', 'Trung bình cả kỳ') !!}</p>
+                        </div>
+                        <div class="relative mt-3 h-36" data-margin-chart>
+                            <canvas x-ref="margin" role="img" aria-label="Biểu đồ biên lợi nhuận theo {{ $periodWord }} so với trung bình cả kỳ"></canvas>
+                        </div>
                     </div>
                     <details class="mt-4 text-sm">
                         <summary class="cursor-pointer font-semibold text-zinc-600">Xem bảng số liệu</summary>
                         <div class="admin-table-wrap mt-3 max-h-80 overflow-y-auto"><table class="admin-table"><thead><tr><th>Ngày</th><th class="text-right">Doanh thu</th><th class="text-right">Giá vốn</th><th class="text-right">Lợi nhuận</th></tr></thead><tbody>
                             @foreach ($daily as $row)
-                                <tr><td>{{ $day($row['day']) }}</td><td class="text-right tabular-nums">{{ $vnd($row['revenue']) }}</td><td class="text-right tabular-nums">{{ $vnd($row['cogs']) }}</td><td class="text-right tabular-nums">{{ $vnd($row['profit']) }}</td></tr>
+                                <tr><td>{{ $day($row['day']) }}</td><td class="text-right tabular-nums">{{ $vnd($row['revenue']) }}</td><td class="text-right tabular-nums">{{ $vnd($row['cogs']) }}</td><td @class(['text-right tabular-nums', 'text-red-600' => $row['profit'] < 0])>{{ $vnd($row['profit']) }}</td></tr>
                             @endforeach
                         </tbody></table></div>
                     </details>
@@ -94,8 +130,8 @@
                     @if ($money['revenue'] > 0)
                         @php
                             $parts = [
-                                ['label' => 'Giá vốn', 'value' => $money['cogs'], 'color' => '#eb6834'],
-                                ['label' => 'Chi phí khác', 'value' => $money['expense'], 'color' => '#a1a1aa'],
+                                ['label' => 'Giá vốn', 'value' => $money['cogs'], 'color' => '#b4b2a9'],
+                                ['label' => 'Chi phí khác', 'value' => $money['expense'], 'color' => '#eb6834'],
                                 ['label' => 'Lợi nhuận', 'value' => max($money['profit'], 0), 'color' => '#1baf7a'],
                             ];
                             $whole = max(1, array_sum(array_column($parts, 'value')));
@@ -133,11 +169,13 @@
                 <h2 class="text-sm font-semibold text-zinc-500">Đơn mới đặt</h2>
                 <p class="mt-2 text-2xl font-bold tabular-nums">{{ number_format($ordersPlaced, 0, ',', '.') }}</p>
                 <p class="mt-1 text-xs text-zinc-500">Đặt trong khoảng ngày đã chọn</p>
+                <div class="relative mt-3 h-10" aria-hidden="true"><canvas data-sparkline="orders"></canvas></div>
             </article>
             <article class="admin-card">
                 <h2 class="text-sm font-semibold text-zinc-500">Đôi đã giao</h2>
                 <p class="mt-2 text-2xl font-bold tabular-nums">{{ number_format($pairsSold, 0, ',', '.') }} đôi</p>
                 <p class="mt-1 text-xs text-zinc-500">{{ $orderCounts[App\Enums\OrderStatus::Delivered->value] }} đơn đặt trong kỳ đã giao xong</p>
+                <div class="relative mt-3 h-10" aria-hidden="true"><canvas data-sparkline="pairs"></canvas></div>
             </article>
             <article class="admin-card">
                 <h2 class="text-sm font-semibold text-zinc-500">Tồn kho còn bán được</h2>
@@ -152,10 +190,45 @@
         </section>
 
         <section class="admin-card" aria-labelledby="operations-title">
-            <h2 id="operations-title" class="text-xl font-semibold">Đơn đặt và đôi giày đã giao theo ngày</h2>
-            <p class="mt-1 text-xs text-zinc-500">Số đơn khách đặt mỗi ngày và số đôi giao thành công mỗi ngày</p>
-            <div class="relative mt-4 h-64" data-operations-chart>
-                <canvas x-ref="operations" role="img" aria-label="Biểu đồ số đơn đặt và số đôi đã giao theo ngày từ {{ $day($from) }} đến {{ $day($to) }}"></canvas>
+            <div class="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                    <h2 id="operations-title" class="text-xl font-semibold">Lịch số đơn mỗi ngày</h2>
+                    <p class="mt-1 text-xs text-zinc-500">Hàng là thứ trong tuần, cột là tuần. Ô càng đậm càng nhiều đơn · rê chuột để xem số đơn và số đôi đã giao</p>
+                </div>
+                <p class="flex items-center gap-1.5 text-xs text-zinc-500" aria-hidden="true">
+                    Ít
+                    @foreach ($heatSteps as $color)
+                        <span class="inline-block h-3 w-3 rounded-sm" style="background: {{ $color }}"></span>
+                    @endforeach
+                    Nhiều
+                </p>
+            </div>
+            <div class="mt-5 overflow-x-auto" data-orders-heatmap>
+                <table class="border-separate text-xs text-zinc-500" style="border-spacing: 4px" aria-label="Số đơn đặt theo ngày từ {{ $day($from) }} đến {{ $day($to) }}, tối đa {{ $heatPeak }} đơn một ngày">
+                    <thead>
+                        <tr>
+                            <th scope="col"><span class="sr-only">Thứ</span></th>
+                            @for ($week = 0; $week < $heatWeeks; $week++)
+                                @php $monday = collect(array_column($heatCells, $week))->filter()->first(); @endphp
+                                <th scope="col" class="h-4 min-w-[1.75rem] text-left font-normal">{{ $monday !== null && ($week % 2 === 0 || $heatWeeks <= 8) ? $day($monday['day']) : '' }}</th>
+                            @endfor
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'] as $weekday => $name)
+                            <tr>
+                                <th scope="row" class="pr-2 text-left font-normal">{{ $name }}</th>
+                                @foreach ($heatCells[$weekday] as $cell)
+                                    @if ($cell === null)
+                                        <td class="h-7 min-w-[1.75rem]"></td>
+                                    @else
+                                        <td class="h-7 min-w-[1.75rem] rounded-md" style="background: {{ $heatColor($cell['orders']) }}" title="{{ $name }} {{ $day($cell['day']) }}: {{ $cell['orders'] }} đơn, {{ $cell['pairs'] }} đôi đã giao"><span class="sr-only">{{ $day($cell['day']) }}: {{ $cell['orders'] }} đơn</span></td>
+                                    @endif
+                                @endforeach
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
             </div>
             <details class="mt-4 text-sm">
                 <summary class="cursor-pointer font-semibold text-zinc-600">Xem bảng số liệu</summary>

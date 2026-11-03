@@ -83,7 +83,7 @@ class ReportDashboardTest extends TestCase
             ->assertViewHas('daily', fn (array $days) => $days === [['day' => '2026-11-01', 'revenue' => $merchandise + $shipping, 'cogs' => $cogs, 'profit' => $merchandise + $shipping - $cogs]])
             ->assertViewHas('operations', [['day' => '2026-11-01', 'orders' => 5, 'pairs' => 4]])
             ->assertSee('Runner &lt;Một&gt;', false)->assertDontSee('Runner <Một>', false)
-            ->assertSee('Giá vốn')->assertSee('Lợi nhuận')->assertSee('data-report-chart', false);
+            ->assertSee('Giá vốn')->assertSee('Lợi nhuận')->assertSee('data-report-chart', false)->assertSee('data-margin-chart', false);
 
         $this->assertSame($ledgerRows, SalesLedgerEntry::query()->count(), 'The dashboard never writes to the ledger.');
         $this->assertSame($stock, ProductVariant::query()->orderBy('id')->get(['stock_qty', 'reserved_qty'])->toArray(), 'The dashboard never touches stock.');
@@ -147,8 +147,8 @@ class ReportDashboardTest extends TestCase
         $this->actingAs($this->staff)->get(route('admin.reports.index'))->assertOk()
             ->assertViewHas('money', null)->assertViewHas('previousMoney', null)->assertViewHas('daily', [])
             ->assertViewHas('operations', fn (array $days) => array_sum(array_column($days, 'pairs')) === 1)
-            ->assertSee('Sản phẩm bán chạy')->assertSee('Staff View')->assertSee('Tồn kho còn bán được')->assertSee('data-operations-chart', false)
-            ->assertDontSee('data-metric', false)->assertDontSee('data-report-chart', false)->assertDontSee('563.457')
+            ->assertSee('Sản phẩm bán chạy')->assertSee('Staff View')->assertSee('Tồn kho còn bán được')->assertSee('data-orders-heatmap', false)->assertSee('Lịch số đơn mỗi ngày')
+            ->assertDontSee('data-metric', false)->assertDontSee('data-report-chart', false)->assertDontSee('data-margin-chart', false)->assertDontSee('563.457')
             ->assertDontSee('&quot;revenue&quot;', false)->assertDontSee('"revenue"', false)->assertDontSee('Mỗi 100 đồng doanh thu');
         $this->actingAs($this->staff)->get(route('admin.dashboard'))->assertSee('href="'.route('admin.reports.index').'"', false);
 
