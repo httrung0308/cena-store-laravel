@@ -21,7 +21,7 @@ class ArticleController extends Controller
     {
         $filters = $request->validate([
             'status' => ['nullable', Rule::enum(ArticleStatus::class)],
-            'sort' => ['nullable', Rule::in(['latest', 'helpful'])],
+            'sort' => ['nullable', Rule::in(['latest', 'helpful', 'unhelpful'])],
         ]);
         $articles = Article::query()
             ->withCount([
@@ -30,6 +30,7 @@ class ArticleController extends Controller
             ])
             ->when($filters['status'] ?? null, fn ($query, $status) => $query->where('status', $status))
             ->when(($filters['sort'] ?? 'latest') === 'helpful', fn ($query) => $query->orderByDesc('helpful_count')->orderBy('unhelpful_count'))
+            ->when(($filters['sort'] ?? 'latest') === 'unhelpful', fn ($query) => $query->orderByDesc('unhelpful_count')->orderBy('helpful_count'))
             ->orderByDesc('updated_at')->orderByDesc('id')
             ->paginate(15)->withQueryString();
 

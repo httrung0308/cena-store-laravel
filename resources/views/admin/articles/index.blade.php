@@ -21,6 +21,7 @@
                 <select class="input border-zinc-300 py-2 font-normal" name="sort">
                     <option value="latest" @selected(($filters['sort'] ?? 'latest') === 'latest')>Mới cập nhật</option>
                     <option value="helpful" @selected(($filters['sort'] ?? '') === 'helpful')>Hữu ích nhất</option>
+                    <option value="unhelpful" @selected(($filters['sort'] ?? '') === 'unhelpful')>Không hữu ích nhất</option>
                 </select>
             </label>
             <button type="submit" class="btn-pill-dark">Lọc</button>

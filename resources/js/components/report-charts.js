@@ -159,6 +159,68 @@ function marginChart(Chart, canvas, periods) {
     });
 }
 
+/** One horizontal stacked bar per article: helpful (aqua) then not helpful (orange), counted in answers. */
+function feedbackChart(Chart, canvas, articles) {
+    const stack = (label, field, color, last) => ({
+        label,
+        data: articles.map((article) => article[field]),
+        backgroundColor: color,
+        borderColor: INK.surface,
+        borderWidth: { right: 2 },
+        borderRadius: last ? { topRight: 4, bottomRight: 4 } : 0,
+        borderSkipped: 'left',
+        maxBarThickness: 22,
+    });
+    // The title column has a fixed share of the width and titles are cut to fit it, so a late-loading web font can
+    // never push them past the canvas edge.
+    const labelWidth = (chart) => Math.min(240, Math.round(chart.width * 0.4));
+    const shorten = (title, chart) => {
+        const fit = Math.max(8, Math.floor(labelWidth(chart) / 6.6));
+
+        return title.length > fit ? `${title.slice(0, fit - 1)}…` : title;
+    };
+
+    return new Chart(canvas, {
+        type: 'bar',
+        data: {
+            labels: articles.map((article) => article.title),
+            datasets: [stack('Hữu ích', 'helpful', COLORS.profit, false), stack('Không hữu ích', 'unhelpful', COLORS.expense, true)],
+        },
+        options: {
+            indexAxis: 'y',
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false, axis: 'y' },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    ...tooltip,
+                    callbacks: {
+                        title: (items) => articles[items[0].dataIndex].title,
+                        label: (context) => ` ${context.dataset.label}: ${context.parsed.x} lượt`,
+                        footer: (items) => {
+                            const article = articles[items[0].dataIndex];
+                            const total = article.helpful + article.unhelpful;
+
+                            return total ? `${Math.round((article.helpful / total) * 100)}% thấy hữu ích` : '';
+                        },
+                    },
+                },
+            },
+            scales: {
+                x: { ...axisY((value) => (Number.isInteger(value) ? value : '')), stacked: true, beginAtZero: true },
+                y: {
+                    ...axisX,
+                    stacked: true,
+                    grid: { display: false },
+                    border: { display: false },
+                    ticks: { ...axisX.ticks, autoSkip: false, callback(value, index) { return shorten(articles[index].title, this.chart); } },
+                    afterFit: (scale) => { scale.width = labelWidth(scale.chart); },
+                },
+            },
+        },
+    });
+}
+
 function sparkline(Chart, canvas, values, color) {
     return new Chart(canvas, {
         type: 'line',
@@ -187,6 +249,7 @@ export function reportCharts() {
 
             if (this.$refs.money && money.length) this.charts.push(financeChart(Chart, this.$refs.money, money));
             if (this.$refs.margin && money.length) this.charts.push(marginChart(Chart, this.$refs.margin, money));
+            if (this.$refs.feedback && data.feedback?.length) this.charts.push(feedbackChart(Chart, this.$refs.feedback, data.feedback));
             this.$el.querySelectorAll('canvas[data-sparkline]').forEach((canvas) => {
                 const field = canvas.dataset.sparkline;
                 if (series[field]?.length > 1 && series[field].some((period) => period[field] !== 0)) this.charts.push(sparkline(Chart, canvas, series[field].map((period) => period[field]), sparkColor[field]));

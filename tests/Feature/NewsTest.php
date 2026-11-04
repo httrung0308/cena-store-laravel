@@ -255,6 +255,9 @@ class NewsTest extends TestCase
         $this->assertSame(['Bài được thích', 'Bài chia rẽ'], array_slice($page->viewData('articles')->pluck('title')->all(), 0, 2));
         $this->assertSame([3, 0], [$page->viewData('articles')->first()->helpful_count, $page->viewData('articles')->first()->unhelpful_count]);
 
+        $unhelpful = $this->get(route('admin.articles.index', ['sort' => 'unhelpful']))->assertOk()->assertSee('Không hữu ích nhất');
+        $this->assertSame('Bài chia rẽ', $unhelpful->viewData('articles')->first()->title);
+
         $this->actingAs(User::factory()->staff()->create())->get(route('admin.articles.index'))->assertForbidden();
     }
 
