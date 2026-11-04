@@ -19,6 +19,29 @@
                 <p class="whitespace-pre-line">{{ $paragraph }}</p>
             @endforeach
         </div>
+
+        <section id="article-feedback" class="mt-12 rounded-3xl border border-zinc-200 p-6 text-center" aria-labelledby="feedback-title" data-article-feedback>
+            <h2 id="feedback-title" class="text-lg font-semibold">Bài viết có hữu ích không?</h2>
+            <form method="POST" action="{{ route('news.feedback', $article->slug) }}" class="mt-4 flex justify-center gap-3">
+                @csrf
+                @foreach (['yes' => ['👍', 'Có', true], 'no' => ['👎', 'Không', false]] as $value => [$icon, $label, $isHelpful])
+                    <button type="submit" name="helpful" value="{{ $value }}" aria-pressed="{{ $myFeedback === $isHelpful ? 'true' : 'false' }}"
+                            @class(['inline-flex items-center gap-2 rounded-full border px-5 py-2 text-sm font-semibold transition', 'border-zinc-900 bg-zinc-900 text-white' => $myFeedback === $isHelpful, 'border-zinc-300 bg-white text-zinc-800 hover:border-zinc-900' => $myFeedback !== $isHelpful])>
+                        <span aria-hidden="true">{{ $icon }}</span> {{ $label }}
+                    </button>
+                @endforeach
+            </form>
+            <p class="mt-3 text-sm text-zinc-500" aria-live="polite">
+                @if (session('feedback_saved'))
+                    Cảm ơn bạn đã góp ý!
+                @elseif ($myFeedback !== null)
+                    Bạn đã trả lời. Bấm nút còn lại nếu muốn đổi ý.
+                @endif
+                @if ($helpfulCount > 0)
+                    <span class="block">{{ $helpfulCount }} người thấy bài viết này hữu ích.</span>
+                @endif
+            </p>
+        </section>
     </article>
     @if ($related->isNotEmpty())
         <section class="border-t border-zinc-200 py-12" aria-labelledby="related-title" data-related-articles>

@@ -34,7 +34,7 @@
 
 @section('content')
     <div class="flex flex-col gap-8" x-data="reportCharts()">
-        <script type="application/json" x-ref="data">@json(['daily' => $daily, 'operations' => $operations])</script>
+        <script type="application/json" x-ref="data">@json(['daily' => $daily, 'operations' => $operations, 'feedback' => $articleFeedback['articles'] ?? []])</script>
 
         <form method="GET" action="{{ route('admin.reports.index') }}" class="admin-card flex flex-wrap items-end gap-4" aria-label="Lọc theo ngày">
             <div>
@@ -334,5 +334,54 @@
                 @endforeach
             </dl>
         </section>
+
+        @if ($isAdmin)
+            @php
+                $answers = $articleFeedback['helpful'] + $articleFeedback['unhelpful'];
+                $helpfulShare = $answers > 0 ? $articleFeedback['helpful'] / $answers * 100 : 0;
+            @endphp
+            <section class="admin-card" aria-labelledby="feedback-title" data-feedback-report>
+                <div class="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                        <h2 id="feedback-title" class="text-xl font-semibold">Đánh giá bài viết</h2>
+                        <p class="mt-1 text-xs text-zinc-500">Câu trả lời "Bài viết có hữu ích không?" của người đọc trong khoảng ngày đã chọn</p>
+                    </div>
+                    <p class="flex flex-wrap gap-4 text-xs text-zinc-600">{!! $legend('#1baf7a', 'Hữu ích') !!}{!! $legend('#eb6834', 'Không hữu ích') !!}</p>
+                </div>
+                @if ($answers === 0)
+                    <p class="py-10 text-center text-sm text-zinc-500">Chưa có người đọc nào đánh giá trong khoảng này.</p>
+                @else
+                    <div class="mt-5 grid gap-4 sm:grid-cols-3">
+                        <div class="rounded-2xl bg-zinc-50 p-4"><p class="text-xs text-zinc-500">👍 Hữu ích</p><p class="mt-1 text-2xl font-bold tabular-nums">{{ $articleFeedback['helpful'] }}</p></div>
+                        <div class="rounded-2xl bg-zinc-50 p-4"><p class="text-xs text-zinc-500">👎 Không hữu ích</p><p class="mt-1 text-2xl font-bold tabular-nums">{{ $articleFeedback['unhelpful'] }}</p></div>
+                        <div class="rounded-2xl bg-zinc-50 p-4">
+                            <p class="text-xs text-zinc-500">Tỉ lệ hữu ích</p>
+                            <p class="mt-1 text-2xl font-bold tabular-nums">{{ $percent($helpfulShare) }}</p>
+                            <div class="mt-2 flex h-2 gap-0.5 overflow-hidden rounded-full" aria-hidden="true">
+                                @if ($articleFeedback['helpful'] > 0)<span class="h-full" style="width: {{ round($helpfulShare, 2) }}%; background: #1baf7a"></span>@endif
+                                @if ($articleFeedback['unhelpful'] > 0)<span class="h-full flex-1" style="background: #eb6834"></span>@endif
+                            </div>
+                        </div>
+                    </div>
+                    <h3 class="mt-6 text-sm font-semibold text-zinc-700">Theo bài viết (nhiều lượt đánh giá nhất)</h3>
+                    <div class="relative mt-3" style="height: {{ count($articleFeedback['articles']) * 44 + 48 }}px">
+                        <canvas x-ref="feedback" role="img" aria-label="Biểu đồ số lượt hữu ích và không hữu ích của từng bài viết"></canvas>
+                    </div>
+                    <details class="mt-4 text-sm">
+                        <summary class="cursor-pointer font-semibold text-zinc-600">Xem bảng số liệu</summary>
+                        <div class="admin-table-wrap mt-3"><table class="admin-table"><thead><tr><th>Bài viết</th><th class="text-right">Hữu ích</th><th class="text-right">Không hữu ích</th><th class="text-right">Tỉ lệ</th></tr></thead><tbody>
+                            @foreach ($articleFeedback['articles'] as $row)
+                                <tr data-feedback-row>
+                                    <td><a href="{{ route('news.show', $row['slug']) }}" class="font-semibold text-zinc-900 hover:underline">{{ $row['title'] }}</a></td>
+                                    <td class="text-right tabular-nums">{{ $row['helpful'] }}</td>
+                                    <td class="text-right tabular-nums">{{ $row['unhelpful'] }}</td>
+                                    <td class="text-right tabular-nums">{{ $percent($row['helpful'] / max(1, $row['helpful'] + $row['unhelpful']) * 100) }}</td>
+                                </tr>
+                            @endforeach
+                        </tbody></table></div>
+                    </details>
+                @endif
+            </section>
+        @endif
     </div>
 @endsection

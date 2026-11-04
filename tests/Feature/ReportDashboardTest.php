@@ -7,6 +7,8 @@ use App\Enums\InventoryAction;
 use App\Enums\InventoryReferenceType;
 use App\Enums\SalesLedgerType;
 use App\Models\Address;
+use App\Models\Article;
+use App\Models\ArticleFeedback;
 use App\Models\Cart;
 use App\Models\CartItem;
 use App\Models\Category;
@@ -138,6 +140,36 @@ class ReportDashboardTest extends TestCase
             ->assertViewHas('previousMoney', fn (array $money) => $money['merchandise'] === 800_000 && $money['cogs'] === 560_000)
             ->assertViewHas('presets', fn (array $presets) => $presets[0] === ['label' => '7 ngày', 'from' => '2026-10-26', 'to' => '2026-11-01'])
             ->assertSee('so với 1 ngày trước đó')->assertSee('Lãi 31,7% trên doanh thu')->assertSee('Mỗi 100 đồng doanh thu')->assertSee('Biên lợi nhuận');
+    }
+
+    public function test_admin_sees_helpful_versus_not_helpful_answers_for_the_range(): void
+    {
+        $sizes = Article::factory()->published()->create(['title' => 'Chọn size <chuẩn>']);
+        $care = Article::factory()->published()->create(['title' => 'Bảo quản giày']);
+        $inRange = '2026-11-01 05:00:00';
+        ArticleFeedback::factory()->count(3)->create(['article_id' => $sizes->id, 'updated_at' => $inRange]);
+        ArticleFeedback::factory()->notHelpful()->create(['article_id' => $sizes->id, 'updated_at' => $inRange]);
+        ArticleFeedback::factory()->notHelpful()->create(['article_id' => $care->id, 'updated_at' => $inRange]);
+        // 23:30 on 31/10 in Vietnam: outside a range that starts on 01/11.
+        ArticleFeedback::factory()->count(5)->create(['article_id' => $care->id, 'updated_at' => '2026-10-31 16:30:00']);
+
+        $this->actingAs($this->admin)->get(route('admin.reports.index', ['from' => '2026-11-01', 'to' => '2026-11-01']))->assertOk()
+            ->assertViewHas('articleFeedback', [
+                'helpful' => 3,
+                'unhelpful' => 2,
+                'articles' => [
+                    ['title' => 'Chọn size <chuẩn>', 'slug' => $sizes->slug, 'helpful' => 3, 'unhelpful' => 1],
+                    ['title' => 'Bảo quản giày', 'slug' => $care->slug, 'helpful' => 0, 'unhelpful' => 1],
+                ],
+            ])
+            ->assertSee('Đánh giá bài viết')->assertSee('60,0%')->assertSee('data-feedback-report', false)
+            ->assertSee('Chọn size &lt;chuẩn&gt;', false)->assertDontSee('Chọn size <chuẩn>', false);
+
+        $this->get(route('admin.reports.index', ['from' => '2026-10-01', 'to' => '2026-10-02']))->assertOk()
+            ->assertSee('Chưa có người đọc nào đánh giá trong khoảng này.');
+
+        $this->actingAs($this->staff)->get(route('admin.reports.index', ['from' => '2026-11-01', 'to' => '2026-11-01']))->assertOk()
+            ->assertViewHas('articleFeedback', null)->assertDontSee('data-feedback-report', false)->assertDontSee('Bảo quản giày');
     }
 
     public function test_staff_sees_operational_figures_only_and_customers_are_kept_out(): void
