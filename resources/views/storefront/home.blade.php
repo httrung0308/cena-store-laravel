@@ -6,7 +6,8 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="description" content="Fakestore — Thể thao là không ngừng bỏ cuộc.">
     <title>Fakestore</title>
-    <link rel="icon" href="{{ asset('legacy/favicon.ico') }}">
+    <link rel="icon" href="{{ asset('legacy/fakestore-favicon.ico') }}" sizes="any">
+    <link rel="apple-touch-icon" href="{{ asset('legacy/fakestore-icon-180.png') }}">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body>

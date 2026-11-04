@@ -6,7 +6,8 @@
 <head>
     <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ $pageTitle }} — Fakestore</title>
-    <link rel="icon" href="{{ asset('legacy/favicon.ico') }}">
+    <link rel="icon" href="{{ asset('legacy/fakestore-favicon.ico') }}" sizes="any">
+    <link rel="apple-touch-icon" href="{{ asset('legacy/fakestore-icon-180.png') }}">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="font-montserrat bg-black text-white">
