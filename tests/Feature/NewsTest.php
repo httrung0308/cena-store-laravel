@@ -129,7 +129,7 @@ class NewsTest extends TestCase
             Article::factory()->published()->create(['title' => 'Bài số '.$index, 'published_at' => now()->subMinutes(100 - $index)]);
         }
 
-        $this->get(route('home'))->assertSee('href="'.route('news.index').'"', false);
+        $this->get(route('home'))->assertSee('href="'.route('news.index').'" class="transition-all hover:underline">News</a>', false);
         $page = $this->get(route('news.index'))->assertOk()->assertSee('Bài số 10')->assertDontSee('Bài số 1<', false);
         $this->assertSame(9, substr_count($page->getContent(), 'data-news-card'));
         $this->assertSame(1, substr_count($page->getContent(), 'data-news-featured'));
