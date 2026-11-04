@@ -1,13 +1,13 @@
-{{-- Storefront page shell: Nike navbar, cart/menu panels and footer around the page.
+{{-- Storefront page shell: Fakestore navbar, cart/menu panels and footer around the page.
      Use @extends('layouts.store') with @section('title') and @section('content'). --}}
-@php($pageTitle = $title ?? trim($__env->yieldContent('title', 'Nike Store')))
+@php($pageTitle = $title ?? trim($__env->yieldContent('title', 'Fakestore')))
 <!doctype html>
 <html lang="vi">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>{{ $pageTitle }} — Nike</title>
+    <title>{{ $pageTitle }} — Fakestore</title>
     <link rel="icon" href="{{ asset('legacy/favicon.ico') }}">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @stack('head')
