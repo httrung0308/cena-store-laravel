@@ -8,6 +8,7 @@ use App\Models\ArticleFeedback;
 use App\Models\User;
 use App\Services\ArticleService;
 use App\Support\BusinessClock;
+use Database\Seeders\ArticleFeedbackDemoSeeder;
 use Database\Seeders\NewsDemoSeeder;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Http\UploadedFile;
@@ -259,6 +260,31 @@ class NewsTest extends TestCase
         $this->assertSame('Bài chia rẽ', $unhelpful->viewData('articles')->first()->title);
 
         $this->actingAs(User::factory()->staff()->create())->get(route('admin.articles.index'))->assertForbidden();
+    }
+
+    public function test_demo_feedback_follows_article_quality_and_age_and_replays_without_new_votes(): void
+    {
+        config(['store.demo.enabled' => true]);
+        app(BusinessClock::class)->freeze('2026-11-04 05:00:00');
+        $this->seed(NewsDemoSeeder::class);
+        app(BusinessClock::class)->freeze('2026-11-04 05:00:00');
+        $this->seed(ArticleFeedbackDemoSeeder::class);
+        $first = DB::table('article_feedback')->orderBy('id')->get(['article_id', 'voter_hash', 'is_helpful'])->toArray();
+        app(BusinessClock::class)->freeze('2026-11-04 05:00:00');
+        $this->seed(ArticleFeedbackDemoSeeder::class);
+        $this->assertEquals($first, DB::table('article_feedback')->orderBy('id')->get(['article_id', 'voter_hash', 'is_helpful'])->toArray(), 'Replaying keeps the same readers and answers.');
+
+        $stats = fn (string $slug): array => (array) DB::table('article_feedback')->join('articles', 'articles.id', '=', 'article_feedback.article_id')
+            ->where('articles.slug', $slug)->selectRaw('COUNT(*) AS answers, AVG(is_helpful) AS share')->first();
+        $guide = $stats('cach-chon-size-giay-nike-chuan-khi-mua-online');
+        $dunk = $stats('dunk-low-panda-hien-tuong-chua-ha-nhiet');
+        $fresh = $stats('air-max-90-bieu-tuong-dem-khi-tro-lai');
+        $this->assertGreaterThan(30, $guide['answers']);
+        $this->assertGreaterThan(0.8, (float) $guide['share']);
+        $this->assertLessThan((float) $guide['share'] - 0.15, (float) $dunk['share'], 'Back-ordered Dunk Low draws more thumbs down.');
+        $this->assertLessThan($guide['answers'], $fresh['answers'], 'A nine-day-old article has fewer answers yet.');
+        $this->assertSame(0, DB::table('article_feedback')->join('articles', 'articles.id', '=', 'article_feedback.article_id')->where('articles.status', '!=', 'PUBLISHED')->count());
+        $this->assertSame(0, DB::table('article_feedback')->join('articles', 'articles.id', '=', 'article_feedback.article_id')->whereColumn('article_feedback.updated_at', '<', 'articles.published_at')->count(), 'Nobody answers before an article is published.');
     }
 
     /** @return array<string, mixed> */
