@@ -23,7 +23,7 @@ class SchemaContractTest extends TestCase
         sort($expected);
         sort($actual);
         $this->assertSame($expected, $actual);
-        $this->assertCount(42, $actual);
+        $this->assertCount(43, $actual);
         $this->assertFalse(Schema::hasTable('password_reset_tokens'));
     }
 

@@ -997,5 +997,18 @@
         "HIDDEN"
       ]
     }
+  },
+  "article_feedback": {
+    "class": "App\\Models\\ArticleFeedback",
+    "belongs_to": [
+      {
+        "column": "article_id",
+        "relation": "article",
+        "class": "App\\Models\\Article",
+        "history": false
+      }
+    ],
+    "enums": {},
+    "enum_cases": {}
   }
 }
