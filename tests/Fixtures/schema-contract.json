@@ -4429,6 +4429,72 @@
         "articles_published_at_check",
         "articles_status_allowed_check"
       ]
+    },
+    "article_feedback": {
+      "number": 36,
+      "columns": {
+        "id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": true
+        },
+        "article_id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "voter_hash": {
+          "type": "char(64)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "is_helpful": {
+          "type": "tinyint(1)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "created_at": {
+          "type": "datetime(6)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "updated_at": {
+          "type": "datetime(6)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        }
+      },
+      "foreign_keys": [
+        {
+          "column": "article_id",
+          "table": "articles",
+          "references": "id",
+          "on_delete": "RESTRICT"
+        }
+      ],
+      "indexes": [
+        {
+          "columns": [
+            "article_id",
+            "voter_hash"
+          ],
+          "unique": true
+        },
+        {
+          "columns": [
+            "article_id",
+            "is_helpful"
+          ],
+          "unique": false
+        }
+      ],
+      "checks": []
     }
   }
 }

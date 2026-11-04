@@ -50,6 +50,7 @@ class ReportController extends Controller
             'orderCounts' => $this->reports->orderCounts($start, $end),
             'bestSellers' => $this->reports->bestSellers($start, $end, 8),
             'inventory' => $this->reports->inventory(),
+            'articleFeedback' => $isAdmin ? $this->reports->articleFeedback($start, $end) : null,
             'lowStockThreshold' => ReportService::LOW_STOCK_THRESHOLD,
         ]);
     }

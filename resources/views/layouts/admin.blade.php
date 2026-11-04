@@ -27,8 +27,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="robots" content="noindex">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>{{ $pageTitle }} — Quản trị Nike</title>
-    <link rel="icon" href="{{ asset('legacy/favicon.ico') }}">
+    <title>{{ $pageTitle }} — Quản trị Fakestore</title>
+    <link rel="icon" href="{{ asset('legacy/fakestore-favicon.ico') }}" sizes="any">
+    <link rel="apple-touch-icon" href="{{ asset('legacy/fakestore-icon-180.png') }}">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @stack('head')
 </head>

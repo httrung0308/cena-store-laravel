@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Storage;
 
 /** Shoe news written by Admin; only published articles are public. Hidden instead of deleted. */
@@ -37,6 +38,11 @@ class Article extends DomainModel
     public function author(): BelongsTo
     {
         return $this->belongsTo(User::class, 'author_id')->withTrashed();
+    }
+
+    public function feedback(): HasMany
+    {
+        return $this->hasMany(ArticleFeedback::class, 'article_id');
     }
 
     /** @param Builder<Article> $query */

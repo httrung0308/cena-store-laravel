@@ -57,9 +57,36 @@ final class ArticleService
         return $article;
     }
 
+    /**
+     * Records or changes one reader's "helpful?" answer. The reader is a signed-in user or, for guests, the
+     * browser session; only an HMAC of that identity is stored, and the unique key allows one answer each.
+     */
+    public function recordFeedback(Article $article, ?User $user, string $sessionId, bool $helpful): void
+    {
+        $now = $this->clock->now()->format('Y-m-d H:i:s.u');
+        DB::table('article_feedback')->upsert(
+            [['article_id' => $article->id, 'voter_hash' => $this->voterHash($user, $sessionId), 'is_helpful' => $helpful, 'created_at' => $now, 'updated_at' => $now]],
+            ['article_id', 'voter_hash'],
+            ['is_helpful', 'updated_at'],
+        );
+    }
+
+    /** The answer this reader already gave, or null. */
+    public function feedbackOf(Article $article, ?User $user, string $sessionId): ?bool
+    {
+        $answer = DB::table('article_feedback')->where('article_id', $article->id)->where('voter_hash', $this->voterHash($user, $sessionId))->value('is_helpful');
+
+        return $answer === null ? null : (bool) $answer;
+    }
+
     public function hide(Article $article): void
     {
         Article::query()->whereKey($article->id)->update(['status' => ArticleStatus::Hidden->value, 'updated_at' => $this->clock->now()->format('Y-m-d H:i:s.u')]);
+    }
+
+    private function voterHash(?User $user, string $sessionId): string
+    {
+        return hash_hmac('sha256', $user !== null ? 'user:'.$user->id : 'session:'.$sessionId, (string) config('app.key'));
     }
 
     private function uniqueSlug(string $title): string

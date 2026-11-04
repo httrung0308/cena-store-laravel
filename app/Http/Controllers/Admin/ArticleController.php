@@ -19,9 +19,18 @@ class ArticleController extends Controller
 
     public function index(Request $request): View
     {
-        $filters = $request->validate(['status' => ['nullable', Rule::enum(ArticleStatus::class)]]);
+        $filters = $request->validate([
+            'status' => ['nullable', Rule::enum(ArticleStatus::class)],
+            'sort' => ['nullable', Rule::in(['latest', 'helpful', 'unhelpful'])],
+        ]);
         $articles = Article::query()
+            ->withCount([
+                'feedback as helpful_count' => fn ($query) => $query->where('is_helpful', true),
+                'feedback as unhelpful_count' => fn ($query) => $query->where('is_helpful', false),
+            ])
             ->when($filters['status'] ?? null, fn ($query, $status) => $query->where('status', $status))
+            ->when(($filters['sort'] ?? 'latest') === 'helpful', fn ($query) => $query->orderByDesc('helpful_count')->orderBy('unhelpful_count'))
+            ->when(($filters['sort'] ?? 'latest') === 'unhelpful', fn ($query) => $query->orderByDesc('unhelpful_count')->orderBy('helpful_count'))
             ->orderByDesc('updated_at')->orderByDesc('id')
             ->paginate(15)->withQueryString();
 

@@ -124,6 +124,28 @@ final class ReportService
             ->all();
     }
 
+    /**
+     * Readers' "was this article helpful?" answers whose latest answer falls within the range, overall and for the
+     * most-answered articles. A reader who changed their mind counts once, with their current answer.
+     *
+     * @return array{helpful: int, unhelpful: int, articles: list<array{title: string, slug: string, helpful: int, unhelpful: int}>}
+     */
+    public function articleFeedback(CarbonImmutable $start, CarbonImmutable $end, int $limit = 8): array
+    {
+        $answers = DB::table('article_feedback')->where('article_feedback.updated_at', '>=', $start)->where('article_feedback.updated_at', '<', $end);
+        $totals = (clone $answers)->selectRaw('COALESCE(SUM(is_helpful = 1), 0) AS helpful, COALESCE(SUM(is_helpful = 0), 0) AS unhelpful')->first();
+        $articles = (clone $answers)
+            ->join('articles', 'articles.id', '=', 'article_feedback.article_id')
+            ->groupBy('articles.id', 'articles.title', 'articles.slug')
+            ->selectRaw('articles.title AS title, articles.slug AS slug, SUM(article_feedback.is_helpful = 1) AS helpful, SUM(article_feedback.is_helpful = 0) AS unhelpful, COUNT(*) AS answers')
+            ->orderByDesc('answers')->orderByDesc('helpful')->orderBy('articles.id')
+            ->limit($limit)->get()
+            ->map(fn (object $row): array => ['title' => (string) $row->title, 'slug' => (string) $row->slug, 'helpful' => (int) $row->helpful, 'unhelpful' => (int) $row->unhelpful])
+            ->all();
+
+        return ['helpful' => (int) $totals->helpful, 'unhelpful' => (int) $totals->unhelpful, 'articles' => $articles];
+    }
+
     /** @return array<string, int> Orders placed within the range, by status value. */
     public function orderCounts(CarbonImmutable $start, CarbonImmutable $end): array
     {
