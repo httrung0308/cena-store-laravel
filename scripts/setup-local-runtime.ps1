@@ -48,7 +48,7 @@ $composerPath = Join-Path $runtimeRoot 'composer-2.9.4.phar'
 Get-VerifiedFile @('https://getcomposer.org/download/2.9.4/composer.phar') $composerPath 'd3eb5c4cb2e708267dac5f9a76d2a57b07836c7ea68783a1a02bd6d94753ea80'
 $caPath = Join-Path $runtimeRoot 'cacert.pem'
 if (-not (Test-Path -LiteralPath $caPath)) { Invoke-WebRequest 'https://curl.se/ca/cacert.pem' -OutFile $caPath }
-$ini = @('date.timezone=UTC', 'memory_limit=512M', 'display_errors=On', 'error_reporting=E_ALL', ('extension_dir="' + $phpDirectory.Replace('\', '/') + '/ext"'), ('curl.cainfo="' + $caPath.Replace('\', '/') + '"'), ('openssl.cafile="' + $caPath.Replace('\', '/') + '"'))
+$ini = @('date.timezone=UTC', 'memory_limit=512M', 'display_errors=On', 'error_reporting=E_ALL', 'upload_max_filesize=6M', 'post_max_size=128M', 'max_file_uploads=100', ('extension_dir="' + $phpDirectory.Replace('\', '/') + '/ext"'), ('curl.cainfo="' + $caPath.Replace('\', '/') + '"'), ('openssl.cafile="' + $caPath.Replace('\', '/') + '"'))
 foreach ($extension in @('curl', 'fileinfo', 'gd', 'intl', 'mbstring', 'openssl', 'pdo_mysql', 'zip', 'exif')) { $ini += 'extension=' + $extension }
 Set-Content -LiteralPath (Join-Path $phpDirectory 'php.ini') -Value $ini -Encoding utf8NoBOM
 $mysql = Join-Path $MySqlBin 'mysql.exe'

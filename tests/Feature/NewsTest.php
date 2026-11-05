@@ -122,6 +122,20 @@ class NewsTest extends TestCase
         $this->assertSame([], Storage::disk('public')->allFiles());
     }
 
+    public function test_an_oversized_cover_gets_a_clear_vietnamese_message(): void
+    {
+        $this->actingAs($this->admin);
+        $this->post(route('admin.articles.store'), $this->fields(['cover' => UploadedFile::fake()->image('big.jpg')->size(6000)]))
+            ->assertSessionHasErrors(['cover' => 'Ảnh bìa tối đa 5 MB. Hãy chọn ảnh nhỏ hơn hoặc nén ảnh lại.']);
+
+        // What PHP reports when the file is above upload_max_filesize: the upload never reaches the app.
+        $path = tempnam(sys_get_temp_dir(), 'cover');
+        $this->post(route('admin.articles.store'), $this->fields(['cover' => new UploadedFile($path, 'anh-bia.jpg', 'image/jpeg', UPLOAD_ERR_INI_SIZE, true)]))
+            ->assertSessionHasErrors(['cover' => 'Không tải được ảnh bìa. Ảnh có thể quá lớn so với giới hạn của máy chủ; hãy chọn ảnh dưới 5 MB rồi thử lại.']);
+        @unlink($path);
+        $this->assertSame(0, Article::query()->count());
+    }
+
     public function test_only_admin_manages_news_and_sees_its_menu(): void
     {
         $staff = User::factory()->staff()->create();
