@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Enums\RoleSlug;
 use App\Models\User;
 use App\Models\UserRole;
+use Illuminate\Foundation\Console\ServeCommand;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Route;
@@ -116,5 +117,13 @@ class SharedFoundationTest extends TestCase
         $this->assertStringContainsString('<p>Nội dung</p>', $html);
         $this->assertStringContainsString('&lt;script&gt;x&lt;/script&gt; — Fakestore', $html);
         $this->assertStringNotContainsString('<script>x</script>', $html);
+    }
+
+    public function test_artisan_serve_keeps_the_temp_folder_so_uploads_work_on_windows(): void
+    {
+        foreach (['TEMP', 'TMP', 'TMPDIR'] as $variable) {
+            $this->assertContains($variable, ServeCommand::$passthroughVariables);
+        }
+        $this->assertContains('PATH', ServeCommand::$passthroughVariables, 'Laravel defaults are kept.');
     }
 }
