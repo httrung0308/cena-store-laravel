@@ -125,7 +125,6 @@
                        class="group relative block aspect-[16/10] cursor-pointer overflow-hidden rounded-2xl border-2 border-dashed transition hover:border-zinc-900">
                     <img x-cloak x-show="coverUrl" x-bind:src="coverUrl" alt="Ảnh bìa đã chọn" class="h-full w-full object-cover" @if ($article->cover_path) src="{{ $article->coverUrl() }}" @endif>
                     <span x-show="!coverUrl" class="absolute inset-0 flex flex-col items-center justify-center gap-1 p-4 text-center text-sm text-zinc-500">
-                        <span class="text-2xl" aria-hidden="true">🖼️</span>
                         <span class="font-semibold text-zinc-700">Kéo thả ảnh vào đây</span>
                         <span>hoặc bấm để chọn</span>
                     </span>
