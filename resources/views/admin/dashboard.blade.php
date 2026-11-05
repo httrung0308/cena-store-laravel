@@ -65,7 +65,7 @@
                 @endforeach
                 @if ($isAdmin)
                     <a href="{{ route('admin.articles.index') }}" class="rounded-full border border-zinc-200 bg-white px-6 py-4 text-left font-semibold transition hover:border-zinc-900 hover:bg-zinc-50">
-                        <span class="block text-lg">Quản lý tin tức</span>
+                        <span class="block text-lg">Quản lý bài viết</span>
                         <span class="mt-1 block text-sm font-normal text-zinc-500">Viết, đăng và ẩn bài viết về giày (chỉ Admin)</span>
                     </a>
                     <a href="{{ route('admin.users.index') }}" class="rounded-full border border-zinc-200 bg-white px-6 py-4 text-left font-semibold transition hover:border-zinc-900 hover:bg-zinc-50">

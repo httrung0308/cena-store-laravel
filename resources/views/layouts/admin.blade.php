@@ -16,7 +16,7 @@
     ];
     if (auth()->user()?->hasRole(App\Enums\RoleSlug::Admin)) {
         $sections[] = ['route' => 'admin.users.index', 'label' => 'Người dùng'];
-        $sections[] = ['route' => 'admin.articles.index', 'label' => 'Tin tức'];
+        $sections[] = ['route' => 'admin.articles.index', 'label' => 'Bài viết'];
     }
     $onDashboard = request()->routeIs('admin.dashboard');
 @endphp

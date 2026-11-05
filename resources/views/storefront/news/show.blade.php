@@ -8,7 +8,7 @@
 
 @section('content')
     <article class="mx-auto max-w-3xl px-4 py-10 sm:px-8">
-        <a href="{{ route('news.index') }}" class="inline-flex items-center gap-2 font-semibold text-zinc-600 transition hover:text-zinc-900">← Tin tức</a>
+        <a href="{{ route('news.index') }}" class="inline-flex items-center gap-2 font-semibold text-zinc-600 transition hover:text-zinc-900">← Bài viết</a>
         <p class="mt-6 text-sm text-zinc-500">{{ $article->published_at->setTimezone($tz)->format('d/m/Y') }}</p>
         <h1 class="mt-2 text-3xl font-bold leading-tight sm:text-5xl">{{ $article->title }}</h1>
         <p class="mt-4 text-lg text-zinc-600">{{ $article->summary }}</p>

@@ -1,6 +1,6 @@
 @extends('layouts.admin')
 @section('title', $article->exists ? 'Sửa bài viết' : 'Viết bài mới')
-@section('eyebrow', 'Quản lý tin tức')
+@section('eyebrow', 'Quản lý bài viết')
 @section('actions')
     <a class="btn-pill" href="{{ route('admin.articles.index') }}">Quay lại danh sách</a>
 @endsection

@@ -1,9 +1,9 @@
 @extends('layouts.admin')
-@section('title', 'Tin tức')
-@section('eyebrow', 'Quản lý tin tức')
+@section('title', 'Bài viết')
+@section('eyebrow', 'Quản lý bài viết')
 @php($tz = (string) config('store.business_timezone'))
 @section('actions')
-    <a href="{{ route('news.index') }}" class="btn-pill">Xem trang tin tức</a>
+    <a href="{{ route('news.index') }}" class="btn-pill">Xem trang bài viết</a>
     <a href="{{ route('admin.articles.create') }}" class="btn-pill-dark">+ Viết bài mới</a>
 @endsection
 @section('content')

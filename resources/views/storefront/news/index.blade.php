@@ -1,6 +1,6 @@
 @extends('layouts.store')
 
-@section('title', 'Tin tức')
+@section('title', 'Bài viết')
 
 @php
     $tz = (string) config('store.business_timezone');
@@ -13,7 +13,7 @@
     <section class="py-10">
         <div class="space-y-2">
             <p class="text-sm uppercase tracking-[0.35em] text-zinc-400">Fakestore</p>
-            <h1 class="text-4xl font-bold sm:text-5xl">Tin tức</h1>
+            <h1 class="text-4xl font-bold sm:text-5xl">Bài viết</h1>
             <p class="text-zinc-500">Giày bán chạy, xu hướng, cách chọn size và bảo quản giày.</p>
         </div>
 
