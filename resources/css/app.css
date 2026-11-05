@@ -130,6 +130,35 @@ html {
   .badge {
     @apply inline-block whitespace-nowrap rounded-full px-3 py-1 text-xs font-semibold;
   }
+
+  /* News article text rendered by App\Support\ArticleFormatter (and the editor preview). */
+  .article-body > * + * {
+    @apply mt-5;
+  }
+
+  .article-body h2 {
+    @apply pt-3 text-2xl font-bold leading-snug text-zinc-900;
+  }
+
+  .article-body h3 {
+    @apply pt-2 text-xl font-semibold leading-snug text-zinc-900;
+  }
+
+  .article-body ul {
+    @apply list-disc space-y-2 pl-6;
+  }
+
+  .article-body ol {
+    @apply list-decimal space-y-2 pl-6;
+  }
+
+  .article-body blockquote {
+    @apply border-l-4 border-zinc-900 pl-4 italic text-zinc-600;
+  }
+
+  .article-body strong {
+    @apply font-semibold text-zinc-900;
+  }
 }
 
 #storefront,

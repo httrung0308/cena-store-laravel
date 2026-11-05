@@ -89,6 +89,23 @@ class NewsTest extends TestCase
             ->assertDontSee('<script>alert(1)</script>', false)->assertDontSee('<u>tắt</u>', false);
     }
 
+    public function test_admin_formats_the_body_with_the_editor_and_readers_see_the_formatting(): void
+    {
+        $this->actingAs($this->admin)->get(route('admin.articles.create'))->assertOk()
+            ->assertSee('data-article-editor', false)->assertSee('In đậm (Ctrl+B)')->assertSee('Xem trước');
+
+        $body = "## Ba bước chọn size\n\nĐo chân vào **buổi chiều**.\n\n- Mang tất khi đo\n- Đối chiếu *bảng size*\n\n> Đổi size trong 7 ngày";
+        $this->post(route('admin.articles.store'), $this->fields(['body' => $body, 'cover' => UploadedFile::fake()->image('c.jpg')]))->assertRedirect();
+        $article = Article::query()->sole();
+        $this->assertSame($body, $article->body, 'The markup is stored as plain text.');
+
+        auth()->logout();
+        $this->get(route('news.show', $article->slug))->assertOk()
+            ->assertSee('<h2>Ba bước chọn size</h2>', false)->assertSee('<strong>buổi chiều</strong>', false)
+            ->assertSee('<ul><li>Mang tất khi đo</li><li>Đối chiếu <em>bảng size</em></li></ul>', false)
+            ->assertSee('<blockquote><p>Đổi size trong 7 ngày</p></blockquote>', false)->assertDontSee('**buổi chiều**', false);
+    }
+
     public function test_cover_must_really_be_an_image(): void
     {
         $this->actingAs($this->admin);
