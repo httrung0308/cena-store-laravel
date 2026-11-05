@@ -107,6 +107,10 @@ export function articleEditor() {
         active: Object.fromEntries(TOOLS.map((tool) => [tool, false])),
         canUndo: false,
         canRedo: false,
+        words: 0,
+        get minutes() {
+            return Math.max(1, Math.ceil(this.words / 200));
+        },
         async init() {
             const field = this.$refs.body;
             const [{ Editor }, { default: StarterKit }] = await Promise.all([import('@tiptap/core'), import('@tiptap/starter-kit')]);
@@ -123,7 +127,10 @@ export function articleEditor() {
                 })],
                 content: renderArticle(field.value),
                 editorProps: { attributes: { class: 'article-body min-h-[20rem] px-4 py-3 text-base leading-relaxed text-zinc-800 focus:outline-none', 'aria-label': 'Nội dung bài viết', 'aria-multiline': 'true', role: 'textbox' } },
-                onUpdate: ({ editor: current }) => { field.value = docToMarkup(current.getJSON()); },
+                onUpdate: ({ editor: current }) => {
+                    field.value = docToMarkup(current.getJSON());
+                    field.dispatchEvent(new Event('input', { bubbles: true }));
+                },
                 onTransaction: () => this.refresh(),
             });
             // The textarea keeps the value for the form; the server validates that it is not empty.
@@ -144,6 +151,7 @@ export function articleEditor() {
             };
             this.canUndo = editor.can().undo();
             this.canRedo = editor.can().redo();
+            this.words = editor.state.doc.textBetween(0, editor.state.doc.content.size, ' ').split(/\s+/).filter(Boolean).length;
         },
         run(tool) {
             const chain = editor.chain().focus();

@@ -122,6 +122,26 @@ class NewsTest extends TestCase
         $this->assertSame([], Storage::disk('public')->allFiles());
     }
 
+    public function test_publish_box_offers_actions_for_the_current_state_and_enter_never_publishes(): void
+    {
+        $this->actingAs($this->admin);
+        $actions = fn ($response): array => preg_match_all('/data-status-action="([A-Z]+)"/', $response->getContent(), $found) ? $found[1] : [];
+
+        $new = $this->get(route('admin.articles.create'))->assertOk()
+            ->assertSee('data-article-form', false)->assertSee('data-cover-box', false)->assertSee('Bài mới')->assertSee('Kéo thả ảnh vào đây');
+        $this->assertSame(['DRAFT', 'PUBLISHED'], $actions($new), 'The first (Enter) button saves a draft.');
+
+        $published = Article::factory()->published()->create(['title' => 'Bài đã đăng']);
+        $page = $this->get(route('admin.articles.edit', $published))->assertOk()
+            ->assertSee('Đã đăng')->assertSee('Cập nhật bài')->assertSee('Xem bài ngoài trang')->assertSee('/news/'.$published->slug)->assertSee('Ngày đăng');
+        $this->assertSame(['PUBLISHED', 'DRAFT'], $actions($page));
+
+        $draft = Article::factory()->create();
+        $this->assertSame(['DRAFT', 'PUBLISHED'], $actions($this->get(route('admin.articles.edit', $draft))->assertSee('Nháp')->assertDontSee('Xem bài ngoài trang')));
+        $this->put(route('admin.articles.update', $draft), $this->fields(['status' => 'DRAFT']))->assertRedirect();
+        $this->assertSame(ArticleStatus::Draft, $draft->fresh()->status);
+    }
+
     public function test_an_oversized_cover_gets_a_clear_vietnamese_message(): void
     {
         $this->actingAs($this->admin);
@@ -175,11 +195,11 @@ class NewsTest extends TestCase
         $this->actingAs($this->admin);
 
         $this->get(route('admin.articles.edit', $hidden))->assertOk()
-            ->assertSee('value="HIDDEN" class="accent-black" checked', false)->assertSee('Giữ ẩn');
+            ->assertSee('data-status-action="HIDDEN"', false)->assertSee('Lưu, vẫn ẩn')->assertSee('Đăng lại');
         $this->put(route('admin.articles.update', $hidden), $this->fields(['title' => 'Sửa chính tả', 'status' => 'HIDDEN']))->assertRedirect();
         $this->assertSame([ArticleStatus::Hidden, 'Sửa chính tả'], [$hidden->fresh()->status, $hidden->fresh()->title]);
 
-        $this->get(route('admin.articles.edit', $draft))->assertOk()->assertDontSee('Giữ ẩn');
+        $this->get(route('admin.articles.edit', $draft))->assertOk()->assertDontSee('data-status-action="HIDDEN"', false);
         $this->put(route('admin.articles.update', $draft), $this->fields(['status' => 'HIDDEN']))->assertSessionHasErrors('status');
         $this->assertSame(ArticleStatus::Draft, $draft->fresh()->status, 'Hiding goes through the hide action, not the form.');
 
