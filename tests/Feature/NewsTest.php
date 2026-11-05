@@ -92,7 +92,7 @@ class NewsTest extends TestCase
     public function test_admin_formats_the_body_with_the_editor_and_readers_see_the_formatting(): void
     {
         $this->actingAs($this->admin)->get(route('admin.articles.create'))->assertOk()
-            ->assertSee('data-article-editor', false)->assertSee('In đậm (Ctrl+B)')->assertSee('Xem trước');
+            ->assertSee('data-article-editor', false)->assertSee('In đậm (Ctrl+B)')->assertSee('Hoàn tác (Ctrl+Z)')->assertSee('x-ref="editor"', false);
 
         $body = "## Ba bước chọn size\n\nĐo chân vào **buổi chiều**.\n\n- Mang tất khi đo\n- Đối chiếu *bảng size*\n\n> Đổi size trong 7 ngày";
         $this->post(route('admin.articles.store'), $this->fields(['body' => $body, 'cover' => UploadedFile::fake()->image('c.jpg')]))->assertRedirect();

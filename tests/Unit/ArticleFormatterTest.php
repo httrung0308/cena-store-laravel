@@ -54,6 +54,14 @@ class ArticleFormatterTest extends TestCase
         $this->assertSame([], array_values(array_diff(array_unique($tags[1]), ['h2', 'h3', 'p', 'br', 'strong', 'em', 'ul', 'ol', 'li', 'blockquote'])));
     }
 
+    public function test_bold_italic_written_by_the_editor_renders_both_tags(): void
+    {
+        $this->assertSame(
+            '<p>Chân bè: <strong><em>tăng nửa size</em></strong>, <strong>đậm</strong> và <em>nghiêng</em></p>',
+            ArticleFormatter::toHtml('Chân bè: ***tăng nửa size***, **đậm** và *nghiêng*')->toHtml(),
+        );
+    }
+
     public function test_vietnamese_letters_containing_byte_0x85_are_never_split(): void
     {
         // "ễ" is E1 BB 85 in UTF-8; 0x85 alone is the NEL line break.

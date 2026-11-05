@@ -17,7 +17,7 @@ use Illuminate\Support\HtmlString;
  *   1. item                  → numbered list
  *   > quote                  → quotation
  *   anything else            → paragraph; single line breaks are kept
- * Inline: **bold**, *italic*.
+ * Inline: **bold**, *italic*, ***bold italic***. The admin editor writes exactly this markup.
  */
 final class ArticleFormatter
 {
@@ -72,10 +72,11 @@ final class ArticleFormatter
         return new HtmlString($html);
     }
 
-    /** Escapes the text, then turns **bold** and *italic* into tags. */
+    /** Escapes the text, then turns ***both***, **bold** and *italic* into tags. */
     private static function inline(string $text): string
     {
         $escaped = e(trim($text));
+        $escaped = preg_replace('/\*\*\*(?=\S)(.+?)(?<=\S)\*\*\*/u', '<strong><em>$1</em></strong>', $escaped) ?? $escaped;
         $escaped = preg_replace('/\*\*(?=\S)(.+?)(?<=\S)\*\*/u', '<strong>$1</strong>', $escaped) ?? $escaped;
 
         return preg_replace('/(?<![*\w])\*(?=\S)([^*]+?)(?<=\S)\*(?![*\w])/u', '<em>$1</em>', $escaped) ?? $escaped;

@@ -19,29 +19,32 @@
             @error('summary')<p role="alert" class="mt-1 text-sm text-red-500">{{ $message }}</p>@enderror
         </div>
         <div x-data="articleEditor()" data-article-editor>
-            <label for="article-body" class="admin-label">Nội dung <span class="text-red-500">*</span></label>
-            <div class="overflow-hidden rounded-md border border-zinc-300 focus-within:border-zinc-900">
-                <div class="flex flex-wrap items-center gap-1 border-b border-zinc-200 bg-zinc-50 px-2 py-1.5" role="toolbar" aria-label="Định dạng nội dung" aria-controls="article-body">
+            <label for="article-body" class="admin-label" id="article-body-label">Nội dung <span class="text-red-500">*</span></label>
+            <div class="overflow-hidden rounded-md border border-zinc-300 bg-white focus-within:border-zinc-900">
+                <div x-cloak x-show="ready" class="flex flex-wrap items-center gap-1 border-b border-zinc-200 bg-zinc-50 px-2 py-1.5" role="toolbar" aria-label="Định dạng nội dung">
                     @foreach ([
-                        ['label' => 'B', 'title' => 'In đậm (Ctrl+B)', 'action' => "wrap('**', '**', 'chữ đậm')", 'class' => 'font-bold'],
-                        ['label' => 'I', 'title' => 'In nghiêng (Ctrl+I)', 'action' => "wrap('*', '*', 'chữ nghiêng')", 'class' => 'italic'],
-                        ['label' => 'H2', 'title' => 'Tiêu đề mục', 'action' => "prefix('## ')", 'class' => 'font-semibold'],
-                        ['label' => 'H3', 'title' => 'Tiêu đề nhỏ', 'action' => "prefix('### ')", 'class' => 'font-semibold text-xs'],
-                        ['label' => '• Danh sách', 'title' => 'Danh sách gạch đầu dòng', 'action' => "prefix('- ')", 'class' => ''],
-                        ['label' => '1. Danh sách', 'title' => 'Danh sách đánh số', 'action' => "prefix('1. ')", 'class' => ''],
-                        ['label' => '❝ Trích dẫn', 'title' => 'Trích dẫn', 'action' => "prefix('> ')", 'class' => ''],
+                        ['tool' => 'bold', 'label' => 'B', 'title' => 'In đậm (Ctrl+B)', 'class' => 'font-bold'],
+                        ['tool' => 'italic', 'label' => 'I', 'title' => 'In nghiêng (Ctrl+I)', 'class' => 'italic font-serif'],
+                        ['tool' => 'h2', 'label' => 'H2', 'title' => 'Tiêu đề mục', 'class' => 'font-semibold'],
+                        ['tool' => 'h3', 'label' => 'H3', 'title' => 'Tiêu đề nhỏ', 'class' => 'font-semibold text-xs'],
+                        ['tool' => 'bulletList', 'label' => '• Danh sách', 'title' => 'Danh sách gạch đầu dòng', 'class' => ''],
+                        ['tool' => 'orderedList', 'label' => '1. Danh sách', 'title' => 'Danh sách đánh số', 'class' => ''],
+                        ['tool' => 'blockquote', 'label' => '❝ Trích dẫn', 'title' => 'Trích dẫn', 'class' => ''],
                     ] as $tool)
-                        <button type="button" title="{{ $tool['title'] }}" aria-label="{{ $tool['title'] }}" x-on:click="{{ $tool['action'] }}" x-bind:disabled="previewing"
-                                @class(['rounded px-2.5 py-1 text-sm text-zinc-700 transition hover:bg-zinc-200 disabled:opacity-40', $tool['class']])>{{ $tool['label'] }}</button>
+                        <button type="button" title="{{ $tool['title'] }}" aria-label="{{ $tool['title'] }}" x-on:mousedown.prevent x-on:click="run('{{ $tool['tool'] }}')"
+                                x-bind:aria-pressed="active.{{ $tool['tool'] }}.toString()" x-bind:class="active.{{ $tool['tool'] }} ? 'bg-zinc-900 text-white hover:bg-zinc-800' : 'text-zinc-700 hover:bg-zinc-200'"
+                                @class(['rounded px-2.5 py-1 text-sm transition', $tool['class']])>{{ $tool['label'] }}</button>
                     @endforeach
-                    <button type="button" class="ml-auto rounded-full border border-zinc-300 bg-white px-3 py-1 text-xs font-semibold transition hover:border-zinc-900"
-                            x-on:click="togglePreview()" x-bind:aria-pressed="previewing.toString()" x-text="previewing ? 'Tiếp tục viết' : 'Xem trước'">Xem trước</button>
+                    <span class="mx-1 h-5 w-px bg-zinc-300" aria-hidden="true"></span>
+                    <button type="button" title="Hoàn tác (Ctrl+Z)" aria-label="Hoàn tác (Ctrl+Z)" x-on:mousedown.prevent x-on:click="run('undo')" x-bind:disabled="!canUndo" class="rounded px-2.5 py-1 text-sm text-zinc-700 transition hover:bg-zinc-200 disabled:opacity-30">↶</button>
+                    <button type="button" title="Làm lại (Ctrl+Y)" aria-label="Làm lại (Ctrl+Y)" x-on:mousedown.prevent x-on:click="run('redo')" x-bind:disabled="!canRedo" class="rounded px-2.5 py-1 text-sm text-zinc-700 transition hover:bg-zinc-200 disabled:opacity-30">↷</button>
                 </div>
-                <textarea id="article-body" name="body" rows="16" maxlength="20000" required x-ref="body" x-show="!previewing" x-on:keydown="shortcut($event)"
+                <div x-ref="editor" x-cloak x-show="ready" aria-labelledby="article-body-label"></div>
+                {{-- Without JavaScript the plain field still works; with it, the editor writes its markup here. --}}
+                <textarea id="article-body" name="body" rows="16" maxlength="20000" required x-ref="body" x-show="!ready"
                           class="block w-full border-0 px-3 py-2 font-[inherit] focus:outline-none focus:ring-0">{{ old('body', $article->body) }}</textarea>
-                <div x-cloak x-show="previewing" class="article-body min-h-[20rem] px-4 py-3 text-base leading-relaxed text-zinc-800" x-html="preview" aria-live="polite"></div>
             </div>
-            <p class="mt-1 text-xs text-zinc-500">Bôi đen chữ rồi bấm nút để định dạng. Để một dòng trống giữa các đoạn. Không dùng thẻ HTML.</p>
+            <p class="mt-1 text-xs text-zinc-500">Định dạng bằng thanh công cụ hoặc gõ nhanh: "## " cho tiêu đề, "- " cho danh sách, "> " cho trích dẫn. Dán từ Word vẫn giữ đậm, nghiêng, tiêu đề, danh sách.</p>
             @error('body')<p role="alert" class="mt-1 text-sm text-red-500">{{ $message }}</p>@enderror
         </div>
         <div>

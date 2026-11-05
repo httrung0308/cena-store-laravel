@@ -1,16 +1,19 @@
-// Light article editor for the admin form: a toolbar that inserts the same markup App\Support\ArticleFormatter
-// renders (## headings, - lists, 1. lists, > quotes, **bold**, *italic*) into a plain textarea, plus a preview.
-// The server stays the authority: it stores plain text and renders it; renderArticle only mirrors it for preview.
+// What-you-see editor for the article body (Tiptap). The body is still stored as the light markup that
+// App\Support\ArticleFormatter renders (## heading, - item, 1. item, > quote, **bold**, *italic*): the editor
+// loads it through renderArticle and writes it back through docToMarkup into the form's textarea, so the server
+// keeps refusing HTML and stays the only place that decides what reaches the page.
+// Tiptap is loaded on demand, only on the article form, so storefront pages do not download it.
 
 const escapeHtml = (text) => text.replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' })[char]);
 
 function inline(text) {
     return escapeHtml(text.trim())
+        .replace(/\*\*\*(?=\S)(.+?)(?<=\S)\*\*\*/gu, '<strong><em>$1</em></strong>')
         .replace(/\*\*(?=\S)(.+?)(?<=\S)\*\*/gu, '<strong>$1</strong>')
         .replace(/(?<![*\p{L}\p{N}_])\*(?=\S)([^*]+?)(?<=\S)\*(?![*\p{L}\p{N}_])/gu, '<em>$1</em>');
 }
 
-/** Same rules as ArticleFormatter::toHtml, for the preview only. */
+/** Same rules as ArticleFormatter::toHtml: markup → the HTML the editor (and the article page) shows. */
 export function renderArticle(text) {
     let html = '';
     let block = null;
@@ -41,62 +44,124 @@ export function renderArticle(text) {
     return html;
 }
 
-/** Wraps the selection (or a placeholder) in markers, e.g. **bold**; returns the new value and selection. */
-export function wrapSelection(value, start, end, before, after, placeholder) {
-    const selected = value.slice(start, end) || placeholder;
+/** Inline nodes → markup; spaces stay outside the markers so **bold** still parses. */
+function inlineMarkup(nodes = [], lineBreak = '\n') {
+    return nodes.map((node) => {
+        if (node.type === 'hardBreak') return lineBreak;
+        if (node.type !== 'text') return '';
+        const marks = new Set((node.marks ?? []).map((mark) => mark.type));
+        const [, lead, core, trail] = node.text.match(/^(\s*)([\s\S]*?)(\s*)$/);
+        if (core === '') return node.text;
+        const marker = (marks.has('bold') ? '**' : '') + (marks.has('italic') ? '*' : '');
+        const closing = [...marker].reverse().join('');
 
-    return {
-        value: value.slice(0, start) + before + selected + after + value.slice(end),
-        start: start + before.length,
-        end: start + before.length + selected.length,
+        return lead + marker + core + closing + trail;
+    }).join('');
+}
+
+/** Tiptap document JSON → the stored markup, one block per paragraph separated by a blank line. */
+export function docToMarkup(doc) {
+    const blocks = [];
+    const listItems = (list, numbered) => {
+        let index = 0;
+        const lines = [];
+        for (const item of list.content ?? []) {
+            for (const child of item.content ?? []) {
+                if (child.type === 'paragraph' || child.type === 'heading') {
+                    index += 1;
+                    lines.push(`${numbered ? `${index}.` : '-'} ${inlineMarkup(child.content, ' ').trim()}`);
+                } else if (child.type === 'bulletList' || child.type === 'orderedList') {
+                    lines.push(...listItems(child, child.type === 'orderedList'));
+                }
+            }
+        }
+
+        return lines.filter((line) => !/^(-|\d+\.)\s*$/.test(line));
     };
+    for (const node of doc.content ?? []) {
+        if (node.type === 'paragraph') {
+            const text = inlineMarkup(node.content).trim();
+            if (text) blocks.push(text);
+        } else if (node.type === 'heading') {
+            const text = inlineMarkup(node.content, ' ').trim();
+            if (text) blocks.push(`${'#'.repeat(Math.min(3, Math.max(2, node.attrs?.level ?? 2)))} ${text}`);
+        } else if (node.type === 'bulletList' || node.type === 'orderedList') {
+            const lines = listItems(node, node.type === 'orderedList');
+            if (lines.length) blocks.push(lines.join('\n'));
+        } else if (node.type === 'blockquote') {
+            const lines = (node.content ?? []).flatMap((child) => inlineMarkup(child.content).split('\n')).map((line) => line.trim()).filter(Boolean);
+            if (lines.length) blocks.push(lines.map((line) => `> ${line}`).join('\n'));
+        }
+    }
+
+    return blocks.join('\n\n');
 }
 
-/** Adds a line prefix ("## ", "- ", "1. ", "> ") to every selected line, or removes it when all already have it. */
-export function prefixLines(value, start, end, prefix) {
-    const lineStart = value.lastIndexOf('\n', start - 1) + 1;
-    const lineEnd = value.indexOf('\n', end) === -1 ? value.length : value.indexOf('\n', end);
-    const lines = value.slice(lineStart, lineEnd).split('\n');
-    const numbered = prefix === '1. ';
-    const marker = numbered ? /^\d{1,3}[.)]\s+/ : new RegExp(`^${prefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`);
-    const allPrefixed = lines.every((line) => marker.test(line));
-    const changed = lines.map((line, index) => {
-        if (allPrefixed) return line.replace(marker, '');
-        const bare = line.replace(/^(#{2,3}\s+|[-*]\s+|\d{1,3}[.)]\s+|>\s?)/, '');
-        return (numbered ? `${index + 1}. ` : prefix) + bare;
-    }).join('\n');
-
-    return { value: value.slice(0, lineStart) + changed + value.slice(lineEnd), start: lineStart, end: lineStart + changed.length };
-}
+const TOOLS = ['bold', 'italic', 'h2', 'h3', 'bulletList', 'orderedList', 'blockquote'];
 
 export function articleEditor() {
+    let editor = null;
+
     return {
-        previewing: false,
-        preview: '',
-        apply(result) {
-            const area = this.$refs.body;
-            area.value = result.value;
-            area.focus();
-            area.setSelectionRange(result.start, result.end);
-            area.dispatchEvent(new Event('input', { bubbles: true }));
+        ready: false,
+        active: Object.fromEntries(TOOLS.map((tool) => [tool, false])),
+        canUndo: false,
+        canRedo: false,
+        async init() {
+            const field = this.$refs.body;
+            const [{ Editor }, { default: StarterKit }] = await Promise.all([import('@tiptap/core'), import('@tiptap/starter-kit')]);
+            editor = new Editor({
+                element: this.$refs.editor,
+                extensions: [StarterKit.configure({
+                    heading: { levels: [2, 3] },
+                    code: false,
+                    codeBlock: false,
+                    strike: false,
+                    horizontalRule: false,
+                    underline: false,
+                    link: false,
+                })],
+                content: renderArticle(field.value),
+                editorProps: { attributes: { class: 'article-body min-h-[20rem] px-4 py-3 text-base leading-relaxed text-zinc-800 focus:outline-none', 'aria-label': 'Nội dung bài viết', 'aria-multiline': 'true', role: 'textbox' } },
+                onUpdate: ({ editor: current }) => { field.value = docToMarkup(current.getJSON()); },
+                onTransaction: () => this.refresh(),
+            });
+            // The textarea keeps the value for the form; the server validates that it is not empty.
+            field.required = false;
+            this.ready = true;
+            this.refresh();
         },
-        wrap(before, after, placeholder) {
-            const area = this.$refs.body;
-            this.apply(wrapSelection(area.value, area.selectionStart, area.selectionEnd, before, after, placeholder));
+        refresh() {
+            if (!editor) return;
+            this.active = {
+                bold: editor.isActive('bold'),
+                italic: editor.isActive('italic'),
+                h2: editor.isActive('heading', { level: 2 }),
+                h3: editor.isActive('heading', { level: 3 }),
+                bulletList: editor.isActive('bulletList'),
+                orderedList: editor.isActive('orderedList'),
+                blockquote: editor.isActive('blockquote'),
+            };
+            this.canUndo = editor.can().undo();
+            this.canRedo = editor.can().redo();
         },
-        prefix(marker) {
-            const area = this.$refs.body;
-            this.apply(prefixLines(area.value, area.selectionStart, area.selectionEnd, marker));
+        run(tool) {
+            const chain = editor.chain().focus();
+            ({
+                bold: () => chain.toggleBold(),
+                italic: () => chain.toggleItalic(),
+                h2: () => chain.toggleHeading({ level: 2 }),
+                h3: () => chain.toggleHeading({ level: 3 }),
+                bulletList: () => chain.toggleBulletList(),
+                orderedList: () => chain.toggleOrderedList(),
+                blockquote: () => chain.toggleBlockquote(),
+                undo: () => chain.undo(),
+                redo: () => chain.redo(),
+            })[tool]().run();
         },
-        shortcut(event) {
-            if (!(event.ctrlKey || event.metaKey)) return;
-            const key = event.key.toLowerCase();
-            if (key === 'b') { event.preventDefault(); this.wrap('**', '**', 'chữ đậm'); }
-            if (key === 'i') { event.preventDefault(); this.wrap('*', '*', 'chữ nghiêng'); }
-        },
-        togglePreview() {
-            this.previewing = !this.previewing;
-            if (this.previewing) this.preview = renderArticle(this.$refs.body.value) || '<p class="text-zinc-400">Chưa có nội dung.</p>';
+        destroy() {
+            editor?.destroy();
+            editor = null;
         },
     };
 }

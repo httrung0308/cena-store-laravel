@@ -12,6 +12,9 @@
     },
     "dependencies": {
         "@fontsource/montserrat": "^5.2",
+        "@tiptap/core": "^3.32.0",
+        "@tiptap/pm": "^3.32.0",
+        "@tiptap/starter-kit": "^3.32.0",
         "alpinejs": "^3.14",
         "chart.js": "^4.4"
     },
