@@ -53,6 +53,9 @@ class ArticleRequest extends FormRequest
             'summary.not_regex' => 'Tóm tắt chỉ được là chữ thường, không chứa thẻ HTML.',
             'body.not_regex' => 'Nội dung chỉ được là chữ thường, không chứa thẻ HTML.',
             'cover.mimetypes' => 'Ảnh bìa phải là ảnh JPEG, PNG hoặc WebP.',
+            'cover.max' => 'Ảnh bìa tối đa 5 MB. Hãy chọn ảnh nhỏ hơn hoặc nén ảnh lại.',
+            // PHP refused the file before validation (usually larger than the server's upload limit).
+            'cover.uploaded' => 'Không tải được ảnh bìa. Ảnh có thể quá lớn so với giới hạn của máy chủ; hãy chọn ảnh dưới 5 MB rồi thử lại.',
         ];
     }
 

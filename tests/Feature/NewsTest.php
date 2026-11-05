@@ -89,6 +89,23 @@ class NewsTest extends TestCase
             ->assertDontSee('<script>alert(1)</script>', false)->assertDontSee('<u>tắt</u>', false);
     }
 
+    public function test_admin_formats_the_body_with_the_editor_and_readers_see_the_formatting(): void
+    {
+        $this->actingAs($this->admin)->get(route('admin.articles.create'))->assertOk()
+            ->assertSee('data-article-editor', false)->assertSee('In đậm (Ctrl+B)')->assertSee('Hoàn tác (Ctrl+Z)')->assertSee('x-ref="editor"', false);
+
+        $body = "## Ba bước chọn size\n\nĐo chân vào **buổi chiều**.\n\n- Mang tất khi đo\n- Đối chiếu *bảng size*\n\n> Đổi size trong 7 ngày";
+        $this->post(route('admin.articles.store'), $this->fields(['body' => $body, 'cover' => UploadedFile::fake()->image('c.jpg')]))->assertRedirect();
+        $article = Article::query()->sole();
+        $this->assertSame($body, $article->body, 'The markup is stored as plain text.');
+
+        auth()->logout();
+        $this->get(route('news.show', $article->slug))->assertOk()
+            ->assertSee('<h2>Ba bước chọn size</h2>', false)->assertSee('<strong>buổi chiều</strong>', false)
+            ->assertSee('<ul><li>Mang tất khi đo</li><li>Đối chiếu <em>bảng size</em></li></ul>', false)
+            ->assertSee('<blockquote><p>Đổi size trong 7 ngày</p></blockquote>', false)->assertDontSee('**buổi chiều**', false);
+    }
+
     public function test_cover_must_really_be_an_image(): void
     {
         $this->actingAs($this->admin);
@@ -103,6 +120,40 @@ class NewsTest extends TestCase
         $this->post(route('admin.articles.store'), $this->fields())->assertSessionHasErrors('cover');
         $this->assertSame(0, Article::query()->count());
         $this->assertSame([], Storage::disk('public')->allFiles());
+    }
+
+    public function test_publish_box_offers_actions_for_the_current_state_and_enter_never_publishes(): void
+    {
+        $this->actingAs($this->admin);
+        $actions = fn ($response): array => preg_match_all('/data-status-action="([A-Z]+)"/', $response->getContent(), $found) ? $found[1] : [];
+
+        $new = $this->get(route('admin.articles.create'))->assertOk()
+            ->assertSee('data-article-form', false)->assertSee('data-cover-box', false)->assertSee('Bài mới')->assertSee('Kéo thả ảnh vào đây');
+        $this->assertSame(['DRAFT', 'PUBLISHED'], $actions($new), 'The first (Enter) button saves a draft.');
+
+        $published = Article::factory()->published()->create(['title' => 'Bài đã đăng']);
+        $page = $this->get(route('admin.articles.edit', $published))->assertOk()
+            ->assertSee('Đã đăng')->assertSee('Cập nhật bài')->assertSee('Xem bài ngoài trang')->assertSee('/news/'.$published->slug)->assertSee('Ngày đăng');
+        $this->assertSame(['PUBLISHED', 'DRAFT'], $actions($page));
+
+        $draft = Article::factory()->create();
+        $this->assertSame(['DRAFT', 'PUBLISHED'], $actions($this->get(route('admin.articles.edit', $draft))->assertSee('Nháp')->assertDontSee('Xem bài ngoài trang')));
+        $this->put(route('admin.articles.update', $draft), $this->fields(['status' => 'DRAFT']))->assertRedirect();
+        $this->assertSame(ArticleStatus::Draft, $draft->fresh()->status);
+    }
+
+    public function test_an_oversized_cover_gets_a_clear_vietnamese_message(): void
+    {
+        $this->actingAs($this->admin);
+        $this->post(route('admin.articles.store'), $this->fields(['cover' => UploadedFile::fake()->image('big.jpg')->size(6000)]))
+            ->assertSessionHasErrors(['cover' => 'Ảnh bìa tối đa 5 MB. Hãy chọn ảnh nhỏ hơn hoặc nén ảnh lại.']);
+
+        // What PHP reports when the file is above upload_max_filesize: the upload never reaches the app.
+        $path = tempnam(sys_get_temp_dir(), 'cover');
+        $this->post(route('admin.articles.store'), $this->fields(['cover' => new UploadedFile($path, 'anh-bia.jpg', 'image/jpeg', UPLOAD_ERR_INI_SIZE, true)]))
+            ->assertSessionHasErrors(['cover' => 'Không tải được ảnh bìa. Ảnh có thể quá lớn so với giới hạn của máy chủ; hãy chọn ảnh dưới 5 MB rồi thử lại.']);
+        @unlink($path);
+        $this->assertSame(0, Article::query()->count());
     }
 
     public function test_only_admin_manages_news_and_sees_its_menu(): void
@@ -144,11 +195,11 @@ class NewsTest extends TestCase
         $this->actingAs($this->admin);
 
         $this->get(route('admin.articles.edit', $hidden))->assertOk()
-            ->assertSee('value="HIDDEN" class="accent-black" checked', false)->assertSee('Giữ ẩn');
+            ->assertSee('data-status-action="HIDDEN"', false)->assertSee('Lưu, vẫn ẩn')->assertSee('Đăng lại');
         $this->put(route('admin.articles.update', $hidden), $this->fields(['title' => 'Sửa chính tả', 'status' => 'HIDDEN']))->assertRedirect();
         $this->assertSame([ArticleStatus::Hidden, 'Sửa chính tả'], [$hidden->fresh()->status, $hidden->fresh()->title]);
 
-        $this->get(route('admin.articles.edit', $draft))->assertOk()->assertDontSee('Giữ ẩn');
+        $this->get(route('admin.articles.edit', $draft))->assertOk()->assertDontSee('data-status-action="HIDDEN"', false);
         $this->put(route('admin.articles.update', $draft), $this->fields(['status' => 'HIDDEN']))->assertSessionHasErrors('status');
         $this->assertSame(ArticleStatus::Draft, $draft->fresh()->status, 'Hiding goes through the hide action, not the form.');
 
