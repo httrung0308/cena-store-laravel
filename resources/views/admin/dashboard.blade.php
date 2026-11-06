@@ -1,7 +1,7 @@
 @extends('layouts.admin')
 
-@section('title', 'Bảng điều khiển')
-@section('eyebrow', 'Trang quản trị')
+@section('title', 'Bảng Điều Khiển')
+@section('eyebrow', 'QUẢN TRỊ HỆ THỐNG')
 
 @php
     $user = auth()->user();
