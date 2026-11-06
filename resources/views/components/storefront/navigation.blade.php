@@ -8,7 +8,6 @@
         <h2>
             <a href="{{ route('home') }}" class="flex items-center gap-2" aria-label="Cena — trang chủ">
                 <img src="{{ asset('cena-logo.svg') }}" alt="Cena" class="h-8 w-auto sm:h-9">
-                <span class="text-[11px] font-serif italic text-accent/70 tracking-widest hidden sm:inline">· 履物</span>
             </a>
         </h2>
         <div class="hidden items-center gap-8 md:flex" @mouseleave="hoverImage = null">
@@ -18,6 +17,33 @@
             <a href="{{ route('news.index') }}" class="text-xs font-semibold uppercase tracking-wider text-muted transition-colors hover:text-accent">News</a>
         </div>
         <div class="flex shrink-0 items-center gap-1 sm:gap-2">
+            {{-- Theme toggle --}}
+            <div x-data="{ themeOpen: false }" class="relative">
+                <button type="button" class="btn-icon" aria-label="Chế độ giao diện" :aria-expanded="themeOpen.toString()" @click="themeOpen = !themeOpen" @click.outside="themeOpen = false">
+                    <span x-show="theme === 'light'" class="inline-flex items-center justify-center">
+                        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+                    </span>
+                    <span x-show="theme === 'system'" class="inline-flex items-center justify-center">
+                        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></svg>
+                    </span>
+                </button>
+                <div x-cloak x-show="themeOpen" x-transition:enter="transition duration-150 ease-out" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" class="absolute right-0 top-full mt-2 w-44 rounded-xl border border-border bg-surface-card p-1.5 shadow-elevated z-50 text-xs">
+                    <button type="button" @click="setTheme('light'); themeOpen = false" class="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left font-medium transition hover:bg-surface" :class="theme === 'light' ? 'text-accent font-semibold' : 'text-main'">
+                        <span class="flex items-center gap-2">
+                            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+                            <span>Sáng</span>
+                        </span>
+                        <span x-show="theme === 'light'" class="text-accent font-bold">✓</span>
+                    </button>
+                    <button type="button" @click="setTheme('system'); themeOpen = false" class="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left font-medium transition hover:bg-surface" :class="theme === 'system' ? 'text-accent font-semibold' : 'text-main'">
+                        <span class="flex items-center gap-2">
+                            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></svg>
+                            <span>Theo hệ thống</span>
+                        </span>
+                        <span x-show="theme === 'system'" class="text-accent font-bold">✓</span>
+                    </button>
+                </div>
+            </div>
             @auth
                 <button type="button" class="btn-icon" aria-label="Tài khoản" @click="openPanel('account')" :aria-expanded="(panel === 'account').toString()" aria-controls="account-panel"><x-storefront.icon name="user"/></button>
             @else

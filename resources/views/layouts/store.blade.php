@@ -2,12 +2,26 @@
      Use @extends('layouts.store') with @section('title') and @section('content'). --}}
 @php($pageTitle = $title ?? trim($__env->yieldContent('title', 'Cena')))
 <!doctype html>
-<html lang="vi">
+<html lang="vi" data-theme="light">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ $pageTitle }} — Cena</title>
+    <script>
+        (function() {
+            try {
+                var theme = localStorage.getItem('cena-theme') || 'light';
+                if (theme === 'system') {
+                    document.documentElement.setAttribute('data-theme', 'light');
+                } else {
+                    document.documentElement.setAttribute('data-theme', theme);
+                }
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+            }
+        })();
+    </script>
     <link rel="icon" href="{{ asset('cena-favicon.svg') }}" type="image/svg+xml">
     <link rel="alternate icon" href="{{ asset('cena-favicon.ico') }}" sizes="any">
     <link rel="apple-touch-icon" href="{{ asset('cena-favicon.svg') }}">

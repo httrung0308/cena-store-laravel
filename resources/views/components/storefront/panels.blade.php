@@ -10,6 +10,16 @@
         <a href="{{ route('shoes.index', ['gender' => $gender]) }}" class="text-xl font-semibold uppercase tracking-wider text-muted transition-colors hover:text-accent" @click="closePanel()">{{ $label }}</a>
     @endforeach
     <a href="{{ route('news.index') }}" class="text-xl font-semibold uppercase tracking-wider text-muted transition-colors hover:text-accent" @click="closePanel()">News</a>
+    <div class="mt-4 flex items-center gap-2 rounded-xl border border-border bg-surface p-1 text-xs">
+        <button type="button" @click="setTheme('light')" class="flex items-center gap-1.5 rounded-lg px-3 py-1.5 font-medium transition" :class="theme === 'light' ? 'bg-surface-card text-accent shadow-sm font-semibold' : 'text-muted hover:text-main'" aria-label="Giao diện Sáng">
+            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+            <span>Sáng</span>
+        </button>
+        <button type="button" @click="setTheme('system')" class="flex items-center gap-1.5 rounded-lg px-3 py-1.5 font-medium transition" :class="theme === 'system' ? 'bg-surface-card text-accent shadow-sm font-semibold' : 'text-muted hover:text-main'" aria-label="Giao diện Theo hệ thống">
+            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></svg>
+            <span>Theo hệ thống</span>
+        </button>
+    </div>
 </section>
 @unless ($isAdminAccount)
 <section id="cart-panel" x-cloak x-show="panel === 'cart'" x-transition:enter="transition-transform duration-300" x-transition:enter-start="translate-x-full" x-transition:enter-end="translate-x-0" x-transition:leave="transition-transform duration-300" x-transition:leave-start="translate-x-0" x-transition:leave-end="translate-x-full" class="fixed right-0 top-0 z-40 flex h-full w-full flex-col gap-5 border-l border-border bg-surface-card p-6 shadow-elevated sm:w-[32rem] sm:p-8 lg:w-[36rem]" role="dialog" aria-modal="true" aria-label="Giỏ hàng" @keydown.tab="trapFocus($event)"

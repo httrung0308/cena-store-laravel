@@ -32,6 +32,34 @@ Alpine.store('cart', cartStore({ csrfToken: document.querySelector('meta[name="c
 bindAddToCartButtons(Alpine.store('cart'));
 
 Alpine.data('storefrontShell', () => ({
+    theme: 'light',
+    init() {
+        this.initTheme();
+    },
+    initTheme() {
+        try {
+            this.theme = localStorage.getItem('cena-theme') || 'light';
+        } catch (e) {
+            this.theme = 'light';
+        }
+        this.applyTheme(this.theme);
+    },
+    setTheme(t) {
+        this.theme = t;
+        try {
+            localStorage.setItem('cena-theme', t);
+        } catch (e) {}
+        this.applyTheme(t);
+    },
+    applyTheme(t) {
+        try {
+            if (t === 'system') {
+                document.documentElement.setAttribute('data-theme', 'light');
+            } else {
+                document.documentElement.setAttribute('data-theme', t);
+            }
+        } catch (e) {}
+    },
     panel: null,
     noticeTitle: '',
     hoverImage: null,
