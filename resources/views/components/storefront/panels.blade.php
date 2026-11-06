@@ -86,11 +86,11 @@
     </div>
 </section>
 @else
-<section id="cart-panel" x-cloak x-show="panel === 'cart'" class="fixed right-0 top-0 z-40 flex h-full w-full flex-col gap-5 bg-white p-5 sm:w-[32rem] sm:p-10 lg:w-[36rem]" role="dialog" aria-modal="true" aria-label="Tài khoản quản trị" @keydown.tab="trapFocus($event)"
+<section id="cart-panel" x-cloak x-show="panel === 'cart'" class="fixed right-0 top-0 z-40 flex h-full w-full flex-col gap-5 border-l border-border bg-surface-card p-6 shadow-elevated sm:w-[32rem] sm:p-8 lg:w-[36rem]" role="dialog" aria-modal="true" aria-label="Tài khoản quản trị" @keydown.tab="trapFocus($event)"
     x-init="$store.cart.configure(@js(['show' => route('cart.show'), 'add' => route('cart.items.store'), 'item' => route('cart.items.update', ['item' => '__ID__']), 'clear' => route('cart.clear')]))">
     <button type="button" class="btn-icon self-end" @click="closePanel()" aria-label="Đóng thông báo"><x-storefront.icon name="close"/></button>
-    <h2 class="text-xl font-semibold">Tài khoản quản trị</h2>
-    <p>Tài khoản quản trị không dùng để mua sắm. Vui lòng đăng nhập bằng tài khoản khách hàng để đặt hàng.</p>
+    <h2 class="text-xl font-bold text-main font-serif">Tài khoản quản trị</h2>
+    <p class="text-sm text-muted">Tài khoản quản trị không dùng để mua sắm. Vui lòng đăng nhập bằng tài khoản khách hàng để đặt hàng.</p>
     <a href="{{ route('admin.dashboard') }}" class="btn text-center">Về trang quản trị</a>
 </section>
 @endunless

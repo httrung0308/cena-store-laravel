@@ -321,27 +321,31 @@ html {
   }
 
   .article-body h2 {
-    @apply pt-3 text-2xl font-bold leading-snug text-zinc-900;
+    @apply pt-4 text-2xl font-bold font-serif leading-snug text-main sm:text-3xl;
   }
 
   .article-body h3 {
-    @apply pt-2 text-xl font-semibold leading-snug text-zinc-900;
+    @apply pt-3 text-xl font-bold font-serif leading-snug text-main sm:text-2xl;
+  }
+
+  .article-body p {
+    @apply leading-relaxed text-main/90;
   }
 
   .article-body ul {
-    @apply list-disc space-y-2 pl-6;
+    @apply list-disc space-y-2 pl-6 text-main/90;
   }
 
   .article-body ol {
-    @apply list-decimal space-y-2 pl-6;
+    @apply list-decimal space-y-2 pl-6 text-main/90;
   }
 
   .article-body blockquote {
-    @apply border-l-4 border-zinc-900 pl-4 italic text-zinc-600;
+    @apply border-l-4 border-accent bg-surface/40 py-2 pl-5 italic text-muted rounded-r-xl;
   }
 
   .article-body strong {
-    @apply font-semibold text-zinc-900;
+    @apply font-semibold text-main;
   }
 }
 
