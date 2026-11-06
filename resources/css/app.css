@@ -278,45 +278,45 @@ html {
     @apply rounded-2xl border border-border bg-surface-card p-6 shadow-card transition-[box-shadow,border-color] duration-200 hover:shadow-card-hover;
   }
 
-  /* Back office & general pill buttons */
+  /* Back office & general buttons */
   .admin-card {
-    @apply rounded-2xl border border-border bg-surface-card p-6 shadow-card;
+    @apply rounded-2xl border border-border bg-surface-card p-6 shadow-sm;
   }
 
   .admin-table-wrap {
-    @apply overflow-x-auto rounded-2xl border border-border bg-surface-card shadow-card;
+    @apply overflow-x-auto rounded-2xl border border-border bg-surface-card shadow-sm;
   }
 
   .admin-table {
-    @apply w-full text-left text-sm;
+    @apply w-full text-left text-xs text-muted border-collapse;
   }
 
   .admin-table th {
-    @apply whitespace-nowrap border-b border-border bg-surface px-6 py-4 font-semibold text-main;
+    @apply whitespace-nowrap border-b border-border bg-surface p-4 text-xs font-bold text-main;
   }
 
   .admin-table td {
-    @apply border-b border-border/60 px-6 py-4 align-middle text-muted;
+    @apply border-b border-border/60 p-4 align-middle text-muted;
   }
 
   .admin-table tbody tr:hover {
-    @apply bg-surface/50;
+    @apply bg-surface/50 transition-colors;
   }
 
   .admin-label {
-    @apply mb-2 block text-sm font-semibold text-main;
+    @apply mb-2 block text-xs font-bold text-main;
   }
 
   .btn-pill {
-    @apply inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full border border-border bg-surface-card px-4 py-2 text-sm font-semibold text-main shadow-subtle transition-all hover:border-accent hover:bg-surface hover:text-accent disabled:cursor-not-allowed disabled:opacity-40;
+    @apply inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-xl border border-border bg-surface-card px-3 py-1.5 text-xs font-bold text-main shadow-sm transition-all hover:border-accent hover:bg-surface hover:text-accent disabled:cursor-not-allowed disabled:opacity-40;
   }
 
   .btn-pill-dark {
-    @apply inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full bg-accent px-5 py-2 text-sm font-semibold text-accent-text shadow-sm transition-all hover:bg-accent-hover hover:shadow-card disabled:cursor-not-allowed disabled:opacity-40;
+    @apply inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-xl bg-accent px-4 py-2 text-xs font-bold text-accent-text shadow-sm transition-all hover:bg-accent-hover hover:shadow-md disabled:cursor-not-allowed disabled:opacity-40;
   }
 
   .badge {
-    @apply inline-block whitespace-nowrap rounded-full px-3 py-1 text-xs font-semibold;
+    @apply inline-block whitespace-nowrap rounded-full px-2.5 py-0.5 text-[11px] font-bold;
   }
 
   /* News article text rendered by App\Support\ArticleFormatter (and the editor preview). */

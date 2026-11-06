@@ -1,80 +1,87 @@
 @extends('layouts.admin')
-@section('title', 'Sản phẩm')
-@section('eyebrow', 'Quản lý sản phẩm')
+@section('title', 'Danh Sách Sản Phẩm')
+@section('eyebrow', 'QUẢN TRỊ KHO HÀNG')
 @section('actions')
-    <a class="btn-pill-dark" href="{{ route('admin.products.create') }}">+ Thêm sản phẩm</a>
+    <a class="px-5 py-2.5 bg-accent hover:bg-accent-hover text-accent-text text-xs font-bold rounded-xl transition-all shadow-md flex items-center gap-1.5" href="{{ route('admin.products.create') }}">
+        <span>+ Thêm sản phẩm</span>
+    </a>
 @endsection
 @php($images = app(App\Services\CatalogQueryService::class))
 @section('content')
-    <div class="space-y-6">
-        <x-admin.search-form :action="route('admin.products.index')" id="product-search" label="Tìm sản phẩm" placeholder="Tìm sản phẩm..." :value="request('search', '')" />
-        <div class="admin-table-wrap">
-            <table class="admin-table">
-                <thead>
+    <x-admin.search-form :action="route('admin.products.index')" id="product-search" label="Tìm sản phẩm" placeholder="Tìm kiếm theo tên sản phẩm, mã slug..." :value="request('search', '')" />
+
+    <div class="bg-surface-card rounded-2xl border border-border overflow-hidden shadow-sm">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs text-muted border-collapse">
+                <thead class="bg-surface text-main font-bold border-b border-border">
                     <tr>
-                        <th class="w-20">Ảnh</th>
-                        <th>Sản phẩm</th>
-                        <th>Danh mục</th>
-                        <th>Giá</th>
-                        <th class="text-center">Size</th>
-                        <th class="text-center">Tồn kho</th>
-                        <th>Trạng thái</th>
-                        <th>Ngày tạo</th>
-                        <th class="text-right">Thao tác</th>
+                        <th class="p-4 w-20">Ảnh</th>
+                        <th class="p-4">Sản phẩm</th>
+                        <th class="p-4">Danh mục</th>
+                        <th class="p-4">Giá bán</th>
+                        <th class="p-4 text-center">Tồn kho</th>
+                        <th class="p-4 text-center">Trạng thái</th>
+                        <th class="p-4 text-center">Biến thể</th>
+                        <th class="p-4">Ngày tạo</th>
+                        <th class="p-4 text-right">Thao tác</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody class="divide-y divide-border font-medium">
                 @forelse ($products as $product)
                     @php($thumbnail = $product->colors->first()?->thumbnail)
                     @php($stock = (int) ($product->total_stock ?? 0))
-                    <tr>
-                        <td>
+                    <tr class="hover:bg-surface/50 transition-colors">
+                        <td class="p-4">
                             @if ($thumbnail)
-                                <img src="{{ $thumbnail->thumb_64_url ?? $thumbnail->thumbnail_url ?? $images->imageUrl($thumbnail) }}" alt="{{ $product->name }}" class="h-14 w-14 rounded-xl border border-border/60 bg-surface object-cover" loading="lazy">
+                                <img src="{{ $thumbnail->thumb_64_url ?? $thumbnail->thumbnail_url ?? $images->imageUrl($thumbnail) }}" alt="{{ $product->name }}" class="w-14 h-14 object-cover rounded-xl border border-border bg-surface" loading="lazy">
                             @else
-                                <div class="flex h-14 w-14 items-center justify-center rounded-xl border border-border/60 bg-surface text-[10px] text-muted">Chưa có</div>
+                                <div class="flex w-14 h-14 items-center justify-center rounded-xl border border-border bg-surface text-[10px] text-muted">Chưa có</div>
                             @endif
                         </td>
-                        <td class="min-w-[12rem]">
-                            <span class="font-bold text-main block">{{ $product->name }}</span>
-                            <span class="block text-xs text-muted font-mono mt-0.5">{{ $product->slug }}</span>
+                        <td class="p-4">
+                            <strong class="font-bold text-main text-sm block">{{ $product->name }}</strong>
+                            <span class="text-[11px] text-muted font-mono">{{ $product->slug }}</span>
                         </td>
-                        <td class="text-xs text-muted font-medium">{{ $product->category?->name ?? '—' }}</td>
-                        <td class="whitespace-nowrap">
+                        <td class="p-4 text-main font-bold">{{ $product->category?->name ?? '—' }}</td>
+                        <td class="p-4 whitespace-nowrap">
                             @if ($product->promotion_price !== null && $product->promotion_price < $product->base_price)
-                                <span class="block font-bold text-accent">{{ number_format($product->promotion_price, 0, ',', '.') }} ₫</span>
-                                <span class="block text-xs text-muted line-through">{{ number_format($product->base_price, 0, ',', '.') }} ₫</span>
+                                <span class="font-extrabold text-accent text-sm block">{{ number_format($product->promotion_price, 0, ',', '.') }} ₫</span>
+                                <span class="text-[11px] text-muted line-through">{{ number_format($product->base_price, 0, ',', '.') }} ₫</span>
                             @else
-                                <span class="font-bold text-main">{{ number_format($product->base_price, 0, ',', '.') }} ₫</span>
+                                <span class="font-extrabold text-main text-sm block">{{ number_format($product->base_price, 0, ',', '.') }} ₫</span>
                             @endif
                         </td>
-                        <td class="text-center font-medium">{{ $product->variants_count }}</td>
-                        <td class="text-center">
-                            <span @class(['badge text-xs', 'bg-success-bg border border-success/30 text-success-text' => $stock > 0, 'bg-error-bg border border-error/30 text-error-text' => $stock <= 0])>{{ $stock }}</span>
+                        <td class="p-4 text-center">
+                            <span @class([
+                                'border px-2.5 py-1 rounded-lg font-mono font-bold text-[11px]',
+                                'bg-surface text-main border-border' => $stock > 0,
+                                'bg-error-bg text-error border-error/30' => $stock <= 0,
+                            ])>{{ $stock }} đôi</span>
                         </td>
-                        <td>
+                        <td class="p-4 text-center">
                             @if ($product->is_active)
-                                <span class="badge bg-success-bg border border-success/30 text-success-text text-xs">Đang bán</span>
+                                <span class="bg-success-bg text-success border border-success/30 px-2.5 py-0.5 rounded-full font-bold text-[11px]">Đang bán</span>
                             @else
-                                <span class="badge bg-surface border border-border text-muted text-xs">Đã ẩn</span>
+                                <span class="bg-muted/15 text-muted px-2.5 py-0.5 rounded-full font-bold text-[11px]">Đã ẩn</span>
                             @endif
                         </td>
-                        <td class="whitespace-nowrap text-xs text-muted">{{ $product->created_at?->setTimezone(config('store.business_timezone'))->format('d/m/Y') }}</td>
-                        <td class="text-right">
-                            <div class="inline-flex items-center gap-2">
-                                <a class="btn-pill text-xs py-1.5 px-3" href="{{ route('admin.products.edit', $product) }}">Sửa</a>
-                                @if ($product->is_active)
-                                    <form method="POST" action="{{ route('admin.products.deactivate', $product) }}">
-                                        @csrf
-                                        @method('PATCH')
-                                        <button class="btn-pill text-xs py-1.5 px-3 hover:border-warning hover:text-warning-text">Ngừng bán</button>
-                                    </form>
-                                @endif
-                            </div>
+                        <td class="p-4 text-center">
+                            <span class="bg-surface text-muted border border-border px-2 py-0.5 rounded text-[11px] font-mono">{{ $product->variants_count }}</span>
+                        </td>
+                        <td class="p-4 whitespace-nowrap text-xs text-muted">{{ $product->created_at?->setTimezone(config('store.business_timezone'))->format('d/m/Y') }}</td>
+                        <td class="p-4 text-right whitespace-nowrap">
+                            <a class="px-2.5 py-1 text-accent hover:bg-surface rounded-lg font-bold mr-1 inline-block transition-colors" href="{{ route('admin.products.edit', $product) }}">Sửa</a>
+                            @if ($product->is_active)
+                                <form method="POST" action="{{ route('admin.products.deactivate', $product) }}" class="inline-block">
+                                    @csrf
+                                    @method('PATCH')
+                                    <button class="px-2.5 py-1 text-error hover:bg-error-bg rounded-lg font-bold transition-colors">Ngừng</button>
+                                </form>
+                            @endif
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="9" class="py-20 text-center text-sm text-muted">Chưa có sản phẩm.</td></tr>
+                    <tr><td colspan="9" class="p-12 text-center text-xs text-muted">Chưa có sản phẩm.</td></tr>
                 @endforelse
                 </tbody>
             </table>
