@@ -1,18 +1,19 @@
-{{-- Full-screen sign-in / sign-up shell: looping video background, no navbar or footer, Fakestore logo back to home.
+{{-- Full-screen sign-in / sign-up shell: Cena branded background, no navbar or footer, Cena logo back to home.
      Sections: title, heading, subheading (optional), switch (link to the other form), content (the form). --}}
-@php($pageTitle = $title ?? trim($__env->yieldContent('title', 'Fakestore')))
+@php($pageTitle = $title ?? trim($__env->yieldContent('title', 'Cena')))
 <!doctype html>
 <html lang="vi">
 <head>
     <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ $pageTitle }} — Fakestore</title>
-    <link rel="icon" href="{{ asset('legacy/fakestore-favicon.ico') }}" sizes="any">
-    <link rel="apple-touch-icon" href="{{ asset('legacy/fakestore-icon-180.png') }}">
+    <title>{{ $pageTitle }} — Cena</title>
+    <link rel="icon" href="{{ asset('cena-favicon.svg') }}" type="image/svg+xml">
+    <link rel="alternate icon" href="{{ asset('cena-favicon.ico') }}" sizes="any">
+    <link rel="apple-touch-icon" href="{{ asset('cena-favicon.svg') }}">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="font-montserrat bg-black text-white">
     <x-auth.background />
-    <a href="{{ route('home') }}" class="absolute left-6 top-6 z-10 focus-visible:ring-4 sm:left-10" aria-label="Về trang chủ"><img src="{{ asset('legacy/img/fakestore-logo-white.png') }}" alt="Fakestore" class="h-10 w-auto"></a>
+    <a href="{{ route('home') }}" class="absolute left-6 top-6 z-10 focus-visible:ring-4 sm:left-10" aria-label="Về trang chủ"><img src="{{ asset('cena-logo-white.svg') }}" alt="Cena" class="h-10 w-auto"></a>
     <main class="relative flex min-h-screen flex-col items-center justify-center pb-12 pt-24">
         <div class="w-full p-4 sm:p-7">
             <h1 class="text-center text-4xl font-semibold leading-tight xl:text-6xl">@yield('heading', $pageTitle)</h1>

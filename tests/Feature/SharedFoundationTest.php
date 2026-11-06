@@ -115,7 +115,7 @@ class SharedFoundationTest extends TestCase
         $html = Blade::render("@extends('layouts.store')\n@section('title', \$title)\n@section('content')<p>Nội dung</p>@endsection", ['title' => '<script>x</script>']);
 
         $this->assertStringContainsString('<p>Nội dung</p>', $html);
-        $this->assertStringContainsString('&lt;script&gt;x&lt;/script&gt; — Fakestore', $html);
+        $this->assertStringContainsString('&lt;script&gt;x&lt;/script&gt; — Cena', $html);
         $this->assertStringNotContainsString('<script>x</script>', $html);
     }
 

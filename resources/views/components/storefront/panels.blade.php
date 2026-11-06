@@ -122,7 +122,7 @@
                 </button>
             </form>
         </nav>
-        <p class="px-2 pt-2 text-[11px] text-zinc-400">Fakestore · bản demo đồ án</p>
+        <p class="px-2 pt-2 text-[11px] text-zinc-400">Cena · bản demo đồ án</p>
     </section>
 @endauth
 <section id="notice-panel" x-cloak x-show="panel === 'notice'" x-transition.opacity class="fixed left-1/2 top-1/2 z-40 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 bg-white p-8" role="dialog" aria-modal="true" aria-labelledby="notice-title" @keydown.tab="trapFocus($event)">

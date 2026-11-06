@@ -4,17 +4,18 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <meta name="description" content="Fakestore — Thể thao là không ngừng bỏ cuộc.">
-    <title>Fakestore</title>
-    <link rel="icon" href="{{ asset('legacy/fakestore-favicon.ico') }}" sizes="any">
-    <link rel="apple-touch-icon" href="{{ asset('legacy/fakestore-icon-180.png') }}">
+    <meta name="description" content="Cena — Thể thao là không ngừng bỏ cuộc.">
+    <title>Cena</title>
+    <link rel="icon" href="{{ asset('cena-favicon.svg') }}" type="image/svg+xml">
+    <link rel="alternate icon" href="{{ asset('cena-favicon.ico') }}" sizes="any">
+    <link rel="apple-touch-icon" href="{{ asset('cena-favicon.svg') }}">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body>
     <div id="storefront" x-data="storefrontShell" @cart-open.window="openPanel('cart')" @keydown.escape.window="closePanel()" @mousemove.window="pointerX = $event.clientX; pointerY = $event.clientY">
         <div :inert="panel !== null" :aria-hidden="panel !== null ? 'true' : null">
             <x-storefront.navigation/>
-            <main class="flex h-screen w-full items-center justify-center" aria-label="Fakestore home">
+            <main class="flex h-screen w-full items-center justify-center" aria-label="Cena home">
                 <div class="legacy-home-image relative h-64 w-64 sm:h-96 sm:w-96" style="width: 100%; height: 80%; transform: translateY(40%); padding: 1rem;">
                     <div class="legacy-headline absolute bottom-full mb-0 ml-5 md:ml-10 lg:-mb-5 xl:ml-24 2xl:mb-5 2xl:ml-48">
                         <h1 class="-mt-5 text-5xl font-extrabold md:-mt-8 md:text-[3.25rem] lg:text-6xl xl:-mt-12 xl:text-[5.25rem]">Thể thao là</h1>
@@ -22,7 +23,7 @@
                         <p class="-mt-5 block text-5xl font-extrabold sm:hidden">không ngừng</p>
                         <p class="-mt-5 block text-5xl font-extrabold sm:hidden">bỏ cuộc.</p>
                     </div>
-                    <img src="{{ asset('legacy/img/main.jpg') }}" alt="" class="h-full w-full object-cover object-center" fetchpriority="high">
+                    <img src="{{ asset('cena-hero-banner.svg') }}" alt="Cena Hero Banner" class="h-full w-full object-cover object-center" fetchpriority="high">
                     <div class="legacy-collections">
                         <div class="py-28"><div class="flex w-full flex-col items-center md:px-16 lg:px-0">
                             <div class="w-full lg:w-[40rem] lg:translate-x-20 xl:w-[60rem]">

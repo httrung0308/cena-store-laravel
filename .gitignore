@@ -37,3 +37,10 @@ Thumbs.db
 
 # Unrelated extracted archive; never publish as application code.
 /cena-store-laravel/
+
+.ai/
+SPEC.md
+PRODUCT.md
+SCAN_REPORT.md
+preview/
+.codegraph/

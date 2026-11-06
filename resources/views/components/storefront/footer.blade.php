@@ -20,12 +20,12 @@
 <footer class="mt-20 w-full bg-black text-zinc-300">
     <div class="mx-auto grid max-w-7xl gap-10 px-5 py-14 sm:grid-cols-2 sm:px-10 lg:grid-cols-4">
         <div>
-            <a href="{{ route('home') }}" class="inline-block" aria-label="Fakestore — trang chủ"><img src="{{ asset('legacy/img/fakestore-logo-white.png') }}" alt="Fakestore" class="h-12 w-auto"></a>
+            <a href="{{ route('home') }}" class="inline-block" aria-label="Cena — trang chủ"><img src="{{ asset('cena-logo-white.svg') }}" alt="Cena" class="h-12 w-auto"></a>
             <p class="mt-3 text-sm leading-relaxed">Thể thao là không ngừng bỏ cuộc. Giày chạy bộ, thời trang và thể thao cho cả gia đình.</p>
             <ul class="mt-5 space-y-2 text-sm">
                 <li class="flex items-center gap-2"><svg class="{{ $icon }}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> 12 Nguyễn Văn Bảo, Gò Vấp, TP. Hồ Chí Minh</li>
                 <li class="flex items-center gap-2"><svg class="{{ $icon }}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg> 1900 0000</li>
-                <li class="flex items-center gap-2"><svg class="{{ $icon }}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><path d="m22 6-10 7L2 6"/></svg> hotro@nikestore.test</li>
+                <li class="flex items-center gap-2"><svg class="{{ $icon }}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><path d="m22 6-10 7L2 6"/></svg> hotro@cena.test</li>
             </ul>
         </div>
         <nav aria-label="Mua sắm">
@@ -55,7 +55,7 @@
     </div>
     <div class="border-t border-zinc-800">
         <div class="mx-auto flex max-w-7xl flex-col gap-2 px-5 py-5 text-xs text-zinc-500 sm:flex-row sm:items-center sm:justify-between sm:px-10">
-            <p>© {{ now()->year }} Fakestore — bản demo đồ án, không phải website chính thức của Nike.</p>
+            <p>© {{ now()->year }} Cena — Cena là cửa hàng độc lập, không phải website chính thức của Nike.</p>
             <p>Hình ảnh sản phẩm là ảnh minh họa.</p>
         </div>
     </div>

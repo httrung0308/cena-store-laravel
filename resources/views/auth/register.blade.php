@@ -1,7 +1,7 @@
 @extends('layouts.auth')
 
 @section('title', 'Tạo tài khoản')
-@section('heading', 'Gia nhập cùng Fakestore.')
+@section('heading', 'Gia nhập cùng Cena.')
 @section('subheading', 'Tạo tài khoản để mua sắm, theo dõi đơn hàng và nhận ưu đãi.')
 @section('switch')
     <a href="{{ route('login') }}" class="underline">Đã có tài khoản? Đăng nhập tại đây!</a>

@@ -18,7 +18,7 @@ class PasswordResetOtpMail extends Mailable
 
     public function envelope(): Envelope
     {
-        return new Envelope(subject: 'Mã đặt lại mật khẩu Fakestore');
+        return new Envelope(subject: 'Mã đặt lại mật khẩu Cena');
     }
 
     public function content(): Content

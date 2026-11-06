@@ -15,7 +15,7 @@ class StorefrontRedesignTest extends TestCase
     {
         $this->get(route('shoes.index'))
             ->assertOk()
-            ->assertSee('<title>Giày — Shoes — Fakestore</title>', false)
+            ->assertSee('<title>Giày — Shoes — Cena</title>', false)
             ->assertSee('Giày nam')
             ->assertSee('Chính sách')
             ->assertSee('Thanh toán khi nhận hàng (COD)')
@@ -28,14 +28,14 @@ class StorefrontRedesignTest extends TestCase
         $this->get(route('login'))
             ->assertOk()
             ->assertSee('Chào mừng trở lại.')
-            ->assertSee('legacy/video/register.mp4', false)
+            ->assertSee('cena-auth-bg.svg', false)
             ->assertSee('href="'.route('register').'"', false)
             ->assertDontSee('aria-label="Main navigation"', false)
             ->assertDontSee('id="cart-panel"', false);
 
         $this->get(route('register'))
             ->assertOk()
-            ->assertSee('Gia nhập cùng Fakestore.')
+            ->assertSee('Gia nhập cùng Cena.')
             ->assertSee('href="'.route('login').'"', false)
             ->assertSee('name="password_confirmation"', false)
             ->assertDontSee('aria-label="Main navigation"', false);

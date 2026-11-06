@@ -1,15 +1,16 @@
-{{-- Storefront page shell: Fakestore navbar, cart/menu panels and footer around the page.
+{{-- Storefront page shell: Cena navbar, cart/menu panels and footer around the page.
      Use @extends('layouts.store') with @section('title') and @section('content'). --}}
-@php($pageTitle = $title ?? trim($__env->yieldContent('title', 'Fakestore')))
+@php($pageTitle = $title ?? trim($__env->yieldContent('title', 'Cena')))
 <!doctype html>
 <html lang="vi">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>{{ $pageTitle }} — Fakestore</title>
-    <link rel="icon" href="{{ asset('legacy/fakestore-favicon.ico') }}" sizes="any">
-    <link rel="apple-touch-icon" href="{{ asset('legacy/fakestore-icon-180.png') }}">
+    <title>{{ $pageTitle }} — Cena</title>
+    <link rel="icon" href="{{ asset('cena-favicon.svg') }}" type="image/svg+xml">
+    <link rel="alternate icon" href="{{ asset('cena-favicon.ico') }}" sizes="any">
+    <link rel="apple-touch-icon" href="{{ asset('cena-favicon.svg') }}">
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @stack('head')
 </head>
