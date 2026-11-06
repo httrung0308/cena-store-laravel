@@ -53,11 +53,7 @@ Alpine.data('storefrontShell', () => ({
     },
     applyTheme(t) {
         try {
-            if (t === 'system') {
-                document.documentElement.setAttribute('data-theme', 'light');
-            } else {
-                document.documentElement.setAttribute('data-theme', t);
-            }
+            document.documentElement.setAttribute('data-theme', t);
         } catch (e) {}
     },
     panel: null,

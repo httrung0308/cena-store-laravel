@@ -12,11 +12,7 @@
         (function() {
             try {
                 var theme = localStorage.getItem('cena-theme') || 'light';
-                if (theme === 'system') {
-                    document.documentElement.setAttribute('data-theme', 'light');
-                } else {
-                    document.documentElement.setAttribute('data-theme', theme);
-                }
+                document.documentElement.setAttribute('data-theme', theme);
             } catch (e) {
                 document.documentElement.setAttribute('data-theme', 'light');
             }

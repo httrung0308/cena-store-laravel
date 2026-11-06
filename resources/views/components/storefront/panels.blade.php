@@ -5,19 +5,26 @@
 <div x-cloak x-show="panel" class="fixed inset-0 z-30" x-bind:class="panel === 'account' ? 'bg-transparent' : 'bg-black/50'" @click="closePanel()" x-transition.opacity></div>
 <section id="mobile-menu" x-cloak x-show="panel === 'menu'" x-transition.opacity role="dialog" aria-modal="true" aria-label="Menu" class="fixed inset-0 z-40 flex flex-col items-center justify-center gap-6 bg-surface-card p-6" @keydown.tab="trapFocus($event)">
     <button type="button" class="btn-icon absolute right-6 top-6" @click="closePanel()" aria-label="Close menu"><x-storefront.icon name="close"/></button>
-    <a href="{{ route('home') }}" class="mb-4" @click="closePanel()"><img src="{{ asset('cena-logo.svg') }}" alt="Cena" class="h-9 w-auto"></a>
+    <a href="{{ route('home') }}" class="mb-4" @click="closePanel()">
+        <img src="{{ asset('cena-logo.svg') }}" alt="Cena" class="theme-logo-light h-9 w-auto">
+        <img src="{{ asset('cena-logo-white.svg') }}" alt="Cena" class="theme-logo-dark h-9 w-auto">
+    </a>
     @foreach (['Men' => 'men', 'Women' => 'women', 'Kids' => 'kids', 'Unisex' => 'unisex'] as $label => $gender)
         <a href="{{ route('shoes.index', ['gender' => $gender]) }}" class="text-xl font-semibold uppercase tracking-wider text-muted transition-colors hover:text-accent" @click="closePanel()">{{ $label }}</a>
     @endforeach
     <a href="{{ route('news.index') }}" class="text-xl font-semibold uppercase tracking-wider text-muted transition-colors hover:text-accent" @click="closePanel()">News</a>
-    <div class="mt-4 flex items-center gap-2 rounded-xl border border-border bg-surface p-1 text-xs">
-        <button type="button" @click="setTheme('light')" class="flex items-center gap-1.5 rounded-lg px-3 py-1.5 font-medium transition" :class="theme === 'light' ? 'bg-surface-card text-accent shadow-sm font-semibold' : 'text-muted hover:text-main'" aria-label="Giao diện Sáng">
+    <div class="mt-4 flex items-center gap-1.5 rounded-xl border border-border bg-surface p-1 text-xs">
+        <button type="button" @click="setTheme('light')" class="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 font-medium transition" :class="theme === 'light' ? 'bg-surface-card text-accent shadow-sm font-semibold' : 'text-muted hover:text-main'" aria-label="Giao diện Sáng">
             <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
             <span>Sáng</span>
         </button>
-        <button type="button" @click="setTheme('system')" class="flex items-center gap-1.5 rounded-lg px-3 py-1.5 font-medium transition" :class="theme === 'system' ? 'bg-surface-card text-accent shadow-sm font-semibold' : 'text-muted hover:text-main'" aria-label="Giao diện Theo hệ thống">
+        <button type="button" @click="setTheme('dark')" class="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 font-medium transition" :class="theme === 'dark' ? 'bg-surface-card text-accent shadow-sm font-semibold' : 'text-muted hover:text-main'" aria-label="Giao diện Tối">
+            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+            <span>Tối</span>
+        </button>
+        <button type="button" @click="setTheme('system')" class="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 font-medium transition" :class="theme === 'system' ? 'bg-surface-card text-accent shadow-sm font-semibold' : 'text-muted hover:text-main'" aria-label="Giao diện Theo hệ thống">
             <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></svg>
-            <span>Theo hệ thống</span>
+            <span>Hệ thống</span>
         </button>
     </div>
 </section>
