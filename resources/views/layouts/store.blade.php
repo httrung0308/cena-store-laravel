@@ -15,7 +15,7 @@
     @stack('head')
 </head>
 <body class="font-sans bg-bg text-main antialiased selection:bg-accent selection:text-white">
-    <div id="storefront" x-data="storefrontShell" @cart-open.window="openPanel('cart')" @keydown.escape.window="closePanel()" @mousemove.window="pointerX = $event.clientX; pointerY = $event.clientY">
+    <div id="storefront" x-data="storefrontShell" @cart-open.window="openPanel('cart')" @keydown.escape.window="closePanel()" @mousemove.window.throttle.30ms="if (hoverImage) { pointerX = $event.clientX; pointerY = $event.clientY }">
         <div :inert="panel !== null" :aria-hidden="panel !== null ? 'true' : null" class="flex min-h-screen flex-col">
             {{-- Top announcement banner --}}
             <div class="bg-surface/80 border-b border-border text-muted text-xs py-2 px-6 text-center tracking-wider">

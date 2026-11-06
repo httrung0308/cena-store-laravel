@@ -15,7 +15,7 @@
                 </div>
                 <div class="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
                     @foreach ($paginator->items() as $entry)
-                        <x-catalog.product-card :product="$entry['product'] ?? []" :detail-url="$entry['detailUrl'] ?? null" :image-url="$entry['imageUrl'] ?? null" />
+                        <x-catalog.product-card :product="$entry['product'] ?? []" :detail-url="$entry['detailUrl'] ?? null" :image-url="$entry['imageUrl'] ?? null" :eager="$loop->index < 3" />
                     @endforeach
                 </div>
                 <div class="mt-8">

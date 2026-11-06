@@ -3,7 +3,7 @@
     $genderLinks = ['Men' => ['men', 'men'], 'Women' => ['women', 'women'], 'Kids' => ['kids', 'kid'], 'Unisex' => ['unisex', 'unisex']];
     $isAdminAccount = auth()->user()?->hasRole(App\Enums\RoleSlug::Admin) ?? false;
 @endphp
-<header @class(['sticky top-0 z-40 border-b border-border bg-surface-card/95 backdrop-blur-md transition-colors', 'legacy-navigation' => $animated])>
+<header @class(['sticky top-0 z-40 border-b border-border bg-surface-card shadow-subtle transition-colors duration-150', 'legacy-navigation' => $animated])>
     <nav class="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-8 lg:px-10" aria-label="Main navigation">
         <h2>
             <a href="{{ route('home') }}" class="flex items-center gap-2" aria-label="Cena — trang chủ">
