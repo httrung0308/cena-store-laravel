@@ -65,7 +65,7 @@
                 <a href="{{ route('login') }}" class="btn-icon" aria-label="Đăng nhập"><x-storefront.icon name="user"/></a>
             @endauth
             @unless ($isAdminAccount)
-            <button type="button" class="btn-icon relative" aria-label="Cart" @click="openPanel('cart')" :aria-expanded="(panel === 'cart').toString()" aria-controls="cart-panel"><x-storefront.icon name="cart"/><span x-cloak x-show="$store.cart.count > 0" x-text="$store.cart.count" class="absolute -right-1 -top-1 min-w-[1.25rem] rounded-full bg-accent-sub px-1 text-center text-xs font-bold leading-5 text-accent-sub-text" aria-label="Số đôi trong giỏ"></span></button>
+            <button type="button" class="btn-icon relative" aria-label="Giỏ hàng" @click="openPanel('cart')" :aria-expanded="(panel === 'cart').toString()" aria-controls="cart-panel"><x-storefront.icon name="cart"/><span x-cloak x-show="$store.cart.count > 0" x-text="$store.cart.count" class="absolute -right-1 -top-1 min-w-[1.25rem] rounded-full bg-accent-sub px-1 text-center text-xs font-bold leading-5 text-accent-sub-text" aria-label="Số đôi trong giỏ"></span></button>
             @endunless
             <button type="button" class="btn-icon inline md:hidden" aria-label="Menu" @click="openPanel('menu')" :aria-expanded="(panel === 'menu').toString()" aria-controls="mobile-menu"><x-storefront.icon name="menu"/></button>
         </div>

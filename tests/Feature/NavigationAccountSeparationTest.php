@@ -31,7 +31,7 @@ class NavigationAccountSeparationTest extends TestCase
                 ->assertDontSee('href="'.route('orders.index').'"', false)
                 ->assertDontSee('href="'.route('account.addresses.index').'"', false)
                 ->assertDontSee('href="'.route('checkout.show').'"', false)
-                ->assertDontSee('aria-label="Cart"', false)
+                ->assertDontSee('aria-label="Giỏ hàng"', false)
                 ->assertDontSee('$store.cart.load()', false)
                 ->assertSee('href="'.route('admin.dashboard').'"', false);
         }
@@ -102,10 +102,10 @@ class NavigationAccountSeparationTest extends TestCase
         $role = Role::where('slug', RoleSlug::Admin)->first() ?? Role::factory()->create(['slug' => RoleSlug::Admin]);
         UserRole::factory()->create(['user_id' => $customer->id, 'role_id' => $role->id]);
         $this->getJson(route('orders.index'))->assertForbidden();
-        $this->get(route('home'))->assertDontSee('aria-label="Cart"', false)->assertDontSee('href="'.route('orders.index').'"', false);
+        $this->get(route('home'))->assertDontSee('aria-label="Giỏ hàng"', false)->assertDontSee('href="'.route('orders.index').'"', false);
         UserRole::where('user_id', $customer->id)->where('role_id', $role->id)->delete();
         $this->get(route('orders.index'))->assertOk();
-        $this->get(route('home'))->assertSee('aria-label="Cart"', false);
+        $this->get(route('home'))->assertSee('aria-label="Giỏ hàng"', false);
     }
 
     #[DataProvider('customerRoles')]
@@ -115,7 +115,7 @@ class NavigationAccountSeparationTest extends TestCase
         $this->actingAs($user)->get(route('account.index'))->assertOk()
             ->assertSee('href="'.route('orders.index').'"', false)
             ->assertSee('href="'.route('account.addresses.index').'"', false)
-            ->assertSee('aria-label="Cart"', false)->assertSee('$store.cart.load()', false)
+            ->assertSee('aria-label="Giỏ hàng"', false)->assertSee('$store.cart.load()', false)
             ->assertSee('Các đơn hàng gần đây');
         $this->get(route('orders.index'))->assertOk();
         $this->getJson(route('cart.show'))->assertOk();
@@ -129,7 +129,7 @@ class NavigationAccountSeparationTest extends TestCase
 
     public function test_guest_storefront_and_authentication_contract_are_preserved(): void
     {
-        $this->get(route('home'))->assertOk()->assertSee('aria-label="Cart"', false)->assertSee('href="'.route('login').'"', false);
+        $this->get(route('home'))->assertOk()->assertSee('aria-label="Giỏ hàng"', false)->assertSee('href="'.route('login').'"', false);
         $this->get(route('orders.index'))->assertRedirect(route('login'));
         $this->getJson(route('checkout.show'))->assertUnauthorized();
         $this->getJson(route('cart.show'))->assertOk();

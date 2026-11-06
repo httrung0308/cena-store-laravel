@@ -12,7 +12,7 @@ class FoundationSmokeTest extends TestCase
         $this->get(route('home'))
             ->assertOk()
             ->assertViewIs('storefront.home')
-            ->assertSee('<html lang="en">', false)
+            ->assertSee('<html lang="vi">', false)
             ->assertSee('Thể thao là')->assertSee('không ngừng bỏ cuộc.')
             ->assertSee('cena-logo.svg')->assertDontSee('the smart choice.')
             ->assertSee('cena-hero-banner.svg')
