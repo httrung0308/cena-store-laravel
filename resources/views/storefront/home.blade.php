@@ -6,6 +6,16 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="description" content="Cena — Thể thao là không ngừng bỏ cuộc.">
     <title>Cena</title>
+    <script>
+        (function() {
+            try {
+                var theme = localStorage.getItem('cena-theme') || 'light';
+                document.documentElement.setAttribute('data-theme', theme);
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'light');
+            }
+        })();
+    </script>
     <link rel="icon" href="{{ asset('cena-favicon.svg') }}" type="image/svg+xml">
     <link rel="alternate icon" href="{{ asset('cena-favicon.ico') }}" sizes="any">
     <link rel="apple-touch-icon" href="{{ asset('cena-favicon.svg') }}">
@@ -28,7 +38,7 @@
                         </span>
                         <h1 class="mb-6 text-4xl sm:text-6xl lg:text-7xl font-light tracking-tight text-main leading-[1.15]">
                             Thể thao là <br class="hidden sm:inline">
-                            <span class="font-serif italic font-normal text-accent">không ngừng bỏ cuộc.</span>
+                            <span class="font-serif italic font-normal text-accent underline decoration-accent-sub decoration-4 underline-offset-8">không ngừng bỏ cuộc.</span>
                         </h1>
                         <p class="mx-auto mb-10 max-w-2xl text-base sm:text-lg font-light leading-relaxed text-muted">
                             Tìm lại sự thanh thản và tự tin trong từng chuyển động. Tuyển chọn giày thể thao chính hãng với độ nâng đỡ êm ái suốt ngày dài.
