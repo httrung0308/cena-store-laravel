@@ -5,18 +5,18 @@
     @endif
     <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Mã</th><th>Tên</th><th>Liên hệ</th><th>Trạng thái</th><th>Thao tác</th></tr></thead><tbody>
     @forelse ($suppliers as $supplier)
-        <tr>
-            <td class="font-semibold text-zinc-900">{{ $supplier['code'] ?? '' }}</td>
-            <td>{{ $supplier['name'] ?? '' }}@if ($supplier['address'] ?? null)<span class="block text-xs text-zinc-500">{{ $supplier['address'] }}</span>@endif</td>
-            <td>{{ $supplier['phone'] ?? '' }}@if ($supplier['email'] ?? null)<span class="block text-xs text-zinc-500">{{ $supplier['email'] }}</span>@endif</td>
-            <td>@if ($supplier['is_active'] ?? false)<span class="badge bg-green-100 text-green-600">Hoạt động</span>@else<span class="badge bg-zinc-100 text-zinc-600">Đã ngừng</span>@endif</td>
+        <tr class="hover:bg-surface-alt/40 transition-colors">
+            <td class="font-semibold text-main">{{ $supplier['code'] ?? '' }}</td>
+            <td class="text-main">{{ $supplier['name'] ?? '' }}@if ($supplier['address'] ?? null)<span class="block text-xs text-muted">{{ $supplier['address'] }}</span>@endif</td>
+            <td class="text-main">{{ $supplier['phone'] ?? '' }}@if ($supplier['email'] ?? null)<span class="block text-xs text-muted">{{ $supplier['email'] }}</span>@endif</td>
+            <td>@if ($supplier['is_active'] ?? false)<span class="badge bg-success-bg text-success-text border border-success/30">Hoạt động</span>@else<span class="badge bg-surface-alt text-muted border border-border">Đã ngừng</span>@endif</td>
             <td><div class="flex flex-wrap gap-2">
                 @if ($supplier['editUrl'] ?? null)<a class="btn-pill" href="{{ $supplier['editUrl'] }}">Sửa</a>@endif
-                @if ($supplier['deactivateUrl'] ?? null)<form action="{{ $supplier['deactivateUrl'] }}" method="POST">@csrf @method('PATCH')<button type="submit" class="btn-pill">Ngừng hoạt động</button></form>@endif
+                @if ($supplier['deactivateUrl'] ?? null)<form action="{{ $supplier['deactivateUrl'] }}" method="POST">@csrf @method('PATCH')<button type="submit" class="btn-pill text-error hover:bg-error-bg">Ngừng hoạt động</button></form>@endif
             </div></td>
         </tr>
     @empty
-        <tr><td class="py-20 text-center text-zinc-500" colspan="5">Chưa có nhà cung cấp.</td></tr>
+        <tr><td class="py-20 text-center text-muted" colspan="5">Chưa có nhà cung cấp.</td></tr>
     @endforelse
     </tbody></table></div>
     @if ($paginator)<x-ui.pagination :paginator="$paginator" />@endif
