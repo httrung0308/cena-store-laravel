@@ -37,7 +37,7 @@
                             <th class="p-4">Bài viết</th>
                             <th class="p-4 text-center">Trạng thái</th>
                             <th class="p-4">Ngày đăng</th>
-                            <th class="p-4">Đánh giá người đọc</th>
+                            <th class="p-4">Người đọc đánh giá</th>
                             <th class="p-4 text-right">Thao tác</th>
                         </tr>
                     </thead>
@@ -71,16 +71,12 @@
                                     <a class="px-2.5 py-1 text-accent hover:bg-surface rounded-lg font-bold text-xs inline-block transition-colors" href="{{ route('admin.articles.edit', $article) }}">Sửa</a>
                                     @if ($article->status === App\Enums\ArticleStatus::Published)
                                         <a class="px-2.5 py-1 text-muted hover:text-main rounded-lg font-bold text-xs inline-block transition-colors" href="{{ route('news.show', $article->slug) }}" target="_blank">Xem</a>
-                                        <form method="POST" action="{{ route('admin.articles.unpublish', $article) }}" class="inline-block">
+                                    @endif
+                                    @if ($article->status !== App\Enums\ArticleStatus::Hidden)
+                                        <form method="POST" action="{{ route('admin.articles.hide', $article) }}" class="inline-block">
                                             @csrf
                                             @method('PATCH')
                                             <button type="submit" class="px-2.5 py-1 text-error hover:bg-error-bg rounded-lg font-bold text-xs transition-colors">Ẩn</button>
-                                        </form>
-                                    @else
-                                        <form method="POST" action="{{ route('admin.articles.publish', $article) }}" class="inline-block">
-                                            @csrf
-                                            @method('PATCH')
-                                            <button type="submit" class="px-2.5 py-1 text-success hover:bg-success-bg rounded-lg font-bold text-xs transition-colors">Đăng</button>
                                         </form>
                                     @endif
                                 </div>
