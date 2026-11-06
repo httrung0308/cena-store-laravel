@@ -18,7 +18,7 @@
     <div x-on:keydown="onKeydown($event)" x-show="images.length > 1" class="grid grid-cols-4 gap-3" role="group" aria-label="Chọn ảnh">
         <template x-for="(image, index) in images.slice(0, 4)" :key="image.id"><button type="button" x-on:click="choose(image.id)" x-on:mouseenter="choose(image.id)" x-bind:aria-pressed="(selectedId===image.id).toString()" x-bind:aria-label="'Ảnh ' + (index + 1)"
             x-bind:class="selectedId === image.id ? 'border-accent ring-2 ring-accent/30' : 'border-border hover:border-accent/60'"
-            class="aspect-square w-full overflow-hidden rounded-xl border-2 bg-surface p-1 transition focus-visible:ring-2"><img x-bind:src="image.url" x-bind:alt="image.alt || 'Ảnh thu nhỏ'" x-on:error="$el.src !== @js($fallbackImage) && ($el.src = @js($fallbackImage))" class="h-full w-full rounded-lg object-cover"></button></template>
+            class="aspect-square w-full overflow-hidden rounded-xl border-2 bg-surface p-1 transition focus-visible:ring-2"><img x-bind:src="image.thumb_url || image.url" x-bind:alt="image.alt || 'Ảnh thu nhỏ'" loading="lazy" decoding="async" width="100" height="100" x-on:error="$el.src !== @js($fallbackImage) && ($el.src = @js($fallbackImage))" class="h-full w-full rounded-lg object-cover aspect-square"></button></template>
     </div>
     <p class="text-xs text-muted">Rê chuột lên ảnh để phóng to chi tiết.</p>
 </section>

@@ -29,7 +29,7 @@
         @if (! empty($product['colors']))
             <div class="flex flex-wrap gap-1.5" aria-label="Phối màu">
                 @foreach ($product['colors'] as $color)
-                    <a href="{{ $color['url'] }}" aria-label="{{ $color['name'] }}" class="h-8 w-8 overflow-hidden rounded-lg border border-border/80 shadow-subtle transition-colors hover:border-accent focus-visible:ring-2" x-on:mouseenter="image = @js($color['image_url'])" x-on:mouseleave="image = @js($imageUrl)" x-on:focus="image = @js($color['image_url'])" x-on:blur="image = @js($imageUrl)">
+                    <a href="{{ $color['url'] }}" aria-label="{{ $color['name'] }}" class="h-8 w-8 overflow-hidden rounded-lg border border-border/80 shadow-subtle transition-colors hover:border-accent focus-visible:ring-2" x-on:mouseenter="image = @js($color['card_image_url'] ?? $color['image_url'])" x-on:mouseleave="image = @js($imageUrl)" x-on:focus="image = @js($color['card_image_url'] ?? $color['image_url'])" x-on:blur="image = @js($imageUrl)">
                         <img src="{{ $color['image_url'] }}" alt="{{ $color['name'] }}" loading="lazy" decoding="async" width="32" height="32" x-on:error="$el.src !== @js($fallbackImage) && ($el.src = @js($fallbackImage))" class="h-full w-full object-cover aspect-square">
                     </a>
                 @endforeach

@@ -86,7 +86,7 @@ final class CatalogQueryService
         foreach ($product->colors as $color) {
             $colors[] = $this->color($product, $color);
             $albums[(string) $color->id] = $color->images
-                ->map(fn (ProductImage $image): array => ['id' => $image->id, 'url' => $this->imageUrl($image), 'alt' => $image->alt_text ?? $product->name])
+                ->map(fn (ProductImage $image): array => ['id' => $image->id, 'url' => $this->imageUrl($image), 'thumb_url' => $this->imageUrl($image, 400), 'alt' => $image->alt_text ?? $product->name])
                 ->all();
             foreach ($color->variants as $variant) {
                 $available = max(0, $variant->stock_qty - $variant->reserved_qty);
@@ -192,7 +192,7 @@ final class CatalogQueryService
                 'colors' => $colors,
             ],
             'detailUrl' => $colors[0]['url'] ?? route('shoes.show', $product->slug),
-            'imageUrl' => $colors[0]['image_url'] ?? asset(self::FALLBACK_IMAGE),
+            'imageUrl' => $colors[0]['card_image_url'] ?? $this->imageUrl($product->colors->first()?->thumbnail, 400),
         ];
     }
 
@@ -287,7 +287,7 @@ final class CatalogQueryService
         return number_format($amount, 0, ',', '.').' ₫';
     }
 
-    /** @return array{id: int, name: string, hex: ?string, style_color_code: string, image_url: string, url: string} */
+    /** @return array{id: int, name: string, hex: ?string, style_color_code: string, image_url: string, card_image_url: string, url: string} */
     private function color(Product $product, ProductColor $color): array
     {
         return [
@@ -295,20 +295,29 @@ final class CatalogQueryService
             'name' => $color->color_name,
             'hex' => $color->primary_hex,
             'style_color_code' => $color->style_color_code,
-            'image_url' => $this->imageUrl($color->thumbnail),
+            'image_url' => $this->imageUrl($color->thumbnail, 64),
+            'card_image_url' => $this->imageUrl($color->thumbnail, 400),
             'url' => route('shoes.show', ['slug' => $product->slug, 'style_color' => $color->style_color_code]),
         ];
     }
 
     /** Safe public URL of a stored or HTTPS image, else the local fallback asset. */
-    public function imageUrl(?ProductImage $image): string
+    public function imageUrl(?ProductImage $image, ?int $size = null): string
     {
-        if ($image?->source_type === ProductImageSourceType::ExternalUrl && is_string($image->external_url)
+        if ($image === null) {
+            return asset(self::FALLBACK_IMAGE);
+        }
+
+        if ($size !== null) {
+            return $image->thumbnailUrl($size);
+        }
+
+        if ($image->source_type === ProductImageSourceType::ExternalUrl && is_string($image->external_url)
             && filter_var($image->external_url, FILTER_VALIDATE_URL) && parse_url($image->external_url, PHP_URL_SCHEME) === 'https'
             && parse_url($image->external_url, PHP_URL_USER) === null && parse_url($image->external_url, PHP_URL_PASS) === null) {
             return $image->external_url;
         }
-        if ($image?->source_type === ProductImageSourceType::Upload && is_string($image->storage_path)
+        if ($image->source_type === ProductImageSourceType::Upload && is_string($image->storage_path)
             && preg_match('~^products/[A-Za-z0-9]{40}\.(?:jpe?g|png|webp)$~D', $image->storage_path)) {
             return Storage::disk('public')->url($image->storage_path);
         }

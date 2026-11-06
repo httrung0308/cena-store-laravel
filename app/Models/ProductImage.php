@@ -37,4 +37,13 @@ class ProductImage extends DomainModel
     {
         return $this->belongsTo(ProductColor::class, 'product_color_id');
     }
+
+    public function thumbnailUrl(int $size = 400): string
+    {
+        return app(\App\Services\ProductImageThumbnailService::class)->getThumbnailUrl(
+            $this->storage_path,
+            $this->external_url,
+            $size
+        );
+    }
 }

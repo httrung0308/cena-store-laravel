@@ -6,7 +6,7 @@
         <div class="flex flex-wrap gap-2.5" role="group" aria-label="Phối màu">
             @foreach ($colors as $color)
                 <button type="button" class="h-16 w-16 overflow-hidden rounded-xl border-2 transition-all focus-visible:ring-2 shadow-subtle" x-bind:class="String(colorId) === @js((string) $color['id']) ? 'border-accent ring-2 ring-accent/30' : 'border-border/80 hover:border-accent/50'" x-bind:aria-pressed="(String(colorId) === @js((string) $color['id'])).toString()" aria-label="{{ $color['name'] }}" x-on:click="changeColor(@js($color['id'])); $dispatch('catalog-color-changed', {id: colorId})">
-                    <img src="{{ $color['image_url'] ?? $fallbackImage }}" alt="{{ $color['name'] }}" x-on:error="$el.src !== @js($fallbackImage) && ($el.src = @js($fallbackImage))" class="h-full w-full object-cover">
+                    <img src="{{ $color['image_url'] ?? $fallbackImage }}" alt="{{ $color['name'] }}" loading="lazy" decoding="async" width="64" height="64" x-on:error="$el.src !== @js($fallbackImage) && ($el.src = @js($fallbackImage))" class="h-full w-full object-cover aspect-square">
                 </button>
             @endforeach
         </div>
