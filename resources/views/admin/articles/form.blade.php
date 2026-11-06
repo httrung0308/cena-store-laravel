@@ -1,8 +1,8 @@
 @extends('layouts.admin')
-@section('title', $article->exists ? 'Sửa bài viết' : 'Viết bài mới')
-@section('eyebrow', 'Quản lý bài viết')
+@section('title', $article->exists ? 'Sửa Bài Viết' : 'Viết Bài Mới')
+@section('eyebrow', 'QUẢN TRỊ NỘI DUNG')
 @section('actions')
-    <a class="btn-pill" href="{{ route('admin.articles.index') }}">Quay lại danh sách</a>
+    <a class="px-4 py-2 bg-surface hover:bg-border/40 text-muted hover:text-main text-xs font-bold rounded-xl border border-border transition-all" href="{{ route('admin.articles.index') }}">← Quay lại danh sách</a>
 @endsection
 @use('App\Enums\ArticleStatus')
 @php

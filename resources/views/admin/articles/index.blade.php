@@ -1,65 +1,98 @@
 @extends('layouts.admin')
-@section('title', 'Bài viết')
-@section('eyebrow', 'Quản lý bài viết')
+@section('title', 'Quản Lý Bài Viết')
+@section('eyebrow', 'QUẢN TRỊ NỘI DUNG')
 @php($tz = (string) config('store.business_timezone'))
 @section('actions')
-    <a href="{{ route('news.index') }}" class="btn-pill">Xem trang bài viết</a>
-    <a href="{{ route('admin.articles.create') }}" class="btn-pill-dark">+ Viết bài mới</a>
+    <a href="{{ route('news.index') }}" class="px-4 py-2 bg-surface hover:bg-border/40 text-muted hover:text-main text-xs font-bold rounded-xl border border-border transition-all">Xem trang bài viết</a>
+    <a href="{{ route('admin.articles.create') }}" class="px-5 py-2.5 bg-accent hover:bg-accent-hover text-accent-text text-xs font-bold rounded-xl transition-all shadow-md flex items-center gap-1.5">+ Viết bài mới</a>
 @endsection
 @section('content')
     <div class="space-y-6">
-        <form method="GET" action="{{ route('admin.articles.index') }}" class="flex flex-wrap items-center gap-2">
-            <label class="flex items-center gap-2 text-sm font-semibold text-muted">Trạng thái
-                <select class="input border-border bg-surface text-main py-2 font-normal" name="status">
-                    <option value="">Tất cả</option>
-                    @foreach (App\Enums\ArticleStatus::cases() as $status)
-                        <option value="{{ $status->value }}" @selected(($filters['status'] ?? '') === $status->value)>{{ $status->label() }}</option>
-                    @endforeach
-                </select>
-            </label>
-            <label class="flex items-center gap-2 text-sm font-semibold text-muted">Sắp xếp
-                <select class="input border-border bg-surface text-main py-2 font-normal" name="sort">
-                    <option value="latest" @selected(($filters['sort'] ?? 'latest') === 'latest')>Mới cập nhật</option>
-                    <option value="helpful" @selected(($filters['sort'] ?? '') === 'helpful')>Hữu ích nhất</option>
-                    <option value="unhelpful" @selected(($filters['sort'] ?? '') === 'unhelpful')>Không hữu ích nhất</option>
-                </select>
-            </label>
-            <button type="submit" class="btn-pill-dark">Lọc</button>
-        </form>
-        <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Bài viết</th><th>Trạng thái</th><th>Ngày đăng</th><th>Người đọc đánh giá</th><th>Thao tác</th></tr></thead><tbody>
-            @forelse ($articles as $article)
-                <tr class="hover:bg-surface-alt/40 transition-colors">
-                    <td>
-                        <div class="flex items-center gap-3">
-                            <img src="{{ $article->coverUrl() }}" alt="" class="h-12 w-16 shrink-0 rounded-lg object-cover border border-border">
-                            <div class="min-w-0"><span class="block font-semibold text-main">{{ $article->title }}</span><span class="block text-xs text-muted">/news/{{ $article->slug }}</span></div>
-                        </div>
-                    </td>
-                    <td><span @class(['badge', 'bg-success-bg text-success-text border border-success/30' => $article->status === App\Enums\ArticleStatus::Published, 'bg-surface-alt text-muted border border-border' => $article->status !== App\Enums\ArticleStatus::Published])>{{ $article->status->label() }}</span></td>
-                    <td class="whitespace-nowrap text-muted">{{ $article->published_at?->setTimezone($tz)->format('d/m/Y H:i') ?? '—' }}</td>
-                    @php($votes = $article->helpful_count + $article->unhelpful_count)
-                    <td class="whitespace-nowrap" data-article-votes>
-                        @if ($votes === 0)
-                            <span class="text-muted/60">Chưa có</span>
-                        @else
-                            <span class="font-semibold text-main"><span aria-hidden="true">👍</span> {{ $article->helpful_count }} · <span aria-hidden="true">👎</span> {{ $article->unhelpful_count }}</span>
-                            <span class="block text-xs text-muted">{{ round($article->helpful_count / $votes * 100) }}% thấy hữu ích</span>
-                        @endif
-                    </td>
-                    <td><div class="flex flex-wrap gap-2">
-                        <a class="btn-pill" href="{{ route('admin.articles.edit', $article) }}">Sửa</a>
-                        @if ($article->status === App\Enums\ArticleStatus::Published)
-                            <a class="btn-pill" href="{{ route('news.show', $article->slug) }}">Xem</a>
-                        @endif
-                        @if ($article->status !== App\Enums\ArticleStatus::Hidden)
-                            <form action="{{ route('admin.articles.hide', $article) }}" method="POST">@csrf @method('PATCH')<button type="submit" class="btn-pill text-error hover:bg-error-bg">Ẩn bài</button></form>
-                        @endif
-                    </div></td>
-                </tr>
-            @empty
-                <tr><td class="py-20 text-center text-muted" colspan="5">Chưa có bài viết.</td></tr>
-            @endforelse
-        </tbody></table></div>
-        <x-ui.pagination :paginator="$articles" />
+        <div class="bg-surface-card p-4 rounded-2xl border border-border mb-6 flex flex-col md:flex-row items-center justify-between gap-4 text-xs shadow-sm">
+            <form method="GET" action="{{ route('admin.articles.index') }}" class="flex flex-wrap items-center gap-3 w-full">
+                <label class="flex items-center gap-2 text-xs font-bold text-main">Trạng thái
+                    <select class="bg-bg border border-border px-3 py-2 rounded-xl text-xs text-main font-semibold focus:outline-none focus:border-accent" name="status">
+                        <option value="">Tất cả</option>
+                        @foreach (App\Enums\ArticleStatus::cases() as $status)
+                            <option value="{{ $status->value }}" @selected(($filters['status'] ?? '') === $status->value)>{{ $status->label() }}</option>
+                        @endforeach
+                    </select>
+                </label>
+                <label class="flex items-center gap-2 text-xs font-bold text-main">Sắp xếp
+                    <select class="bg-bg border border-border px-3 py-2 rounded-xl text-xs text-main font-semibold focus:outline-none focus:border-accent" name="sort">
+                        <option value="latest" @selected(($filters['sort'] ?? 'latest') === 'latest')>Mới cập nhật</option>
+                        <option value="helpful" @selected(($filters['sort'] ?? '') === 'helpful')>Hữu ích nhất</option>
+                        <option value="unhelpful" @selected(($filters['sort'] ?? '') === 'unhelpful')>Không hữu ích nhất</option>
+                    </select>
+                </label>
+                <button type="submit" class="px-4 py-2 bg-accent hover:bg-accent-hover text-accent-text text-xs font-bold rounded-xl transition-all shadow-sm">Lọc</button>
+            </form>
+        </div>
+
+        <div class="bg-surface-card rounded-2xl border border-border overflow-hidden shadow-sm">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs text-muted border-collapse">
+                    <thead class="bg-surface text-main font-bold border-b border-border">
+                        <tr>
+                            <th class="p-4">Bài viết</th>
+                            <th class="p-4 text-center">Trạng thái</th>
+                            <th class="p-4">Ngày đăng</th>
+                            <th class="p-4">Đánh giá người đọc</th>
+                            <th class="p-4 text-right">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-border font-medium">
+                    @forelse ($articles as $article)
+                        <tr class="hover:bg-surface/50 transition-colors">
+                            <td class="p-4">
+                                <div class="flex items-center gap-3">
+                                    <img src="{{ $article->coverUrl() }}" alt="" class="h-12 w-16 shrink-0 rounded-xl object-cover border border-border bg-surface">
+                                    <div class="min-w-0">
+                                        <strong class="font-bold text-main text-sm block">{{ $article->title }}</strong>
+                                        <span class="block text-[11px] text-muted font-mono mt-0.5">/news/{{ $article->slug }}</span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="p-4 text-center">
+                                <span @class(['badge', 'bg-success-bg text-success border border-success/30 px-2.5 py-0.5 rounded-full font-bold text-[11px]' => $article->status === App\Enums\ArticleStatus::Published, 'bg-muted/15 text-muted px-2.5 py-0.5 rounded-full font-bold text-[11px]' => $article->status !== App\Enums\ArticleStatus::Published])>{{ $article->status->label() }}</span>
+                            </td>
+                            <td class="p-4 whitespace-nowrap text-muted text-xs">{{ $article->published_at?->setTimezone($tz)->format('d/m/Y H:i') ?? '—' }}</td>
+                            @php($votes = $article->helpful_count + $article->unhelpful_count)
+                            <td class="p-4 whitespace-nowrap text-xs" data-article-votes>
+                                @if ($votes === 0)
+                                    <span class="text-muted/60">Chưa có</span>
+                                @else
+                                    <span class="font-bold text-main"><span aria-hidden="true">👍</span> {{ $article->helpful_count }} · <span aria-hidden="true">👎</span> {{ $article->unhelpful_count }}</span>
+                                    <span class="block text-[11px] text-muted">{{ round($article->helpful_count / $votes * 100) }}% thấy hữu ích</span>
+                                @endif
+                            </td>
+                            <td class="p-4 text-right whitespace-nowrap">
+                                <div class="inline-flex items-center gap-1.5">
+                                    <a class="px-2.5 py-1 text-accent hover:bg-surface rounded-lg font-bold text-xs inline-block transition-colors" href="{{ route('admin.articles.edit', $article) }}">Sửa</a>
+                                    @if ($article->status === App\Enums\ArticleStatus::Published)
+                                        <a class="px-2.5 py-1 text-muted hover:text-main rounded-lg font-bold text-xs inline-block transition-colors" href="{{ route('news.show', $article->slug) }}" target="_blank">Xem</a>
+                                        <form method="POST" action="{{ route('admin.articles.unpublish', $article) }}" class="inline-block">
+                                            @csrf
+                                            @method('PATCH')
+                                            <button type="submit" class="px-2.5 py-1 text-error hover:bg-error-bg rounded-lg font-bold text-xs transition-colors">Ẩn</button>
+                                        </form>
+                                    @else
+                                        <form method="POST" action="{{ route('admin.articles.publish', $article) }}" class="inline-block">
+                                            @csrf
+                                            @method('PATCH')
+                                            <button type="submit" class="px-2.5 py-1 text-success hover:bg-success-bg rounded-lg font-bold text-xs transition-colors">Đăng</button>
+                                        </form>
+                                    @endif
+                                </div>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr><td colspan="5" class="p-12 text-center text-xs text-muted">Chưa có bài viết.</td></tr>
+                    @endforelse
+                    </tbody>
+                </table>
+            </div>
+            <x-ui.pagination :paginator="$articles" />
+        </div>
     </div>
 @endsection

@@ -1,6 +1,6 @@
 @extends('layouts.admin')
-@section('title', 'Báo cáo')
-@section('eyebrow', 'Dashboard và báo cáo')
+@section('title', 'Báo Cáo & Thống Kê')
+@section('eyebrow', 'QUẢN TRỊ BÁO CÁO')
 
 @php
     $vnd = fn (int $amount): string => number_format($amount, 0, ',', '.').' ₫';
@@ -45,11 +45,11 @@
                 <label for="report-to" class="admin-label text-muted">Đến ngày</label>
                 <input id="report-to" type="date" name="to" value="{{ $to }}" class="input border-border bg-surface text-main">
             </div>
-            <button type="submit" class="btn-pill-dark">Xem báo cáo</button>
+            <button type="submit" class="px-5 py-2.5 bg-accent hover:bg-accent-hover text-accent-text text-xs font-bold rounded-xl transition-all shadow-md">Xem báo cáo</button>
             <nav class="flex flex-wrap gap-2 sm:ml-auto" aria-label="Khoảng ngày nhanh">
                 @foreach ($presets as $preset)
                     <a href="{{ route('admin.reports.index', ['from' => $preset['from'], 'to' => $preset['to']]) }}"
-                       @class(['btn-pill', '!border-accent !bg-accent !text-accent-text' => $preset['from'] === $from && $preset['to'] === $to])
+                       @class(['px-3 py-1.5 text-xs font-bold rounded-xl border transition-all', '!border-accent !bg-accent !text-accent-text shadow-sm' => $preset['from'] === $from && $preset['to'] === $to, 'border-border bg-surface-card text-muted hover:bg-surface hover:text-main' => ! ($preset['from'] === $from && $preset['to'] === $to)])
                        @if ($preset['from'] === $from && $preset['to'] === $to) aria-current="true" @endif>{{ $preset['label'] }}</a>
                 @endforeach
             </nav>
