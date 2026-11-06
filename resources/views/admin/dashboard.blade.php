@@ -18,64 +18,70 @@
 @endphp
 
 @section('content')
-    <div class="flex flex-col gap-10">
-        <p class="text-base text-zinc-500">Chào mừng đến trang quản trị. Quản lý cửa hàng của bạn tại đây.</p>
+    <div class="flex flex-col gap-8">
+        <p class="text-sm text-muted">Chào mừng đến trang quản trị. Quản lý cửa hàng của bạn tại đây.</p>
 
         <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            <article class="admin-card">
-                <h2 class="text-lg font-semibold">Thông tin tài khoản</h2>
-                <div class="mt-3 space-y-2 text-sm text-zinc-500">
-                    <p>Họ tên: <span class="font-medium text-zinc-900">{{ $user->full_name }}</span></p>
-                    <p>Email: <span class="break-all font-medium text-zinc-900">{{ $user->email }}</span></p>
-                    <p>Vai trò: <span class="font-medium text-zinc-900">{{ $user->roles->map(fn ($role) => $role->slug->label())->join(', ') }}</span></p>
+            <article class="admin-card flex flex-col justify-between">
+                <div>
+                    <h2 class="text-base font-bold font-serif text-main">Thông tin tài khoản</h2>
+                    <div class="mt-3 space-y-1.5 text-xs text-muted">
+                        <p>Họ tên: <span class="font-semibold text-main">{{ $user->full_name }}</span></p>
+                        <p>Email: <span class="break-all font-semibold text-main">{{ $user->email }}</span></p>
+                        <p>Vai trò: <span class="font-semibold text-accent">{{ $user->roles->map(fn ($role) => $role->slug->label())->join(', ') }}</span></p>
+                    </div>
                 </div>
             </article>
 
-            <article class="admin-card">
-                <h2 class="text-lg font-semibold">Thao tác nhanh</h2>
-                <div class="mt-3 space-y-2">
-                    <a href="{{ route('home') }}" class="btn-pill w-full hover:bg-zinc-900 hover:text-white">Xem cửa hàng</a>
-                    <form method="POST" action="{{ route('logout') }}">
-                        @csrf
-                        <button type="submit" class="btn-pill w-full hover:bg-zinc-900 hover:text-white">Đăng xuất</button>
-                    </form>
+            <article class="admin-card flex flex-col justify-between">
+                <div>
+                    <h2 class="text-base font-bold font-serif text-main">Thao tác nhanh</h2>
+                    <div class="mt-3 space-y-2">
+                        <a href="{{ route('home') }}" class="btn-pill w-full text-xs">Xem cửa hàng</a>
+                        <form method="POST" action="{{ route('logout') }}">
+                            @csrf
+                            <button type="submit" class="btn-pill w-full text-xs hover:border-error hover:text-error">Đăng xuất</button>
+                        </form>
+                    </div>
                 </div>
             </article>
 
-            <article class="admin-card">
-                <h2 class="text-lg font-semibold">Trạng thái hệ thống</h2>
-                <div class="mt-3 flex items-center justify-between">
-                    <span class="text-sm text-zinc-500">Hệ thống</span>
-                    <span class="badge bg-green-100 text-green-600">Đang hoạt động</span>
+            <article class="admin-card flex flex-col justify-between">
+                <div>
+                    <h2 class="text-base font-bold font-serif text-main">Trạng thái hệ thống</h2>
+                    <div class="mt-4 flex items-center justify-between">
+                        <span class="text-xs text-muted">Hệ thống</span>
+                        <span class="badge bg-success-bg border border-success/30 text-success-text">Đang hoạt động</span>
+                    </div>
                 </div>
             </article>
         </div>
 
-        <div class="rounded-3xl border border-zinc-200 p-8 shadow-sm">
-            <h2 class="text-2xl font-semibold">Các mô-đun quản lý</h2>
-            <p class="mt-2 text-zinc-500">Các chức năng quản lý hiện có:</p>
+        <div class="rounded-2xl border border-border bg-surface-card p-6 shadow-card sm:p-8">
+            <h2 class="text-xl font-bold font-serif text-main sm:text-2xl">Các mô-đun quản lý</h2>
+            <p class="mt-1 text-xs text-muted">Các chức năng quản lý hiện có:</p>
             <div class="mt-6 grid gap-4 md:grid-cols-2">
                 @foreach ($modules as $module)
                     @if (Route::has($module['route']))
-                        <a href="{{ route($module['route']) }}" class="rounded-full border border-zinc-200 bg-white px-6 py-4 text-left font-semibold transition hover:border-zinc-900 hover:bg-zinc-50">
-                            <span class="block text-lg">{{ $module['label'] }}</span>
-                            <span class="mt-1 block text-sm font-normal text-zinc-500">{{ $module['description'] }}</span>
+                        <a href="{{ route($module['route']) }}" class="group rounded-2xl border border-border bg-surface/30 p-5 transition-colors duration-150 hover:border-accent hover:bg-surface/70">
+                            <span class="block text-base font-bold text-main group-hover:text-accent transition-colors">{{ $module['label'] }}</span>
+                            <span class="mt-1 block text-xs text-muted leading-relaxed">{{ $module['description'] }}</span>
                         </a>
                     @endif
                 @endforeach
                 @if ($isAdmin)
-                    <a href="{{ route('admin.articles.index') }}" class="rounded-full border border-zinc-200 bg-white px-6 py-4 text-left font-semibold transition hover:border-zinc-900 hover:bg-zinc-50">
-                        <span class="block text-lg">Quản lý bài viết</span>
-                        <span class="mt-1 block text-sm font-normal text-zinc-500">Viết, đăng và ẩn bài viết về giày (chỉ Admin)</span>
+                    <a href="{{ route('admin.articles.index') }}" class="group rounded-2xl border border-border bg-surface/30 p-5 transition-colors duration-150 hover:border-accent hover:bg-surface/70">
+                        <span class="block text-base font-bold text-main group-hover:text-accent transition-colors">Quản lý bài viết</span>
+                        <span class="mt-1 block text-xs text-muted leading-relaxed">Viết, đăng và ẩn bài viết về giày (chỉ Admin)</span>
                     </a>
-                    <a href="{{ route('admin.users.index') }}" class="rounded-full border border-zinc-200 bg-white px-6 py-4 text-left font-semibold transition hover:border-zinc-900 hover:bg-zinc-50">
-                        <span class="block text-lg">Quản lý người dùng</span>
-                        <span class="mt-1 block text-sm font-normal text-zinc-500">Tài khoản, vai trò và khóa/mở khóa</span>
+                    <a href="{{ route('admin.users.index') }}" class="group rounded-2xl border border-border bg-surface/30 p-5 transition-colors duration-150 hover:border-accent hover:bg-surface/70">
+                        <span class="block text-base font-bold text-main group-hover:text-accent transition-colors">Quản lý người dùng</span>
+                        <span class="mt-1 block text-xs text-muted leading-relaxed">Tài khoản, vai trò và khóa/mở khóa</span>
                     </a>
                 @else
-                    <span class="cursor-not-allowed rounded-full border border-zinc-100 bg-zinc-50 px-6 py-4 text-left font-semibold opacity-50" aria-disabled="true">
-                        <span class="block text-lg">Quản lý người dùng</span>
-                        <span class="mt-1 block text-sm font-normal text-zinc-500">Tài khoản, vai trò và khóa/mở khóa (chỉ Admin)</span>
+                    <span class="cursor-not-allowed rounded-2xl border border-border/50 bg-surface/20 p-5 opacity-50" aria-disabled="true">
+                        <span class="block text-base font-bold text-muted">Quản lý người dùng</span>
+                        <span class="mt-1 block text-xs text-muted leading-relaxed">Tài khoản, vai trò và khóa/mở khóa (chỉ Admin)</span>
                     </span>
                 @endif
             </div>
