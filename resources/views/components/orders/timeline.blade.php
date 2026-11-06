@@ -4,7 +4,7 @@
     $visibleEntries = array_values(array_filter((array) $entries, static fn ($entry) => is_array($entry) && ($entry['visibility'] ?? null) === 'CUSTOMER'));
 @endphp
 <section aria-label="Lịch sử trạng thái" class="space-y-4">
-    <h2 class="text-lg font-bold font-serif text-main">Lịch sử cập nhật</h2>
+    <h2 class="text-lg font-bold text-main">Lịch sử cập nhật</h2>
     <ol class="relative space-y-5 border-l border-border pl-5">
         @if (count($visibleEntries) === 0)
             <li class="text-sm text-muted">Chưa có lịch sử công khai.</li>

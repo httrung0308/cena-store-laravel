@@ -13,7 +13,6 @@
     "dependencies": {
         "@fontsource/be-vietnam-pro": "^5.3.0",
         "@fontsource/montserrat": "^5.2",
-        "@fontsource/playfair-display": "^5.3.0",
         "@tiptap/core": "^3.32.0",
         "@tiptap/pm": "^3.32.0",
         "@tiptap/starter-kit": "^3.32.0",

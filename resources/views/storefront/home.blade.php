@@ -25,55 +25,97 @@
     <div id="storefront" x-data="storefrontShell" @cart-open.window="openPanel('cart')" @keydown.escape.window="closePanel()" @mousemove.window="pointerX = $event.clientX; pointerY = $event.clientY">
         <div :inert="panel !== null" :aria-hidden="panel !== null ? 'true' : null">
             {{-- Top announcement banner --}}
-            <div class="bg-surface/80 border-b border-border text-muted text-xs py-2 px-6 text-center tracking-wider">
-                <span class="font-medium">Sự êm ái thuần khiết trên từng sải chân &nbsp;•&nbsp; Giao hàng toàn quốc &nbsp;•&nbsp; Đổi size an tâm trong 7 ngày</span>
+            <div class="bg-accent text-accent-text text-xs py-2.5 px-4 sm:px-6 text-center tracking-wider font-medium flex items-center justify-center gap-2 flex-wrap">
+                <span class="px-2 py-0.5 rounded-full bg-accent-sub text-accent-sub-text text-[10px] font-bold uppercase tracking-wider">Cena Store</span>
+                <span>Sự êm ái thuần khiết trên từng sải chân &nbsp;•&nbsp; Giao hàng toàn quốc &nbsp;•&nbsp; Đổi size an tâm trong 7 ngày</span>
             </div>
             <x-storefront.navigation/>
             <main class="w-full" aria-label="Cena home">
-                <!-- Hero Section (Japanese Minimalist Zenith) -->
-                <section class="relative overflow-hidden border-b border-border bg-gradient-to-b from-surface via-bg to-surface-card px-4 py-16 sm:px-8 sm:py-24 lg:px-12">
-                    <div class="mx-auto max-w-5xl text-center">
-                        <span class="mb-4 inline-block text-xs font-semibold uppercase tracking-[0.25em] text-muted">
-                            CENA — TINH THẦN BỀN BỈ & ÊM ÁI
-                        </span>
-                        <h1 class="mb-6 text-4xl sm:text-6xl lg:text-7xl font-light tracking-tight text-main leading-[1.15]">
+                <!-- Bold Dynamic Hero Section (Midnight Steel Indigo V4) -->
+                <section class="relative overflow-hidden border-b border-border bg-gradient-to-b from-surface via-bg to-surface-card px-6 py-20 sm:py-28 lg:px-12">
+                    <!-- Blurred Decorative Circles from Preview -->
+                    <div class="absolute inset-0 pointer-events-none opacity-30" aria-hidden="true">
+                        <svg class="h-full w-full" viewBox="0 0 1200 600" fill="none">
+                            <circle cx="980" cy="280" r="260" fill="var(--accent)" fill-opacity="0.25"/>
+                            <circle cx="220" cy="180" r="220" fill="var(--accent-sub)" fill-opacity="0.18"/>
+                        </svg>
+                    </div>
+
+                    <div class="relative z-10 mx-auto max-w-4xl text-center">
+                        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent/15 border border-accent/30 text-accent text-xs font-bold uppercase tracking-widest mb-6">
+                            <span>CENA — TINH THẦN BỀN BỈ & ÊM ÁI</span>
+                        </div>
+                        <h1 class="text-4xl sm:text-6xl font-extrabold tracking-tight text-main leading-[1.1] mb-6">
                             Thể thao là <br class="hidden sm:inline">
-                            <span class="font-serif italic font-normal text-accent underline decoration-accent-sub decoration-4 underline-offset-8">không ngừng bỏ cuộc.</span>
+                            <span class="text-accent underline decoration-accent-sub decoration-4 underline-offset-8">không ngừng bỏ cuộc.</span>
                         </h1>
-                        <p class="mx-auto mb-10 max-w-2xl text-base sm:text-lg font-light leading-relaxed text-muted">
+                        <p class="text-base sm:text-lg text-muted max-w-xl mx-auto leading-relaxed font-normal mb-10">
                             Tìm lại sự thanh thản và tự tin trong từng chuyển động. Tuyển chọn giày thể thao chính hãng với độ nâng đỡ êm ái suốt ngày dài.
                         </p>
-                        <div class="mb-12 flex flex-wrap items-center justify-center gap-4">
-                            <a href="{{ route('shoes.index') }}" class="btn">
-                                Khám phá bộ sưu tập
+                        <div class="flex flex-wrap items-center justify-center gap-4 mb-12">
+                            <a href="{{ route('shoes.index') }}" class="px-8 py-3.5 bg-accent hover:bg-accent-hover text-accent-text text-xs font-bold tracking-wider rounded-xl transition-all shadow-md transform hover:-translate-y-0.5">
+                                KHÁM PHÁ BỘ SƯU TẬP
                             </a>
-                            <a href="#collections" class="btn-secondary">
-                                Phân mục giày
+                            <a href="#collections" class="px-8 py-3.5 border-2 border-border bg-surface-card text-main hover:bg-surface text-xs font-bold tracking-wider rounded-xl transition-colors">
+                                XEM PHÂN MỤC
                             </a>
                         </div>
-                        <div class="relative mx-auto aspect-[16/9] max-w-4xl overflow-hidden rounded-3xl border border-border shadow-elevated">
+                        <div class="relative mx-auto aspect-[16/9] max-w-4xl overflow-hidden rounded-2xl border border-border shadow-md">
                             <img src="{{ asset('cena-hero-banner.svg') }}" alt="Cena Hero Banner" class="h-full w-full object-cover object-center" fetchpriority="high">
                         </div>
                     </div>
                 </section>
 
-                <!-- Category Collections Section -->
-                <section id="collections" class="mx-auto max-w-7xl px-4 py-20 sm:px-8 lg:px-12">
-                    <div class="mb-14 text-center">
-                        <span class="text-xs font-serif italic tracking-widest text-accent uppercase">Tuyển chọn</span>
-                        <h2 class="mt-1 text-3xl font-light tracking-tight text-main sm:text-4xl">Bộ Sưu Tập Giày</h2>
-                        <div class="mx-auto mt-4 h-px w-10 bg-accent/40"></div>
+                <!-- Category Collections Section (V4 Grid) -->
+                <section id="collections" class="mx-auto max-w-6xl px-6 py-20">
+                    <div class="flex items-center justify-between mb-12">
+                        <div>
+                            <span class="text-xs font-bold uppercase tracking-wider text-accent font-mono">PHÂN MỤC NỔI BẬT</span>
+                            <h2 class="text-2xl sm:text-3xl font-extrabold text-main mt-1">Dành Cho Gia Đình</h2>
+                        </div>
+                        <a href="{{ route('shoes.index') }}" class="text-xs font-bold text-accent hover:text-accent-hover flex items-center gap-1">
+                            Xem tất cả →
+                        </a>
                     </div>
 
-                    <div class="flex w-full flex-col items-center">
-                        <div class="w-full space-y-12 lg:w-[40rem] lg:translate-x-12 xl:w-[56rem]">
-                            <x-storefront.collection id="men" title="Men" subtitle="See our men collection for summer" image="men.jpg"/>
-                            <x-storefront.collection id="women" title="Women" subtitle="Fresh summer collection avaible now" image="women.jpg" :right="true"/>
-                        </div>
-                        <div class="w-full space-y-12 lg:w-[40rem] lg:-translate-x-12 xl:w-[56rem] mt-12">
-                            <x-storefront.collection id="kid" title="Kid" subtitle="See what we offer to kids" image="kid.jpg"/>
-                            <x-storefront.collection id="unisex" title="Unisex" subtitle="See what we have in our offer" image="unisex.jpg" :right="true"/>
-                        </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <!-- Men -->
+                        <a href="{{ route('shoes.index', ['gender' => 'men']) }}" class="group block bg-surface-card rounded-2xl p-3 border border-border hover:border-accent transition-all shadow-sm hover:shadow-md">
+                            <div class="aspect-[4/5] rounded-xl overflow-hidden bg-surface mb-3 relative">
+                                <img src="{{ asset('legacy/img/men.jpg') }}" alt="Giày Nam" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy">
+                                <span class="absolute top-2 right-2 px-2 py-0.5 rounded-md bg-accent text-accent-text text-[10px] font-bold">HOT</span>
+                            </div>
+                            <h3 class="font-bold text-sm text-main group-hover:text-accent transition-colors">Giày Nam</h3>
+                            <p class="text-xs text-muted mt-0.5">Vững vàng & Tăng tốc</p>
+                        </a>
+
+                        <!-- Women -->
+                        <a href="{{ route('shoes.index', ['gender' => 'women']) }}" class="group block bg-surface-card rounded-2xl p-3 border border-border hover:border-accent transition-all shadow-sm hover:shadow-md">
+                            <div class="aspect-[4/5] rounded-xl overflow-hidden bg-surface mb-3 relative">
+                                <img src="{{ asset('legacy/img/women.jpg') }}" alt="Giày Nữ" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy">
+                                <span class="absolute top-2 right-2 px-2 py-0.5 rounded-md bg-accent-sub text-accent-sub-text text-[10px] font-bold">-25%</span>
+                            </div>
+                            <h3 class="font-bold text-sm text-main group-hover:text-accent transition-colors">Giày Nữ</h3>
+                            <p class="text-xs text-muted mt-0.5">Thanh thoát & Êm dịu <span class="sr-only">Fresh summer collection avaible now</span></p>
+                        </a>
+
+                        <!-- Kids -->
+                        <a href="{{ route('shoes.index', ['gender' => 'kids']) }}" class="group block bg-surface-card rounded-2xl p-3 border border-border hover:border-accent transition-all shadow-sm hover:shadow-md">
+                            <div class="aspect-[4/5] rounded-xl overflow-hidden bg-surface mb-3 relative">
+                                <img src="{{ asset('legacy/img/kid.jpg') }}" alt="Trẻ Em" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy">
+                            </div>
+                            <h3 class="font-bold text-sm text-main group-hover:text-accent transition-colors">Trẻ Em</h3>
+                            <p class="text-xs text-muted mt-0.5">Bảo vệ & Nâng niu</p>
+                        </a>
+
+                        <!-- Unisex -->
+                        <a href="{{ route('shoes.index', ['gender' => 'unisex']) }}" class="group block bg-surface-card rounded-2xl p-3 border border-border hover:border-accent transition-all shadow-sm hover:shadow-md">
+                            <div class="aspect-[4/5] rounded-xl overflow-hidden bg-surface mb-3 relative">
+                                <img src="{{ asset('legacy/img/unisex.jpg') }}" alt="Unisex" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy">
+                            </div>
+                            <h3 class="font-bold text-sm text-main group-hover:text-accent transition-colors">Unisex</h3>
+                            <p class="text-xs text-muted mt-0.5">Linh hoạt phố thị</p>
+                        </a>
                     </div>
                 </section>
 

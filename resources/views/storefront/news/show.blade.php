@@ -13,7 +13,7 @@
             <span>Bài viết</span>
         </a>
         <p class="mt-6 text-xs font-semibold uppercase tracking-wider text-muted">{{ $article->published_at->setTimezone($tz)->format('d/m/Y') }}</p>
-        <h1 class="mt-3 text-3xl font-bold font-serif leading-tight text-main sm:text-5xl tracking-tight">{{ $article->title }}</h1>
+        <h1 class="mt-3 text-3xl font-extrabold leading-tight text-main sm:text-5xl tracking-tight">{{ $article->title }}</h1>
         <p class="mt-5 text-lg text-muted leading-relaxed">{{ $article->summary }}</p>
         <div class="mt-8 aspect-[16/9] w-full overflow-hidden rounded-2xl border border-border bg-surface shadow-card">
             <img src="{{ $article->coverUrl() }}" alt="{{ $article->title }}" class="h-full w-full object-cover">
@@ -21,7 +21,7 @@
         <div class="article-body mt-10 text-base leading-relaxed text-main" data-article-body>{{ App\Support\ArticleFormatter::toHtml($article->body) }}</div>
 
         <section id="article-feedback" class="mt-14 rounded-2xl border border-border bg-surface-card p-6 text-center shadow-card sm:p-8" aria-labelledby="feedback-title" data-article-feedback>
-            <h2 id="feedback-title" class="text-lg font-bold font-serif text-main">Bài viết có hữu ích không?</h2>
+            <h2 id="feedback-title" class="text-lg font-bold text-main">Bài viết có hữu ích không?</h2>
             <form method="POST" action="{{ route('news.feedback', $article->slug) }}" class="mt-4 flex justify-center gap-3">
                 @csrf
                 @foreach (['yes' => ['👍', 'Có', true], 'no' => ['👎', 'Không', false]] as $value => [$icon, $label, $isHelpful])
@@ -50,7 +50,7 @@
     @if ($related->isNotEmpty())
         <section class="mx-auto max-w-7xl border-t border-border mt-16 pt-12" aria-labelledby="related-title" data-related-articles>
             <div class="flex items-baseline justify-between gap-4">
-                <h2 id="related-title" class="text-2xl font-bold font-serif text-main">Bài viết khác</h2>
+                <h2 id="related-title" class="text-2xl font-bold text-main">Bài viết khác</h2>
                 <a href="{{ route('news.index') }}" class="text-sm font-semibold text-accent hover:text-accent-hover hover:underline transition-colors">Xem tất cả →</a>
             </div>
             <div class="mt-8 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
@@ -60,7 +60,7 @@
                             <img src="{{ $other->coverUrl() }}" alt="{{ $other->title }}" loading="lazy" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105">
                         </a>
                         <p class="text-xs font-medium text-muted">{{ $other->published_at->setTimezone($tz)->format('d/m/Y') }}</p>
-                        <h3 class="text-base font-semibold font-serif leading-snug text-main"><a href="{{ route('news.show', $other->slug) }}" class="hover:text-accent hover:underline transition-colors">{{ $other->title }}</a></h3>
+                        <h3 class="text-base font-bold leading-snug text-main"><a href="{{ route('news.show', $other->slug) }}" class="hover:text-accent hover:underline transition-colors">{{ $other->title }}</a></h3>
                     </article>
                 @endforeach
             </div>

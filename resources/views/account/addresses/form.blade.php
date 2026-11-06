@@ -9,7 +9,7 @@
                 <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
                 <span>Quản lý địa chỉ</span>
             </a>
-            <h1 class="text-3xl font-bold font-serif text-main sm:text-5xl tracking-tight">{{ $address ? 'Sửa địa chỉ' : 'Thêm địa chỉ' }}</h1>
+            <h1 class="text-2xl sm:text-4xl font-extrabold text-main tracking-tight">{{ $address ? 'Sửa địa chỉ' : 'Thêm địa chỉ' }}</h1>
         </div>
         <form method="POST" action="{{ $address ? route('account.addresses.update', $address->id) : route('account.addresses.store') }}" class="flex flex-col gap-6 rounded-2xl border border-border bg-surface-card p-6 shadow-card sm:p-10" novalidate>
             @csrf

@@ -14,18 +14,6 @@
 @import '@fontsource/be-vietnam-pro/latin-800.css';
 @import '@fontsource/be-vietnam-pro/vietnamese-800.css';
 
-/* Playfair Display (400, 400-italic, 600, 600-italic, 700) */
-@import '@fontsource/playfair-display/latin-400.css';
-@import '@fontsource/playfair-display/vietnamese-400.css';
-@import '@fontsource/playfair-display/latin-400-italic.css';
-@import '@fontsource/playfair-display/vietnamese-400-italic.css';
-@import '@fontsource/playfair-display/latin-600.css';
-@import '@fontsource/playfair-display/vietnamese-600.css';
-@import '@fontsource/playfair-display/latin-600-italic.css';
-@import '@fontsource/playfair-display/vietnamese-600-italic.css';
-@import '@fontsource/playfair-display/latin-700.css';
-@import '@fontsource/playfair-display/vietnamese-700.css';
-
 @import '@fontsource/montserrat/latin-400.css';
 @import '@fontsource/montserrat/vietnamese-400.css';
 @import '@fontsource/montserrat/latin-600.css';
@@ -337,11 +325,11 @@ html {
   }
 
   .article-body h2 {
-    @apply pt-4 text-2xl font-bold font-serif leading-snug text-main sm:text-3xl;
+    @apply pt-4 text-2xl font-bold font-sans leading-snug text-main sm:text-3xl;
   }
 
   .article-body h3 {
-    @apply pt-3 text-xl font-bold font-serif leading-snug text-main sm:text-2xl;
+    @apply pt-3 text-xl font-bold font-sans leading-snug text-main sm:text-2xl;
   }
 
   .article-body p {

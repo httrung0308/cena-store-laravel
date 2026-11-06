@@ -14,7 +14,7 @@
         <div class="min-w-0 space-y-6 break-words">
             <div>
                 <span class="text-[11px] font-semibold uppercase tracking-widest text-accent">Cena · Tuyển chọn chính hãng</span>
-                <h1 class="mt-1 font-serif text-3xl font-light tracking-tight text-main sm:text-4xl">{{ $product['name'] }}</h1>
+                <h1 class="mt-1 text-3xl font-extrabold tracking-tight text-main sm:text-4xl">{{ $product['name'] }}</h1>
                 <p class="mt-1 text-sm text-muted">{{ $product['category'] }}</p>
                 @if ($product['reviews_count'] > 0)
                     <a href="#product-reviews" class="mt-2 inline-flex items-center gap-2 text-xs text-muted transition-colors hover:text-accent">
@@ -108,7 +108,7 @@
                 </summary>
                 @if ($product['reviews_count'] > 0)
                     <div class="mt-4 flex items-center gap-3 border-b border-border/60 pb-4">
-                        <span class="font-serif text-3xl font-light text-main">{{ number_format($product['rating_avg'], 1, ',', '.') }}</span>
+                        <span class="font-mono text-3xl font-extrabold text-main">{{ number_format($product['rating_avg'], 1, ',', '.') }}</span>
                         <div>
                             <x-reviews.stars :rating="$product['rating_avg']" />
                             <p class="mt-0.5 text-[11px] text-muted">{{ $product['reviews_count'] }} lượt đánh giá khách quan</p>

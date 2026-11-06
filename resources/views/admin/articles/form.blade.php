@@ -62,7 +62,7 @@
                     <div x-cloak x-show="ready" class="sticky top-0 z-10 flex flex-wrap items-center gap-1 rounded-t-md border-b border-border bg-surface-alt px-2 py-1.5" role="toolbar" aria-label="Định dạng nội dung">
                         @foreach ([
                             ['tool' => 'bold', 'label' => 'B', 'title' => 'In đậm (Ctrl+B)', 'class' => 'font-bold'],
-                            ['tool' => 'italic', 'label' => 'I', 'title' => 'In nghiêng (Ctrl+I)', 'class' => 'italic font-serif'],
+                            ['tool' => 'italic', 'label' => 'I', 'title' => 'In nghiêng (Ctrl+I)', 'class' => 'italic font-bold'],
                             ['tool' => 'h2', 'label' => 'H2', 'title' => 'Tiêu đề mục', 'class' => 'font-semibold'],
                             ['tool' => 'h3', 'label' => 'H3', 'title' => 'Tiêu đề nhỏ', 'class' => 'font-semibold text-xs'],
                             ['tool' => 'bulletList', 'label' => '• Danh sách', 'title' => 'Danh sách gạch đầu dòng', 'class' => ''],

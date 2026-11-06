@@ -12,7 +12,7 @@
 @section('content')
     <section class="mx-auto max-w-7xl py-6 sm:py-10">
         <div class="space-y-3">
-            <h1 class="text-3xl font-bold font-serif text-main sm:text-5xl tracking-tight">Bài viết</h1>
+            <h1 class="text-3xl font-extrabold text-main sm:text-5xl tracking-tight">Bài viết</h1>
             <p class="text-base text-muted max-w-2xl leading-relaxed">Giày bán chạy, xu hướng, cách chọn size và bảo quản giày từ chuyên gia Cena.</p>
         </div>
 
@@ -23,7 +23,7 @@
                 </a>
                 <div class="flex flex-col gap-4 lg:col-span-2">
                     <p class="text-xs font-semibold uppercase tracking-wider text-muted">Mới nhất · {{ $featured->published_at->setTimezone($tz)->format('d/m/Y') }}</p>
-                    <h2 class="text-2xl font-bold font-serif leading-tight text-main sm:text-3xl lg:text-4xl"><a href="{{ route('news.show', $featured->slug) }}" class="hover:text-accent hover:underline transition-colors">{{ $featured->title }}</a></h2>
+                    <h2 class="text-2xl font-bold leading-tight text-main sm:text-3xl lg:text-4xl"><a href="{{ route('news.show', $featured->slug) }}" class="hover:text-accent hover:underline transition-colors">{{ $featured->title }}</a></h2>
                     <p class="text-sm sm:text-base text-muted leading-relaxed line-clamp-3">{{ $featured->summary }}</p>
                     <a href="{{ route('news.show', $featured->slug) }}" class="btn self-start">Đọc bài</a>
                 </div>
@@ -37,7 +37,7 @@
                         <img src="{{ $article->coverUrl() }}" alt="{{ $article->title }}" loading="lazy" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105">
                     </a>
                     <p class="text-xs font-medium text-muted">{{ $article->published_at->setTimezone($tz)->format('d/m/Y') }}</p>
-                    <h2 class="text-lg font-semibold font-serif leading-snug text-main"><a href="{{ route('news.show', $article->slug) }}" class="hover:text-accent hover:underline transition-colors">{{ $article->title }}</a></h2>
+                    <h2 class="text-lg font-bold leading-snug text-main"><a href="{{ route('news.show', $article->slug) }}" class="hover:text-accent hover:underline transition-colors">{{ $article->title }}</a></h2>
                     <p class="line-clamp-3 text-sm text-muted leading-relaxed">{{ $article->summary }}</p>
                 </article>
             @endforeach

@@ -1,6 +1,6 @@
 @props(['orders' => [], 'paginator' => null])
 <section class="space-y-6" aria-label="Lịch sử đơn hàng">
-    <h2 class="text-xl font-bold font-serif text-main">Đơn hàng của tôi</h2>
+    <h2 class="text-xl font-bold text-main">Đơn hàng của tôi</h2>
     @forelse ($orders as $entry)
         @php($order = $entry['order'] ?? [])
         <article class="space-y-3 rounded-2xl border border-border bg-surface-card p-5 shadow-card transition-colors duration-150 hover:border-accent/40 text-sm">

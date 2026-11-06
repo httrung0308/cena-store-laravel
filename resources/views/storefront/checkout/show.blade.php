@@ -6,7 +6,7 @@
 
 @section('content')
     <div class="mx-auto mt-6 max-w-6xl pb-20 sm:mt-10">
-        <h1 class="mb-8 text-3xl font-bold font-serif text-main tracking-tight sm:text-4xl">Thanh toán</h1>
+        <h1 class="mb-8 text-3xl font-extrabold text-main tracking-tight sm:text-4xl">Thanh toán</h1>
 
         @if ($errors->any())
             <div role="alert" class="mb-8 rounded-2xl border border-error/30 bg-error-bg p-5 text-sm text-error-text shadow-subtle">
@@ -29,7 +29,7 @@
             <input type="hidden" name="payment_method" value="COD">
 
             <section aria-labelledby="checkout-address-title" class="space-y-5">
-                <h2 id="checkout-address-title" class="text-xl sm:text-2xl font-bold font-serif text-main">Địa chỉ giao hàng</h2>
+                <h2 id="checkout-address-title" class="text-xl sm:text-2xl font-bold text-main">Địa chỉ giao hàng</h2>
                 @forelse ($addresses as $option)
                     @php($outdated = $option->dataset_version !== $currentVersion)
                     <label @class([
@@ -66,7 +66,7 @@
             </section>
 
             <section aria-labelledby="checkout-summary-title" class="h-fit rounded-2xl border border-border bg-surface-card p-6 shadow-card sm:p-8">
-                <h2 id="checkout-summary-title" class="mb-5 text-xl sm:text-2xl font-bold font-serif text-main">Đơn hàng của bạn</h2>
+                <h2 id="checkout-summary-title" class="mb-5 text-xl sm:text-2xl font-bold text-main">Đơn hàng của bạn</h2>
                 <div class="mb-5 max-h-96 space-y-4 overflow-y-auto pr-1">
                     @foreach ($quote['lines'] as $line)
                         <div class="flex gap-4 border-b border-border/60 pb-4">

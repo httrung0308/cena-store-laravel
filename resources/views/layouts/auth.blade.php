@@ -71,7 +71,7 @@
 
     <main class="relative z-10 flex flex-1 items-center justify-center px-4 py-8 sm:px-6">
         <div class="w-full max-w-xl rounded-3xl border border-border bg-surface-card p-6 shadow-elevated sm:p-10">
-            <h1 class="text-center text-3xl font-bold font-serif leading-tight text-main sm:text-4xl tracking-tight">@yield('heading', $pageTitle)</h1>
+            <h1 class="text-center text-2xl sm:text-3xl font-extrabold leading-tight text-main tracking-tight">@yield('heading', $pageTitle)</h1>
             @hasSection('subheading')
                 <p class="mt-2 text-center text-sm text-muted sm:text-base leading-relaxed">@yield('subheading')</p>
             @endif

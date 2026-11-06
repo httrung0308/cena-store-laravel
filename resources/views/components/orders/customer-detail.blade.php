@@ -29,7 +29,7 @@
 @endphp
 <section class="space-y-6" aria-label="Chi tiết đơn hàng">
     <header class="space-y-2 rounded-2xl border border-border bg-surface-card p-6 shadow-card">
-        <h2 class="text-xl font-bold font-serif text-main">Đơn {{ $order['order_code'] ?? '' }}</h2>
+        <h2 class="text-xl font-bold text-main">Đơn {{ $order['order_code'] ?? '' }}</h2>
         <p class="text-sm text-muted">Trạng thái: <span class="font-medium text-main">{{ $order['order_status'] ?? '—' }}</span> · Thanh toán: <span class="font-medium text-main">{{ $order['payment_status'] ?? '—' }}</span></p>
         <p class="text-sm text-muted">Người nhận: <span class="font-medium text-main">{{ $order['shipping_name'] ?? '' }} · {{ $order['shipping_phone'] ?? '' }}</span></p>
         <p class="text-sm text-muted">Địa chỉ: <span class="text-main">{{ $addressDisplay !== '' ? $addressDisplay : 'Chưa có địa chỉ' }}</span></p>

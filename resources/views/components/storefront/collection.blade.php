@@ -5,8 +5,8 @@
     </div>
     <div @class(['flex flex-1 flex-col justify-center space-y-3', 'sm:items-end' => $right, 'sm:items-start' => ! $right])>
         <span class="text-xs font-semibold uppercase tracking-widest text-muted">Phân mục</span>
-        <h2 class="text-3xl sm:text-4xl font-serif font-normal text-main">{{ $title }}</h2>
-        <h3 class="text-sm font-light leading-relaxed text-muted max-w-sm">{{ $subtitle }}</h3>
+        <h2 class="text-3xl sm:text-4xl font-extrabold text-main">{{ $title }}</h2>
+        <h3 class="text-sm font-normal leading-relaxed text-muted max-w-sm">{{ $subtitle }}</h3>
         <a href="{{ route('shoes.index', ['gender' => $id === 'kid' ? 'kids' : $id]) }}" class="btn self-start sm:self-auto mt-2">Explore</a>
     </div>
 </section>

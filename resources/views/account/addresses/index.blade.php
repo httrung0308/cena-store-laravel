@@ -10,7 +10,7 @@
                     <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
                     <span>Tài khoản của tôi</span>
                 </a>
-                <h1 class="text-3xl font-bold font-serif text-main sm:text-5xl tracking-tight">Quản lý địa chỉ</h1>
+                <h1 class="text-2xl sm:text-4xl font-extrabold text-main tracking-tight">Quản lý địa chỉ</h1>
             </div>
             @if (session('status'))
                 <p role="status" class="rounded-xl border border-success/30 bg-success-bg p-4 text-sm font-medium text-success-text shadow-subtle">{{ session('status') }}</p>

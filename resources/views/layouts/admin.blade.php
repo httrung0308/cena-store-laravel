@@ -59,7 +59,7 @@
                         @endunless
                         <p class="text-xs font-bold uppercase tracking-wider text-muted">@yield('eyebrow', 'Quản trị cửa hàng')</p>
                         <div class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-                            <h1 class="break-words text-3xl font-bold font-serif text-main sm:text-4xl lg:text-5xl tracking-tight">{{ $pageTitle }}</h1>
+                            <h1 class="break-words text-2xl sm:text-3xl lg:text-4xl font-extrabold text-main tracking-tight">{{ $pageTitle }}</h1>
                             <div class="flex flex-wrap gap-2">@yield('actions')</div>
                         </div>
                     </div>

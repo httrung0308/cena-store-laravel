@@ -24,7 +24,7 @@
         <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             <article class="admin-card flex flex-col justify-between">
                 <div>
-                    <h2 class="text-base font-bold font-serif text-main">Thông tin tài khoản</h2>
+                    <h2 class="text-base font-bold text-main">Thông tin tài khoản</h2>
                     <div class="mt-3 space-y-1.5 text-xs text-muted">
                         <p>Họ tên: <span class="font-semibold text-main">{{ $user->full_name }}</span></p>
                         <p>Email: <span class="break-all font-semibold text-main">{{ $user->email }}</span></p>
@@ -35,7 +35,7 @@
 
             <article class="admin-card flex flex-col justify-between">
                 <div>
-                    <h2 class="text-base font-bold font-serif text-main">Thao tác nhanh</h2>
+                    <h2 class="text-base font-bold text-main">Thao tác nhanh</h2>
                     <div class="mt-3 space-y-2">
                         <a href="{{ route('home') }}" class="btn-pill w-full text-xs">Xem cửa hàng</a>
                         <form method="POST" action="{{ route('logout') }}">
@@ -48,7 +48,7 @@
 
             <article class="admin-card flex flex-col justify-between">
                 <div>
-                    <h2 class="text-base font-bold font-serif text-main">Trạng thái hệ thống</h2>
+                    <h2 class="text-base font-bold text-main">Trạng thái hệ thống</h2>
                     <div class="mt-4 flex items-center justify-between">
                         <span class="text-xs text-muted">Hệ thống</span>
                         <span class="badge bg-success-bg border border-success/30 text-success-text">Đang hoạt động</span>
@@ -58,7 +58,7 @@
         </div>
 
         <div class="rounded-2xl border border-border bg-surface-card p-6 shadow-card sm:p-8">
-            <h2 class="text-xl font-bold font-serif text-main sm:text-2xl">Các mô-đun quản lý</h2>
+            <h2 class="text-xl font-bold text-main sm:text-2xl">Các mô-đun quản lý</h2>
             <p class="mt-1 text-xs text-muted">Các chức năng quản lý hiện có:</p>
             <div class="mt-6 grid gap-4 md:grid-cols-2">
                 @foreach ($modules as $module)

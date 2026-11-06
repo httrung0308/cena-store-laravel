@@ -3,7 +3,7 @@
 <article {{ $attributes->class(['rounded-2xl border border-border bg-surface-card p-6 shadow-card transition-colors duration-150 hover:border-accent/40']) }}>
     <div class="flex flex-wrap items-start justify-between gap-4">
         <div class="min-w-0 flex-1 break-words">
-            <h3 class="text-lg font-bold font-serif text-main sm:text-xl">{{ $address['recipient_name'] ?? 'Địa chỉ' }}</h3>
+            <h3 class="text-lg font-bold text-main sm:text-xl">{{ $address['recipient_name'] ?? 'Địa chỉ' }}</h3>
             <p class="text-sm font-medium text-muted mt-0.5">{{ $address['phone'] ?? '' }}</p>
             <p class="mt-2 text-sm text-main/80 leading-relaxed">{{ $address['street_address'] ?? '' }}, {{ $address['ward_name_snapshot'] ?? '' }}, {{ $address['province_name_snapshot'] ?? '' }}</p>
             @if (($address['is_default'] ?? false) === true)

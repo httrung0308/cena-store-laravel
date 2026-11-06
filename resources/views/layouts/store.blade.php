@@ -28,8 +28,9 @@
     <div id="storefront" x-data="storefrontShell" @cart-open.window="openPanel('cart')" @keydown.escape.window="closePanel()" @mousemove.window.throttle.30ms="if (hoverImage) { pointerX = $event.clientX; pointerY = $event.clientY }">
         <div :inert="panel !== null" :aria-hidden="panel !== null ? 'true' : null" class="flex min-h-screen flex-col">
             {{-- Top announcement banner --}}
-            <div class="bg-surface/80 border-b border-border text-muted text-xs py-2 px-6 text-center tracking-wider">
-                <span class="font-medium">Sự êm ái thuần khiết trên từng sải chân &nbsp;•&nbsp; Giao hàng toàn quốc &nbsp;•&nbsp; Đổi size an tâm trong 7 ngày</span>
+            <div class="bg-accent text-accent-text text-xs py-2.5 px-4 sm:px-6 text-center tracking-wider font-medium flex items-center justify-center gap-2 flex-wrap">
+                <span class="px-2 py-0.5 rounded-full bg-accent-sub text-accent-sub-text text-[10px] font-bold uppercase tracking-wider">Cena Store</span>
+                <span>Sự êm ái thuần khiết trên từng sải chân &nbsp;•&nbsp; Giao hàng toàn quốc &nbsp;•&nbsp; Đổi size an tâm trong 7 ngày</span>
             </div>
             <x-storefront.navigation :animated="false"/>
             <main class="w-full flex-1 px-4 py-6 sm:px-8 lg:px-12">

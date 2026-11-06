@@ -9,10 +9,14 @@
         <img src="{{ asset('cena-logo.svg') }}" alt="Cena" class="theme-logo-light h-9 w-auto">
         <img src="{{ asset('cena-logo-white.svg') }}" alt="Cena" class="theme-logo-dark h-9 w-auto">
     </a>
-    @foreach (['Men' => 'men', 'Women' => 'women', 'Kids' => 'kids', 'Unisex' => 'unisex'] as $label => $gender)
-        <a href="{{ route('shoes.index', ['gender' => $gender]) }}" class="text-xl font-semibold uppercase tracking-wider text-muted transition-colors hover:text-accent" @click="closePanel()">{{ $label }}</a>
+    @foreach (['Giày Nam' => 'men', 'Giày Nữ' => 'women', 'Trẻ Em' => 'kids', 'Unisex' => 'unisex'] as $label => $gender)
+        <a href="{{ route('shoes.index', ['gender' => $gender]) }}" class="text-lg font-bold text-muted transition-colors hover:text-accent" @click="closePanel()">{{ $label }}</a>
     @endforeach
-    <a href="{{ route('news.index') }}" class="text-xl font-semibold uppercase tracking-wider text-muted transition-colors hover:text-accent" @click="closePanel()">News</a>
+    <a href="{{ route('shoes.index') }}" class="text-lg font-bold text-accent transition-colors hover:text-accent-hover flex items-center gap-1.5" @click="closePanel()">
+        <span>Bộ Sưu Tập</span>
+        <span class="w-2 h-2 rounded-full bg-accent-sub" aria-hidden="true"></span>
+    </a>
+    <a href="{{ route('news.index') }}" class="text-lg font-bold text-muted transition-colors hover:text-accent" @click="closePanel()">News</a>
     <div class="mt-4 flex items-center gap-1.5 rounded-xl border border-border bg-surface p-1 text-xs">
         <button type="button" @click="setTheme('light')" class="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 font-medium transition" :class="theme === 'light' ? 'bg-surface-card text-accent shadow-sm font-semibold' : 'text-muted hover:text-main'" aria-label="Giao diện Sáng">
             <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
@@ -89,7 +93,7 @@
 <section id="cart-panel" x-cloak x-show="panel === 'cart'" class="fixed right-0 top-0 z-40 flex h-full w-full flex-col gap-5 border-l border-border bg-surface-card p-6 shadow-elevated sm:w-[32rem] sm:p-8 lg:w-[36rem]" role="dialog" aria-modal="true" aria-label="Tài khoản quản trị" @keydown.tab="trapFocus($event)"
     x-init="$store.cart.configure(@js(['show' => route('cart.show'), 'add' => route('cart.items.store'), 'item' => route('cart.items.update', ['item' => '__ID__']), 'clear' => route('cart.clear')]))">
     <button type="button" class="btn-icon self-end" @click="closePanel()" aria-label="Đóng thông báo"><x-storefront.icon name="close"/></button>
-    <h2 class="text-xl font-bold text-main font-serif">Tài khoản quản trị</h2>
+    <h2 class="text-xl font-bold text-main">Tài khoản quản trị</h2>
     <p class="text-sm text-muted">Tài khoản quản trị không dùng để mua sắm. Vui lòng đăng nhập bằng tài khoản khách hàng để đặt hàng.</p>
     <a href="{{ route('admin.dashboard') }}" class="btn text-center">Về trang quản trị</a>
 </section>

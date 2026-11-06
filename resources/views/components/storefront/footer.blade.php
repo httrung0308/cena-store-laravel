@@ -17,7 +17,7 @@
     $policies = ['Thanh toán khi nhận hàng (COD)', 'Miễn phí vận chuyển mọi đơn', 'Đổi size trong 7 ngày', 'Bảo hành keo, đế 6 tháng'];
     $icon = 'h-4 w-4 shrink-0';
 @endphp
-<footer class="mt-20 w-full border-t border-slate-800 bg-[#0f0927] text-slate-300">
+<footer class="mt-20 w-full border-t-4 border-accent bg-[#0b192c] text-slate-300 text-xs">
     <div class="mx-auto grid max-w-7xl gap-10 px-5 py-14 sm:grid-cols-2 sm:px-10 lg:grid-cols-4">
         <div>
             <a href="{{ route('home') }}" class="inline-block" aria-label="Cena — trang chủ"><img src="{{ asset('cena-logo-white.svg') }}" alt="Cena" class="h-10 w-auto"></a>

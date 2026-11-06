@@ -37,7 +37,6 @@ export default {
             },
             fontFamily: {
                 sans: ['"Be Vietnam Pro"', 'sans-serif'],
-                serif: ['"Playfair Display"', 'serif'],
                 montserrat: ['Montserrat', 'sans-serif'],
             },
             boxShadow: {
@@ -45,6 +44,7 @@ export default {
                 card: '0 4px 20px -2px rgba(32, 20, 100, 0.05), 0 2px 6px -1px rgba(2, 6, 23, 0.04)',
                 'card-hover': '0 14px 34px -4px rgba(32, 20, 100, 0.12), 0 4px 12px -2px rgba(2, 6, 23, 0.06)',
                 elevated: '0 20px 40px -10px rgba(32, 20, 100, 0.15)',
+                'bold-shadow': '0 12px 32px -8px rgba(0, 0, 0, 0.08)',
             },
             width: { 160: '40rem' },
         },

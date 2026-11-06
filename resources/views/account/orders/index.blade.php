@@ -12,7 +12,7 @@
                     <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
                     <span>Tài khoản của tôi</span>
                 </a>
-                <h1 class="text-3xl font-bold font-serif text-main sm:text-5xl tracking-tight">Đơn hàng của tôi</h1>
+                <h1 class="text-2xl sm:text-4xl font-extrabold text-main tracking-tight">Đơn hàng của tôi</h1>
             </div>
             @forelse ($orders as $order)
                 <article class="rounded-2xl border border-border bg-surface-card p-6 shadow-card transition-colors duration-150 hover:border-accent/40">

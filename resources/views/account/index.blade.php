@@ -6,7 +6,7 @@
     <section class="py-6 sm:py-10">
         <div class="mx-auto flex max-w-5xl flex-col gap-10">
             <div class="space-y-4">
-                <h1 class="break-words text-3xl font-bold font-serif text-main sm:text-5xl tracking-tight">Xin chào {{ $user->full_name }}!</h1>
+                <h1 class="break-words text-2xl sm:text-4xl font-extrabold text-main tracking-tight">Xin chào {{ $user->full_name }}!</h1>
                 <p class="text-base text-muted">{{ $isAdminAccount ? 'Quản lý thông tin tài khoản quản trị.' : 'Quản lý thông tin cá nhân, địa chỉ và theo dõi đơn hàng.' }}</p>
                 @if (session('status'))
                     <p role="status" class="rounded-xl border border-success/30 bg-success-bg p-4 text-sm font-medium text-success-text shadow-subtle">{{ session('status') }}</p>
@@ -27,7 +27,7 @@
             <div class="grid gap-6 md:grid-cols-2">
                 <article class="rounded-2xl border border-border bg-surface-card p-6 shadow-card sm:p-7 flex flex-col justify-between">
                     <div>
-                        <h2 class="text-lg font-bold font-serif text-main">Trang cá nhân</h2>
+                        <h2 class="text-lg font-bold text-main">Trang cá nhân</h2>
                         <div class="mt-4 space-y-2 text-sm text-muted">
                             <p>Tên: <span class="font-medium text-main">{{ $user->full_name }}</span></p>
                             <p class="break-all">Email: <span class="font-medium text-main">{{ $user->email }}</span></p>
@@ -44,7 +44,7 @@
                 @if ($isAdminAccount)
                     <article class="rounded-2xl border border-border bg-surface-card p-6 shadow-card sm:p-7 flex flex-col justify-between">
                         <div>
-                            <h2 class="text-lg font-bold font-serif text-main">Quản trị cửa hàng</h2>
+                            <h2 class="text-lg font-bold text-main">Quản trị cửa hàng</h2>
                             <p class="mt-4 text-sm text-muted leading-relaxed">Tài khoản này dùng để quản lý cửa hàng. Khi cần mua sắm, hãy đăng nhập bằng tài khoản khách hàng.</p>
                         </div>
                         <div class="mt-6 pt-4 border-t border-border/60">
@@ -54,7 +54,7 @@
                 @else
                     <article class="rounded-2xl border border-border bg-surface-card p-6 shadow-card sm:p-7 flex flex-col justify-between">
                         <div>
-                            <h2 class="text-lg font-bold font-serif text-main">Địa chỉ đã lưu</h2>
+                            <h2 class="text-lg font-bold text-main">Địa chỉ đã lưu</h2>
                             <div class="mt-4 min-h-[80px] text-sm text-muted leading-relaxed">
                                 @if ($defaultAddress)
                                     <p class="font-medium text-main">{{ $defaultAddress->recipient_name }} · {{ $defaultAddress->phone }}</p>
@@ -73,7 +73,7 @@
 
                     <article class="rounded-2xl border border-border bg-surface-card p-6 shadow-card sm:p-7 md:col-span-2">
                         <div class="flex items-center justify-between pb-3 border-b border-border/60">
-                            <h2 class="text-lg font-bold font-serif text-main">Các đơn hàng gần đây</h2>
+                            <h2 class="text-lg font-bold text-main">Các đơn hàng gần đây</h2>
                             <a href="{{ route('orders.index') }}" class="text-xs font-semibold text-accent hover:text-accent-hover hover:underline transition-colors">Xem tất cả đơn hàng →</a>
                         </div>
                         <div class="mt-5 space-y-3">

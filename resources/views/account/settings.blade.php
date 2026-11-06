@@ -10,7 +10,7 @@
                     <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
                     <span>Tài khoản của tôi</span>
                 </a>
-                <h1 class="text-3xl font-bold font-serif text-main sm:text-5xl tracking-tight">Cài đặt tài khoản</h1>
+                <h1 class="text-2xl sm:text-4xl font-extrabold text-main tracking-tight">Cài đặt tài khoản</h1>
                 @if (session('status'))
                     <p role="status" class="rounded-xl border border-success/30 bg-success-bg p-4 text-sm font-medium text-success-text shadow-subtle">{{ session('status') }}</p>
                 @endif
@@ -21,7 +21,7 @@
                     @csrf
                     @method('PATCH')
                     <div class="space-y-4">
-                        <h2 class="text-xl font-bold font-serif text-main">Thông tin cá nhân</h2>
+                        <h2 class="text-xl font-bold text-main">Thông tin cá nhân</h2>
                         <p class="break-all text-xs text-muted">Email: <span class="font-medium text-main">{{ $user->email }}</span> (không thể đổi)</p>
                         <x-admin.field name="full_name" id="settings-name" label="Họ và tên" :value="$user->full_name" required autocomplete="name" />
                         <x-admin.field name="phone" id="settings-phone" label="Số điện thoại" type="tel" :value="$user->phone" autocomplete="tel" />
@@ -35,7 +35,7 @@
                     @csrf
                     @method('PATCH')
                     <div class="space-y-4">
-                        <h2 class="text-xl font-bold font-serif text-main">Đổi mật khẩu</h2>
+                        <h2 class="text-xl font-bold text-main">Đổi mật khẩu</h2>
                         <p class="text-xs text-muted leading-relaxed">Sau khi đổi, mọi phiên đăng nhập sẽ kết thúc và bạn cần đăng nhập lại.</p>
                         @foreach (['current_password' => ['Mật khẩu hiện tại', 'current-password'], 'password' => ['Mật khẩu mới', 'new-password'], 'password_confirmation' => ['Nhập lại mật khẩu mới', 'new-password']] as $field => [$label, $autocomplete])
                             <div x-data="passwordField()" class="space-y-1.5">

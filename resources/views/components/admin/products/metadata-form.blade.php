@@ -4,7 +4,7 @@
     @csrf
     @if (in_array(strtoupper($method), ['PATCH', 'PUT'], true)) @method(strtoupper($method)) @endif
     <section class="admin-card">
-        <h2 class="mb-5 text-xl font-bold font-serif text-main">Thông tin cơ bản</h2>
+        <h2 class="mb-5 text-xl font-bold text-main">Thông tin cơ bản</h2>
         <div class="grid gap-5 md:grid-cols-2">
             <x-admin.field name="name" label="Tên sản phẩm" :value="$product['name'] ?? ''" required />
             <x-admin.field name="slug" label="Đường dẫn slug" :value="$product['slug'] ?? ''" required />

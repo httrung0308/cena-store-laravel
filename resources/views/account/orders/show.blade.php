@@ -17,7 +17,7 @@
                 <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-success text-white shadow-card">
                     <svg class="h-8 w-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 13l4 4L19 7"/></svg>
                 </div>
-                <h1 class="text-3xl font-bold font-serif text-main sm:text-4xl">Đặt hàng thành công!</h1>
+                <h1 class="text-3xl font-extrabold text-main sm:text-4xl">Đặt hàng thành công!</h1>
                 <p class="mt-2 text-sm text-muted sm:text-base">Cảm ơn bạn. Cửa hàng sẽ liên hệ xác nhận đơn trong vòng 24 giờ.</p>
             </div>
         @else
@@ -26,7 +26,7 @@
                     <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
                     <span>Đơn hàng của tôi</span>
                 </a>
-                <h1 class="break-all text-2xl font-bold font-serif text-main sm:text-4xl tracking-tight">Đơn {{ $order->order_code }}</h1>
+                <h1 class="break-all text-2xl font-extrabold text-main sm:text-4xl tracking-tight">Đơn {{ $order->order_code }}</h1>
                 @if (session('status'))
                     <p role="status" class="rounded-xl border border-success/30 bg-success-bg p-4 text-sm font-medium text-success-text shadow-subtle">{{ session('status') }}</p>
                 @endif
@@ -39,7 +39,7 @@
         @endif
 
         <section class="rounded-2xl border border-border bg-surface-card p-6 shadow-card sm:p-8">
-            <h2 class="mb-5 text-xl font-bold font-serif text-main">Chi tiết đơn hàng</h2>
+            <h2 class="mb-5 text-xl font-bold text-main">Chi tiết đơn hàng</h2>
             <div class="grid grid-cols-2 gap-4 border-b border-border/60 pb-5 text-sm">
                 <div><p class="text-xs text-muted">Mã đơn hàng</p><p class="break-all font-semibold text-main mt-0.5">{{ $order->order_code }}</p></div>
                 <div><p class="text-xs text-muted">Ngày đặt</p><p class="font-semibold text-main mt-0.5">{{ $order->created_at->setTimezone($tz)->format('d/m/Y H:i') }}</p></div>
@@ -106,7 +106,7 @@
         </section>
 
         <section class="rounded-2xl border border-border bg-surface-card p-6 shadow-card sm:p-8">
-            <h2 class="mb-4 text-xl font-bold font-serif text-main">Lịch sử đơn hàng</h2>
+            <h2 class="mb-4 text-xl font-bold text-main">Lịch sử đơn hàng</h2>
             <ol class="space-y-3 text-sm">
                 @foreach ($order->statusHistories as $history)
                     <li class="flex flex-wrap items-center justify-between gap-2 border-b border-border/60 pb-3 last:border-b-0 last:pb-0">
@@ -122,7 +122,7 @@
 
         @if ($order->order_status === App\Enums\OrderStatus::Pending)
             <section class="rounded-2xl border border-error/30 bg-surface-card p-6 shadow-card sm:p-8" x-data="{ open: {{ $errors->has('reason') ? 'true' : 'false' }} }">
-                <h2 class="text-xl font-bold font-serif text-main">Hủy đơn hàng</h2>
+                <h2 class="text-xl font-bold text-main">Hủy đơn hàng</h2>
                 <p class="mt-1 text-xs sm:text-sm text-muted">Bạn có thể tự hủy khi đơn còn chờ cửa hàng xác nhận.</p>
                 <button type="button" class="mt-4 rounded-xl border border-error/40 bg-error-bg px-5 py-2 text-xs font-semibold text-error-text transition hover:bg-error-bg/80" x-show="!open" x-on:click="open = true">Hủy đơn này</button>
                 <form method="POST" action="{{ route('orders.cancel', $order->order_code) }}" class="mt-4 space-y-3" x-cloak x-show="open">
