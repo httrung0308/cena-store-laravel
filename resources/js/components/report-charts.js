@@ -1,12 +1,39 @@
 // Back-office report charts. Long ranges are grouped by week (Monday first) so a quarter reads as ~13 bars
-// instead of 90 spikes. Colours: neutral gray for COGS, the validated categorical orange/aqua for other expenses
-// and profit, blue for counts. Every chart keeps one y-axis and has a table view in the page.
-const COLORS = { cogs: '#b4b2a9', expense: '#eb6834', profit: '#1baf7a', count: '#2a78d6' };
-const INK = { secondary: '#52525b', muted: '#a1a1aa', grid: '#f4f4f5', surface: '#ffffff' };
+// instead of 90 spikes. Colors are read from CSS variables / tokens to respect light/dark themes.
+// Every chart keeps one y-axis and has a table view in the page.
 const WEEKLY_AFTER_DAYS = 31;
 
 const money = new Intl.NumberFormat('vi-VN');
 const vnd = (value) => `${money.format(value)} ₫`;
+
+function getCssVar(name, fallback) {
+    if (typeof window === 'undefined') return fallback;
+    const val = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    return val || fallback;
+}
+
+function getTheme() {
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark' ||
+        (document.documentElement.getAttribute('data-theme') === 'system' && window.matchMedia?.('(prefers-color-scheme: dark)').matches);
+
+    const colors = {
+        cogs: isDark ? '#94a3b8' : '#64748b',
+        expense: getCssVar('--accent-sub', '#be123c'),
+        profit: getCssVar('--success', '#15803d'),
+        count: isDark ? '#818cf8' : getCssVar('--accent', '#201464'),
+    };
+
+    const ink = {
+        secondary: getCssVar('--text-muted', '#334155'),
+        muted: isDark ? '#94a3b8' : '#64748b',
+        grid: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
+        surface: getCssVar('--surface-card', isDark ? '#182235' : '#ffffff'),
+        title: getCssVar('--text-main', isDark ? '#f8fafc' : '#020617'),
+        border: getCssVar('--border', isDark ? '#29354d' : '#cbd5e1'),
+    };
+
+    return { colors, ink, isDark };
+}
 
 /** 1.250.000 → "1,25 tr", 3.400.000.000 → "3,4 tỷ": short labels for the money axis. */
 export function compactVnd(value) {
@@ -45,30 +72,46 @@ export function buckets(rows, fields) {
     });
 }
 
-const tooltip = {
-    backgroundColor: INK.surface,
-    titleColor: '#18181b',
-    bodyColor: INK.secondary,
-    footerColor: '#18181b',
-    borderColor: '#e4e4e7',
-    borderWidth: 1,
-    padding: 12,
-    boxPadding: 4,
-    usePointStyle: true,
-    titleFont: { family: 'Montserrat', weight: '600' },
-    bodyFont: { family: 'Montserrat' },
-    footerFont: { family: 'Montserrat', weight: '600' },
-};
+function createTooltip(theme) {
+    return {
+        backgroundColor: theme.ink.surface,
+        titleColor: theme.ink.title,
+        bodyColor: theme.ink.secondary,
+        footerColor: theme.ink.title,
+        borderColor: theme.ink.border,
+        borderWidth: 1,
+        padding: 12,
+        boxPadding: 4,
+        usePointStyle: true,
+        titleFont: { family: 'Be Vietnam Pro', weight: '600' },
+        bodyFont: { family: 'Be Vietnam Pro' },
+        footerFont: { family: 'Be Vietnam Pro', weight: '600' },
+    };
+}
 
-const axisX = { grid: { display: false }, border: { color: '#e4e4e7' }, ticks: { color: INK.muted, maxRotation: 0, autoSkipPadding: 12, font: { family: 'Montserrat', size: 11 } } };
-const axisY = (callback, extra = {}) => ({ grid: { color: INK.grid }, border: { display: false }, ticks: { color: INK.muted, padding: 8, maxTicksLimit: 5, callback, font: { family: 'Montserrat', size: 11 } }, ...extra });
+function createAxisX(theme) {
+    return {
+        grid: { display: false },
+        border: { color: theme.ink.border },
+        ticks: { color: theme.ink.muted, maxRotation: 0, autoSkipPadding: 12, font: { family: 'Be Vietnam Pro', size: 11 } }
+    };
+}
 
-function financeChart(Chart, canvas, periods) {
+function createAxisY(theme, callback, extra = {}) {
+    return {
+        grid: { color: theme.ink.grid },
+        border: { display: false },
+        ticks: { color: theme.ink.muted, padding: 8, maxTicksLimit: 5, callback, font: { family: 'Be Vietnam Pro', size: 11 } },
+        ...extra
+    };
+}
+
+function financeChart(Chart, canvas, periods, theme) {
     const stack = (label, field, color, top) => ({
         label,
         data: periods.map((period) => period[field]),
         backgroundColor: color,
-        borderColor: INK.surface,
+        borderColor: theme.ink.surface,
         borderWidth: { top: 2 },
         borderRadius: top ? { topLeft: 4, topRight: 4 } : 0,
         borderSkipped: 'bottom',
@@ -81,9 +124,9 @@ function financeChart(Chart, canvas, periods) {
         data: {
             labels: periods.map((period) => period.short),
             datasets: [
-                stack('Giá vốn', 'cogs', COLORS.cogs, false),
-                stack('Chi phí khác', 'expense', COLORS.expense, false),
-                stack('Lợi nhuận', 'profit', COLORS.profit, true),
+                stack('Giá vốn', 'cogs', theme.colors.cogs, false),
+                stack('Chi phí khác', 'expense', theme.colors.expense, false),
+                stack('Lợi nhuận', 'profit', theme.colors.profit, true),
             ],
         },
         options: {
@@ -92,7 +135,7 @@ function financeChart(Chart, canvas, periods) {
             plugins: {
                 legend: { display: false },
                 tooltip: {
-                    ...tooltip,
+                    ...createTooltip(theme),
                     filter: (item) => item.parsed.y !== 0,
                     callbacks: {
                         title: (items) => periods[items[0].dataIndex].label,
@@ -101,12 +144,12 @@ function financeChart(Chart, canvas, periods) {
                     },
                 },
             },
-            scales: { x: { ...axisX, stacked: true }, y: { ...axisY(compactVnd), stacked: true } },
+            scales: { x: { ...createAxisX(theme), stacked: true }, y: { ...createAxisY(theme, compactVnd), stacked: true } },
         },
     });
 }
 
-function marginChart(Chart, canvas, periods) {
+function marginChart(Chart, canvas, periods, theme) {
     const margin = periods.map((period) => (period.revenue > 0 ? Math.round((period.profit / period.revenue) * 1000) / 10 : null));
     const revenue = periods.reduce((sum, period) => sum + period.revenue, 0);
     const average = revenue > 0 ? Math.round((periods.reduce((sum, period) => sum + period.profit, 0) / revenue) * 1000) / 10 : null;
@@ -120,20 +163,20 @@ function marginChart(Chart, canvas, periods) {
                 {
                     label: 'Biên lợi nhuận',
                     data: margin,
-                    borderColor: COLORS.profit,
-                    backgroundColor: COLORS.profit,
+                    borderColor: theme.colors.profit,
+                    backgroundColor: theme.colors.profit,
                     borderWidth: 2,
                     tension: 0.3,
                     spanGaps: true,
                     pointRadius: periods.length > WEEKLY_AFTER_DAYS ? 0 : 4,
                     pointHoverRadius: 5,
-                    pointBorderColor: INK.surface,
+                    pointBorderColor: theme.ink.surface,
                     pointBorderWidth: 2,
                 },
                 {
                     label: 'Trung bình cả kỳ',
                     data: periods.map(() => average),
-                    borderColor: INK.muted,
+                    borderColor: theme.ink.muted,
                     borderDash: [4, 4],
                     borderWidth: 1,
                     pointRadius: 0,
@@ -147,36 +190,33 @@ function marginChart(Chart, canvas, periods) {
             plugins: {
                 legend: { display: false },
                 tooltip: {
-                    ...tooltip,
+                    ...createTooltip(theme),
                     callbacks: {
                         title: (items) => periods[items[0].dataIndex].label,
                         label: (context) => (context.parsed.y === null ? ' Chưa có doanh thu' : ` ${context.dataset.label}: ${percent(context.parsed.y)}`),
                     },
                 },
             },
-            scales: { x: axisX, y: axisY((value) => `${value}%`, { grace: '10%' }) },
+            scales: { x: createAxisX(theme), y: createAxisY(theme, (value) => `${value}%`, { grace: '10%' }) },
         },
     });
 }
 
-/** One horizontal stacked bar per article: helpful (aqua) then not helpful (orange), counted in answers. */
-function feedbackChart(Chart, canvas, articles) {
+/** One horizontal stacked bar per article: helpful then not helpful, counted in answers. */
+function feedbackChart(Chart, canvas, articles, theme) {
     const stack = (label, field, color, last) => ({
         label,
         data: articles.map((article) => article[field]),
         backgroundColor: color,
-        borderColor: INK.surface,
+        borderColor: theme.ink.surface,
         borderWidth: { right: 2 },
         borderRadius: last ? { topRight: 4, bottomRight: 4 } : 0,
         borderSkipped: 'left',
         maxBarThickness: 22,
     });
-    // The title column has a fixed share of the width and titles are cut to fit it, so a late-loading web font can
-    // never push them past the canvas edge.
     const labelWidth = (chart) => Math.min(240, Math.round(chart.width * 0.4));
     const shorten = (title, chart) => {
         const fit = Math.max(8, Math.floor(labelWidth(chart) / 6.6));
-
         return title.length > fit ? `${title.slice(0, fit - 1)}…` : title;
     };
 
@@ -184,7 +224,7 @@ function feedbackChart(Chart, canvas, articles) {
         type: 'bar',
         data: {
             labels: articles.map((article) => article.title),
-            datasets: [stack('Hữu ích', 'helpful', COLORS.profit, false), stack('Không hữu ích', 'unhelpful', COLORS.expense, true)],
+            datasets: [stack('Hữu ích', 'helpful', theme.colors.profit, false), stack('Không hữu ích', 'unhelpful', theme.colors.expense, true)],
         },
         options: {
             indexAxis: 'y',
@@ -193,27 +233,26 @@ function feedbackChart(Chart, canvas, articles) {
             plugins: {
                 legend: { display: false },
                 tooltip: {
-                    ...tooltip,
+                    ...createTooltip(theme),
                     callbacks: {
                         title: (items) => articles[items[0].dataIndex].title,
                         label: (context) => ` ${context.dataset.label}: ${context.parsed.x} lượt`,
                         footer: (items) => {
                             const article = articles[items[0].dataIndex];
                             const total = article.helpful + article.unhelpful;
-
                             return total ? `${Math.round((article.helpful / total) * 100)}% thấy hữu ích` : '';
                         },
                     },
                 },
             },
             scales: {
-                x: { ...axisY((value) => (Number.isInteger(value) ? value : '')), stacked: true, beginAtZero: true },
+                x: { ...createAxisY(theme, (value) => (Number.isInteger(value) ? value : '')), stacked: true, beginAtZero: true },
                 y: {
-                    ...axisX,
+                    ...createAxisX(theme),
                     stacked: true,
                     grid: { display: false },
                     border: { display: false },
-                    ticks: { ...axisX.ticks, autoSkip: false, callback(value, index) { return shorten(articles[index].title, this.chart); } },
+                    ticks: { ...createAxisX(theme).ticks, autoSkip: false, callback(value, index) { return shorten(articles[index].title, this.chart); } },
                     afterFit: (scale) => { scale.width = labelWidth(scale.chart); },
                 },
             },
@@ -238,25 +277,41 @@ function sparkline(Chart, canvas, values, color) {
 export function reportCharts() {
     return {
         charts: [],
-        init() {
+        observer: null,
+        renderCharts() {
             const Chart = window.Chart;
             if (!Chart) return;
-            const data = JSON.parse(this.$refs.data.textContent);
-            const money = buckets((data.daily ?? []).map((row) => ({ ...row, expense: row.revenue - row.cogs - row.profit })), ['revenue', 'cogs', 'expense', 'profit']);
-            const operations = buckets(data.operations ?? [], ['orders', 'pairs']);
-            const series = { ...Object.fromEntries(['revenue', 'cogs', 'expense', 'profit'].map((field) => [field, money])), orders: operations, pairs: operations };
-            const sparkColor = { revenue: COLORS.count, cogs: COLORS.cogs, expense: COLORS.expense, profit: COLORS.profit, orders: COLORS.count, pairs: COLORS.count };
+            this.destroy();
 
-            if (this.$refs.money && money.length) this.charts.push(financeChart(Chart, this.$refs.money, money));
-            if (this.$refs.margin && money.length) this.charts.push(marginChart(Chart, this.$refs.margin, money));
-            if (this.$refs.feedback && data.feedback?.length) this.charts.push(feedbackChart(Chart, this.$refs.feedback, data.feedback));
+            const theme = getTheme();
+            const data = JSON.parse(this.$refs.data.textContent);
+            const moneyRows = buckets((data.daily ?? []).map((row) => ({ ...row, expense: row.revenue - row.cogs - row.profit })), ['revenue', 'cogs', 'expense', 'profit']);
+            const operations = buckets(data.operations ?? [], ['orders', 'pairs']);
+            const series = { ...Object.fromEntries(['revenue', 'cogs', 'expense', 'profit'].map((field) => [field, moneyRows])), orders: operations, pairs: operations };
+            const sparkColor = { revenue: theme.colors.count, cogs: theme.colors.cogs, expense: theme.colors.expense, profit: theme.colors.profit, orders: theme.colors.count, pairs: theme.colors.count };
+
+            if (this.$refs.money && moneyRows.length) this.charts.push(financeChart(Chart, this.$refs.money, moneyRows, theme));
+            if (this.$refs.margin && moneyRows.length) this.charts.push(marginChart(Chart, this.$refs.margin, moneyRows, theme));
+            if (this.$refs.feedback && data.feedback?.length) this.charts.push(feedbackChart(Chart, this.$refs.feedback, data.feedback, theme));
             this.$el.querySelectorAll('canvas[data-sparkline]').forEach((canvas) => {
                 const field = canvas.dataset.sparkline;
                 if (series[field]?.length > 1 && series[field].some((period) => period[field] !== 0)) this.charts.push(sparkline(Chart, canvas, series[field].map((period) => period[field]), sparkColor[field]));
             });
         },
+        init() {
+            this.renderCharts();
+            if (typeof MutationObserver !== 'undefined') {
+                this.observer = new MutationObserver(() => this.renderCharts());
+                this.observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'class'] });
+            }
+        },
         destroy() {
             this.charts.forEach((chart) => chart.destroy());
+            this.charts = [];
+            if (this.observer) {
+                this.observer.disconnect();
+                this.observer = null;
+            }
         },
     };
 }

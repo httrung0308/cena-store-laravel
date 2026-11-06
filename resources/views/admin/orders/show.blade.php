@@ -22,49 +22,49 @@
     <div class="min-w-0 space-y-6 lg:col-span-2">
         <section class="admin-card space-y-3">
             <div class="flex flex-wrap items-center justify-between gap-3">
-                <p class="break-all text-lg font-semibold">{{ $order->order_code }}</p>
+                <p class="break-all text-lg font-semibold text-main">{{ $order->order_code }}</p>
                 <x-orders.status-badge :status="$status" />
             </div>
-            <div class="grid gap-2 text-sm text-zinc-500 sm:grid-cols-2">
-                <p>Ngày đặt: <span class="font-medium text-zinc-900">{{ $order->created_at->setTimezone($tz)->format('d/m/Y H:i') }}</span></p>
-                <p>Thanh toán: <span class="font-medium text-zinc-900">{{ $order->payment_method->label() }} · {{ $order->payment_status->label() }}</span></p>
-                <p>Khách hàng: <span class="font-medium text-zinc-900">{{ $order->user?->full_name }}</span> <span class="break-all">({{ $order->user?->email }})</span></p>
-                @if ($status === OrderStatus::Pending && $order->payment_expires_at)<p>Hạn xác nhận: <span class="font-medium text-zinc-900">{{ $order->payment_expires_at->setTimezone($tz)->format('d/m/Y H:i') }}</span></p>@endif
+            <div class="grid gap-2 text-sm text-muted sm:grid-cols-2">
+                <p>Ngày đặt: <span class="font-medium text-main">{{ $order->created_at->setTimezone($tz)->format('d/m/Y H:i') }}</span></p>
+                <p>Thanh toán: <span class="font-medium text-main">{{ $order->payment_method->label() }} · {{ $order->payment_status->label() }}</span></p>
+                <p>Khách hàng: <span class="font-medium text-main">{{ $order->user?->full_name }}</span> <span class="break-all">({{ $order->user?->email }})</span></p>
+                @if ($status === OrderStatus::Pending && $order->payment_expires_at)<p>Hạn xác nhận: <span class="font-medium text-main">{{ $order->payment_expires_at->setTimezone($tz)->format('d/m/Y H:i') }}</span></p>@endif
             </div>
-            <div class="rounded-xl bg-zinc-50 p-3 text-sm">
-                <p class="font-semibold">Giao đến: {{ $order->shipping_name }} · {{ $order->shipping_phone }}</p>
-                <p class="text-zinc-600">{{ implode(', ', array_filter([$address['street'] ?? null, $address['ward_name'] ?? null, $address['province_name'] ?? null])) }}</p>
-                @if ($order->customer_note)<p class="mt-2 whitespace-pre-wrap text-zinc-600">Ghi chú của khách: {{ $order->customer_note }}</p>@endif
-                @if ($order->cancel_reason)<p class="mt-2 text-red-600">Lý do: {{ $order->cancel_reason }}</p>@endif
+            <div class="rounded-xl bg-surface-alt/60 border border-border/50 p-3 text-sm">
+                <p class="font-semibold text-main">Giao đến: {{ $order->shipping_name }} · {{ $order->shipping_phone }}</p>
+                <p class="text-muted">{{ implode(', ', array_filter([$address['street'] ?? null, $address['ward_name'] ?? null, $address['province_name'] ?? null])) }}</p>
+                @if ($order->customer_note)<p class="mt-2 whitespace-pre-wrap text-muted">Ghi chú của khách: {{ $order->customer_note }}</p>@endif
+                @if ($order->cancel_reason)<p class="mt-2 text-error font-medium">Lý do: {{ $order->cancel_reason }}</p>@endif
             </div>
         </section>
 
         <div class="admin-table-wrap"><table class="admin-table min-w-[560px]"><thead><tr><th>Sản phẩm</th><th>SKU</th><th>SL</th><th>Đơn giá</th><th>Thành tiền</th></tr></thead><tbody>
             @foreach ($order->items as $item)
-                <tr>
-                    <td class="min-w-[12rem]"><span class="font-semibold text-zinc-900">{{ $item->product_name_snapshot }}</span><span class="block text-xs text-zinc-500">{{ $item->color_name_snapshot }} · Size {{ $item->size_value_snapshot }}</span>
-                        <span class="mt-1 block text-xs text-zinc-500">@foreach ($item->units as $unit)Đôi #{{ $unit->unit_no }}: {{ $unit->state->label() }}@if (! $loop->last) · @endif @endforeach</span></td>
-                    <td class="whitespace-nowrap">{{ $item->sku_snapshot }}</td>
-                    <td>{{ $item->quantity }}</td>
-                    <td class="whitespace-nowrap">{{ $vnd($item->unit_price) }}</td>
-                    <td class="whitespace-nowrap font-semibold text-zinc-900">{{ $vnd($item->net_amount) }}</td>
+                <tr class="hover:bg-surface-alt/40 transition-colors">
+                    <td class="min-w-[12rem]"><span class="font-semibold text-main">{{ $item->product_name_snapshot }}</span><span class="block text-xs text-muted">{{ $item->color_name_snapshot }} · Size {{ $item->size_value_snapshot }}</span>
+                        <span class="mt-1 block text-xs text-muted">@foreach ($item->units as $unit)Đôi #{{ $unit->unit_no }}: {{ $unit->state->label() }}@if (! $loop->last) · @endif @endforeach</span></td>
+                    <td class="whitespace-nowrap text-main">{{ $item->sku_snapshot }}</td>
+                    <td class="text-main">{{ $item->quantity }}</td>
+                    <td class="whitespace-nowrap text-main">{{ $vnd($item->unit_price) }}</td>
+                    <td class="whitespace-nowrap font-semibold text-main">{{ $vnd($item->net_amount) }}</td>
                 </tr>
             @endforeach
         </tbody></table></div>
         <dl class="admin-card space-y-1 text-sm">
-            <div class="flex justify-between"><dt>Tạm tính</dt><dd>{{ $vnd($order->subtotal_amount) }}</dd></div>
-            <div class="flex justify-between"><dt>Phí vận chuyển</dt><dd>{{ $order->shipping_fee === 0 ? 'Miễn phí' : $vnd($order->shipping_fee) }}</dd></div>
-            <div class="flex justify-between text-lg font-semibold"><dt>Tổng cộng</dt><dd>{{ $vnd($order->total_amount) }}</dd></div>
-            <div class="flex justify-between text-zinc-500"><dt>Đã thu</dt><dd>{{ $vnd($order->paid_amount) }}</dd></div>
+            <div class="flex justify-between"><dt class="text-muted">Tạm tính</dt><dd class="text-main">{{ $vnd($order->subtotal_amount) }}</dd></div>
+            <div class="flex justify-between"><dt class="text-muted">Phí vận chuyển</dt><dd class="text-main">{{ $order->shipping_fee === 0 ? 'Miễn phí' : $vnd($order->shipping_fee) }}</dd></div>
+            <div class="flex justify-between text-lg font-semibold"><dt class="text-main">Tổng cộng</dt><dd class="text-main">{{ $vnd($order->total_amount) }}</dd></div>
+            <div class="flex justify-between text-muted"><dt>Đã thu</dt><dd>{{ $vnd($order->paid_amount) }}</dd></div>
         </dl>
 
         <section class="admin-card">
-            <h2 class="mb-3 text-xl font-semibold">Lịch sử trạng thái</h2>
+            <h2 class="mb-3 text-xl font-semibold text-main">Lịch sử trạng thái</h2>
             <ol class="space-y-2 text-sm">
                 @foreach ($order->statusHistories as $history)
-                    <li class="flex flex-wrap justify-between gap-2 border-b border-zinc-100 pb-2 last:border-b-0">
-                        <span><x-orders.status-badge :status="$history->to_status" /> <span class="ml-2 text-zinc-600">{{ $history->actor_name_snapshot }}</span></span>
-                        <span class="text-zinc-500">{{ $history->created_at->setTimezone($tz)->format('d/m/Y H:i') }}</span>
+                    <li class="flex flex-wrap justify-between gap-2 border-b border-border pb-2 last:border-b-0">
+                        <span><x-orders.status-badge :status="$history->to_status" /> <span class="ml-2 text-muted">{{ $history->actor_name_snapshot }}</span></span>
+                        <span class="text-muted">{{ $history->created_at->setTimezone($tz)->format('d/m/Y H:i') }}</span>
                     </li>
                 @endforeach
             </ol>
@@ -73,7 +73,7 @@
 
     <aside class="min-w-0 space-y-6">
         <section class="admin-card space-y-4">
-            <h2 class="text-xl font-semibold">Xử lý đơn</h2>
+            <h2 class="text-xl font-semibold text-main">Xử lý đơn</h2>
             @foreach ($next as $action => $label)
                 <form method="POST" action="{{ route('admin.orders.transition', [$order, $action]) }}">@csrf
                     <input type="hidden" name="expected_status" value="{{ $status->value }}">
@@ -94,36 +94,36 @@
                     <x-admin.field name="receipt_reference" label="Mã phiếu thu COD" required placeholder="Ví dụ: PT-0001" hint="Chỉ xác nhận khi đã thu đủ {{ $vnd($order->total_amount) }}." />
                     <button class="btn-pill-dark w-full py-3">Giao thành công, đã thu tiền</button>
                 </form>
-                <form method="POST" action="{{ route('admin.orders.transition', [$order, 'fail']) }}" class="space-y-2 border-t border-zinc-100 pt-4">@csrf
+                <form method="POST" action="{{ route('admin.orders.transition', [$order, 'fail']) }}" class="space-y-2 border-t border-border pt-4">@csrf
                     <input type="hidden" name="expected_status" value="{{ $status->value }}">
-                    <label for="fail-reason" class="admin-label">Lý do giao thất bại</label>
-                    <input id="fail-reason" name="reason" class="input w-full border-zinc-300" required minlength="5" maxlength="500">
-                    <button class="btn-pill w-full text-red-600">Báo giao thất bại</button>
+                    <label for="fail-reason" class="admin-label text-muted">Lý do giao thất bại</label>
+                    <input id="fail-reason" name="reason" class="input w-full border-border bg-surface text-main" required minlength="5" maxlength="500">
+                    <button class="btn-pill w-full text-error hover:bg-error-bg">Báo giao thất bại</button>
                 </form>
             @endif
             @if ($cancellable)
-                <form method="POST" action="{{ route('admin.orders.transition', [$order, 'cancel']) }}" class="space-y-2 border-t border-zinc-100 pt-4">@csrf
+                <form method="POST" action="{{ route('admin.orders.transition', [$order, 'cancel']) }}" class="space-y-2 border-t border-border pt-4">@csrf
                     <input type="hidden" name="expected_status" value="{{ $status->value }}">
-                    <label for="cancel-reason" class="admin-label">Lý do hủy</label>
-                    <input id="cancel-reason" name="reason" class="input w-full border-zinc-300" required minlength="5" maxlength="500">
-                    <button class="btn-pill w-full text-red-600">Hủy đơn (nhả hàng đang giữ)</button>
+                    <label for="cancel-reason" class="admin-label text-muted">Lý do hủy</label>
+                    <input id="cancel-reason" name="reason" class="input w-full border-border bg-surface text-main" required minlength="5" maxlength="500">
+                    <button class="btn-pill w-full text-error hover:bg-error-bg">Hủy đơn (nhả hàng đang giữ)</button>
                 </form>
             @endif
             @if ($next === [] && ! $cancellable && ! in_array($status, [OrderStatus::Packing, OrderStatus::OnDelivery], true))
-                <p class="text-sm text-zinc-500">Đơn đã kết thúc, không còn thao tác.</p>
+                <p class="text-sm text-muted">Đơn đã kết thúc, không còn thao tác.</p>
             @endif
         </section>
 
         <section class="admin-card space-y-2 text-sm">
-            <h2 class="text-lg font-semibold">Vận chuyển & thanh toán</h2>
+            <h2 class="text-lg font-semibold text-main">Vận chuyển & thanh toán</h2>
             @if ($order->shipment)
-                <p>Đơn vị: <span class="font-medium">{{ $order->shipment->carrier_name }}</span>@if ($order->shipment->tracking_code) · {{ $order->shipment->tracking_code }}@endif</p>
-                <p>Trạng thái giao: <span class="font-medium">{{ $order->shipment->status->label() }}</span></p>
+                <p class="text-main">Đơn vị: <span class="font-medium">{{ $order->shipment->carrier_name }}</span>@if ($order->shipment->tracking_code) · {{ $order->shipment->tracking_code }}@endif</p>
+                <p class="text-main">Trạng thái giao: <span class="font-medium">{{ $order->shipment->status->label() }}</span></p>
             @else
-                <p class="text-zinc-500">Chưa bàn giao vận chuyển.</p>
+                <p class="text-muted">Chưa bàn giao vận chuyển.</p>
             @endif
             @foreach ($order->payments as $payment)
-                <p>COD: <span class="font-medium">{{ $payment->status->label() }}</span>@if ($payment->provider_transaction_id) · phiếu thu {{ $payment->provider_transaction_id }}@endif</p>
+                <p class="text-main">COD: <span class="font-medium">{{ $payment->status->label() }}</span>@if ($payment->provider_transaction_id) · phiếu thu {{ $payment->provider_transaction_id }}@endif</p>
             @endforeach
         </section>
     </aside>
