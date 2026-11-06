@@ -14,11 +14,15 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @stack('head')
 </head>
-<body class="font-montserrat bg-white text-black">
+<body class="font-sans bg-bg text-main antialiased selection:bg-accent selection:text-white">
     <div id="storefront" x-data="storefrontShell" @cart-open.window="openPanel('cart')" @keydown.escape.window="closePanel()" @mousemove.window="pointerX = $event.clientX; pointerY = $event.clientY">
         <div :inert="panel !== null" :aria-hidden="panel !== null ? 'true' : null" class="flex min-h-screen flex-col">
+            {{-- Top announcement banner --}}
+            <div class="bg-surface/80 border-b border-border text-muted text-xs py-2 px-6 text-center tracking-wider">
+                <span class="font-medium">Sự êm ái thuần khiết trên từng sải chân &nbsp;•&nbsp; Giao hàng toàn quốc &nbsp;•&nbsp; Đổi size an tâm trong 7 ngày</span>
+            </div>
             <x-storefront.navigation :animated="false"/>
-            <main class="w-full flex-1 px-3 pt-16 pb-10 sm:px-10 xl:px-24 2xl:px-48">
+            <main class="w-full flex-1 px-4 py-6 sm:px-8 lg:px-12">
                 {{ $slot ?? '' }}
                 @yield('content')
             </main>

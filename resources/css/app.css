@@ -1,36 +1,84 @@
+@import '@fontsource/be-vietnam-pro/latin-400.css';
+@import '@fontsource/be-vietnam-pro/vietnamese-400.css';
+@import '@fontsource/be-vietnam-pro/latin-500.css';
+@import '@fontsource/be-vietnam-pro/vietnamese-500.css';
+@import '@fontsource/be-vietnam-pro/latin-600.css';
+@import '@fontsource/be-vietnam-pro/vietnamese-600.css';
+@import '@fontsource/be-vietnam-pro/latin-700.css';
+@import '@fontsource/be-vietnam-pro/vietnamese-700.css';
+@import '@fontsource/playfair-display/latin-600.css';
+@import '@fontsource/playfair-display/vietnamese-600.css';
+@import '@fontsource/playfair-display/latin-700.css';
+@import '@fontsource/playfair-display/vietnamese-700.css';
 @import '@fontsource/montserrat/latin-400.css';
 @import '@fontsource/montserrat/vietnamese-400.css';
-@import '@fontsource/montserrat/latin-500.css';
-@import '@fontsource/montserrat/vietnamese-500.css';
 @import '@fontsource/montserrat/latin-600.css';
 @import '@fontsource/montserrat/vietnamese-600.css';
-@import '@fontsource/montserrat/latin-700.css';
-@import '@fontsource/montserrat/vietnamese-700.css';
-@import '@fontsource/montserrat/latin-800.css';
-@import '@fontsource/montserrat/vietnamese-800.css';
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --bg: #f8fafc;
+  --bg-rgb: 248 250 252;
+  --surface: #f1f5f9;
+  --surface-rgb: 241 245 249;
+  --surface-card: #ffffff;
+  --surface-card-rgb: 255 255 255;
+  --border: #cbd5e1;
+  --border-rgb: 203 213 225;
+  --text-main: #020617;
+  --main-rgb: 2 6 23;
+  --text-muted: #334155;
+  --muted-rgb: 51 65 85;
+  --accent: #201464;
+  --accent-rgb: 32 20 100;
+  --accent-hover: #160c4a;
+  --accent-hover-rgb: 22 12 74;
+  --accent-text: #ffffff;
+  --accent-sub: #be123c;
+  --accent-sub-rgb: 190 18 60;
+  --accent-sub-hover: #9f1239;
+  --accent-sub-hover-rgb: 159 18 57;
+  --accent-sub-text: #ffffff;
+  --success: #15803d;
+  --success-rgb: 21 128 61;
+  --success-bg: #dcfce7;
+  --success-text: #14532d;
+  --warning: #a16207;
+  --warning-rgb: 161 98 7;
+  --warning-bg: #fef9c3;
+  --warning-text: #713f12;
+  --error: #b91c1c;
+  --error-rgb: 185 28 28;
+  --error-bg: #fee2e2;
+  --error-text: #7f1d1d;
+}
+
+::selection {
+  background-color: var(--accent);
+  color: #ffffff;
+}
+
 * {
-  @apply font-montserrat font-medium ring-zinc-400 focus:outline-none focus:ring-4;
-  scrollbar-width: thin; /* Firefox */
-  -ms-overflow-style: none; /* IE 10+ */
+  @apply ring-accent/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+  -ms-overflow-style: none;
 }
 
 *::-webkit-scrollbar-track {
-  -webkit-box-shadow: none !important;
   background-color: transparent !important;
 }
 
 *::-webkit-scrollbar {
   width: 6px !important;
-  position: absolute;
   background-color: transparent;
 }
 
 *::-webkit-scrollbar-thumb {
-  @apply bg-black/75;
+  background-color: var(--border);
+  border-radius: 9999px;
 }
 
 input[type='checkbox'] {
@@ -43,7 +91,6 @@ input[type='checkbox'] {
   width: 1px;
 }
 
-/* Opt back in to a visible native checkbox (forms that have no custom checkbox visual). */
 input[type='checkbox'].native-checkbox {
   clip: auto;
   clip-path: none;
@@ -63,22 +110,33 @@ input[type='number']::-webkit-outer-spin-button {
 body {
   min-height: 100vh;
   min-height: -webkit-fill-available;
+  background-color: var(--bg);
+  color: var(--text-main);
+  font-family: 'Be Vietnam Pro', sans-serif;
 }
+
 html {
   height: -webkit-fill-available;
+  background-color: var(--bg);
+  color: var(--text-main);
+  font-family: 'Be Vietnam Pro', sans-serif;
 }
 
 @layer components {
   .btn {
-    @apply bg-black px-5 py-3 text-white transition-all hover:scale-105 active:scale-100;
+    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-accent px-5 py-3 text-sm font-semibold text-accent-text shadow-sm transition-all hover:bg-accent-hover hover:shadow-card active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-surface-card px-5 py-3 text-sm font-semibold text-main transition-all hover:bg-surface active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40;
   }
 
   .btn-icon {
-    @apply fill-black p-1 text-xl transition-all hover:scale-105 active:scale-100;
+    @apply rounded-xl p-2 text-muted transition-all hover:bg-surface hover:text-accent active:scale-95;
   }
 
   .divider {
-    @apply my-5 h-px w-full bg-zinc-200;
+    @apply my-5 h-px w-full bg-border;
   }
 
   .overflow-overlay {
@@ -87,16 +145,37 @@ html {
   }
 
   .input {
-    @apply rounded-md border px-2 py-1;
+    @apply rounded-xl border border-border bg-surface-card px-3 py-2 text-sm text-main transition-colors focus:border-accent focus:ring-2 focus:ring-accent/20;
   }
 
-  /* Back office: rounded cards, tables and pill buttons of the management pages. */
+  .input::placeholder {
+    color: var(--text-muted);
+    opacity: 0.6;
+  }
+
+  .badge {
+    @apply inline-flex items-center whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-semibold;
+  }
+
+  .badge-ruby {
+    @apply inline-flex items-center whitespace-nowrap rounded-full bg-accent-sub px-2.5 py-0.5 text-xs font-bold text-accent-sub-text shadow-sm;
+  }
+
+  .badge-accent {
+    @apply inline-flex items-center whitespace-nowrap rounded-full bg-accent/10 px-2.5 py-0.5 text-xs font-semibold text-accent;
+  }
+
+  .card {
+    @apply rounded-2xl border border-border bg-surface-card p-6 shadow-card transition-all hover:shadow-card-hover;
+  }
+
+  /* Back office & general pill buttons */
   .admin-card {
-    @apply rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm;
+    @apply rounded-2xl border border-border bg-surface-card p-6 shadow-card;
   }
 
   .admin-table-wrap {
-    @apply overflow-x-auto rounded-3xl border border-zinc-200 bg-white shadow-sm;
+    @apply overflow-x-auto rounded-2xl border border-border bg-surface-card shadow-card;
   }
 
   .admin-table {
@@ -104,27 +183,27 @@ html {
   }
 
   .admin-table th {
-    @apply whitespace-nowrap border-b border-zinc-200 bg-zinc-50 px-6 py-4 font-semibold text-zinc-700;
+    @apply whitespace-nowrap border-b border-border bg-surface px-6 py-4 font-semibold text-main;
   }
 
   .admin-table td {
-    @apply border-b border-zinc-100 px-6 py-4 align-middle text-zinc-700;
+    @apply border-b border-border/60 px-6 py-4 align-middle text-muted;
   }
 
   .admin-table tbody tr:hover {
-    @apply bg-zinc-50;
+    @apply bg-surface/50;
   }
 
   .admin-label {
-    @apply mb-2 block text-sm font-semibold text-zinc-700;
+    @apply mb-2 block text-sm font-semibold text-main;
   }
 
   .btn-pill {
-    @apply inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-black transition hover:border-zinc-900 disabled:cursor-not-allowed disabled:opacity-40;
+    @apply inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full border border-border bg-surface-card px-4 py-2 text-sm font-semibold text-main shadow-subtle transition-all hover:border-accent hover:bg-surface hover:text-accent disabled:cursor-not-allowed disabled:opacity-40;
   }
 
   .btn-pill-dark {
-    @apply inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full bg-black px-5 py-2 text-sm font-semibold text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-40;
+    @apply inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full bg-accent px-5 py-2 text-sm font-semibold text-accent-text shadow-sm transition-all hover:bg-accent-hover hover:shadow-card disabled:cursor-not-allowed disabled:opacity-40;
   }
 
   .badge {

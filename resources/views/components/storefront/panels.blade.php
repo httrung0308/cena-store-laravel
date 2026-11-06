@@ -3,61 +3,64 @@
 @endphp
 {{-- Click-catcher; the account dropdown keeps the page undimmed like a menu, other panels dim it. --}}
 <div x-cloak x-show="panel" class="fixed inset-0 z-30" x-bind:class="panel === 'account' ? 'bg-transparent' : 'bg-black/50'" @click="closePanel()" x-transition.opacity></div>
-<section id="mobile-menu" x-cloak x-show="panel === 'menu'" x-transition.opacity role="dialog" aria-modal="true" aria-label="Menu" class="fixed inset-0 z-40 flex flex-col items-center justify-center gap-5 bg-white" @keydown.tab="trapFocus($event)">
-    <button type="button" class="btn-icon absolute right-10 top-5" @click="closePanel()" aria-label="Close menu"><x-storefront.icon name="close"/></button>
+<section id="mobile-menu" x-cloak x-show="panel === 'menu'" x-transition.opacity role="dialog" aria-modal="true" aria-label="Menu" class="fixed inset-0 z-40 flex flex-col items-center justify-center gap-6 bg-surface-card p-6" @keydown.tab="trapFocus($event)">
+    <button type="button" class="btn-icon absolute right-6 top-6" @click="closePanel()" aria-label="Close menu"><x-storefront.icon name="close"/></button>
+    <a href="{{ route('home') }}" class="mb-4" @click="closePanel()"><img src="{{ asset('cena-logo.svg') }}" alt="Cena" class="h-9 w-auto"></a>
     @foreach (['Men' => 'men', 'Women' => 'women', 'Kids' => 'kids', 'Unisex' => 'unisex'] as $label => $gender)
-        <a href="{{ route('shoes.index', ['gender' => $gender]) }}" class="text-2xl font-semibold" @click="closePanel()">{{ $label }}</a>
+        <a href="{{ route('shoes.index', ['gender' => $gender]) }}" class="text-xl font-semibold uppercase tracking-wider text-muted transition-colors hover:text-accent" @click="closePanel()">{{ $label }}</a>
     @endforeach
-    <a href="{{ route('news.index') }}" class="text-2xl font-semibold" @click="closePanel()">News</a>
+    <a href="{{ route('news.index') }}" class="text-xl font-semibold uppercase tracking-wider text-muted transition-colors hover:text-accent" @click="closePanel()">News</a>
 </section>
 @unless ($isAdminAccount)
-<section id="cart-panel" x-cloak x-show="panel === 'cart'" x-transition:enter="transition-transform duration-300" x-transition:enter-start="translate-x-full" x-transition:enter-end="translate-x-0" x-transition:leave="transition-transform duration-300" x-transition:leave-start="translate-x-0" x-transition:leave-end="translate-x-full" class="fixed right-0 top-0 z-40 flex h-full w-full flex-col gap-5 bg-white p-5 sm:w-[32rem] sm:p-10 lg:w-[36rem]" role="dialog" aria-modal="true" aria-label="Giỏ hàng" @keydown.tab="trapFocus($event)"
+<section id="cart-panel" x-cloak x-show="panel === 'cart'" x-transition:enter="transition-transform duration-300" x-transition:enter-start="translate-x-full" x-transition:enter-end="translate-x-0" x-transition:leave="transition-transform duration-300" x-transition:leave-start="translate-x-0" x-transition:leave-end="translate-x-full" class="fixed right-0 top-0 z-40 flex h-full w-full flex-col gap-5 border-l border-border bg-surface-card p-6 shadow-elevated sm:w-[32rem] sm:p-8 lg:w-[36rem]" role="dialog" aria-modal="true" aria-label="Giỏ hàng" @keydown.tab="trapFocus($event)"
     x-init="$store.cart.configure(@js(['show' => route('cart.show'), 'add' => route('cart.items.store'), 'item' => route('cart.items.update', ['item' => '__ID__']), 'clear' => route('cart.clear')])); $store.cart.load()">
-    <div class="flex w-full items-center justify-between">
+    <div class="flex w-full items-center justify-between border-b border-border pb-4">
         <div class="flex items-center gap-2">
-            <h2 class="text-xl font-semibold">Giỏ hàng (<span x-text="$store.cart.count">0</span>)</h2>
-            <button type="button" class="text-sm hover:underline disabled:opacity-40" x-show="$store.cart.items.length > 0" x-bind:disabled="$store.cart.isBusy()" @click="$store.cart.clear()">(Xóa tất cả)</button>
+            <h2 class="text-xl font-bold text-main">Giỏ hàng (<span x-text="$store.cart.count" class="text-accent">0</span>)</h2>
+            <button type="button" class="text-xs text-muted hover:text-accent hover:underline disabled:opacity-40" x-show="$store.cart.items.length > 0" x-bind:disabled="$store.cart.isBusy()" @click="$store.cart.clear()">(Xóa tất cả)</button>
         </div>
         <button type="button" class="btn-icon" @click="closePanel()" aria-label="Đóng giỏ hàng"><x-storefront.icon name="close"/></button>
     </div>
 
     <div aria-live="polite" class="space-y-2 text-sm">
-        <p x-show="$store.cart.error" x-text="$store.cart.error" role="alert" class="border border-red-300 bg-red-50 px-3 py-2 text-red-700"></p>
-        <template x-for="notice in $store.cart.notices" :key="notice"><p x-text="notice" class="border border-amber-300 bg-amber-50 px-3 py-2 text-amber-800"></p></template>
+        <p x-show="$store.cart.error" x-text="$store.cart.error" role="alert" class="rounded-xl border border-error/30 bg-error-bg px-3.5 py-2.5 text-error-text font-medium text-xs"></p>
+        <template x-for="notice in $store.cart.notices" :key="notice"><p x-text="notice" class="rounded-xl border border-warning/30 bg-warning-bg px-3.5 py-2.5 text-warning-text font-medium text-xs"></p></template>
     </div>
 
-    <ul class="overflow-overlay -mr-1 flex flex-1 flex-col gap-5 overflow-x-hidden p-1" aria-label="Sản phẩm trong giỏ">
+    <ul class="overflow-overlay -mr-1 flex flex-1 flex-col gap-4 overflow-x-hidden p-1" aria-label="Sản phẩm trong giỏ">
         <template x-for="item in $store.cart.items" :key="item.id">
-            <li class="flex gap-4" x-bind:aria-busy="$store.cart.isBusy('item-' + item.id).toString()">
-                <div class="h-24 w-24 shrink-0 bg-zinc-100">
+            <li class="flex gap-4 rounded-xl border border-border/70 bg-surface/40 p-3" x-bind:aria-busy="$store.cart.isBusy('item-' + item.id).toString()">
+                <div class="h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-surface-card border border-border/60">
                     <img x-show="item.thumbnail_url" x-bind:src="item.thumbnail_url" alt="" class="h-full w-full object-cover" loading="lazy">
                 </div>
-                <div class="flex min-w-0 flex-1 flex-col gap-1 text-sm">
-                    <template x-if="item.product_url"><a x-bind:href="item.product_url" class="truncate font-semibold hover:underline" x-text="item.product_name"></a></template>
-                    <template x-if="!item.product_url"><p class="truncate font-semibold" x-text="item.product_name"></p></template>
-                    <p class="text-zinc-600"><span x-text="item.color_name"></span> · Size <span x-text="item.size_value"></span></p>
-                    <p x-text="$store.cart.price(item.unit_price)"></p>
-                    <p x-show="item.notice" x-text="item.notice" class="text-xs text-red-600"></p>
-                    <div class="mt-1 flex items-center gap-3">
-                        <div class="flex items-center border border-zinc-300">
-                            <button type="button" class="px-2 py-1 disabled:opacity-30" aria-label="Giảm số lượng" x-bind:disabled="$store.cart.isBusy() || item.quantity <= 1" @click="$store.cart.update(item, item.quantity - 1)">−</button>
-                            <span class="w-8 text-center" x-text="item.quantity"></span>
-                            <button type="button" class="px-2 py-1 disabled:opacity-30" aria-label="Tăng số lượng" x-bind:disabled="$store.cart.isBusy() || item.quantity >= item.max_quantity" @click="$store.cart.update(item, item.quantity + 1)">+</button>
+                <div class="flex min-w-0 flex-1 flex-col justify-between text-sm">
+                    <div>
+                        <template x-if="item.product_url"><a x-bind:href="item.product_url" class="truncate font-semibold text-main hover:text-accent hover:underline block" x-text="item.product_name"></a></template>
+                        <template x-if="!item.product_url"><p class="truncate font-semibold text-main" x-text="item.product_name"></p></template>
+                        <p class="text-xs text-muted mt-0.5"><span x-text="item.color_name"></span> · Size <span x-text="item.size_value" class="font-medium text-main"></span></p>
+                    </div>
+                    <p class="text-xs font-semibold text-accent" x-text="$store.cart.price(item.unit_price)"></p>
+                    <p x-show="item.notice" x-text="item.notice" class="text-xs text-error font-medium"></p>
+                    <div class="mt-2 flex items-center justify-between">
+                        <div class="flex items-center rounded-lg border border-border bg-surface-card shadow-subtle">
+                            <button type="button" class="px-2.5 py-1 text-muted hover:text-main disabled:opacity-30" aria-label="Giảm số lượng" x-bind:disabled="$store.cart.isBusy() || item.quantity <= 1" @click="$store.cart.update(item, item.quantity - 1)">−</button>
+                            <span class="w-7 text-center text-xs font-bold text-main" x-text="item.quantity"></span>
+                            <button type="button" class="px-2.5 py-1 text-muted hover:text-main disabled:opacity-30" aria-label="Tăng số lượng" x-bind:disabled="$store.cart.isBusy() || item.quantity >= item.max_quantity" @click="$store.cart.update(item, item.quantity + 1)">+</button>
                         </div>
-                        <button type="button" class="text-xs underline disabled:opacity-30" x-bind:disabled="$store.cart.isBusy()" @click="$store.cart.remove(item)">Xóa</button>
+                        <button type="button" class="text-xs text-muted hover:text-error underline disabled:opacity-30" x-bind:disabled="$store.cart.isBusy()" @click="$store.cart.remove(item)">Xóa</button>
                     </div>
                 </div>
-                <p class="shrink-0 text-sm font-semibold" x-text="$store.cart.price(item.line_total)"></p>
+                <p class="shrink-0 text-sm font-bold text-main" x-text="$store.cart.price(item.line_total)"></p>
             </li>
         </template>
-        <li x-show="$store.cart.loaded && $store.cart.items.length === 0" class="py-10 text-center text-sm text-zinc-500">
-            Giỏ hàng đang trống. <a href="{{ route('shoes.index') }}" class="underline">Xem sản phẩm</a>
+        <li x-show="$store.cart.loaded && $store.cart.items.length === 0" class="py-12 text-center text-sm text-muted">
+            Giỏ hàng đang trống. <a href="{{ route('shoes.index') }}" class="font-semibold text-accent underline hover:text-accent-hover">Xem sản phẩm</a>
         </li>
     </ul>
 
-    <div class="space-y-2 border-t border-zinc-200 pt-4">
-        <div class="flex w-full items-center justify-between"><h3 class="text-xl font-semibold">Tạm tính</h3><p class="text-xl font-semibold" x-text="$store.cart.price($store.cart.subtotal)">0 ₫</p></div>
-        <p class="text-xs text-zinc-500" x-text="$store.cart.checkoutNote"></p>
+    <div class="space-y-3 border-t border-border pt-4">
+        <div class="flex w-full items-center justify-between"><h3 class="text-base font-semibold text-muted">Tạm tính</h3><p class="text-2xl font-bold text-accent" x-text="$store.cart.price($store.cart.subtotal)">0 ₫</p></div>
+        <p class="text-xs text-muted" x-text="$store.cart.checkoutNote"></p>
         @auth
             <a href="{{ route('checkout.show') }}" class="btn block w-full text-center" x-bind:class="$store.cart.count === 0 && 'pointer-events-none opacity-50'" x-bind:aria-disabled="($store.cart.count === 0).toString()">Đặt hàng</a>
         @else
@@ -90,43 +93,43 @@
     <section id="account-panel" x-cloak x-show="panel === 'account'"
         x-transition:enter="transition duration-150 ease-out" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
         x-transition:leave="transition duration-100 ease-in" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95"
-        class="fixed right-3 top-16 z-40 w-[calc(100%-1.5rem)] max-w-sm origin-top-right rounded-2xl bg-white p-3 text-black shadow-[0_12px_28px_rgba(0,0,0,0.2),0_2px_4px_rgba(0,0,0,0.1)] sm:right-10 xl:right-24 2xl:right-48"
+        class="fixed right-3 top-16 z-40 w-[calc(100%-1.5rem)] max-w-sm origin-top-right rounded-2xl border border-border bg-surface-card p-4 text-main shadow-card-hover sm:right-8 xl:right-16"
         role="dialog" aria-modal="true" aria-labelledby="account-title" @keydown.tab="trapFocus($event)">
-        <div class="rounded-xl p-2 shadow-[0_2px_12px_rgba(0,0,0,0.12)]">
-            <a href="{{ route('account.index') }}" data-autofocus class="flex items-center gap-3 rounded-lg p-2 transition hover:bg-zinc-100 focus-visible:ring-4">
-                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-black text-lg font-semibold text-white" aria-hidden="true">{{ $initial }}</span>
+        <div class="rounded-xl border border-border/80 bg-surface/50 p-2.5">
+            <a href="{{ route('account.index') }}" data-autofocus class="flex items-center gap-3 rounded-lg p-2 transition hover:bg-surface-card focus-visible:ring-4">
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent text-base font-bold text-accent-text" aria-hidden="true">{{ $initial }}</span>
                 <span class="min-w-0">
-                    <span id="account-title" class="block truncate text-base font-semibold">{{ $accountUser->full_name }}</span>
-                    <span class="block truncate text-xs text-zinc-500">{{ $accountUser->email }}</span>
+                    <span id="account-title" class="block truncate text-sm font-bold text-main">{{ $accountUser->full_name }}</span>
+                    <span class="block truncate text-xs text-muted">{{ $accountUser->email }}</span>
                 </span>
             </a>
-            <div class="mx-2 my-2 h-px bg-zinc-200"></div>
-            <a href="{{ route('account.index') }}" class="flex items-center justify-center gap-2 rounded-lg bg-zinc-100 px-3 py-2 text-sm font-semibold transition hover:bg-zinc-200">
+            <div class="mx-2 my-2 h-px bg-border"></div>
+            <a href="{{ route('account.index') }}" class="flex items-center justify-center gap-2 rounded-lg bg-surface-card border border-border/60 px-3 py-2 text-xs font-semibold text-main transition hover:border-accent hover:text-accent shadow-subtle">
                 <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"/></svg>
                 Tài khoản của tôi
             </a>
         </div>
-        <nav class="mt-2 flex flex-col" aria-label="Tài khoản">
+        <nav class="mt-2 flex flex-col gap-1" aria-label="Tài khoản">
             @foreach ($menuItems as $item)
-                <a href="{{ $item['href'] }}" class="flex items-center gap-3 rounded-lg p-2 text-sm font-semibold transition hover:bg-zinc-100">
-                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-zinc-200" aria-hidden="true"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{ $item['icon'] }}"/></svg></span>
+                <a href="{{ $item['href'] }}" class="flex items-center gap-3 rounded-lg p-2.5 text-xs font-semibold text-muted transition hover:bg-surface hover:text-accent">
+                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface border border-border/60" aria-hidden="true"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{ $item['icon'] }}"/></svg></span>
                     <span class="flex-1">{{ $item['label'] }}</span>
-                    <svg class="h-4 w-4 text-zinc-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+                    <svg class="h-4 w-4 text-muted/60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
                 </a>
             @endforeach
             <form method="POST" action="{{ route('logout') }}">
                 @csrf
-                <button type="submit" class="flex w-full items-center gap-3 rounded-lg p-2 text-left text-sm font-semibold transition hover:bg-zinc-100">
-                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-zinc-200" aria-hidden="true"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg></span>
+                <button type="submit" class="flex w-full items-center gap-3 rounded-lg p-2.5 text-left text-xs font-semibold text-muted transition hover:bg-error-bg hover:text-error">
+                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface border border-border/60" aria-hidden="true"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg></span>
                     Đăng xuất
                 </button>
             </form>
         </nav>
-        <p class="px-2 pt-2 text-[11px] text-zinc-400">Cena · bản demo đồ án</p>
+        <p class="px-2 pt-2 text-[11px] text-muted/70">Cena · bản demo đồ án</p>
     </section>
 @endauth
-<section id="notice-panel" x-cloak x-show="panel === 'notice'" x-transition.opacity class="fixed left-1/2 top-1/2 z-40 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 bg-white p-8" role="dialog" aria-modal="true" aria-labelledby="notice-title" @keydown.tab="trapFocus($event)">
-    <button type="button" class="btn-icon absolute right-3 top-3" @click="closePanel()" aria-label="Close notification"><x-storefront.icon name="close"/></button>
-    <h2 id="notice-title" class="mb-4 text-xl font-semibold" x-text="noticeTitle"></h2>
-    <p class="text-sm leading-6">Our online shop is getting ready. Please check back soon.</p>
+<section id="notice-panel" x-cloak x-show="panel === 'notice'" x-transition.opacity class="fixed left-1/2 top-1/2 z-40 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-border bg-surface-card p-8 shadow-elevated" role="dialog" aria-modal="true" aria-labelledby="notice-title" @keydown.tab="trapFocus($event)">
+    <button type="button" class="btn-icon absolute right-4 top-4" @click="closePanel()" aria-label="Close notification"><x-storefront.icon name="close"/></button>
+    <h2 id="notice-title" class="mb-3 text-lg font-bold text-main" x-text="noticeTitle"></h2>
+    <p class="text-sm leading-relaxed text-muted">Cửa hàng trực tuyến đang chuẩn bị sẵn sàng. Vui lòng quay lại sau.</p>
 </section>

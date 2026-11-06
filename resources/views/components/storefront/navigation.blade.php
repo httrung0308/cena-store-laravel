@@ -3,25 +3,30 @@
     $genderLinks = ['Men' => ['men', 'men'], 'Women' => ['women', 'women'], 'Kids' => ['kids', 'kid'], 'Unisex' => ['unisex', 'unisex']];
     $isAdminAccount = auth()->user()?->hasRole(App\Enums\RoleSlug::Admin) ?? false;
 @endphp
-<header @class(['legacy-navigation' => $animated, '-mb-10'])>
-    <nav class="relative z-10 flex items-center justify-between px-10 py-5 transition-colors xl:px-24 2xl:px-48" aria-label="Main navigation">
-        <h2><a href="{{ route('home') }}" class="block" aria-label="Cena — trang chủ"><img src="{{ asset('cena-logo.svg') }}" alt="Cena" class="h-11 w-auto sm:h-12"></a></h2>
-        <div class="hidden gap-6 px-24 md:flex" @mouseleave="hoverImage = null">
+<header @class(['sticky top-0 z-40 border-b border-border bg-surface-card/95 backdrop-blur-md transition-colors', 'legacy-navigation' => $animated])>
+    <nav class="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-8 lg:px-10" aria-label="Main navigation">
+        <h2>
+            <a href="{{ route('home') }}" class="flex items-center gap-2" aria-label="Cena — trang chủ">
+                <img src="{{ asset('cena-logo.svg') }}" alt="Cena" class="h-8 w-auto sm:h-9">
+                <span class="text-[11px] font-serif italic text-accent/70 tracking-widest hidden sm:inline">· 履物</span>
+            </a>
+        </h2>
+        <div class="hidden items-center gap-8 md:flex" @mouseleave="hoverImage = null">
             @foreach ($genderLinks as $label => [$gender, $image])
-                <a href="{{ route('shoes.index', ['gender' => $gender]) }}" class="transition-all hover:underline" @mouseenter="hoverImage = '{{ asset('legacy/img/'.$image.'.jpg') }}'" @mouseleave="hoverImage = null" @focus="hoverImage = null">{{ $label }}</a>
+                <a href="{{ route('shoes.index', ['gender' => $gender]) }}" class="text-xs font-semibold uppercase tracking-wider text-muted transition-colors hover:text-accent" @mouseenter="hoverImage = '{{ asset('legacy/img/'.$image.'.jpg') }}'" @mouseleave="hoverImage = null" @focus="hoverImage = null">{{ $label }}</a>
             @endforeach
-            <a href="{{ route('news.index') }}" class="transition-all hover:underline">News</a>
+            <a href="{{ route('news.index') }}" class="text-xs font-semibold uppercase tracking-wider text-muted transition-colors hover:text-accent">News</a>
         </div>
-        <div class="flex shrink-0 items-center">
+        <div class="flex shrink-0 items-center gap-1 sm:gap-2">
             @auth
                 <button type="button" class="btn-icon" aria-label="Tài khoản" @click="openPanel('account')" :aria-expanded="(panel === 'account').toString()" aria-controls="account-panel"><x-storefront.icon name="user"/></button>
             @else
                 <a href="{{ route('login') }}" class="btn-icon" aria-label="Đăng nhập"><x-storefront.icon name="user"/></a>
             @endauth
             @unless ($isAdminAccount)
-            <button type="button" class="btn-icon relative ml-3" aria-label="Cart" @click="openPanel('cart')" :aria-expanded="(panel === 'cart').toString()" aria-controls="cart-panel"><x-storefront.icon name="cart"/><span x-cloak x-show="$store.cart.count > 0" x-text="$store.cart.count" class="absolute -right-2 -top-2 min-w-[1.25rem] rounded-full bg-black px-1 text-center text-xs font-semibold leading-5 text-white" aria-label="Số đôi trong giỏ"></span></button>
+            <button type="button" class="btn-icon relative" aria-label="Cart" @click="openPanel('cart')" :aria-expanded="(panel === 'cart').toString()" aria-controls="cart-panel"><x-storefront.icon name="cart"/><span x-cloak x-show="$store.cart.count > 0" x-text="$store.cart.count" class="absolute -right-1 -top-1 min-w-[1.25rem] rounded-full bg-accent px-1 text-center text-xs font-semibold leading-5 text-accent-text" aria-label="Số đôi trong giỏ"></span></button>
             @endunless
-            <button type="button" class="btn-icon ml-3 inline md:hidden" aria-label="Menu" @click="openPanel('menu')" :aria-expanded="(panel === 'menu').toString()" aria-controls="mobile-menu"><x-storefront.icon name="menu"/></button>
+            <button type="button" class="btn-icon inline md:hidden" aria-label="Menu" @click="openPanel('menu')" :aria-expanded="(panel === 'menu').toString()" aria-controls="mobile-menu"><x-storefront.icon name="menu"/></button>
         </div>
     </nav>
 </header>
