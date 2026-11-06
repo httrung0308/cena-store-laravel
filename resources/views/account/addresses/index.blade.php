@@ -3,18 +3,20 @@
 @section('title', 'Sổ địa chỉ')
 
 @section('content')
-    <section class="py-10 sm:px-8">
+    <section class="py-6 sm:py-10">
         <div class="mx-auto flex max-w-4xl flex-col gap-8">
-            <div class="space-y-4">
-                <a href="{{ route('account.index') }}" class="inline-flex items-center gap-2 font-semibold text-zinc-600 transition hover:text-zinc-900">← Tài khoản của tôi</a>
-                <p class="text-sm uppercase tracking-[0.35em] text-zinc-400">Tài khoản</p>
-                <h1 class="text-4xl font-bold sm:text-5xl">Quản lý địa chỉ</h1>
+            <div class="space-y-3">
+                <a href="{{ route('account.index') }}" class="inline-flex items-center gap-1.5 text-xs font-semibold text-muted transition-colors hover:text-accent">
+                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
+                    <span>Tài khoản của tôi</span>
+                </a>
+                <h1 class="text-3xl font-bold font-serif text-main sm:text-5xl tracking-tight">Quản lý địa chỉ</h1>
             </div>
             @if (session('status'))
-                <p role="status" class="rounded-3xl border border-green-200 bg-green-50 p-4 text-sm text-green-700">{{ session('status') }}</p>
+                <p role="status" class="rounded-xl border border-success/30 bg-success-bg p-4 text-sm font-medium text-success-text shadow-subtle">{{ session('status') }}</p>
             @endif
             <x-account.address-list :addresses="$addresses" />
-            <a href="{{ route('account.addresses.create') }}" class="btn w-full py-4 text-center text-lg font-semibold">+ Thêm địa chỉ mới</a>
+            <a href="{{ route('account.addresses.create') }}" class="btn w-full py-3.5 text-center text-base font-semibold shadow-card">+ Thêm địa chỉ mới</a>
         </div>
     </section>
 @endsection
