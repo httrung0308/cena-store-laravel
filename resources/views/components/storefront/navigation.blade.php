@@ -77,7 +77,7 @@
      class="pointer-events-none fixed left-0 top-0 z-20 hidden w-48 md:block"
      :style="{ transform: `translate(${pointerX + 20}px, ${pointerY + 20}px)` }" aria-hidden="true" data-navigation-preview>
     <template x-for="previewUrl in (hoverImage ? [hoverImage] : [])" :key="previewUrl">
-        <img :src="previewUrl" alt="" class="h-full w-full object-cover"
+        <img :src="previewUrl" alt="Ảnh xem trước sản phẩm" class="h-full w-full object-cover" loading="lazy" decoding="async"
              x-on:load="if (hoverImage === previewUrl && $el.naturalWidth > 0) previewReady = true"
              x-on:error="if (hoverImage === previewUrl) { previewReady = false; hoverImage = null }">
     </template>

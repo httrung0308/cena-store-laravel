@@ -19,7 +19,7 @@
         @if ($featured !== null)
             <article class="group mt-10 grid items-center gap-6 rounded-2xl border border-border bg-surface-card p-6 shadow-card transition-shadow duration-200 hover:shadow-card-hover lg:grid-cols-5 lg:gap-12 lg:p-8" data-news-card data-news-featured>
                 <a href="{{ route('news.show', $featured->slug) }}" class="block aspect-[16/10] overflow-hidden rounded-xl bg-surface border border-border/70 lg:col-span-3">
-                    <img src="{{ $featured->coverUrl() }}" alt="{{ $featured->title }}" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105">
+                    <img src="{{ $featured->coverUrl() }}" alt="{{ $featured->title }}" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105" loading="lazy" decoding="async">
                 </a>
                 <div class="flex flex-col gap-4 lg:col-span-2">
                     <p class="text-xs font-semibold uppercase tracking-wider text-muted">Mới nhất · {{ $featured->published_at->setTimezone($tz)->format('d/m/Y') }}</p>
@@ -34,7 +34,7 @@
             @foreach ($others as $article)
                 <article class="group flex flex-col gap-3 rounded-2xl border border-border bg-surface-card p-4 shadow-subtle transition-shadow duration-200 hover:shadow-card" data-news-card>
                     <a href="{{ route('news.show', $article->slug) }}" class="block aspect-[4/3] overflow-hidden rounded-xl bg-surface border border-border/60">
-                        <img src="{{ $article->coverUrl() }}" alt="{{ $article->title }}" loading="lazy" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105">
+                        <img src="{{ $article->coverUrl() }}" alt="{{ $article->title }}" loading="lazy" decoding="async" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105">
                     </a>
                     <p class="text-xs font-medium text-muted">{{ $article->published_at->setTimezone($tz)->format('d/m/Y') }}</p>
                     <h2 class="text-lg font-bold leading-snug text-main"><a href="{{ route('news.show', $article->slug) }}" class="hover:text-accent hover:underline transition-colors">{{ $article->title }}</a></h2>

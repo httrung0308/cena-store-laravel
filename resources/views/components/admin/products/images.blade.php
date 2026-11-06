@@ -9,7 +9,7 @@
 <label class="block text-xs font-semibold text-muted">Mô tả ảnh <input class="input mt-1 w-full border-border text-sm font-normal text-main" x-model="image.alt_text" x-bind:name="{{ $dynamic ? "'colors['+ci+'][images]['+ii+'][alt_text]'" : "'images['+ii+'][alt_text]'" }}" required></label>
 <input type="hidden" x-bind:name="{{ $dynamic ? "'colors['+ci+'][images]['+ii+'][is_thumbnail]'" : "'images['+ii+'][is_thumbnail]'" }}" x-bind:value="image.thumbnail ? 1:0">
 <label class="inline-flex items-center gap-2 text-main text-xs font-medium cursor-pointer"><input type="radio" class="accent-accent" x-bind:name="{{ $dynamic ? "'thumbnail-'+ci" : "'thumbnail'" }}" x-bind:checked="image.thumbnail" x-on:change="makeThumbnail(image.key)"> Ảnh đại diện</label>
-<img x-show="image.previewUrl || image.external_url || image.existingUrl" x-bind:src="image.previewUrl || image.external_url || image.existingUrl" alt="Ảnh xem trước được chọn" class="h-24 w-24 rounded-lg object-cover border border-border">
+<img x-show="image.previewUrl || image.external_url || image.existingUrl" x-bind:src="image.previewUrl || image.external_url || image.existingUrl" alt="Ảnh xem trước được chọn" class="h-24 w-24 rounded-lg object-cover border border-border" loading="lazy" decoding="async">
 <div class="flex flex-wrap gap-2 pt-1"><button type="button" class="btn-pill" x-on:click="move(ii,ii-1)">Lên</button><button type="button" class="btn-pill" x-on:click="move(ii,ii+1)">Xuống</button><button type="button" class="btn-pill text-error hover:bg-error-bg" x-on:click="remove(image.key)">Xóa ảnh nháp</button></div>
 </div>
 </template>

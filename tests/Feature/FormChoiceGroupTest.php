@@ -46,8 +46,8 @@ class FormChoiceGroupTest extends TestCase
         $html = Blade::render('<x-forms.choice-group name="sizes" label="Chọn" id="selection" :options="$options" :value="[\'00001\']"/>', compact('options'));
         $this->assertStringContainsString('for="selection-0"', $html);
         $this->assertMatchesRegularExpression('/id="selection-0"[^>]*value="00001"[^>]*checked[^>]*class="peer sr-only"/s', $html);
-        $this->assertStringContainsString('peer-checked:bg-black', $html);
-        $this->assertStringContainsString('peer-checked:text-white', $html);
+        $this->assertStringContainsString('peer-checked:bg-accent', $html);
+        $this->assertStringContainsString('peer-checked:text-accent-text', $html);
         $this->assertStringContainsString('peer-focus-visible:ring-4', $html);
         $this->assertStringContainsString('aria-hidden="true"', $html);
         $this->assertMatchesRegularExpression('/id="selection-1"[^>]*value="40\.5"[^>]*disabled/s', $html);

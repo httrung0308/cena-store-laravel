@@ -16,7 +16,7 @@
         <h1 class="mt-3 text-3xl font-extrabold leading-tight text-main sm:text-5xl tracking-tight">{{ $article->title }}</h1>
         <p class="mt-5 text-lg text-muted leading-relaxed">{{ $article->summary }}</p>
         <div class="mt-8 aspect-[16/9] w-full overflow-hidden rounded-2xl border border-border bg-surface shadow-card">
-            <img src="{{ $article->coverUrl() }}" alt="{{ $article->title }}" class="h-full w-full object-cover">
+            <img src="{{ $article->coverUrl() }}" alt="{{ $article->title }}" class="h-full w-full object-cover" loading="lazy" decoding="async">
         </div>
         <div class="article-body mt-10 text-base leading-relaxed text-main" data-article-body>{{ App\Support\ArticleFormatter::toHtml($article->body) }}</div>
 
@@ -57,7 +57,7 @@
                 @foreach ($related as $other)
                     <article class="group flex flex-col gap-3 rounded-2xl border border-border bg-surface-card p-4 shadow-subtle transition-shadow duration-200 hover:shadow-card">
                         <a href="{{ route('news.show', $other->slug) }}" class="block aspect-[4/3] overflow-hidden rounded-xl bg-surface border border-border/60">
-                            <img src="{{ $other->coverUrl() }}" alt="{{ $other->title }}" loading="lazy" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105">
+                            <img src="{{ $other->coverUrl() }}" alt="{{ $other->title }}" loading="lazy" decoding="async" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105">
                         </a>
                         <p class="text-xs font-medium text-muted">{{ $other->published_at->setTimezone($tz)->format('d/m/Y') }}</p>
                         <h3 class="text-base font-bold leading-snug text-main"><a href="{{ route('news.show', $other->slug) }}" class="hover:text-accent hover:underline transition-colors">{{ $other->title }}</a></h3>

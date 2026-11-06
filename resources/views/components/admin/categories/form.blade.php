@@ -33,8 +33,8 @@
         <span>Hiển thị danh mục này</span>
     </label>
     <div class="flex items-center gap-3 pt-2">
-        <button type="submit" class="px-6 py-2.5 bg-accent hover:bg-accent-hover text-accent-text text-xs font-bold rounded-xl transition-all shadow-md" @disabled(! $action)>Lưu danh mục</button>
-        <a href="{{ route('admin.categories.index') }}" class="px-6 py-2.5 bg-surface hover:bg-border/40 text-muted hover:text-main text-xs font-bold rounded-xl border border-border transition-all">Hủy</a>
+        <button type="submit" class="px-6 py-2.5 bg-accent hover:bg-accent-hover text-accent-text text-xs font-bold rounded-xl transition-colors shadow-md" @disabled(! $action)>Lưu danh mục</button>
+        <a href="{{ route('admin.categories.index') }}" class="px-6 py-2.5 bg-surface hover:bg-border/40 text-muted hover:text-main text-xs font-bold rounded-xl border border-border transition-colors">Hủy</a>
     </div>
     @unless ($action)<p role="status" class="text-xs text-error">Chưa có quyền lưu danh mục.</p>@endunless
 </form>

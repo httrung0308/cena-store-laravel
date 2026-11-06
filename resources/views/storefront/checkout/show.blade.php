@@ -71,7 +71,7 @@
                     @foreach ($quote['lines'] as $line)
                         <div class="flex gap-4 border-b border-border/60 pb-4">
                             <div class="h-20 w-20 shrink-0 overflow-hidden rounded-xl border border-border bg-surface">
-                                <img src="{{ $line['thumbnail_url'] ?? asset('legacy/img/men.jpg') }}" alt="{{ $line['product_name'] }}" class="h-full w-full object-cover" loading="lazy">
+                                <img src="{{ $line['thumbnail_url'] ?? asset('legacy/img/men.jpg') }}" alt="{{ $line['product_name'] }}" class="h-full w-full object-cover" loading="lazy" decoding="async" width="64" height="64">
                             </div>
                             <div class="min-w-0 flex-1 break-words">
                                 <p class="font-semibold text-main text-sm">{{ $line['product_name'] }}</p>

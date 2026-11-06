@@ -9,8 +9,8 @@
     <div class="space-y-2"><h3 class="font-semibold">Tệp đính kèm</h3>
         @forelse ($attachments as $entry)
             @if (is_string($entry['authorizedUrl'] ?? null) && $entry['authorizedUrl'] !== '')<a class="block text-sm underline" href="{{ $entry['authorizedUrl'] }}">Tệp {{ $entry['id'] ?? '' }}</a>
-            @else<p class="text-sm text-zinc-500">Tệp chưa khả dụng.</p>@endif
-        @empty<p class="text-sm text-zinc-500">Chưa có tệp đính kèm.</p>@endforelse
+            @else<p class="text-sm text-muted">Tệp chưa khả dụng.</p>@endif
+        @empty<p class="text-sm text-muted">Chưa có tệp đính kèm.</p>@endforelse
     </div>
     @if ($allowedActions['cancelUrl'] ?? null)<form action="{{ $allowedActions['cancelUrl'] }}" method="POST">@csrf<button type="submit" class="text-sm underline">Hủy yêu cầu</button></form>@endif
 </section>

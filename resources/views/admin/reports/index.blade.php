@@ -45,11 +45,11 @@
                 <label for="report-to" class="admin-label text-muted">Đến ngày</label>
                 <input id="report-to" type="date" name="to" value="{{ $to }}" class="input border-border bg-surface text-main">
             </div>
-            <button type="submit" class="px-5 py-2.5 bg-accent hover:bg-accent-hover text-accent-text text-xs font-bold rounded-xl transition-all shadow-md">Xem báo cáo</button>
+            <button type="submit" class="px-5 py-2.5 bg-accent hover:bg-accent-hover text-accent-text text-xs font-bold rounded-xl transition-colors shadow-md">Xem báo cáo</button>
             <nav class="flex flex-wrap gap-2 sm:ml-auto" aria-label="Khoảng ngày nhanh">
                 @foreach ($presets as $preset)
                     <a href="{{ route('admin.reports.index', ['from' => $preset['from'], 'to' => $preset['to']]) }}"
-                       @class(['px-3 py-1.5 text-xs font-bold rounded-xl border transition-all', '!border-accent !bg-accent !text-accent-text shadow-sm' => $preset['from'] === $from && $preset['to'] === $to, 'border-border bg-surface-card text-muted hover:bg-surface hover:text-main' => ! ($preset['from'] === $from && $preset['to'] === $to)])
+                       @class(['px-3 py-1.5 text-xs font-bold rounded-xl border transition-colors', '!border-accent !bg-accent !text-accent-text shadow-sm' => $preset['from'] === $from && $preset['to'] === $to, 'border-border bg-surface-card text-muted hover:bg-surface hover:text-main' => ! ($preset['from'] === $from && $preset['to'] === $to)])
                        @if ($preset['from'] === $from && $preset['to'] === $to) aria-current="true" @endif>{{ $preset['label'] }}</a>
                 @endforeach
             </nav>
@@ -98,7 +98,7 @@
                             <h2 id="chart-title" class="text-xl font-semibold text-main">Doanh thu theo {{ $periodWord }}</h2>
                             <p class="mt-1 text-xs text-muted">Mỗi cột là doanh thu một {{ $periodWord }}, chia thành giá vốn, chi phí khác và lợi nhuận · rê chuột để xem số</p>
                         </div>
-                        <p class="flex flex-wrap gap-4 text-xs text-muted">{!! $legend('#94a3b8', 'Giá vốn') !!}{!! $legend('#be123c', 'Chi phí khác') !!}{!! $legend('#15803d', 'Lợi nhuận') !!}</p>
+                        <p class="flex flex-wrap gap-4 text-xs text-muted">{!! $legend('var(--text-muted)', 'Giá vốn') !!}{!! $legend('var(--accent-sub)', 'Chi phí khác') !!}{!! $legend('var(--success)', 'Lợi nhuận') !!}</p>
                     </div>
                     <div class="relative mt-4 h-72" data-report-chart>
                         <canvas x-ref="money" role="img" aria-label="Biểu đồ cột chồng doanh thu theo {{ $periodWord }} từ {{ $day($from) }} đến {{ $day($to) }}: giá vốn, chi phí khác và lợi nhuận"></canvas>
@@ -109,7 +109,7 @@
                                 <h3 class="font-semibold text-main">Biên lợi nhuận theo {{ $periodWord }}</h3>
                                 <p class="mt-1 text-xs text-muted">Lợi nhuận chia doanh thu; đường đứt là mức trung bình cả kỳ</p>
                             </div>
-                            <p class="flex flex-wrap gap-4 text-xs text-muted">{!! $legend('#15803d', 'Biên lợi nhuận') !!}{!! $legend('#94a3b8', 'Trung bình cả kỳ') !!}</p>
+                            <p class="flex flex-wrap gap-4 text-xs text-muted">{!! $legend('var(--success)', 'Biên lợi nhuận') !!}{!! $legend('var(--text-muted)', 'Trung bình cả kỳ') !!}</p>
                         </div>
                         <div class="relative mt-3 h-36" data-margin-chart>
                             <canvas x-ref="margin" role="img" aria-label="Biểu đồ biên lợi nhuận theo {{ $periodWord }} so với trung bình cả kỳ"></canvas>
@@ -131,9 +131,9 @@
                     @if ($money['revenue'] > 0)
                         @php
                             $parts = [
-                                ['label' => 'Giá vốn', 'value' => $money['cogs'], 'color' => '#94a3b8'],
-                                ['label' => 'Chi phí khác', 'value' => $money['expense'], 'color' => '#be123c'],
-                                ['label' => 'Lợi nhuận', 'value' => max($money['profit'], 0), 'color' => '#15803d'],
+                                ['label' => 'Giá vốn', 'value' => $money['cogs'], 'color' => 'var(--text-muted)'],
+                                ['label' => 'Chi phí khác', 'value' => $money['expense'], 'color' => 'var(--accent-sub)'],
+                                ['label' => 'Lợi nhuận', 'value' => max($money['profit'], 0), 'color' => 'var(--success)'],
                             ];
                             $whole = max(1, array_sum(array_column($parts, 'value')));
                         @endphp
@@ -346,7 +346,7 @@
                         <h2 id="feedback-title" class="text-xl font-semibold text-main">Đánh giá bài viết</h2>
                         <p class="mt-1 text-xs text-muted">Câu trả lời "Bài viết có hữu ích không?" của người đọc trong khoảng ngày đã chọn</p>
                     </div>
-                    <p class="flex flex-wrap gap-4 text-xs text-muted">{!! $legend('#15803d', 'Hữu ích') !!}{!! $legend('#be123c', 'Không hữu ích') !!}</p>
+                    <p class="flex flex-wrap gap-4 text-xs text-muted">{!! $legend('var(--success)', 'Hữu ích') !!}{!! $legend('var(--accent-sub)', 'Không hữu ích') !!}</p>
                 </div>
                 @if ($answers === 0)
                     <p class="py-10 text-center text-sm text-muted">Chưa có người đọc nào đánh giá trong khoảng này.</p>
@@ -358,8 +358,8 @@
                             <p class="text-xs text-muted">Tỉ lệ hữu ích</p>
                             <p class="mt-1 text-2xl font-bold tabular-nums text-main">{{ $percent($helpfulShare) }}</p>
                             <div class="mt-2 flex h-2 gap-0.5 overflow-hidden rounded-full" aria-hidden="true">
-                                @if ($articleFeedback['helpful'] > 0)<span class="h-full" style="width: {{ round($helpfulShare, 2) }}%; background: #15803d"></span>@endif
-                                @if ($articleFeedback['unhelpful'] > 0)<span class="h-full flex-1" style="background: #be123c"></span>@endif
+                                @if ($articleFeedback['helpful'] > 0)<span class="h-full" style="width: {{ round($helpfulShare, 2) }}%; background: var(--success)"></span>@endif
+                                @if ($articleFeedback['unhelpful'] > 0)<span class="h-full flex-1" style="background: var(--accent-sub)"></span>@endif
                             </div>
                         </div>
                     </div>

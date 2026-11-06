@@ -2,7 +2,7 @@
 @section('title', $import->exists ? 'Sửa Phiếu Nháp' : 'Tạo Phiếu Nháp')
 @section('eyebrow', 'QUẢN TRỊ KHO HÀNG')
 @section('actions')
-    <a class="px-4 py-2 bg-surface hover:bg-border/40 text-muted hover:text-main text-xs font-bold rounded-xl border border-border transition-all" href="{{ route('admin.stock-imports.index') }}">← Quay lại danh sách</a>
+    <a class="px-4 py-2 bg-surface hover:bg-border/40 text-muted hover:text-main text-xs font-bold rounded-xl border border-border transition-colors" href="{{ route('admin.stock-imports.index') }}">← Quay lại danh sách</a>
 @endsection
 @section('content')
 <div class="max-w-5xl">
@@ -17,7 +17,7 @@
             <label for="spreadsheet-file" class="sr-only">File Excel hoặc CSV</label>
             <input id="spreadsheet-file" type="file" name="file" accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv" required
                    class="block w-full max-w-md text-xs text-main file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-surface file:text-main file:border file:border-border hover:file:bg-border/40 cursor-pointer">
-            <button type="submit" class="px-5 py-2 bg-accent hover:bg-accent-hover text-accent-text text-xs font-bold rounded-xl transition-all shadow-md">Đọc file</button>
+            <button type="submit" class="px-5 py-2 bg-accent hover:bg-accent-hover text-accent-text text-xs font-bold rounded-xl transition-colors shadow-md">Đọc file</button>
         </form>
         <p class="text-[11px] text-muted">Nhận .xlsx hoặc .csv, tối đa 2 MB và {{ App\Services\StockImportSpreadsheet::MAX_LINES }} dòng. Cột khác (tên giày, màu, size...) được bỏ qua.</p>
         @if ($errors->spreadsheet->any())
@@ -49,7 +49,7 @@
     <section class="admin-card space-y-4">
         <div class="flex flex-wrap items-center justify-between gap-3">
             <h2 class="text-base font-bold text-main">Các dòng SKU</h2>
-            <button type="button" class="px-4 py-2 bg-accent hover:bg-accent-hover text-accent-text text-xs font-bold rounded-xl transition-all shadow-sm" x-on:click="rows.push({variant_id:'',quantity:1,unit_cost_amount:''})">+ Thêm dòng SKU</button>
+            <button type="button" class="px-4 py-2 bg-accent hover:bg-accent-hover text-accent-text text-xs font-bold rounded-xl transition-colors shadow-sm" x-on:click="rows.push({variant_id:'',quantity:1,unit_cost_amount:''})">+ Thêm dòng SKU</button>
         </div>
         <p x-show="rows.length === 0" class="text-xs text-muted">Chưa có dòng nào. Bấm “Thêm dòng SKU”.</p>
         <template x-for="(row,i) in rows" :key="i">
@@ -77,8 +77,8 @@
         <p class="text-xs text-muted">Tổng do server tính. Phiếu nháp không đổi tồn kho. Giá 0 chỉ được Admin ghi sổ với lý do nhập tặng ít nhất 20 ký tự.</p>
     </section>
     <div class="flex items-center gap-3 pt-2">
-        <button class="px-6 py-2.5 bg-accent hover:bg-accent-hover text-accent-text text-xs font-bold rounded-xl transition-all shadow-md" type="submit">Lưu phiếu nháp</button>
-        <a href="{{ route('admin.stock-imports.index') }}" class="px-6 py-2.5 bg-surface hover:bg-border/40 text-muted hover:text-main text-xs font-bold rounded-xl border border-border transition-all">Hủy</a>
+        <button class="px-6 py-2.5 bg-accent hover:bg-accent-hover text-accent-text text-xs font-bold rounded-xl transition-colors shadow-md" type="submit">Lưu phiếu nháp</button>
+        <a href="{{ route('admin.stock-imports.index') }}" class="px-6 py-2.5 bg-surface hover:bg-border/40 text-muted hover:text-main text-xs font-bold rounded-xl border border-border transition-colors">Hủy</a>
     </div>
 </form>
 </div>

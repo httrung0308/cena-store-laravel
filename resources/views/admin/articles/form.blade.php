@@ -2,7 +2,7 @@
 @section('title', $article->exists ? 'Sửa Bài Viết' : 'Viết Bài Mới')
 @section('eyebrow', 'QUẢN TRỊ NỘI DUNG')
 @section('actions')
-    <a class="px-4 py-2 bg-surface hover:bg-border/40 text-muted hover:text-main text-xs font-bold rounded-xl border border-border transition-all" href="{{ route('admin.articles.index') }}">← Quay lại danh sách</a>
+    <a class="px-4 py-2 bg-surface hover:bg-border/40 text-muted hover:text-main text-xs font-bold rounded-xl border border-border transition-colors" href="{{ route('admin.articles.index') }}">← Quay lại danh sách</a>
 @endsection
 @use('App\Enums\ArticleStatus')
 @php
@@ -123,7 +123,7 @@
                        x-on:dragover.prevent="dragging = true" x-on:dragleave.prevent="dragging = false" x-on:drop.prevent="dropCover($event)"
                        x-bind:class="dragging ? 'border-accent bg-surface-alt' : 'border-border'"
                        class="group relative block aspect-[16/10] cursor-pointer overflow-hidden rounded-2xl border-2 border-dashed transition hover:border-accent">
-                    <img x-cloak x-show="coverUrl" x-bind:src="coverUrl" alt="Ảnh bìa đã chọn" class="h-full w-full object-cover" @if ($article->cover_path) src="{{ $article->coverUrl() }}" @endif>
+                    <img x-cloak x-show="coverUrl" x-bind:src="coverUrl" alt="Ảnh bìa đã chọn" class="h-full w-full object-cover" loading="lazy" decoding="async" @if ($article->cover_path) src="{{ $article->coverUrl() }}" @endif>
                     <span x-show="!coverUrl" class="absolute inset-0 flex flex-col items-center justify-center gap-1 p-4 text-center text-sm text-muted">
                         <span class="font-semibold text-main">Kéo thả ảnh vào đây</span>
                         <span>hoặc bấm để chọn</span>

@@ -53,7 +53,7 @@
                             Tìm lại sự thanh thản và tự tin trong từng chuyển động. Tuyển chọn giày thể thao chính hãng với độ nâng đỡ êm ái suốt ngày dài.
                         </p>
                         <div class="flex flex-wrap items-center justify-center gap-4 mb-12">
-                            <a href="{{ route('shoes.index') }}" class="px-8 py-3.5 bg-accent hover:bg-accent-hover text-accent-text text-xs font-bold tracking-wider rounded-xl transition-all shadow-md transform hover:-translate-y-0.5">
+                            <a href="{{ route('shoes.index') }}" class="px-8 py-3.5 bg-accent hover:bg-accent-hover text-accent-text text-xs font-bold tracking-wider rounded-xl transition-transform duration-200 shadow-md transform hover:-translate-y-0.5">
                                 KHÁM PHÁ BỘ SƯU TẬP
                             </a>
                             <a href="#collections" class="px-8 py-3.5 border-2 border-border bg-surface-card text-main hover:bg-surface text-xs font-bold tracking-wider rounded-xl transition-colors">
@@ -61,7 +61,7 @@
                             </a>
                         </div>
                         <div class="relative mx-auto aspect-[16/9] max-w-4xl overflow-hidden rounded-2xl border border-border shadow-md">
-                            <img src="{{ asset('cena-hero-banner.svg') }}" alt="Cena Hero Banner" class="h-full w-full object-cover object-center" fetchpriority="high">
+                            <img src="{{ asset('cena-hero-banner.svg') }}" alt="Cena Hero Banner" class="h-full w-full object-cover object-center" fetchpriority="high" decoding="async">
                         </div>
                     </div>
                 </section>
@@ -80,9 +80,9 @@
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                         <!-- Men -->
-                        <a href="{{ route('shoes.index', ['gender' => 'men']) }}" class="group block bg-surface-card rounded-2xl p-3 border border-border hover:border-accent transition-all shadow-sm hover:shadow-md">
+                        <a href="{{ route('shoes.index', ['gender' => 'men']) }}" class="group block bg-surface-card rounded-2xl p-3 border border-border hover:border-accent transition-shadow duration-200 shadow-sm hover:shadow-md">
                             <div class="aspect-[4/5] rounded-xl overflow-hidden bg-surface mb-3 relative">
-                                <img src="{{ asset('legacy/img/men.jpg') }}" alt="Giày Nam" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy">
+                                <img src="{{ asset('legacy/img/men.jpg') }}" alt="Giày Nam" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" decoding="async">
                                 <span class="absolute top-2 right-2 px-2 py-0.5 rounded-md bg-accent text-accent-text text-[10px] font-bold">HOT</span>
                             </div>
                             <h3 class="font-bold text-sm text-main group-hover:text-accent transition-colors">Giày Nam</h3>
@@ -90,9 +90,9 @@
                         </a>
 
                         <!-- Women -->
-                        <a href="{{ route('shoes.index', ['gender' => 'women']) }}" class="group block bg-surface-card rounded-2xl p-3 border border-border hover:border-accent transition-all shadow-sm hover:shadow-md">
+                        <a href="{{ route('shoes.index', ['gender' => 'women']) }}" class="group block bg-surface-card rounded-2xl p-3 border border-border hover:border-accent transition-shadow duration-200 shadow-sm hover:shadow-md">
                             <div class="aspect-[4/5] rounded-xl overflow-hidden bg-surface mb-3 relative">
-                                <img src="{{ asset('legacy/img/women.jpg') }}" alt="Giày Nữ" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy">
+                                <img src="{{ asset('legacy/img/women.jpg') }}" alt="Giày Nữ" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" decoding="async">
                                 <span class="absolute top-2 right-2 px-2 py-0.5 rounded-md bg-accent-sub text-accent-sub-text text-[10px] font-bold">-25%</span>
                             </div>
                             <h3 class="font-bold text-sm text-main group-hover:text-accent transition-colors">Giày Nữ</h3>
@@ -100,18 +100,18 @@
                         </a>
 
                         <!-- Kids -->
-                        <a href="{{ route('shoes.index', ['gender' => 'kids']) }}" class="group block bg-surface-card rounded-2xl p-3 border border-border hover:border-accent transition-all shadow-sm hover:shadow-md">
+                        <a href="{{ route('shoes.index', ['gender' => 'kids']) }}" class="group block bg-surface-card rounded-2xl p-3 border border-border hover:border-accent transition-shadow duration-200 shadow-sm hover:shadow-md">
                             <div class="aspect-[4/5] rounded-xl overflow-hidden bg-surface mb-3 relative">
-                                <img src="{{ asset('legacy/img/kid.jpg') }}" alt="Trẻ Em" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy">
+                                <img src="{{ asset('legacy/img/kid.jpg') }}" alt="Trẻ Em" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" decoding="async">
                             </div>
                             <h3 class="font-bold text-sm text-main group-hover:text-accent transition-colors">Trẻ Em</h3>
                             <p class="text-xs text-muted mt-0.5">Bảo vệ & Nâng niu</p>
                         </a>
 
                         <!-- Unisex -->
-                        <a href="{{ route('shoes.index', ['gender' => 'unisex']) }}" class="group block bg-surface-card rounded-2xl p-3 border border-border hover:border-accent transition-all shadow-sm hover:shadow-md">
+                        <a href="{{ route('shoes.index', ['gender' => 'unisex']) }}" class="group block bg-surface-card rounded-2xl p-3 border border-border hover:border-accent transition-shadow duration-200 shadow-sm hover:shadow-md">
                             <div class="aspect-[4/5] rounded-xl overflow-hidden bg-surface mb-3 relative">
-                                <img src="{{ asset('legacy/img/unisex.jpg') }}" alt="Unisex" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy">
+                                <img src="{{ asset('legacy/img/unisex.jpg') }}" alt="Unisex" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" decoding="async">
                             </div>
                             <h3 class="font-bold text-sm text-main group-hover:text-accent transition-colors">Unisex</h3>
                             <p class="text-xs text-muted mt-0.5">Linh hoạt phố thị</p>

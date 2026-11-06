@@ -45,12 +45,12 @@
         @if ($describedBy !== '') aria-describedby="{{ $describedBy }}" @endif
         {{ $attributes->except(['aria-describedby', 'aria-invalid', 'aria-required', 'required'])->class([
             'input w-full',
-            'border-red-500' => $hasError,
-            'border-zinc-300' => ! $hasError,
+            'border-error' => $hasError,
+            'border-border' => ! $hasError,
         ]) }}
     >
     @if ($hasHint)
-        <p id="{{ $hintId }}" class="mt-1 text-xs text-zinc-500">{{ (string) $hint }}</p>
+        <p id="{{ $hintId }}" class="mt-1 text-xs text-muted">{{ (string) $hint }}</p>
     @endif
     <div class="min-h-4">
         <x-forms.field-error :name="$name" :id="$errorId" />

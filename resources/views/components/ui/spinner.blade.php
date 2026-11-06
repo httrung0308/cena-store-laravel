@@ -6,7 +6,7 @@
 <svg
     {{ $attributes->except(['role', 'aria-label'])->class([
         'inline-block shrink-0 animate-spin motion-reduce:animate-none',
-        'mr-2 h-10 w-10 fill-black text-gray-200' => ! $compact,
+        'mr-2 h-10 w-10 fill-accent text-border' => ! $compact,
         'h-5 w-5 fill-white text-white' => $compact,
     ]) }}
     viewBox="0 0 24 24"

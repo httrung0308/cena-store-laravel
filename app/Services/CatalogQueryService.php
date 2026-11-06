@@ -308,15 +308,20 @@ final class CatalogQueryService
             return asset(self::FALLBACK_IMAGE);
         }
 
+        if ($image->source_type === ProductImageSourceType::ExternalUrl) {
+            if (is_string($image->external_url)
+                && filter_var($image->external_url, FILTER_VALIDATE_URL) && parse_url($image->external_url, PHP_URL_SCHEME) === 'https'
+                && parse_url($image->external_url, PHP_URL_USER) === null && parse_url($image->external_url, PHP_URL_PASS) === null) {
+                return $image->external_url;
+            }
+
+            return asset(self::FALLBACK_IMAGE);
+        }
+
         if ($size !== null) {
             return $image->thumbnailUrl($size);
         }
 
-        if ($image->source_type === ProductImageSourceType::ExternalUrl && is_string($image->external_url)
-            && filter_var($image->external_url, FILTER_VALIDATE_URL) && parse_url($image->external_url, PHP_URL_SCHEME) === 'https'
-            && parse_url($image->external_url, PHP_URL_USER) === null && parse_url($image->external_url, PHP_URL_PASS) === null) {
-            return $image->external_url;
-        }
         if ($image->source_type === ProductImageSourceType::Upload && is_string($image->storage_path)
             && preg_match('~^products/[A-Za-z0-9]{40}\.(?:jpe?g|png|webp)$~D', $image->storage_path)) {
             return Storage::disk('public')->url($image->storage_path);

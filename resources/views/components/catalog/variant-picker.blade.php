@@ -5,7 +5,7 @@
         <label class="mb-2 block text-xs font-bold uppercase tracking-wider text-muted">Phối màu</label>
         <div class="flex flex-wrap gap-2.5" role="group" aria-label="Phối màu">
             @foreach ($colors as $color)
-                <button type="button" class="h-16 w-16 overflow-hidden rounded-xl border-2 transition-all focus-visible:ring-2 shadow-subtle" x-bind:class="String(colorId) === @js((string) $color['id']) ? 'border-accent ring-2 ring-accent/30' : 'border-border/80 hover:border-accent/50'" x-bind:aria-pressed="(String(colorId) === @js((string) $color['id'])).toString()" aria-label="{{ $color['name'] }}" x-on:click="changeColor(@js($color['id'])); $dispatch('catalog-color-changed', {id: colorId})">
+                <button type="button" class="h-16 w-16 overflow-hidden rounded-xl border-2 transition-colors focus-visible:ring-2 shadow-subtle" x-bind:class="String(colorId) === @js((string) $color['id']) ? 'border-accent ring-2 ring-accent/30' : 'border-border/80 hover:border-accent/50'" x-bind:aria-pressed="(String(colorId) === @js((string) $color['id'])).toString()" aria-label="{{ $color['name'] }}" x-on:click="changeColor(@js($color['id'])); $dispatch('catalog-color-changed', {id: colorId})">
                     <img src="{{ $color['image_url'] ?? $fallbackImage }}" alt="{{ $color['name'] }}" loading="lazy" decoding="async" width="64" height="64" x-on:error="$el.src !== @js($fallbackImage) && ($el.src = @js($fallbackImage))" class="h-full w-full object-cover aspect-square">
                 </button>
             @endforeach
@@ -23,7 +23,7 @@
         <legend class="mb-2 text-xs font-bold uppercase tracking-wider text-muted">Kích cỡ (Size EU)</legend>
         <div class="flex flex-wrap gap-2">
             <template x-for="variant in variants.filter(v => String(v.product_color_id) === String(colorId) && v.is_active === true)" :key="variant.id">
-                <button type="button" class="min-w-[3.25rem] rounded-xl border px-3.5 py-2.5 text-xs font-semibold transition-all focus-visible:ring-2 disabled:cursor-not-allowed disabled:line-through disabled:opacity-30 disabled:border-border/40" x-bind:disabled="variant.available_qty <= 0" x-bind:aria-label="'Size ' + variant.size_value + (variant.available_qty <= 0 ? ' — Hết hàng' : '')" x-bind:class="variantId === variant.id ? 'bg-accent text-accent-text border-accent shadow-sm' : 'bg-surface-card border-border text-main hover:border-accent'" x-bind:aria-pressed="(variantId === variant.id).toString()" x-text="variant.size_value" x-on:click="choose(variant.id)"></button>
+                <button type="button" class="min-w-[3.25rem] rounded-xl border px-3.5 py-2.5 text-xs font-semibold transition-colors focus-visible:ring-2 disabled:cursor-not-allowed disabled:line-through disabled:opacity-30 disabled:border-border/40" x-bind:disabled="variant.available_qty <= 0" x-bind:aria-label="'Size ' + variant.size_value + (variant.available_qty <= 0 ? ' — Hết hàng' : '')" x-bind:class="variantId === variant.id ? 'bg-accent text-accent-text border-accent shadow-sm' : 'bg-surface-card border-border text-main hover:border-accent'" x-bind:aria-pressed="(variantId === variant.id).toString()" x-text="variant.size_value" x-on:click="choose(variant.id)"></button>
             </template>
         </div>
         <p x-show="available.length === 0" class="mt-2 text-xs text-error font-medium">Màu này hiện đã hết hàng.</p>
@@ -38,7 +38,7 @@
     <div class="flex flex-wrap gap-3 pt-2">
         <button type="button" disabled data-add-to-cart x-bind:data-variant-id="selected?.id ?? ''" x-bind:disabled="!selected || !priceAvailable || $store.cart.isBusy()" class="btn flex-1 sm:flex-initial px-8 py-3.5 disabled:cursor-not-allowed disabled:opacity-50">Thêm vào giỏ</button>
         @if (Route::has('checkout.show'))
-            <button type="button" disabled data-add-to-cart data-buy-now="{{ parse_url(route('checkout.show'), PHP_URL_PATH) }}" x-bind:data-variant-id="selected?.id ?? ''" x-bind:disabled="!selected || !priceAvailable || $store.cart.isBusy()" class="btn-secondary flex-1 sm:flex-initial px-8 py-3.5 font-semibold transition-all hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-50">Mua ngay</button>
+            <button type="button" disabled data-add-to-cart data-buy-now="{{ parse_url(route('checkout.show'), PHP_URL_PATH) }}" x-bind:data-variant-id="selected?.id ?? ''" x-bind:disabled="!selected || !priceAvailable || $store.cart.isBusy()" class="btn-secondary flex-1 sm:flex-initial px-8 py-3.5 font-semibold transition-colors hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-50">Mua ngay</button>
         @endif
     </div>
     @endif

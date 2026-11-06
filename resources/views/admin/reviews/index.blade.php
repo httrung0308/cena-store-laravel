@@ -13,7 +13,7 @@
                         <option value="0" @selected(($filters['visible'] ?? '') === '0')>Đã ẩn</option>
                     </select>
                 </label>
-                <button type="submit" class="px-4 py-2 bg-accent hover:bg-accent-hover text-accent-text text-xs font-bold rounded-xl transition-all shadow-sm">Lọc</button>
+                <button type="submit" class="px-4 py-2 bg-accent hover:bg-accent-hover text-accent-text text-xs font-bold rounded-xl transition-colors shadow-sm">Lọc</button>
             </form>
         </div>
 
@@ -40,14 +40,14 @@
                         @method('PATCH')
                         <label for="reply-{{ $review->id }}" class="admin-label text-muted">Phản hồi của cửa hàng</label>
                         <textarea id="reply-{{ $review->id }}" name="admin_reply" rows="2" maxlength="2000" class="input w-full border-border bg-surface text-main text-xs leading-relaxed" placeholder="Nhập câu trả lời cho khách...">{{ $review->admin_reply }}</textarea>
-                        <button type="submit" class="px-4 py-2 bg-surface hover:bg-border/40 text-muted hover:text-main text-xs font-bold rounded-xl border border-border w-fit transition-all">Lưu phản hồi</button>
+                        <button type="submit" class="px-4 py-2 bg-surface hover:bg-border/40 text-muted hover:text-main text-xs font-bold rounded-xl border border-border w-fit transition-colors">Lưu phản hồi</button>
                     </form>
                     <form method="POST" action="{{ route('admin.reviews.visibility', $review) }}" class="self-end">
                         @csrf
                         @method('PATCH')
                         <input type="hidden" name="visible" value="{{ $review->is_visible ? 0 : 1 }}">
                         <button type="submit" @class([
-                            'px-4 py-2 text-xs font-bold rounded-xl border transition-all',
+                            'px-4 py-2 text-xs font-bold rounded-xl border transition-colors',
                             'border-error/30 text-error hover:bg-error-bg' => $review->is_visible,
                             'border-border bg-surface text-main hover:bg-border/40' => ! $review->is_visible,
                         ])>{{ $review->is_visible ? 'Ẩn đánh giá' : 'Hiện lại' }}</button>

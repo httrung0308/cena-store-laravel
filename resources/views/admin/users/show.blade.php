@@ -2,7 +2,7 @@
 @section('title', 'Chi Tiết Người Dùng')
 @section('eyebrow', 'QUẢN TRỊ HỆ THỐNG')
 @section('actions')
-    <a class="px-4 py-2 bg-surface hover:bg-border/40 text-muted hover:text-main text-xs font-bold rounded-xl border border-border transition-all" href="{{ route('admin.users.index') }}">← Danh sách người dùng</a>
+    <a class="px-4 py-2 bg-surface hover:bg-border/40 text-muted hover:text-main text-xs font-bold rounded-xl border border-border transition-colors" href="{{ route('admin.users.index') }}">← Danh sách người dùng</a>
 @endsection
 @php
     $tz = (string) config('store.business_timezone');

@@ -3,8 +3,8 @@
 @section('eyebrow', 'QUẢN TRỊ NỘI DUNG')
 @php($tz = (string) config('store.business_timezone'))
 @section('actions')
-    <a href="{{ route('news.index') }}" class="px-4 py-2 bg-surface hover:bg-border/40 text-muted hover:text-main text-xs font-bold rounded-xl border border-border transition-all">Xem trang bài viết</a>
-    <a href="{{ route('admin.articles.create') }}" class="px-5 py-2.5 bg-accent hover:bg-accent-hover text-accent-text text-xs font-bold rounded-xl transition-all shadow-md flex items-center gap-1.5">+ Viết bài mới</a>
+    <a href="{{ route('news.index') }}" class="px-4 py-2 bg-surface hover:bg-border/40 text-muted hover:text-main text-xs font-bold rounded-xl border border-border transition-colors">Xem trang bài viết</a>
+    <a href="{{ route('admin.articles.create') }}" class="px-5 py-2.5 bg-accent hover:bg-accent-hover text-accent-text text-xs font-bold rounded-xl transition-colors shadow-md flex items-center gap-1.5">+ Viết bài mới</a>
 @endsection
 @section('content')
     <div class="space-y-6">
@@ -25,7 +25,7 @@
                         <option value="unhelpful" @selected(($filters['sort'] ?? '') === 'unhelpful')>Không hữu ích nhất</option>
                     </select>
                 </label>
-                <button type="submit" class="px-4 py-2 bg-accent hover:bg-accent-hover text-accent-text text-xs font-bold rounded-xl transition-all shadow-sm">Lọc</button>
+                <button type="submit" class="px-4 py-2 bg-accent hover:bg-accent-hover text-accent-text text-xs font-bold rounded-xl transition-colors shadow-sm">Lọc</button>
             </form>
         </div>
 
@@ -46,7 +46,7 @@
                         <tr class="hover:bg-surface/50 transition-colors">
                             <td class="p-4">
                                 <div class="flex items-center gap-3">
-                                    <img src="{{ $article->coverUrl() }}" alt="" class="h-12 w-16 shrink-0 rounded-xl object-cover border border-border bg-surface">
+                                    <img src="{{ $article->coverUrl() }}" alt="{{ $article->title }}" class="h-12 w-16 shrink-0 rounded-xl object-cover border border-border bg-surface" loading="lazy" decoding="async" width="64" height="48">
                                     <div class="min-w-0">
                                         <strong class="font-bold text-main text-sm block">{{ $article->title }}</strong>
                                         <span class="block text-[11px] text-muted font-mono mt-0.5">/news/{{ $article->slug }}</span>

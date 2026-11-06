@@ -2,7 +2,7 @@
 @section('title', 'Danh Sách Sản Phẩm')
 @section('eyebrow', 'QUẢN TRỊ KHO HÀNG')
 @section('actions')
-    <a class="px-5 py-2.5 bg-accent hover:bg-accent-hover text-accent-text text-xs font-bold rounded-xl transition-all shadow-md flex items-center gap-1.5" href="{{ route('admin.products.create') }}">
+    <a class="px-5 py-2.5 bg-accent hover:bg-accent-hover text-accent-text text-xs font-bold rounded-xl transition-colors shadow-md flex items-center gap-1.5" href="{{ route('admin.products.create') }}">
         <span>+ Thêm sản phẩm</span>
     </a>
 @endsection
@@ -33,7 +33,7 @@
                     <tr class="hover:bg-surface/50 transition-colors">
                         <td class="p-4">
                             @if ($thumbnail)
-                                <img src="{{ $thumbnail->thumb_64_url ?? $thumbnail->thumbnail_url ?? $images->imageUrl($thumbnail) }}" alt="{{ $product->name }}" class="w-14 h-14 object-cover rounded-xl border border-border bg-surface" loading="lazy">
+                                <img src="{{ $thumbnail->thumb_64_url ?? $thumbnail->thumbnail_url ?? $images->imageUrl($thumbnail) }}" alt="{{ $product->name }}" class="w-14 h-14 object-cover rounded-xl border border-border bg-surface" loading="lazy" decoding="async" width="56" height="56">
                             @else
                                 <div class="flex w-14 h-14 items-center justify-center rounded-xl border border-border bg-surface text-[10px] text-muted">Chưa có</div>
                             @endif

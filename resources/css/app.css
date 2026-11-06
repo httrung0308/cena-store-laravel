@@ -57,6 +57,15 @@
   --error-rgb: 185 28 28;
   --error-bg: #fee2e2;
   --error-text: #7f1d1d;
+  --admin-sidebar-bg: #0f172a;
+  --admin-sidebar-border: #1e293b;
+  --admin-sidebar-text: #cbd5e1;
+  --admin-sidebar-muted: #94a3b8;
+  --admin-sidebar-hover: #1e293b;
+  --footer-bg: #0b192c;
+  --footer-border: #1e293b;
+  --footer-text: #cbd5e1;
+  --footer-muted: #94a3b8;
 }
 
 html[data-theme='light'] {
@@ -308,11 +317,11 @@ html {
   }
 
   .btn-pill {
-    @apply inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-xl border border-border bg-surface-card px-3 py-1.5 text-xs font-bold text-main shadow-sm transition-all hover:border-accent hover:bg-surface hover:text-accent disabled:cursor-not-allowed disabled:opacity-40;
+    @apply inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-xl border border-border bg-surface-card px-3 py-1.5 text-xs font-bold text-main shadow-sm transition-colors duration-150 hover:border-accent hover:bg-surface hover:text-accent disabled:cursor-not-allowed disabled:opacity-40;
   }
 
   .btn-pill-dark {
-    @apply inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-xl bg-accent px-4 py-2 text-xs font-bold text-accent-text shadow-sm transition-all hover:bg-accent-hover hover:shadow-md disabled:cursor-not-allowed disabled:opacity-40;
+    @apply inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-xl bg-accent px-4 py-2 text-xs font-bold text-accent-text shadow-sm transition-colors duration-150 hover:bg-accent-hover hover:shadow-md disabled:cursor-not-allowed disabled:opacity-40;
   }
 
   .badge {

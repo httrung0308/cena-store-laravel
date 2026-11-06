@@ -12,11 +12,11 @@
         'offline' => ['Mất kết nối', 'Kiểm tra kết nối mạng rồi thử lại.'],
     ];
 @endphp
-<section {{ $attributes->class(['flex min-h-40 w-full flex-col items-center justify-center gap-3 border border-zinc-200 bg-white px-4 py-8 text-center text-black']) }} role="status" aria-live="polite">
+<section {{ $attributes->class(['flex min-h-40 w-full flex-col items-center justify-center gap-3 border border-border bg-surface-card px-4 py-8 text-center text-main rounded-2xl shadow-subtle']) }} role="status" aria-live="polite">
     <h2 class="text-lg font-semibold">{{ $title ?? $defaults[$state][0] }}</h2>
-    <p class="max-w-prose text-sm text-zinc-600">{{ $message ?? $defaults[$state][1] }}</p>
+    <p class="max-w-prose text-sm text-muted">{{ $message ?? $defaults[$state][1] }}</p>
     @if (is_string($requestId) && $requestId !== '')
-        <p class="text-xs text-zinc-500">Mã yêu cầu: {{ $requestId }}</p>
+        <p class="text-xs text-muted">Mã yêu cầu: {{ $requestId }}</p>
     @endif
     @if (isset($retry))<div class="mt-3">{{ $retry }}</div>@endif
 </section>

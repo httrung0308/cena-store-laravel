@@ -2,7 +2,7 @@
 @section('title', 'Chi Tiết Phiếu Nhập')
 @section('eyebrow', 'QUẢN TRỊ KHO HÀNG')
 @section('actions')
-    <a class="px-4 py-2 bg-surface hover:bg-border/40 text-muted hover:text-main text-xs font-bold rounded-xl border border-border transition-all" href="{{ route('admin.stock-imports.index') }}">← Danh sách phiếu</a>
+    <a class="px-4 py-2 bg-surface hover:bg-border/40 text-muted hover:text-main text-xs font-bold rounded-xl border border-border transition-colors" href="{{ route('admin.stock-imports.index') }}">← Danh sách phiếu</a>
 @endsection
 @php($badges = ['DRAFT' => 'bg-warning-bg text-warning border border-warning/30', 'POSTED' => 'bg-success-bg text-success border border-success/30', 'CANCELLED' => 'bg-muted/15 text-muted'])
 @section('content')
@@ -60,9 +60,9 @@
             <div class="flex flex-wrap gap-3">
                 <form method="POST" action="{{ route('admin.stock-imports.post', $import) }}">
                     @csrf
-                    <button class="px-6 py-2.5 bg-accent hover:bg-accent-hover text-accent-text text-xs font-bold rounded-xl transition-all shadow-md">Ghi sổ nhập kho</button>
+                    <button class="px-6 py-2.5 bg-accent hover:bg-accent-hover text-accent-text text-xs font-bold rounded-xl transition-colors shadow-md">Ghi sổ nhập kho</button>
                 </form>
-                <a class="px-6 py-2.5 bg-surface hover:bg-border/40 text-muted hover:text-main text-xs font-bold rounded-xl border border-border transition-all" href="{{ route('admin.stock-imports.edit', $import) }}">Sửa nháp</a>
+                <a class="px-6 py-2.5 bg-surface hover:bg-border/40 text-muted hover:text-main text-xs font-bold rounded-xl border border-border transition-colors" href="{{ route('admin.stock-imports.edit', $import) }}">Sửa nháp</a>
             </div>
             <form class="space-y-3 border-t border-border pt-4" method="POST" action="{{ route('admin.stock-imports.cancel', $import) }}">
                 @csrf

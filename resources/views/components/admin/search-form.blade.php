@@ -9,9 +9,9 @@
         </div>
         <div class="flex flex-wrap items-center gap-2.5 w-full md:w-auto shrink-0">
             {{ $slot }}
-            <button type="submit" class="px-4 py-2.5 bg-accent hover:bg-accent-hover text-accent-text text-xs font-bold rounded-xl transition-all shadow-sm">Tìm</button>
+            <button type="submit" class="px-4 py-2.5 bg-accent hover:bg-accent-hover text-accent-text text-xs font-bold rounded-xl transition-colors shadow-sm">Tìm</button>
             @if (filled($value) || request()->hasAny(['category', 'category_id', 'status', 'is_active', 'role', 'type']))
-                <a href="{{ $action }}" class="px-3.5 py-2.5 bg-surface hover:bg-border/40 text-muted hover:text-main text-xs font-bold rounded-xl border border-border transition-all">Xóa lọc</a>
+                <a href="{{ $action }}" class="px-3.5 py-2.5 bg-surface hover:bg-border/40 text-muted hover:text-main text-xs font-bold rounded-xl border border-border transition-colors">Xóa lọc</a>
             @endif
         </div>
     </form>

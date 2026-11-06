@@ -59,7 +59,7 @@
                 @foreach ($order->items as $item)
                     <div class="flex gap-4 border-b border-border/60 pb-4 last:border-b-0 last:pb-0">
                         <div class="h-20 w-20 shrink-0 overflow-hidden rounded-xl border border-border bg-surface">
-                            <img src="{{ $item->thumbnail_snapshot ?? asset('legacy/img/men.jpg') }}" alt="{{ $item->product_name_snapshot }}" class="h-full w-full object-cover" loading="lazy">
+                            <img src="{{ $item->thumbnail_snapshot ?? asset('legacy/img/men.jpg') }}" alt="{{ $item->product_name_snapshot }}" class="h-full w-full object-cover" loading="lazy" decoding="async" width="80" height="80">
                         </div>
                         <div class="min-w-0 flex-1 break-words text-sm">
                             <p class="font-semibold text-main text-sm sm:text-base">{{ $item->product_name_snapshot }}</p>
