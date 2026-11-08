@@ -4495,6 +4495,91 @@
         }
       ],
       "checks": []
+    },
+    "shipment_delivery_proofs": {
+      "number": 37,
+      "columns": {
+        "id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": true
+        },
+        "shipment_id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "uploaded_by": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "path": {
+          "type": "varchar(500)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "sha256": {
+          "type": "char(64)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "mime_type": {
+          "type": "varchar(30)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "size_bytes": {
+          "type": "int unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "created_at": {
+          "type": "datetime(6)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        }
+      },
+      "foreign_keys": [
+        {
+          "column": "shipment_id",
+          "table": "shipments",
+          "references": "id",
+          "on_delete": "RESTRICT"
+        },
+        {
+          "column": "uploaded_by",
+          "table": "users",
+          "references": "id",
+          "on_delete": "RESTRICT"
+        }
+      ],
+      "indexes": [
+        {
+          "columns": [
+            "shipment_id"
+          ],
+          "unique": true
+        },
+        {
+          "columns": [
+            "sha256"
+          ],
+          "unique": true
+        }
+      ],
+      "checks": [
+        "shipment_delivery_proofs_mime_check",
+        "shipment_delivery_proofs_size_check"
+      ]
     }
   }
 }

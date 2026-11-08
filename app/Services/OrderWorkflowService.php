@@ -21,6 +21,7 @@ use App\Models\OrderItemUnit;
 use App\Models\OrderStatusHistory;
 use App\Models\Payment;
 use App\Models\Shipment;
+use App\Models\ShipmentDeliveryProof;
 use App\Models\User;
 use App\Support\BusinessClock;
 use App\Support\Cost;
@@ -28,10 +29,13 @@ use App\Support\Money;
 use Carbon\CarbonImmutable;
 use Closure;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Http\UploadedFile;
 
 /**
- * Order state machine (WF-15/WF-16, COD only). Every transition locks the order, checks the status the caller
+ * Order state machine for COD and prepaid demo orders. Every transition locks the order, checks the status the caller
  * saw, and is recorded once under a command key, so a double click neither repeats history nor stock moves.
  * Callers authorise the actor; the customer may only cancel their own PENDING order.
  */
@@ -42,13 +46,21 @@ final class OrderWorkflowService
         private readonly InventoryService $inventory,
         private readonly SalesLedgerService $ledger,
         private readonly CheckoutService $checkout,
+        private readonly RefundService $refunds,
     ) {}
 
     public function confirm(Order $order, User $actor, string $expected): Order
     {
-        return $this->transition($order, $actor, $expected, [OrderStatus::Pending], OrderStatus::Confirmed, 'STAFF_CONFIRM', null,
-            function (Order $order, $now): void {
+        return $this->confirmAndPack($order, $actor, $expected);
+    }
+
+    /** Confirm and start packing in one staff action; legacy CONFIRMED orders still use pack(). */
+    public function confirmAndPack(Order $order, User $actor, string $expected): Order
+    {
+        return $this->transition($order, $actor, $expected, [OrderStatus::Pending], OrderStatus::Packing, 'STAFF_CONFIRM_AND_PACK', null,
+            function (Order $order, CarbonImmutable $now): void {
                 $order->confirmed_at = $now;
+                $order->packed_at = $now;
             });
     }
 
@@ -65,6 +77,9 @@ final class OrderWorkflowService
     {
         return $this->transition($order, $actor, $expected, [OrderStatus::Packing], OrderStatus::OnDelivery, 'STAFF_SHIP', null,
             function (Order $order, $now) use ($actor, $carrier, $tracking): void {
+                if ($order->payment_method === PaymentMethod::PrepaidDemo && $order->payment_status !== OrderPaymentStatus::Paid) {
+                    throw new DomainException(ErrorCode::StateConflict, ['order' => ['Đơn trả trước cần được thanh toán trước khi gửi.']]);
+                }
                 $items = $this->items($order);
                 $changes = $items->map(fn (OrderItem $item): InventoryChange => new InventoryChange("order:{$order->id}:dispatch:{$item->variant_id}",
                     $item->variant_id, InventoryAction::OrderDispatched, InventoryReferenceType::Order, $order->id, $item->quantity, null, $actor->id))->values()->all();
@@ -100,33 +115,58 @@ final class OrderWorkflowService
             });
     }
 
-    /** COD delivered: the receipt reference proves the cash, then revenue and COGS are recognised per pair. */
-    public function deliver(Order $order, User $actor, string $expected, string $receiptReference): Order
+    /** COD delivery requires a private proof image; prepaid demo orders are already paid at checkout. */
+    public function deliver(Order $order, User $actor, string $expected, ?UploadedFile $proof): Order
     {
-        return $this->transition($order, $actor, $expected, [OrderStatus::OnDelivery], OrderStatus::Delivered, 'STAFF_DELIVER', null,
-            function (Order $order, $now) use ($actor, $receiptReference): void {
+        if ($order->order_status !== OrderStatus::OnDelivery || $expected !== OrderStatus::OnDelivery->value) {
+            throw new DomainException(ErrorCode::StateConflict, ['order' => ['Đơn không ở trạng thái đang vận chuyển.']]);
+        }
+        $proofPath = null;
+        if ($order->payment_method === PaymentMethod::Cod) {
+            if ($proof === null) {
+                throw new DomainException(ErrorCode::InvalidPayload, ['proof' => ['Đơn COD cần ảnh minh chứng giao hàng.']]);
+            }
+            $proofPath = $proof->store('shipment-proofs', 'private');
+        } elseif ($order->payment_method !== PaymentMethod::PrepaidDemo) {
+            throw new DomainException(ErrorCode::StateConflict);
+        }
+
+        try {
+            $delivered = $this->transition($order, $actor, $expected, [OrderStatus::OnDelivery], OrderStatus::Delivered, 'STAFF_DELIVER', null,
+            function (Order $order, $now) use ($actor, $proofPath, $proof): void {
+                if ($order->payment_method === PaymentMethod::PrepaidDemo && $order->payment_status !== OrderPaymentStatus::Paid) {
+                    throw new DomainException(ErrorCode::StateConflict, ['order' => ['Đơn trả trước chưa được thanh toán.']]);
+                }
                 $payment = Payment::query()->where('order_id', $order->id)->where('status', PaymentAttemptStatus::Pending)->lockForUpdate()->first();
-                if ($payment === null || $payment->method !== PaymentMethod::Cod) {
+                if ($order->payment_method === PaymentMethod::Cod && ($payment === null || $payment->method !== PaymentMethod::Cod)) {
                     throw new DomainException(ErrorCode::StateConflict);
                 }
-                if (Payment::query()->where('method', PaymentMethod::Cod)->where('provider_transaction_id', $receiptReference)->exists()) {
-                    throw new DomainException(ErrorCode::Conflict, ['receipt_reference' => ['Mã phiếu thu này đã được dùng cho đơn khác.']]);
+                if ($order->payment_method === PaymentMethod::Cod) {
+                    $payment->status = PaymentAttemptStatus::Succeeded;
+                    $payment->disposition = PaymentDisposition::Applied;
+                    $payment->received_amount = $order->total_amount;
+                    $payment->applied_amount = $order->total_amount;
+                    $payment->confirmed_by = $actor->id;
+                    $payment->succeeded_at = $now;
+                    $payment->save();
+                    $order->paid_amount = $order->total_amount;
+                    $order->payment_status = OrderPaymentStatus::Paid;
                 }
-                $payment->status = PaymentAttemptStatus::Succeeded;
-                $payment->disposition = PaymentDisposition::Applied;
-                $payment->received_amount = $order->total_amount;
-                $payment->applied_amount = $order->total_amount;
-                $payment->provider_transaction_id = $receiptReference;
-                $payment->confirmed_by = $actor->id;
-                $payment->succeeded_at = $now;
-                $payment->updated_at = $now;
-                $payment->save();
-
-                $order->paid_amount = $order->total_amount;
-                $order->payment_status = OrderPaymentStatus::Paid;
                 $order->delivered_at = $now;
+                $this->checkout->consumeCoupon($order, $now);
 
                 $shipment = Shipment::query()->where('order_id', $order->id)->lockForUpdate()->firstOrFail();
+                if ($proofPath !== null) {
+                    $deliveryProof = new ShipmentDeliveryProof;
+                    $deliveryProof->shipment_id = $shipment->id;
+                    $deliveryProof->uploaded_by = $actor->id;
+                    $deliveryProof->path = $proofPath;
+                    $deliveryProof->sha256 = hash_file('sha256', $proof->getRealPath());
+                    $deliveryProof->mime_type = $proof->getMimeType();
+                    $deliveryProof->size_bytes = $proof->getSize();
+                    $deliveryProof->created_at = $now;
+                    $deliveryProof->save();
+                }
                 $shipment->status = ShipmentStatus::Delivered;
                 $shipment->delivered_at = $now;
                 $shipment->updated_at = $now;
@@ -147,6 +187,20 @@ final class OrderWorkflowService
                 $this->ledger->postUnique("shipping:order:{$order->id}", SalesLedgerType::ShippingRecognized,
                     ['shipping_revenue_delta' => $order->shipping_fee], ['order_id' => $order->id], $now);
             });
+            if ($proofPath !== null && ! ShipmentDeliveryProof::query()->where('path', $proofPath)->exists()) {
+                Storage::disk('private')->delete($proofPath);
+            }
+
+            return $delivered;
+        } catch (\Throwable $exception) {
+            if ($proofPath !== null) {
+                Storage::disk('private')->delete($proofPath);
+            }
+            if ($exception instanceof UniqueConstraintViolationException) {
+                throw new DomainException(ErrorCode::Conflict, ['proof' => ['Ảnh này đã được dùng làm minh chứng cho một đơn hàng khác.']]);
+            }
+            throw $exception;
+        }
     }
 
     /** Cancel before dispatch: release the reservation and void the pending COD attempt. */
@@ -156,6 +210,7 @@ final class OrderWorkflowService
 
         return $this->transition($order, $actor, $expected, $allowed, OrderStatus::Cancelled, $byCustomer ? 'CUSTOMER_CANCEL' : 'STAFF_CANCEL', $reason,
             function (Order $order, $now) use ($actor, $reason): void {
+                $this->checkout->releaseCoupon($order, $now);
                 $items = $this->items($order);
                 $changes = $items->map(fn (OrderItem $item): InventoryChange => new InventoryChange("order:{$order->id}:release:{$item->variant_id}",
                     $item->variant_id, InventoryAction::OrderReleased, InventoryReferenceType::Order, $order->id, $item->quantity, null, $actor->id))->values()->all();
@@ -168,6 +223,9 @@ final class OrderWorkflowService
                     }
                 }
                 $this->voidPendingPayment($order, $now);
+                if ($order->payment_method === PaymentMethod::PrepaidDemo && $order->paid_amount > $order->refunded_amount) {
+                    $this->refunds->requestOrderCancellationRefund($order, $actor);
+                }
                 $order->cancel_reason = $reason;
                 $order->cancelled_at = $now;
             });
@@ -178,6 +236,7 @@ final class OrderWorkflowService
     {
         return $this->transition($order, $actor, $expected, [OrderStatus::OnDelivery], OrderStatus::Failed, 'DELIVERY_FAILED', $reason,
             function (Order $order, $now) use ($reason): void {
+                $this->checkout->releaseCoupon($order, $now);
                 $shipment = Shipment::query()->where('order_id', $order->id)->lockForUpdate()->firstOrFail();
                 $shipment->status = ShipmentStatus::Returning;
                 $shipment->failed_at = $now;
