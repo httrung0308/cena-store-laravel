@@ -15,7 +15,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
-use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * Back-office order list, detail and the status transitions of the COD workflow.
@@ -51,7 +51,7 @@ class OrderController extends Controller
         return view('admin.orders.show', ['order' => $order]);
     }
 
-    public function deliveryProof(Order $order): Response
+    public function deliveryProof(Order $order): StreamedResponse
     {
         abort_unless($order->shipment?->deliveryProof !== null, 404);
         $proof = $order->shipment->deliveryProof;

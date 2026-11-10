@@ -113,7 +113,6 @@
                         <p class="mt-2 text-xs font-medium text-success-text">Đã áp dụng mã {{ $quote['coupon_code'] }}.</p>
                     @endif
                 </div>
-                </div>
                 <button type="submit" class="btn mt-6 w-full py-3.5 text-base shadow-card font-semibold disabled:cursor-not-allowed disabled:opacity-40"
                     @disabled($quote['fingerprint'] === null || $quote['problems'] !== []) x-bind:disabled="submitting || {{ $quote['fingerprint'] === null || $quote['problems'] !== [] ? 'true' : 'false' }}">
                     <span x-text="submitting ? 'Đang xử lý...' : 'Đặt hàng'">Đặt hàng</span>

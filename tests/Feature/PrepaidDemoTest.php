@@ -11,6 +11,7 @@ use App\Enums\PaymentAttemptStatus;
 use App\Enums\PaymentMethod;
 use App\Enums\RefundStatus;
 use App\Enums\SalesLedgerType;
+use App\Enums\ShipmentStatus;
 use App\Models\Address;
 use App\Models\Cart;
 use App\Models\CartItem;
@@ -22,11 +23,14 @@ use App\Models\ProductColor;
 use App\Models\ProductVariant;
 use App\Models\Refund;
 use App\Models\SalesLedgerEntry;
+use App\Models\Shipment;
+use App\Models\ShipmentDeliveryProof;
 use App\Models\StockImportItem;
 use App\Models\User;
 use App\Services\CheckoutService;
 use App\Services\InventoryService;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
@@ -126,6 +130,42 @@ class PrepaidDemoTest extends TestCase
         $this->assertNull($order->shipment->deliveryProof);
         $this->assertSame(1, SalesLedgerEntry::query()->where('order_id', $order->id)->where('type', SalesLedgerType::ShippingRecognized)->count());
         $this->assertSame(1, SalesLedgerEntry::query()->where('order_id', $order->id)->where('type', SalesLedgerType::SaleRecognized)->count());
+    }
+
+    public function test_delivery_proof_authorization_and_streamed_response(): void
+    {
+        Storage::fake('private');
+        $staff = User::factory()->staff()->create();
+        $order = $this->placePrepaidOrder();
+        $shipment = new Shipment;
+        $shipment->forceFill([
+            'order_id' => $order->id,
+            'carrier_name' => 'GHN',
+            'status' => ShipmentStatus::Delivered,
+            'created_by' => $staff->id,
+        ])->save();
+        Storage::disk('private')->put('shipment-proofs/test-proof.jpg', 'dummy-proof-content');
+        $proof = new ShipmentDeliveryProof;
+        $proof->forceFill([
+            'shipment_id' => $shipment->id,
+            'uploaded_by' => $staff->id,
+            'path' => 'shipment-proofs/test-proof.jpg',
+            'sha256' => hash('sha256', 'dummy-proof-content'),
+            'mime_type' => 'image/jpeg',
+            'size_bytes' => strlen('dummy-proof-content'),
+        ])->save();
+
+        // Guest is redirected to login
+        $this->get(route('admin.orders.delivery-proof', $order))->assertRedirect(route('login'));
+
+        // Customer is forbidden
+        $this->actingAs($this->customer)->get(route('admin.orders.delivery-proof', $order))->assertForbidden();
+
+        // Staff is authorized and receives StreamedResponse without TypeError
+        $response = $this->actingAs($staff)->get(route('admin.orders.delivery-proof', $order));
+        $response->assertOk();
+        $response->assertHeader('Content-Type', 'image/jpeg');
+        $response->assertHeader('X-Content-Type-Options', 'nosniff');
     }
 
     private function placePrepaidOrder(): Order
