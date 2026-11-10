@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\ArticleController;
 use App\Http\Controllers\Admin\CategoryController;
+use App\Http\Controllers\Admin\CouponController;
 use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\ReportController;
@@ -37,6 +38,8 @@ Route::post('stock-imports/{stock_import}/cancel', [StockImportController::class
 
 Route::get('orders', [OrderController::class, 'index'])->name('orders.index');
 Route::get('orders/{order}', [OrderController::class, 'show'])->whereNumber('order')->name('orders.show');
+Route::get('orders/{order}/delivery-proof', [OrderController::class, 'deliveryProof'])->whereNumber('order')->name('orders.delivery-proof');
+Route::post('orders/{order}/refunds/{refund}/approve', [OrderController::class, 'approveRefund'])->whereNumber('order')->whereNumber('refund')->middleware('role:admin')->name('orders.refunds.approve');
 Route::post('orders/{order}/{action}', [OrderController::class, 'transition'])->whereNumber('order')
     ->whereIn('action', ['confirm', 'pack', 'ship', 'deliver', 'cancel', 'fail'])->middleware('throttle:30,1')->name('orders.transition');
 
@@ -46,6 +49,11 @@ Route::middleware('role:admin')->prefix('users')->name('users.')->whereNumber('u
     Route::patch('/{user}', [UserController::class, 'update'])->name('update');
     Route::patch('/{user}/active', [UserController::class, 'active'])->name('active');
     Route::put('/{user}/roles', [UserController::class, 'roles'])->name('roles');
+});
+
+Route::middleware('role:admin')->group(function (): void {
+    Route::resource('coupons', CouponController::class)->except(['show', 'destroy']);
+    Route::patch('coupons/{coupon}/deactivate', [CouponController::class, 'deactivate'])->name('coupons.deactivate');
 });
 
 Route::get('reviews', [ReviewController::class, 'index'])->name('reviews.index');

@@ -23,7 +23,7 @@ class SchemaContractTest extends TestCase
         sort($expected);
         sort($actual);
         $this->assertSame($expected, $actual);
-        $this->assertCount(43, $actual);
+        $this->assertCount(44, $actual);
         $this->assertFalse(Schema::hasTable('password_reset_tokens'));
     }
 
@@ -270,6 +270,8 @@ class SchemaContractTest extends TestCase
             'zero refund' => ['refunds', ['amount' => 0], 3819],
             'refund sum' => ['refunds', ['amount' => 99], 3819],
             'shipment status' => ['shipments', ['status' => 'UNKNOWN'], 3819],
+            'delivery proof mime' => ['shipment_delivery_proofs', ['mime_type' => 'image/svg+xml'], 3819],
+            'delivery proof size' => ['shipment_delivery_proofs', ['size_bytes' => 5242881], 3819],
             'return cost' => ['shipment_return_items', ['cost_basis' => '-1.0000'], 3819],
             'half star' => ['reviews', ['rating' => 4.1], 3819],
             'rating minimum' => ['reviews', ['rating' => 0], 3819],
@@ -348,6 +350,7 @@ class SchemaContractTest extends TestCase
             'reviews' => ['rating' => '4.5'], 'after_sales_requests' => ['type' => 'WARRANTY_REPAIR'],
             'after_sales_histories' => ['to_status' => 'NEW', 'event_type' => 'CREATED'],
             'after_sales_attachments' => ['mime_type' => 'image/jpeg', 'size_bytes' => 1024],
+            'shipment_delivery_proofs' => ['mime_type' => 'image/jpeg', 'size_bytes' => 1024, 'sha256' => str_repeat('a', 64)],
             'sales_ledger_entries' => ['type' => 'SALE_RECOGNIZED'], 'outbox_events' => ['aggregate_type' => 'ORDER', 'aggregate_id' => 1],
         ];
         if ($table === 'carts' || $table === 'sales_ledger_entries') {

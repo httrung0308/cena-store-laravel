@@ -390,6 +390,7 @@
       ],
       "payment_method": [
         "COD",
+        "PREPAID_DEMO",
         "VIETQR",
         "VNPAY"
       ],
@@ -523,6 +524,7 @@
     "enum_cases": {
       "method": [
         "COD",
+        "PREPAID_DEMO",
         "VIETQR",
         "VNPAY"
       ],
@@ -561,6 +563,7 @@
     "enum_cases": {
       "provider": [
         "COD",
+        "PREPAID_DEMO",
         "VIETQR",
         "VNPAY"
       ],
@@ -1006,6 +1009,25 @@
         "relation": "article",
         "class": "App\\Models\\Article",
         "history": false
+      }
+    ],
+    "enums": {},
+    "enum_cases": {}
+  },
+  "shipment_delivery_proofs": {
+    "class": "App\\Models\\ShipmentDeliveryProof",
+    "belongs_to": [
+      {
+        "column": "shipment_id",
+        "relation": "shipment",
+        "class": "App\\Models\\Shipment",
+        "history": false
+      },
+      {
+        "column": "uploaded_by",
+        "relation": "uploadedBy",
+        "class": "App\\Models\\User",
+        "history": true
       }
     ],
     "enums": {},

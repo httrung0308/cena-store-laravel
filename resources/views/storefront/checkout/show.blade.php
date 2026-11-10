@@ -26,7 +26,6 @@
             @csrf
             <input type="hidden" name="checkout_key" value="{{ $checkoutKey }}">
             <input type="hidden" name="fingerprint" value="{{ $quote['fingerprint'] }}">
-            <input type="hidden" name="payment_method" value="COD">
 
             <section aria-labelledby="checkout-address-title" class="space-y-4">
                 <h2 id="checkout-address-title" class="text-2xl font-semibold">Địa chỉ giao hàng</h2>
@@ -48,7 +47,7 @@
                             <div class="flex shrink-0 flex-col items-end gap-2">
                                 @if ($option->is_default)<span class="rounded bg-green-100 px-2 py-1 text-xs font-semibold text-green-600">Mặc định</span>@endif
                                 <input type="radio" name="address_id" value="{{ $option->id }}" class="native-checkbox accent-black" @checked($address?->id === $option->id) @disabled($outdated)
-                                    x-on:change="window.location = @js(route('checkout.show')) + '?address=' + $event.target.value">
+                                    x-on:change="const params = new URLSearchParams({ address: $event.target.value, payment_method: document.querySelector('input[name=payment_method]:checked')?.value ?? 'COD', coupon_code: document.getElementById('checkout-coupon')?.value ?? '' }); window.location = @js(route('checkout.show')) + '?' + params.toString()">
                             </div>
                         </div>
                     </label>
@@ -60,6 +59,11 @@
                 <div>
                     <label for="checkout-note" class="mb-2 block font-semibold">Ghi chú cho cửa hàng (không bắt buộc)</label>
                     <textarea id="checkout-note" name="customer_note" rows="3" maxlength="1000" class="input w-full border-zinc-300" placeholder="Ví dụ: giao giờ hành chính">{{ old('customer_note') }}</textarea>
+                </div>
+                <div class="space-y-2">
+                    <p class="font-semibold">Phương thức thanh toán</p>
+                    <label class="flex items-center gap-2 rounded border p-3"><input type="radio" name="payment_method" value="COD" @checked($paymentMethod === App\Enums\PaymentMethod::Cod) x-on:change="updateCheckoutQuote($event.target.value)"> Thanh toán khi nhận hàng (COD)</label>
+                    <label class="flex items-center gap-2 rounded border p-3"><input type="radio" name="payment_method" value="PREPAID_DEMO" @checked($paymentMethod === App\Enums\PaymentMethod::PrepaidDemo) x-on:change="updateCheckoutQuote($event.target.value)"> Trả trước (mô phỏng)</label>
                 </div>
             </section>
 
@@ -79,13 +83,16 @@
                 </div>
                 <dl class="space-y-2 border-t pt-4 text-sm">
                     <div class="flex justify-between"><dt>Tạm tính</dt><dd>{{ $vnd($quote['subtotal']) }}</dd></div>
+                    @if ($quote['merchandise_discount'] > 0)<div class="flex justify-between text-green-700"><dt>Giảm coupon</dt><dd>−{{ $vnd($quote['merchandise_discount']) }}</dd></div>@endif
                     <div class="flex justify-between"><dt>Phí vận chuyển</dt><dd>@if (! $address)—@elseif ($quote['shipping_fee'] === 0)Miễn phí @else{{ $vnd($quote['shipping_fee']) }}@endif</dd></div>
+                    @if ($quote['shipping_discount'] > 0)<div class="flex justify-between text-green-700"><dt>Giảm phí vận chuyển</dt><dd>−{{ $vnd($quote['shipping_discount']) }}</dd></div>@endif
                     <div class="flex justify-between border-t pt-2 text-lg font-semibold"><dt>Tổng cộng</dt><dd>{{ $vnd($quote['total']) }}</dd></div>
                 </dl>
                 <p class="mt-2 text-xs text-zinc-500">Miễn phí vận chuyển cho đơn từ {{ $vnd((int) config('store.shipping.free_threshold')) }}; TP. Hồ Chí Minh {{ $vnd((int) config('store.shipping.hcm_fee')) }}, tỉnh khác {{ $vnd((int) config('store.shipping.other_fee')) }}.</p>
-                <div class="mt-4 rounded border border-black px-4 py-3 text-sm">
-                    <p class="font-semibold">Phương thức thanh toán</p>
-                    <p class="mt-1 text-zinc-700">Thanh toán khi nhận hàng (COD)</p>
+                <div class="mt-4 rounded border border-zinc-300 px-4 py-3 text-sm">
+                    <label for="checkout-coupon" class="font-semibold">Mã coupon</label>
+                    <div class="mt-2 flex gap-2"><input id="checkout-coupon" name="coupon_code" value="{{ old('coupon_code', $couponCode) }}" class="input min-w-0 flex-1 border-zinc-300" maxlength="50" placeholder="Nhập mã giảm giá" x-on:keydown.enter.prevent="updateCheckoutQuote(document.querySelector('input[name=payment_method]:checked')?.value ?? 'COD')"><button type="button" x-on:click="updateCheckoutQuote(document.querySelector('input[name=payment_method]:checked')?.value ?? 'COD')" class="rounded border px-3">Áp dụng</button></div>
+                    @if ($quote['coupon_error'])<p role="alert" class="mt-1 text-xs text-red-700">{{ $quote['coupon_error'] }}</p>@elseif ($quote['coupon_code'])<p class="mt-1 text-xs text-green-700">Đã áp dụng mã {{ $quote['coupon_code'] }}.</p>@endif
                 </div>
                 <button type="submit" class="btn mt-6 w-full py-3 text-lg disabled:cursor-not-allowed disabled:opacity-50"
                     @disabled($quote['fingerprint'] === null || $quote['problems'] !== []) x-bind:disabled="submitting || {{ $quote['fingerprint'] === null || $quote['problems'] !== [] ? 'true' : 'false' }}">
@@ -95,4 +102,14 @@
             </section>
         </form>
     </div>
+    <script>
+        function updateCheckoutQuote(method) {
+            const params = new URLSearchParams({
+                address: @js((string) ($address?->id ?? '')),
+                payment_method: method,
+                coupon_code: document.getElementById('checkout-coupon')?.value ?? '',
+            });
+            window.location = @js(route('checkout.show')) + '?' + params.toString();
+        }
+    </script>
 @endsection

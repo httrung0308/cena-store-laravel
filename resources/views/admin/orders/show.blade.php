@@ -11,7 +11,7 @@
     $address = $order->shipping_address_snapshot ?? [];
     $status = $order->order_status;
     $next = match ($status) {
-        OrderStatus::Pending => ['confirm' => 'Xác nhận đơn'],
+        OrderStatus::Pending => ['confirm' => 'Xác nhận và đóng gói'],
         OrderStatus::Confirmed => ['pack' => 'Bắt đầu đóng gói'],
         default => [],
     };
@@ -19,6 +19,7 @@
 @endphp
 @section('content')
 <div class="grid min-w-0 gap-6 lg:grid-cols-3">
+    @if ($errors->any())<div role="alert" class="admin-card text-sm text-red-700 lg:col-span-3">@foreach ($errors->all() as $error)<p>{{ $error }}</p>@endforeach</div>@endif
     <div class="min-w-0 space-y-6 lg:col-span-2">
         <section class="admin-card space-y-3">
             <div class="flex flex-wrap items-center justify-between gap-3">
@@ -53,6 +54,8 @@
         </tbody></table></div>
         <dl class="admin-card space-y-1 text-sm">
             <div class="flex justify-between"><dt>Tạm tính</dt><dd>{{ $vnd($order->subtotal_amount) }}</dd></div>
+            @if ($order->merchandise_discount_amount > 0)<div class="flex justify-between"><dt>Coupon {{ $order->coupon_code_snapshot }}</dt><dd>−{{ $vnd($order->merchandise_discount_amount) }}</dd></div>@endif
+            @if ($order->shipping_discount_amount > 0)<div class="flex justify-between"><dt>Giảm vận chuyển</dt><dd>−{{ $vnd($order->shipping_discount_amount) }}</dd></div>@endif
             <div class="flex justify-between"><dt>Phí vận chuyển</dt><dd>{{ $order->shipping_fee === 0 ? 'Miễn phí' : $vnd($order->shipping_fee) }}</dd></div>
             <div class="flex justify-between text-lg font-semibold"><dt>Tổng cộng</dt><dd>{{ $vnd($order->total_amount) }}</dd></div>
             <div class="flex justify-between text-zinc-500"><dt>Đã thu</dt><dd>{{ $vnd($order->paid_amount) }}</dd></div>
@@ -89,10 +92,12 @@
                 </form>
             @endif
             @if ($status === OrderStatus::OnDelivery)
-                <form method="POST" action="{{ route('admin.orders.transition', [$order, 'deliver']) }}" class="space-y-3">@csrf
+                <form method="POST" enctype="multipart/form-data" action="{{ route('admin.orders.transition', [$order, 'deliver']) }}" class="space-y-3">@csrf
                     <input type="hidden" name="expected_status" value="{{ $status->value }}">
-                    <x-admin.field name="receipt_reference" label="Mã phiếu thu COD" required placeholder="Ví dụ: PT-0001" hint="Chỉ xác nhận khi đã thu đủ {{ $vnd($order->total_amount) }}." />
-                    <button class="btn-pill-dark w-full py-3">Giao thành công, đã thu tiền</button>
+                    @if ($order->payment_method === App\Enums\PaymentMethod::Cod)
+                        <x-admin.field name="proof" type="file" label="Ảnh minh chứng giao COD" required accept="image/jpeg,image/png,image/webp" hint="JPEG, PNG hoặc WebP; tối đa 5 MB. Ảnh được lưu riêng tư." />
+                    @endif
+                    <button class="btn-pill-dark w-full py-3">Xác nhận giao thành công</button>
                 </form>
                 <form method="POST" action="{{ route('admin.orders.transition', [$order, 'fail']) }}" class="space-y-2 border-t border-zinc-100 pt-4">@csrf
                     <input type="hidden" name="expected_status" value="{{ $status->value }}">
@@ -119,11 +124,20 @@
             @if ($order->shipment)
                 <p>Đơn vị: <span class="font-medium">{{ $order->shipment->carrier_name }}</span>@if ($order->shipment->tracking_code) · {{ $order->shipment->tracking_code }}@endif</p>
                 <p>Trạng thái giao: <span class="font-medium">{{ $order->shipment->status->label() }}</span></p>
+                @if ($order->shipment->deliveryProof)
+                    <a class="text-sm font-semibold underline" href="{{ route('admin.orders.delivery-proof', $order) }}" target="_blank" rel="noopener">Xem ảnh minh chứng giao COD</a>
+                @endif
             @else
                 <p class="text-zinc-500">Chưa bàn giao vận chuyển.</p>
             @endif
             @foreach ($order->payments as $payment)
-                <p>COD: <span class="font-medium">{{ $payment->status->label() }}</span>@if ($payment->provider_transaction_id) · phiếu thu {{ $payment->provider_transaction_id }}@endif</p>
+                <p>{{ $payment->method->label() }}: <span class="font-medium">{{ $payment->status->label() }}</span>@if ($payment->provider_transaction_id && $payment->method !== App\Enums\PaymentMethod::PrepaidDemo) · {{ $payment->provider_transaction_id }}@endif</p>
+            @endforeach
+            @foreach ($order->refunds as $refund)
+                <p>Hoàn tiền mô phỏng: <span class="font-medium">{{ $refund->status === App\Enums\RefundStatus::Approved ? 'Đã hoàn (mô phỏng)' : $refund->status->label() }}</span> · {{ $vnd($refund->amount) }}</p>
+                @if ($refund->status === App\Enums\RefundStatus::Requested && auth()->user()->hasRole(App\Enums\RoleSlug::Admin))
+                    <form method="POST" action="{{ route('admin.orders.refunds.approve', [$order, $refund]) }}">@csrf<button class="btn-pill w-full text-amber-800">Duyệt hoàn tiền mô phỏng</button></form>
+                @endif
             @endforeach
         </section>
     </aside>

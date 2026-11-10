@@ -78,7 +78,7 @@ class CheckoutTest extends TestCase
         $this->assertSame($cart->version + 1, $cart->fresh()->version);
 
         $this->get(route('orders.show', $order->order_code))->assertOk()
-            ->assertSee($order->order_code)->assertSee('&lt;b&gt;Giao giờ trưa&lt;/b&gt;', false)->assertSee('Đang chờ');
+            ->assertSee($order->order_code)->assertSee('&lt;b&gt;Giao giờ trưa&lt;/b&gt;', false)->assertSee('Chờ xác nhận');
     }
 
     public function test_same_checkout_key_returns_the_same_order_and_a_changed_payload_is_rejected(): void

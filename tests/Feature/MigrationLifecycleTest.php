@@ -22,7 +22,7 @@ class MigrationLifecycleTest extends TestCase
         $this->assertSame($expected, $this->tables());
         $this->assertSame($before, $this->columnDefinitions());
 
-        $this->artisan('migrate:rollback', ['--step' => 8, '--force' => true, '--no-interaction' => true])->assertSuccessful();
+        $this->artisan('migrate:rollback', ['--step' => 9, '--force' => true, '--no-interaction' => true])->assertSuccessful();
         $this->assertSame(['cache', 'cache_locks', 'failed_jobs', 'job_batches', 'jobs', 'migrations', 'sessions'], $this->tables());
 
         $this->artisan('migrate', ['--force' => true, '--no-interaction' => true])->assertSuccessful();
