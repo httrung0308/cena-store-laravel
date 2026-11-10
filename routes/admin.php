@@ -28,6 +28,7 @@ Route::resource('suppliers', SupplierController::class)->except(['show', 'destro
 Route::patch('suppliers/{supplier}/deactivate', [SupplierController::class, 'deactivate'])->name('suppliers.deactivate');
 
 Route::resource('products', ProductController::class)->except(['show', 'destroy']);
+Route::get('products/{product}', [ProductController::class, 'show'])->whereNumber('product')->withTrashed()->name('products.show');
 Route::patch('products/{product}/deactivate', [ProductController::class, 'deactivate'])->name('products.deactivate');
 
 Route::post('stock-imports/spreadsheet', [StockImportController::class, 'spreadsheet'])->name('stock-imports.spreadsheet');

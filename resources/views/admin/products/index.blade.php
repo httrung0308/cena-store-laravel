@@ -8,7 +8,16 @@
 @endsection
 @php($images = app(App\Services\CatalogQueryService::class))
 @section('content')
-    <x-admin.search-form :action="route('admin.products.index')" id="product-search" label="Tìm sản phẩm" placeholder="Tìm kiếm theo tên sản phẩm, mã slug..." :value="request('search', '')" />
+    <x-admin.search-form :action="route('admin.products.index')" id="product-search" label="Tìm sản phẩm" placeholder="Tìm theo tên, slug hoặc SKU..." :value="request('search', '')">
+        <label class="sr-only" for="product-status">Trạng thái sản phẩm</label>
+        <select id="product-status" name="status" class="min-h-10 rounded-xl border border-border bg-bg px-3 text-xs font-semibold text-main focus:border-accent focus:outline-none">
+            <option value="">Đang bán và đã ẩn</option>
+            <option value="active" @selected(request('status') === 'active')>Đang bán</option>
+            <option value="inactive" @selected(request('status') === 'inactive')>Đã ẩn</option>
+            <option value="deleted" @selected(request('status') === 'deleted')>Đã xóa mềm</option>
+            <option value="all" @selected(request('status') === 'all')>Tất cả, gồm đã xóa mềm</option>
+        </select>
+    </x-admin.search-form>
 
     <div class="bg-surface-card rounded-2xl border border-border overflow-hidden shadow-sm">
         <div class="overflow-x-auto">
@@ -70,13 +79,16 @@
                         </td>
                         <td class="p-4 whitespace-nowrap text-xs text-muted">{{ $product->created_at?->setTimezone(config('store.business_timezone'))->format('d/m/Y') }}</td>
                         <td class="p-4 text-right whitespace-nowrap">
-                            <a class="px-2.5 py-1 text-accent hover:bg-surface rounded-lg font-bold mr-1 inline-block transition-colors" href="{{ route('admin.products.edit', $product) }}">Sửa</a>
-                            @if ($product->is_active)
-                                <form method="POST" action="{{ route('admin.products.deactivate', $product) }}" class="inline-block">
-                                    @csrf
-                                    @method('PATCH')
-                                    <button class="px-2.5 py-1 text-error hover:bg-error-bg rounded-lg font-bold transition-colors">Ngừng</button>
-                                </form>
+                            <a class="px-2.5 py-1 text-accent hover:bg-surface rounded-lg font-bold mr-1 inline-block transition-colors" href="{{ route('admin.products.show', $product) }}">Chi tiết / Thẻ kho</a>
+                            @unless ($product->trashed())
+                                <a class="px-2.5 py-1 text-accent hover:bg-surface rounded-lg font-bold mr-1 inline-block transition-colors" href="{{ route('admin.products.edit', $product) }}">Sửa</a>
+                                @if ($product->is_active)
+                                    <form method="POST" action="{{ route('admin.products.deactivate', $product) }}" class="inline-block">
+                                        @csrf
+                                        @method('PATCH')
+                                        <button class="px-2.5 py-1 text-error hover:bg-error-bg rounded-lg font-bold transition-colors">Ngừng</button>
+                                    </form>
+                                @endif
                             @endif
                         </td>
                     </tr>
