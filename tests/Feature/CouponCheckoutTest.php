@@ -129,6 +129,36 @@ class CouponCheckoutTest extends TestCase
         $this->assertFalse($coupon->fresh()->is_active);
     }
 
+    public function test_checkout_quote_ajax_returns_json_without_page_reload(): void
+    {
+        $customer = User::factory()->customer()->create();
+        $address = Address::factory()->create(['user_id' => $customer->id]);
+        $shoe = $this->variant();
+        $this->addToCart($customer, $address, $shoe);
+
+        $coupon = Coupon::factory()->create([
+            'code' => 'AJAXDISCOUNT',
+            'type' => CouponType::Fixed,
+            'value' => 100_000,
+            'min_order_amount' => 500_000,
+            'is_active' => true,
+        ]);
+
+        $response = $this->actingAs($customer)->getJson(route('checkout.show', [
+            'address' => $address->id,
+            'payment_method' => 'COD',
+            'coupon_code' => 'AJAXDISCOUNT',
+        ]));
+
+        $response->assertOk();
+        $response->assertJsonPath('coupon_code', 'AJAXDISCOUNT');
+        $response->assertJsonPath('quote.merchandise_discount', 100_000);
+        $response->assertJsonStructure([
+            'quote' => ['fingerprint', 'subtotal', 'merchandise_discount', 'shipping_fee', 'total'],
+            'formatted' => ['subtotal', 'merchandise_discount', 'shipping_fee', 'total'],
+        ]);
+    }
+
     private function addToCart(User $customer, Address $address, ProductVariant $shoe): void
     {
         $cart = (new Cart)->forceFill(['user_id' => $customer->id, 'version' => 1]);

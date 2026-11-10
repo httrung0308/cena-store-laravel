@@ -9,6 +9,7 @@ use App\Http\Requests\Storefront\CheckoutOrderRequest;
 use App\Models\Address;
 use App\Services\CheckoutService;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -20,7 +21,7 @@ class CheckoutController extends Controller
 {
     public function __construct(private readonly CheckoutService $checkout) {}
 
-    public function show(Request $request): View|RedirectResponse
+    public function show(Request $request): View|RedirectResponse|JsonResponse
     {
         $user = $request->user();
         $addresses = $user->addresses()->orderByDesc('is_default')->orderBy('id')->get();
@@ -32,7 +33,27 @@ class CheckoutController extends Controller
         $couponCode = $request->query('coupon_code');
         $quote = $this->checkout->quote($user, $address, $method, is_string($couponCode) ? $couponCode : null);
         if ($quote['lines'] === [] && $quote['problems'] === []) {
+            if ($request->wantsJson()) {
+                return response()->json(['empty' => true, 'redirect' => route('shoes.index')]);
+            }
+
             return redirect()->route('shoes.index')->with('status', 'Giỏ hàng đang trống.');
+        }
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'quote' => $quote,
+                'address_id' => $address?->id,
+                'payment_method' => $method->value,
+                'coupon_code' => is_string($couponCode) ? $couponCode : null,
+                'formatted' => [
+                    'subtotal' => number_format($quote['subtotal'], 0, ',', '.').' ₫',
+                    'merchandise_discount' => number_format($quote['merchandise_discount'], 0, ',', '.').' ₫',
+                    'shipping_fee' => $quote['shipping_fee'] === 0 ? 'Miễn phí' : number_format($quote['shipping_fee'], 0, ',', '.').' ₫',
+                    'shipping_discount' => number_format($quote['shipping_discount'], 0, ',', '.').' ₫',
+                    'total' => number_format($quote['total'], 0, ',', '.').' ₫',
+                ],
+            ]);
         }
 
         return view('storefront.checkout.show', [
