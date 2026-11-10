@@ -36,7 +36,13 @@
         <p class="rounded-xl border border-warning/30 bg-warning-bg p-3.5 text-xs font-medium text-warning-text">Tài khoản quản trị không dùng để mua sắm. Đăng nhập bằng tài khoản khách hàng để đặt hàng.</p>
     @else
     <div class="flex flex-wrap gap-3 pt-2">
-        <button type="button" disabled data-add-to-cart x-bind:data-variant-id="selected?.id ?? ''" x-bind:disabled="!selected || !priceAvailable || $store.cart.isBusy()" class="btn flex-1 sm:flex-initial px-8 py-3.5 disabled:cursor-not-allowed disabled:opacity-50">Thêm vào giỏ</button>
+        <button type="button" disabled data-add-to-cart x-bind:data-variant-id="selected?.id ?? ''" x-bind:disabled="!selected || !priceAvailable || $store.cart.isBusy()" class="btn flex-1 sm:flex-initial px-8 py-3.5 disabled:cursor-not-allowed disabled:opacity-50">
+            <span x-show="!$store.cart.isBusy('add-' + (selected?.id ?? ''))">Thêm vào giỏ</span>
+            <span x-cloak x-show="$store.cart.isBusy('add-' + (selected?.id ?? ''))" class="inline-flex items-center gap-2">
+                <x-ui.spinner :compact="true" />
+                <span>Đang thêm...</span>
+            </span>
+        </button>
         @if (Route::has('checkout.show'))
             <button type="button" disabled data-add-to-cart data-buy-now="{{ parse_url(route('checkout.show'), PHP_URL_PATH) }}" x-bind:data-variant-id="selected?.id ?? ''" x-bind:disabled="!selected || !priceAvailable || $store.cart.isBusy()" class="btn-secondary flex-1 sm:flex-initial px-8 py-3.5 font-semibold transition-colors hover:border-accent hover:text-accent disabled:cursor-not-allowed disabled:opacity-50">Mua ngay</button>
         @endif

@@ -50,7 +50,7 @@
 
     <ul class="overflow-overlay -mr-1 flex flex-1 flex-col gap-4 overflow-x-hidden p-1" aria-label="Sản phẩm trong giỏ">
         <template x-for="item in $store.cart.items" :key="item.id">
-            <li class="flex gap-4 rounded-xl border border-border/70 bg-surface/40 p-3" x-bind:aria-busy="$store.cart.isBusy('item-' + item.id).toString()">
+            <li class="flex gap-4 rounded-xl border border-border/70 bg-surface/40 p-3 transition-opacity duration-150" x-bind:class="$store.cart.isBusy('item-' + item.id) && 'opacity-50 pointer-events-none'" x-bind:aria-busy="$store.cart.isBusy('item-' + item.id).toString()">
                 <div class="h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-surface-card border border-border/60">
                     <img x-show="item.thumbnail_url" x-bind:src="item.thumbnail_url" alt="Ảnh sản phẩm trong giỏ" class="h-full w-full object-cover" loading="lazy" decoding="async">
                 </div>
