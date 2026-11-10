@@ -77,7 +77,7 @@
                                             @if ($review) <x-reviews.stars :rating="$review->rating" class="align-middle inline-block text-warning" /> Sửa đánh giá @if (! $review->is_visible)<span class="text-xs text-muted">(đang bị ẩn)</span>@endif
                                             @else Viết đánh giá @endif
                                         </summary>
-                                        <form method="POST" action="{{ route('account.reviews.store') }}" class="mt-3 space-y-3">
+                                        <form method="POST" action="{{ route('account.reviews.store') }}" class="mt-3 space-y-3" x-data="{ submitting: false }" x-on:submit="if (submitting) { $event.preventDefault(); return false; } submitting = true">
                                             @csrf
                                             <input type="hidden" name="unit_id" value="{{ $unit->id }}">
                                             <label class="block text-xs font-bold uppercase tracking-wider text-muted">Số sao
@@ -92,7 +92,10 @@
                                             </label>
                                             @if ((int) old('unit_id') === $unit->id)@foreach ($errors->all() as $error)<p class="text-xs text-error font-medium">{{ $error }}</p>@endforeach @endif
                                             @if ($review?->admin_reply)<p class="rounded-lg bg-surface p-2.5 text-xs text-muted"><span class="font-semibold text-main">Cửa hàng phản hồi:</span> {{ $review->admin_reply }}</p>@endif
-                                            <button type="submit" class="btn px-4 py-2 text-xs font-semibold">{{ $review ? 'Cập nhật đánh giá' : 'Gửi đánh giá' }}</button>
+                                            <button type="submit" :disabled="submitting" class="btn px-4 py-2 text-xs font-semibold disabled:opacity-50">
+                                                <span x-show="!submitting">{{ $review ? 'Cập nhật đánh giá' : 'Gửi đánh giá' }}</span>
+                                                <span x-cloak x-show="submitting" class="inline-flex items-center gap-1"><x-ui.spinner :compact="true" /> Đang lưu...</span>
+                                            </button>
                                         </form>
                                     </details>
                                 @endforeach
@@ -107,7 +110,6 @@
                 @if ($order->shipping_discount_amount > 0)<div class="flex justify-between"><dt class="text-muted">Giảm vận chuyển</dt><dd class="font-medium text-accent">−{{ $vnd($order->shipping_discount_amount) }}</dd></div>@endif
                 <div class="flex justify-between"><dt class="text-muted">Phí vận chuyển</dt><dd class="font-medium text-main">{{ $order->shipping_fee === 0 ? 'Miễn phí' : $vnd($order->shipping_fee) }}</dd></div>
                 <div class="flex justify-between border-t border-border/60 pt-3 text-lg font-bold text-main"><dt>Tổng cộng</dt><dd class="text-xl font-bold text-accent">{{ $vnd($order->total_amount) }}</dd></div>
-            </dl>
             </dl>
         </section>
 

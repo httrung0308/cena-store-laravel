@@ -15,20 +15,26 @@
         </div>
         <div class="flex flex-wrap items-center gap-2">
             @if ($setDefaultUrl && ! ($address['is_default'] ?? false))
-                <form action="{{ $setDefaultUrl }}" method="POST">
+                <form action="{{ $setDefaultUrl }}" method="POST" x-data="{ saving: false }" x-on:submit="if (saving) { $event.preventDefault(); return false; } saving = true">
                     @csrf
                     @method('PATCH')
-                    <button type="submit" class="btn-secondary px-3.5 py-1.5 text-xs font-semibold hover:border-success hover:text-success">Đặt mặc định</button>
+                    <button type="submit" :disabled="saving" class="btn-secondary px-3.5 py-1.5 text-xs font-semibold hover:border-success hover:text-success disabled:opacity-50">
+                        <span x-show="!saving">Đặt mặc định</span>
+                        <span x-cloak x-show="saving" class="inline-flex items-center gap-1"><x-ui.spinner :compact="true" /></span>
+                    </button>
                 </form>
             @endif
             @if ($editUrl)
                 <a href="{{ $editUrl }}" class="btn-secondary px-3.5 py-1.5 text-xs font-semibold hover:border-accent hover:text-accent">Sửa</a>
             @endif
             @if ($deleteUrl)
-                <form action="{{ $deleteUrl }}" method="POST">
+                <form action="{{ $deleteUrl }}" method="POST" x-data="{ deleting: false }" x-on:submit="if (deleting || !confirm('Bạn có chắc muốn xóa địa chỉ này?')) { $event.preventDefault(); return false; } deleting = true">
                     @csrf
                     @method('DELETE')
-                    <button type="submit" class="btn-secondary px-3.5 py-1.5 text-xs font-semibold hover:border-error hover:text-error">Xóa</button>
+                    <button type="submit" :disabled="deleting" class="btn-secondary px-3.5 py-1.5 text-xs font-semibold hover:border-error hover:text-error disabled:opacity-50">
+                        <span x-show="!deleting">Xóa</span>
+                        <span x-cloak x-show="deleting" class="inline-flex items-center gap-1"><x-ui.spinner :compact="true" /></span>
+                    </button>
                 </form>
             @endif
         </div>
