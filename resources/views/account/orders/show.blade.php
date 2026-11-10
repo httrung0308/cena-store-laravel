@@ -28,6 +28,9 @@
                 @if (session('status'))<p role="status" class="rounded-3xl border border-green-200 bg-green-50 p-4 text-sm text-green-700">{{ session('status') }}</p>@endif
             </div>
         @endif
+        @if ($order->payment_method === App\Enums\PaymentMethod::PrepaidDemo && $order->payment_status === App\Enums\OrderPaymentStatus::Unpaid && $order->order_status !== App\Enums\OrderStatus::Cancelled)
+            <a href="{{ route('orders.payment.show', $order->order_code) }}" class="block rounded-lg border border-amber-300 bg-amber-50 p-4 text-center font-semibold">Tiếp tục thanh toán mô phỏng · {{ $vnd($order->total_amount) }}</a>
+        @endif
         @if ($errors->any())
             <div role="alert" class="rounded-3xl border border-red-200 bg-red-50 p-4 text-sm text-red-600">@foreach ($errors->all() as $error)<p>{{ $error }}</p>@endforeach</div>
         @endif
@@ -91,6 +94,8 @@
             </div>
             <dl class="space-y-1 border-t pt-4 text-sm">
                 <div class="flex justify-between"><dt>Tạm tính</dt><dd>{{ $vnd($order->subtotal_amount) }}</dd></div>
+                @if ($order->merchandise_discount_amount > 0)<div class="flex justify-between"><dt>Coupon {{ $order->coupon_code_snapshot }}</dt><dd>−{{ $vnd($order->merchandise_discount_amount) }}</dd></div>@endif
+                @if ($order->shipping_discount_amount > 0)<div class="flex justify-between"><dt>Giảm vận chuyển</dt><dd>−{{ $vnd($order->shipping_discount_amount) }}</dd></div>@endif
                 <div class="flex justify-between"><dt>Phí vận chuyển</dt><dd>{{ $order->shipping_fee === 0 ? 'Miễn phí' : $vnd($order->shipping_fee) }}</dd></div>
                 <div class="flex justify-between text-lg font-semibold"><dt>Tổng cộng</dt><dd>{{ $vnd($order->total_amount) }}</dd></div>
             </dl>
