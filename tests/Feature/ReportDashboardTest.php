@@ -211,9 +211,27 @@ class ReportDashboardTest extends TestCase
     private function deliver(Order $order): Order
     {
         $order = $this->ship($order);
-        $this->post(route('admin.orders.transition', [$order, 'deliver']), ['expected_status' => 'ON_DELIVERY', 'proof' => UploadedFile::fake()->image('delivery-'.$order->id.'.jpg')])->assertRedirect();
+        $proof = $this->createProofImage('delivery-'.$order->id.'.jpg', $order->order_code);
+        $this->post(route('admin.orders.transition', [$order, 'deliver']), ['expected_status' => 'ON_DELIVERY', 'proof' => $proof])->assertRedirect();
 
         return $order->fresh();
+    }
+
+    private function createProofImage(string $name, string $seed): UploadedFile
+    {
+        $image = imagecreatetruecolor(240, 60);
+        $intSeed = crc32($seed);
+        $bgColor = imagecolorallocate($image, 200 + abs($intSeed % 50), 200 + abs(($intSeed >> 3) % 50), 200 + abs(($intSeed >> 6) % 50));
+        imagefill($image, 0, 0, $bgColor);
+        $textColor = imagecolorallocate($image, 20, 20, 20);
+        imagestring($image, 3, 10, 20, $seed, $textColor);
+        $temp = tmpfile();
+        ob_start();
+        imagejpeg($image);
+        imagedestroy($image);
+        fwrite($temp, ob_get_clean());
+
+        return new \Illuminate\Http\Testing\File($name, $temp);
     }
 
     private function placeOrder(ProductVariant $variant, int $quantity): Order
