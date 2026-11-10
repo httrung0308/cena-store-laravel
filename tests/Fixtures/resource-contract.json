@@ -468,5 +468,38 @@
       ],
       "owner": "user_id"
     }
+  },
+  "work_center": {
+    "class": "App\\Models\\OperationsWorkItem",
+    "controller": "App\\Http\\Controllers\\Admin\\OperationsWorkItemController",
+    "fields": [
+      "id",
+      "source_type",
+      "source_reference",
+      "source_label",
+      "title",
+      "content",
+      "occurred_at",
+      "status",
+      "version",
+      "created_at",
+      "updated_at"
+    ],
+    "roles": [
+      "admin",
+      "staff"
+    ],
+    "history_fields": [
+      "from_status",
+      "to_status",
+      "actor_id",
+      "actor_name_snapshot",
+      "actor_roles_snapshot",
+      "note",
+      "outcome_code",
+      "snapshot",
+      "created_at"
+    ],
+    "completion": "server-side verified source outcome only"
   }
 }

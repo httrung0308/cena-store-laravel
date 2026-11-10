@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\ArticleController;
 use App\Http\Controllers\Admin\CategoryController;
+use App\Http\Controllers\Admin\OperationsWorkItemController;
 use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\ReportController;
@@ -41,6 +42,11 @@ Route::get('orders', [OrderController::class, 'index'])->name('orders.index');
 Route::get('orders/{order}', [OrderController::class, 'show'])->whereNumber('order')->name('orders.show');
 Route::post('orders/{order}/{action}', [OrderController::class, 'transition'])->whereNumber('order')
     ->whereIn('action', ['confirm', 'pack', 'ship', 'deliver', 'cancel', 'fail'])->middleware('throttle:30,1')->name('orders.transition');
+
+Route::get('operations-work-items', [OperationsWorkItemController::class, 'index'])->name('operations-work-items.index');
+Route::get('operations-work-items/{workItem}', [OperationsWorkItemController::class, 'show'])->whereNumber('workItem')->name('operations-work-items.show');
+Route::patch('operations-work-items/{workItem}', [OperationsWorkItemController::class, 'update'])->whereNumber('workItem')
+    ->middleware('throttle:30,1')->name('operations-work-items.update');
 
 Route::get('shipment-returns', [ShipmentReturnController::class, 'index'])->name('shipment-returns.index');
 Route::get('shipments/{shipment}/returns', [ShipmentReturnController::class, 'show'])->whereNumber('shipment')->name('shipment-returns.show');

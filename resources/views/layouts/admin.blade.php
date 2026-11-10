@@ -9,6 +9,7 @@
         ['route' => 'admin.stock-imports.index', 'label' => 'Nhập kho', 'icon' => 'archive'],
         ['route' => 'admin.shipment-returns.index', 'label' => 'Hàng hoàn cách ly', 'icon' => 'archive'],
         ['route' => 'admin.orders.index', 'label' => 'Đơn hàng', 'icon' => 'cart'],
+        ['route' => 'admin.operations-work-items.index', 'label' => 'Công việc xử lý', 'icon' => 'archive'],
         ['route' => 'admin.reviews.index', 'label' => 'Đánh giá', 'icon' => 'star'],
         ['route' => 'admin.reports.index', 'label' => 'Báo cáo', 'icon' => 'chart'],
     ];

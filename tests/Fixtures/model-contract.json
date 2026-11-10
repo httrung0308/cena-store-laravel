@@ -1045,5 +1045,68 @@
         "FAILED"
       ]
     }
+  },
+  "operations_work_items": {
+    "class": "App\\Models\\OperationsWorkItem",
+    "belongs_to": [
+      {
+        "column": "created_by",
+        "relation": "creator",
+        "class": "App\\Models\\User",
+        "history": true
+      }
+    ],
+    "enums": {
+      "source_type": "App\\Enums\\OperationsSourceType",
+      "status": "App\\Enums\\OperationsWorkItemStatus"
+    },
+    "enum_cases": {
+      "source_type": [
+        "ORDER",
+        "SHIPMENT",
+        "INVENTORY",
+        "AFTER_SALES",
+        "PAYMENT",
+        "OTHER"
+      ],
+      "status": [
+        "PENDING",
+        "IN_PROGRESS",
+        "COMPLETED"
+      ]
+    }
+  },
+  "operations_work_item_histories": {
+    "class": "App\\Models\\OperationsWorkItemHistory",
+    "belongs_to": [
+      {
+        "column": "work_item_id",
+        "relation": "workItem",
+        "class": "App\\Models\\OperationsWorkItem",
+        "history": false
+      },
+      {
+        "column": "actor_id",
+        "relation": "actor",
+        "class": "App\\Models\\User",
+        "history": true
+      }
+    ],
+    "enums": {
+      "from_status": "App\\Enums\\OperationsWorkItemStatus",
+      "to_status": "App\\Enums\\OperationsWorkItemStatus"
+    },
+    "enum_cases": {
+      "from_status": [
+        "PENDING",
+        "IN_PROGRESS",
+        "COMPLETED"
+      ],
+      "to_status": [
+        "PENDING",
+        "IN_PROGRESS",
+        "COMPLETED"
+      ]
+    }
   }
 }

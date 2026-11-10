@@ -4594,6 +4594,225 @@
       "checks": [
         "notifications_status_allowed_check"
       ]
+    },
+    "operations_work_items": {
+      "number": 38,
+      "columns": {
+        "id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": true
+        },
+        "source_type": {
+          "type": "varchar(24)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "source_event_key": {
+          "type": "varchar(191)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false,
+          "collation": "utf8mb4_bin"
+        },
+        "source_reference": {
+          "type": "varchar(100)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "source_label": {
+          "type": "varchar(120)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "title": {
+          "type": "varchar(200)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "content": {
+          "type": "text",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "occurred_at": {
+          "type": "datetime(6)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "status": {
+          "type": "varchar(16)",
+          "nullable": false,
+          "default": "PENDING",
+          "auto_increment": false
+        },
+        "version": {
+          "type": "int unsigned",
+          "nullable": false,
+          "default": "1",
+          "auto_increment": false
+        },
+        "created_by": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "created_at": {
+          "type": "datetime(6)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "updated_at": {
+          "type": "datetime(6)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        }
+      },
+      "foreign_keys": [
+        {
+          "column": "created_by",
+          "table": "users",
+          "references": "id",
+          "on_delete": "RESTRICT"
+        }
+      ],
+      "indexes": [
+        {
+          "columns": [
+            "source_type",
+            "source_event_key"
+          ],
+          "unique": true
+        },
+        {
+          "columns": [
+            "status",
+            "occurred_at",
+            "id"
+          ],
+          "unique": false
+        },
+        {
+          "columns": [
+            "source_type",
+            "source_reference"
+          ],
+          "unique": false
+        }
+      ],
+      "checks": [
+        "operations_work_items_source_type_check",
+        "operations_work_items_status_check",
+        "operations_work_items_version_check"
+      ]
+    },
+    "operations_work_item_histories": {
+      "number": 39,
+      "columns": {
+        "id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": true
+        },
+        "work_item_id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "actor_id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "actor_name_snapshot": {
+          "type": "varchar(100)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "actor_roles_snapshot": {
+          "type": "json",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "from_status": {
+          "type": "varchar(16)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "to_status": {
+          "type": "varchar(16)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "outcome_code": {
+          "type": "varchar(64)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "note": {
+          "type": "text",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "snapshot": {
+          "type": "json",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "created_at": {
+          "type": "datetime(6)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        }
+      },
+      "foreign_keys": [
+        {
+          "column": "work_item_id",
+          "table": "operations_work_items",
+          "references": "id",
+          "on_delete": "RESTRICT"
+        },
+        {
+          "column": "actor_id",
+          "table": "users",
+          "references": "id",
+          "on_delete": "RESTRICT"
+        }
+      ],
+      "indexes": [
+        {
+          "columns": [
+            "work_item_id",
+            "created_at",
+            "id"
+          ],
+          "unique": false
+        }
+      ],
+      "checks": [
+        "operations_work_item_histories_status_check"
+      ]
     }
   }
 }
