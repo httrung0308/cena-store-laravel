@@ -141,6 +141,31 @@ class OrderWorkflowTest extends TestCase
         $this->assertSame(OrderStatus::Packing, $order->fresh()->order_status);
     }
 
+    public function test_idempotent_replays_do_not_duplicate_history_or_inventory_or_ledger(): void
+    {
+        Storage::fake('private');
+        $order = $this->placeOrder(quantity: 1);
+        $this->actingAs($this->staff)->from(route('admin.orders.show', $order));
+
+        // Confirm & replay confirm
+        $this->transition($order, 'confirm')->assertRedirect(route('admin.orders.show', $order));
+        $this->transition($order, 'confirm', [], 'PENDING')->assertRedirect();
+        $this->assertSame(2, OrderStatusHistory::query()->where('order_id', $order->id)->count());
+
+        // Stale action 'pack' is rejected
+        $this->transition($order, 'pack', [], 'PENDING')->assertSessionHasErrors('order');
+
+        // Ship & replay ship
+        $this->transition($order->fresh(), 'ship', ['carrier_name' => 'GHN', 'tracking_code' => 'GHN-123'])->assertRedirect();
+        $historyCountAfterShip = OrderStatusHistory::query()->where('order_id', $order->id)->count();
+        $movementsCountAfterShip = InventoryMovement::query()->where('reference_type', InventoryReferenceType::Order)->where('reference_id', $order->id)->count();
+
+        // Replay ship with stale expected PACKING
+        $this->transition($order->fresh(), 'ship', ['carrier_name' => 'GHN', 'tracking_code' => 'GHN-123'], 'PACKING')->assertRedirect();
+        $this->assertSame($historyCountAfterShip, OrderStatusHistory::query()->where('order_id', $order->id)->count());
+        $this->assertSame($movementsCountAfterShip, InventoryMovement::query()->where('reference_type', InventoryReferenceType::Order)->where('reference_id', $order->id)->count());
+    }
+
     public function test_cod_delivery_requires_an_image_proof(): void
     {
         $order = $this->placeOrder(quantity: 1);

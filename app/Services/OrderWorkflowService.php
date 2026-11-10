@@ -257,7 +257,7 @@ final class OrderWorkflowService
     {
         return DB::transaction(function () use ($order, $actor, $expected, $from, $to, $reasonCode, $note, $effects): Order {
             $locked = Order::query()->whereKey($order->id)->lockForUpdate()->firstOrFail();
-            $commandKey = "order:{$locked->id}:to:{$to->value}";
+            $commandKey = "order:{$locked->id}:action:{$reasonCode}";
             if (OrderStatusHistory::query()->where('command_key', $commandKey)->exists()) {
                 return $locked;
             }
