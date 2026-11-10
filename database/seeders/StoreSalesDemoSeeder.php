@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Enums\AdministrativeUnitLevel;
+use App\Enums\OrderStatus;
 use App\Enums\RoleSlug;
 use App\Models\AdministrativeUnit;
 use App\Models\Cart;
@@ -419,7 +420,7 @@ class StoreSalesDemoSeeder extends Seeder
 
         return match ($step) {
             'confirm' => $workflow->confirm($order, $staff, $expected),
-            'pack' => $workflow->pack($order, $staff, $expected),
+            'pack' => $order->order_status === OrderStatus::Packing ? $order : $workflow->pack($order, $staff, $expected),
             'ship' => $workflow->ship($order, $staff, $expected, ['GHN', 'GHTK', 'J&T Express'][$order->id % 3], 'VN'.str_pad((string) $order->id, 9, '0', STR_PAD_LEFT)),
             'deliver' => $workflow->deliver($order, $staff, $expected, $this->demoProof($order)),
             'fail' => $workflow->fail($order, $staff, $expected, $plan['reason']),
