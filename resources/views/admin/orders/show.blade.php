@@ -80,26 +80,35 @@
         <section class="admin-card space-y-4">
             <h2 class="text-xl font-semibold text-main">Xử lý đơn</h2>
             @foreach ($next as $action => $label)
-                <form method="POST" action="{{ route('admin.orders.transition', [$order, $action]) }}">@csrf
+                <form method="POST" action="{{ route('admin.orders.transition', [$order, $action]) }}" x-data="{ busy: false }" x-on:submit="if (busy) { $event.preventDefault(); return false; } busy = true">@csrf
                     <input type="hidden" name="expected_status" value="{{ $status->value }}">
-                    <button class="btn-pill-dark w-full py-3">{{ $label }}</button>
+                    <button :disabled="busy" class="btn-pill-dark w-full py-3 disabled:opacity-50">
+                        <span x-show="!busy">{{ $label }}</span>
+                        <span x-cloak x-show="busy" class="inline-flex items-center gap-1.5"><x-ui.spinner :compact="true" /> Đang xử lý...</span>
+                    </button>
                 </form>
             @endforeach
             @if ($status === OrderStatus::Packing)
-                <form method="POST" action="{{ route('admin.orders.transition', [$order, 'ship']) }}" class="space-y-3">@csrf
+                <form method="POST" action="{{ route('admin.orders.transition', [$order, 'ship']) }}" class="space-y-3" x-data="{ busy: false }" x-on:submit="if (busy) { $event.preventDefault(); return false; } busy = true">@csrf
                     <input type="hidden" name="expected_status" value="{{ $status->value }}">
                     <x-admin.field name="carrier_name" label="Đơn vị vận chuyển" required placeholder="Ví dụ: GHN" />
                     <x-admin.field name="tracking_code" label="Mã vận đơn" placeholder="Không bắt buộc" />
-                    <button class="btn-pill-dark w-full py-3">Giao cho vận chuyển (xuất kho)</button>
+                    <button :disabled="busy" class="btn-pill-dark w-full py-3 disabled:opacity-50">
+                        <span x-show="!busy">Giao cho vận chuyển (xuất kho)</span>
+                        <span x-cloak x-show="busy" class="inline-flex items-center gap-1.5"><x-ui.spinner :compact="true" /> Đang xuất kho...</span>
+                    </button>
                 </form>
             @endif
             @if ($status === OrderStatus::OnDelivery)
-                <form method="POST" enctype="multipart/form-data" action="{{ route('admin.orders.transition', [$order, 'deliver']) }}" class="space-y-3">@csrf
+                <form method="POST" enctype="multipart/form-data" action="{{ route('admin.orders.transition', [$order, 'deliver']) }}" class="space-y-3" x-data="{ busy: false }" x-on:submit="if (busy) { $event.preventDefault(); return false; } busy = true">@csrf
                     <input type="hidden" name="expected_status" value="{{ $status->value }}">
                     @if ($order->payment_method === App\Enums\PaymentMethod::Cod)
                         <x-admin.field name="proof" type="file" label="Ảnh minh chứng giao COD" required accept="image/jpeg,image/png,image/webp" hint="JPEG, PNG hoặc WebP; tối đa 5 MB. Ảnh được lưu riêng tư." />
                     @endif
-                    <button class="btn-pill-dark w-full py-3">Xác nhận giao thành công</button>
+                    <button :disabled="busy" class="btn-pill-dark w-full py-3 disabled:opacity-50">
+                        <span x-show="!busy">Xác nhận giao thành công</span>
+                        <span x-cloak x-show="busy" class="inline-flex items-center gap-1.5"><x-ui.spinner :compact="true" /> Đang ghi nhận...</span>
+                    </button>
                 </form>
                 <form method="POST" action="{{ route('admin.orders.transition', [$order, 'fail']) }}" class="space-y-2 border-t border-border pt-4">@csrf
                     <input type="hidden" name="expected_status" value="{{ $status->value }}">
@@ -133,7 +142,6 @@
                 <p class="text-muted">Chưa bàn giao vận chuyển.</p>
             @endif
             @foreach ($order->payments as $payment)
-            @foreach ($order->payments as $payment)
                 <p class="text-main">{{ $payment->method->label() }}: <span class="font-medium">{{ $payment->status->label() }}</span>@if ($payment->provider_transaction_id && $payment->method !== App\Enums\PaymentMethod::PrepaidDemo) · {{ $payment->provider_transaction_id }}@endif</p>
             @endforeach
             @foreach ($order->refunds as $refund)
@@ -144,7 +152,6 @@
                         <button class="btn-pill w-full text-warning-text hover:bg-warning-bg mt-1">Duyệt hoàn tiền mô phỏng</button>
                     </form>
                 @endif
-            @endforeach
             @endforeach
         </section>
     </aside>
