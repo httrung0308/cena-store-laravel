@@ -32,6 +32,9 @@
                 @endif
             </div>
         @endif
+        @if ($order->payment_method === App\Enums\PaymentMethod::PrepaidDemo && $order->payment_status === App\Enums\OrderPaymentStatus::Unpaid && $order->order_status !== App\Enums\OrderStatus::Cancelled)
+            <a href="{{ route('orders.payment.show', $order->order_code) }}" class="block rounded-xl border border-warning/40 bg-warning-bg p-4 text-center font-semibold text-warning-text hover:bg-warning-bg/80 transition-colors shadow-subtle">Tiếp tục thanh toán mô phỏng · {{ $vnd($order->total_amount) }}</a>
+        @endif
         @if ($errors->any())
             <div role="alert" class="rounded-xl border border-error/30 bg-error-bg p-4 text-sm font-medium text-error-text shadow-subtle">
                 @foreach ($errors->all() as $error)<p>{{ $error }}</p>@endforeach
@@ -100,8 +103,11 @@
             </div>
             <dl class="space-y-2 border-t border-border/60 pt-4 text-sm">
                 <div class="flex justify-between"><dt class="text-muted">Tạm tính</dt><dd class="font-medium text-main">{{ $vnd($order->subtotal_amount) }}</dd></div>
+                @if ($order->merchandise_discount_amount > 0)<div class="flex justify-between"><dt class="text-muted">Coupon {{ $order->coupon_code_snapshot }}</dt><dd class="font-medium text-accent">−{{ $vnd($order->merchandise_discount_amount) }}</dd></div>@endif
+                @if ($order->shipping_discount_amount > 0)<div class="flex justify-between"><dt class="text-muted">Giảm vận chuyển</dt><dd class="font-medium text-accent">−{{ $vnd($order->shipping_discount_amount) }}</dd></div>@endif
                 <div class="flex justify-between"><dt class="text-muted">Phí vận chuyển</dt><dd class="font-medium text-main">{{ $order->shipping_fee === 0 ? 'Miễn phí' : $vnd($order->shipping_fee) }}</dd></div>
                 <div class="flex justify-between border-t border-border/60 pt-3 text-lg font-bold text-main"><dt>Tổng cộng</dt><dd class="text-xl font-bold text-accent">{{ $vnd($order->total_amount) }}</dd></div>
+            </dl>
             </dl>
         </section>
 

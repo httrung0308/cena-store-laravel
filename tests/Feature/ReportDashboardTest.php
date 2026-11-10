@@ -25,7 +25,9 @@ use App\Services\ReportService;
 use App\Services\SalesLedgerService;
 use App\Support\BusinessClock;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
@@ -43,6 +45,7 @@ class ReportDashboardTest extends TestCase
     {
         parent::setUp();
         config(['store.shipping.dataset_version' => 'factory-v1', 'store.shipping.hcm_province_code' => 'none']);
+        Storage::fake('private');
         $this->admin = User::factory()->administrator()->create();
         $this->staff = User::factory()->staff()->create();
         $this->customer = User::factory()->customer()->create();
@@ -198,7 +201,7 @@ class ReportDashboardTest extends TestCase
     private function ship(Order $order): Order
     {
         $this->actingAs($this->staff);
-        foreach (['confirm' => [], 'pack' => [], 'ship' => ['carrier_name' => 'GHN', 'tracking_code' => 'GHN-'.$order->id]] as $action => $fields) {
+        foreach (['confirm' => [], 'ship' => ['carrier_name' => 'GHN', 'tracking_code' => 'GHN-'.$order->id]] as $action => $fields) {
             $this->post(route('admin.orders.transition', [$order, $action]), ['expected_status' => $order->fresh()->order_status->value] + $fields)->assertRedirect();
         }
 
@@ -208,7 +211,7 @@ class ReportDashboardTest extends TestCase
     private function deliver(Order $order): Order
     {
         $order = $this->ship($order);
-        $this->post(route('admin.orders.transition', [$order, 'deliver']), ['expected_status' => 'ON_DELIVERY', 'receipt_reference' => 'PT-'.$order->id])->assertRedirect();
+        $this->post(route('admin.orders.transition', [$order, 'deliver']), ['expected_status' => 'ON_DELIVERY', 'proof' => UploadedFile::fake()->image('delivery-'.$order->id.'.jpg')])->assertRedirect();
 
         return $order->fresh();
     }

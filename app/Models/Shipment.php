@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 #[Fillable([])]
 #[Hidden(['proof_path'])]
@@ -49,4 +50,10 @@ class Shipment extends DomainModel
     {
         return $this->hasMany(ShipmentReturnItem::class, 'shipment_id');
     }
+
+    public function deliveryProof(): HasOne
+    {
+        return $this->hasOne(ShipmentDeliveryProof::class, 'shipment_id');
+    }
+
 }

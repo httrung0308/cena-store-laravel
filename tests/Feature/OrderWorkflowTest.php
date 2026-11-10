@@ -27,6 +27,8 @@ use App\Models\User;
 use App\Services\CheckoutService;
 use App\Services\InventoryService;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
@@ -44,6 +46,7 @@ class OrderWorkflowTest extends TestCase
     {
         parent::setUp();
         config(['store.shipping.dataset_version' => 'factory-v1', 'store.shipping.hcm_province_code' => 'none']);
+        Storage::fake('private');
         $this->staff = User::factory()->staff()->create();
         $this->customer = User::factory()->customer()->create();
         $this->shoe = $this->variant(stock: 4, cost: 300_000);
@@ -54,7 +57,7 @@ class OrderWorkflowTest extends TestCase
         $order = $this->placeOrder(quantity: 3);
         $this->actingAs($this->staff);
 
-        foreach (['confirm' => [], 'pack' => [], 'ship' => ['carrier_name' => 'GHN', 'tracking_code' => 'GHN-123']] as $action => $fields) {
+        foreach (['confirm' => [], 'ship' => ['carrier_name' => 'GHN', 'tracking_code' => 'GHN-123']] as $action => $fields) {
             $this->transition($order, $action, $fields)->assertRedirect(route('admin.orders.show', $order));
         }
         $this->shoe->refresh();
@@ -69,7 +72,7 @@ class OrderWorkflowTest extends TestCase
         // A later import at another cost must not rewrite the frozen COGS.
         $this->receive($this->shoe, 1, 900_000);
 
-        $this->transition($order, 'deliver', ['receipt_reference' => 'PT-0001'])->assertRedirect();
+        $this->transition($order, 'deliver', ['proof' => UploadedFile::fake()->image('delivery.jpg')])->assertRedirect();
         $order->refresh();
         $this->assertSame(OrderStatus::Delivered, $order->order_status);
         $this->assertSame(OrderPaymentStatus::Paid, $order->payment_status);
@@ -79,9 +82,13 @@ class OrderWorkflowTest extends TestCase
         $sales = SalesLedgerEntry::query()->where('order_id', $order->id)->where('type', SalesLedgerType::SaleRecognized)->get();
         $this->assertSame([2_400_000, 900_000], [$sales->sum('merchandise_revenue_delta'), $sales->sum('cogs_delta')]);
         $this->assertSame(1, SalesLedgerEntry::query()->where('order_id', $order->id)->where('type', SalesLedgerType::ShippingRecognized)->count());
-        $this->assertSame(['PENDING', 'CONFIRMED', 'PACKING', 'ON_DELIVERY', 'DELIVERED'], $order->statusHistories()->orderBy('id')->get()->map(fn ($h) => $h->to_status->value)->all());
+        $this->assertSame(['PENDING', 'PACKING', 'ON_DELIVERY', 'DELIVERED'], $order->statusHistories()->orderBy('id')->get()->map(fn ($h) => $h->to_status->value)->all());
+        $this->assertNotNull($order->shipment->deliveryProof);
+        Storage::disk('private')->assertExists($order->shipment->deliveryProof->path);
+        $this->actingAs($this->staff)->get(route('admin.orders.delivery-proof', $order))->assertOk()->assertHeader('Content-Type', 'image/jpeg');
+        $this->actingAs($this->customer)->get(route('admin.orders.delivery-proof', $order))->assertForbidden();
 
-        $this->actingAs($this->customer)->get(route('orders.show', $order->order_code))->assertSee('Đã giao hàng')->assertDontSee('Hủy đơn này');
+        $this->actingAs($this->customer)->get(route('orders.show', $order->order_code))->assertSee('Giao thành công')->assertDontSee('Hủy đơn này');
     }
 
     public function test_staff_cancel_releases_the_reservation_and_voids_the_cod_attempt(): void
@@ -116,7 +123,7 @@ class OrderWorkflowTest extends TestCase
         $this->transition($confirmed, 'confirm');
         $this->actingAs($this->customer)->from(route('orders.show', $confirmed->order_code))
             ->post(route('orders.cancel', $confirmed->order_code), ['expected_status' => 'CONFIRMED', 'reason' => 'Muộn quá rồi'])->assertSessionHasErrors('order');
-        $this->assertSame(OrderStatus::Confirmed, $confirmed->fresh()->order_status);
+        $this->assertSame(OrderStatus::Packing, $confirmed->fresh()->order_status);
     }
 
     public function test_forbidden_edges_and_stale_double_clicks_change_nothing(): void
@@ -124,28 +131,40 @@ class OrderWorkflowTest extends TestCase
         $order = $this->placeOrder(quantity: 1);
         $this->actingAs($this->staff)->from(route('admin.orders.show', $order));
 
-        $this->transition($order, 'deliver', ['receipt_reference' => 'PT-9'], 'PENDING')->assertSessionHasErrors('order');
+        $this->transition($order, 'deliver', ['proof' => UploadedFile::fake()->image('wrong-state.jpg')], 'PENDING')->assertSessionHasErrors('order');
         $this->transition($order, 'ship', ['carrier_name' => 'GHN'], 'PENDING')->assertSessionHasErrors('order');
         $this->transition($order, 'confirm')->assertRedirect(route('admin.orders.show', $order));
         $this->transition($order, 'confirm', [], 'PENDING')->assertRedirect();
 
         $this->assertSame(2, OrderStatusHistory::query()->where('order_id', $order->id)->count(), 'The second click replays the same command.');
         $this->transition($order, 'pack', [], 'PENDING')->assertSessionHasErrors('order');
-        $this->assertSame(OrderStatus::Confirmed, $order->fresh()->order_status);
+        $this->assertSame(OrderStatus::Packing, $order->fresh()->order_status);
     }
 
-    public function test_cod_receipt_reference_cannot_pay_two_orders_and_failed_delivery_keeps_stock_out(): void
+    public function test_cod_delivery_requires_an_image_proof(): void
+    {
+        $order = $this->placeOrder(quantity: 1);
+        $this->actingAs($this->staff);
+        $this->transition($order, 'confirm');
+        $this->transition($order->fresh(), 'ship', ['carrier_name' => 'GHN']);
+
+        $this->from(route('admin.orders.show', $order))->transition($order->fresh(), 'deliver')->assertSessionHasErrors('proof');
+        $this->assertSame(OrderStatus::OnDelivery, $order->fresh()->order_status);
+        $this->assertSame(PaymentAttemptStatus::Pending, $order->payments()->sole()->status);
+    }
+
+    public function test_cod_proof_image_cannot_be_reused_for_two_orders_and_failed_delivery_keeps_stock_out(): void
     {
         $first = $this->placeOrder(quantity: 1);
         $second = $this->placeOrder(quantity: 1);
         $this->actingAs($this->staff);
         foreach ([$first, $second] as $order) {
             $this->transition($order, 'confirm');
-            $this->transition($order->fresh(), 'pack');
             $this->transition($order->fresh(), 'ship', ['carrier_name' => 'GHN']);
         }
-        $this->transition($first->fresh(), 'deliver', ['receipt_reference' => 'PT-SAME']);
-        $this->from(route('admin.orders.show', $second))->transition($second->fresh(), 'deliver', ['receipt_reference' => 'PT-SAME'])->assertSessionHasErrors('order');
+        $proof = UploadedFile::fake()->image('same-proof.jpg');
+        $this->transition($first->fresh(), 'deliver', ['proof' => $proof]);
+        $this->from(route('admin.orders.show', $second))->transition($second->fresh(), 'deliver', ['proof' => $proof])->assertSessionHasErrors('order');
         $this->assertSame(OrderPaymentStatus::Unpaid, $second->fresh()->payment_status);
 
         $this->transition($second->fresh(), 'fail', ['reason' => 'Khách không nghe máy'])->assertRedirect();
@@ -163,7 +182,7 @@ class OrderWorkflowTest extends TestCase
 
         $this->actingAs($this->staff)->get(route('admin.orders.index', ['search' => substr($order->order_code, 0, 12)]))->assertOk()->assertSee($order->order_code);
         $this->get(route('admin.orders.index', ['status' => 'DELIVERED']))->assertOk()->assertDontSee($order->order_code);
-        $this->get(route('admin.orders.show', $order))->assertOk()->assertSee('Xác nhận đơn')
+        $this->get(route('admin.orders.show', $order))->assertOk()->assertSee('Xác nhận và đóng gói')
             ->assertSee('&lt;script&gt;alert(1)&lt;/script&gt;', false)->assertDontSee('<script>alert(1)</script>', false);
     }
 

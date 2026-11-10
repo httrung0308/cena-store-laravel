@@ -11,7 +11,8 @@
         ['route' => 'admin.suppliers.index', 'label' => 'Quản lý nhà cung cấp', 'description' => 'Thông tin liên hệ và trạng thái hợp tác'],
         ['route' => 'admin.products.index', 'label' => 'Quản lý sản phẩm', 'description' => 'Sản phẩm, phối màu, size và ảnh'],
         ['route' => 'admin.stock-imports.index', 'label' => 'Phiếu nhập kho', 'description' => 'Tạo phiếu nháp, ghi sổ để cộng tồn kho'],
-        ['route' => 'admin.orders.index', 'label' => 'Quản lý đơn hàng', 'description' => 'Xác nhận, đóng gói, giao hàng, thu COD và hủy đơn'],
+        ['route' => 'admin.orders.index', 'label' => 'Quản lý đơn hàng', 'description' => 'Xác nhận, đóng gói, giao hàng, thanh toán và hủy đơn'],
+        ['route' => 'admin.coupons.index', 'label' => 'Mã giảm giá', 'description' => 'Quản lý coupon, hạn dùng và lượt sử dụng'],
         ['route' => 'admin.reviews.index', 'label' => 'Quản lý đánh giá', 'description' => 'Phản hồi, ẩn hoặc hiện đánh giá của khách'],
     ];
     $isAdmin = $user->hasRole(App\Enums\RoleSlug::Admin);
@@ -62,7 +63,7 @@
             <p class="mt-1 text-xs text-muted">Các chức năng quản lý hiện có:</p>
             <div class="mt-6 grid gap-4 md:grid-cols-2">
                 @foreach ($modules as $module)
-                    @if (Route::has($module['route']))
+                    @if (Route::has($module['route']) && ($module['route'] !== 'admin.coupons.index' || $isAdmin))
                         <a href="{{ route($module['route']) }}" class="group rounded-2xl border border-border bg-surface/30 p-5 transition-colors duration-150 hover:border-accent hover:bg-surface/70">
                             <span class="block text-base font-bold text-main group-hover:text-accent transition-colors">{{ $module['label'] }}</span>
                             <span class="mt-1 block text-xs text-muted leading-relaxed">{{ $module['description'] }}</span>
