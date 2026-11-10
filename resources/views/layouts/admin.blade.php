@@ -7,6 +7,7 @@
         ['route' => 'admin.categories.index', 'label' => 'Danh mục', 'icon' => 'tag'],
         ['route' => 'admin.suppliers.index', 'label' => 'Nhà cung cấp', 'icon' => 'truck'],
         ['route' => 'admin.stock-imports.index', 'label' => 'Nhập kho', 'icon' => 'archive'],
+        ['route' => 'admin.shipment-returns.index', 'label' => 'Hàng hoàn cách ly', 'icon' => 'archive'],
         ['route' => 'admin.orders.index', 'label' => 'Đơn hàng', 'icon' => 'cart'],
         ['route' => 'admin.reviews.index', 'label' => 'Đánh giá', 'icon' => 'star'],
         ['route' => 'admin.reports.index', 'label' => 'Báo cáo', 'icon' => 'chart'],

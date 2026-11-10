@@ -49,4 +49,9 @@ class Shipment extends DomainModel
     {
         return $this->hasMany(ShipmentReturnItem::class, 'shipment_id');
     }
+
+    public function returnEvents(): HasMany
+    {
+        return $this->hasMany(ShipmentReturnEvent::class, 'shipment_id')->orderBy('occurred_at')->orderBy('id');
+    }
 }

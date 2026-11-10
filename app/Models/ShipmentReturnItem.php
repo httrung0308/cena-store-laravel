@@ -6,6 +6,7 @@ use App\Enums\ReturnDisposition;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([])]
 #[Hidden(['cost_basis'])]
@@ -59,5 +60,10 @@ class ShipmentReturnItem extends DomainModel
     public function inspectedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'inspected_by')->withTrashed();
+    }
+
+    public function events(): HasMany
+    {
+        return $this->hasMany(ShipmentReturnEvent::class, 'shipment_return_item_id')->orderBy('id');
     }
 }

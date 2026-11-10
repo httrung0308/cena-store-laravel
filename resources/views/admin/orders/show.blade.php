@@ -1,9 +1,6 @@
 @extends('layouts.admin')
 @section('title', 'Chi Tiết Đơn Hàng')
 @section('eyebrow', 'QUẢN TRỊ BÁN HÀNG')
-@section('actions')
-    <a class="px-4 py-2 bg-surface hover:bg-border/40 text-muted hover:text-main text-xs font-bold rounded-xl border border-border transition-colors" href="{{ route('admin.orders.index') }}">← Danh sách đơn</a>
-@endsection
 @use('App\Enums\OrderStatus')
 @php
     $tz = (string) config('store.business_timezone');
@@ -17,6 +14,12 @@
     };
     $cancellable = in_array($status, [OrderStatus::Pending, OrderStatus::Confirmed, OrderStatus::Packing], true);
 @endphp
+@section('actions')
+    <a class="px-4 py-2 bg-surface hover:bg-border/40 text-muted hover:text-main text-xs font-bold rounded-xl border border-border transition-colors" href="{{ route('admin.orders.index') }}">← Danh sách đơn</a>
+    @if ($status === OrderStatus::Failed && $order->shipment && in_array($order->shipment->status, [App\Enums\ShipmentStatus::Returning, App\Enums\ShipmentStatus::ReturnReceived], true))
+        <a class="px-4 py-2 bg-accent text-accent-text hover:bg-accent-hover text-xs font-bold rounded-xl transition-colors" href="{{ route('admin.shipment-returns.show', $order->shipment) }}">Nhận hàng hoàn</a>
+    @endif
+@endsection
 @section('content')
 <div class="grid min-w-0 gap-6 lg:grid-cols-3">
     <div class="min-w-0 space-y-6 lg:col-span-2">
