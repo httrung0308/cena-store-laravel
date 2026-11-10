@@ -21,6 +21,8 @@ use App\Services\CheckoutService;
 use App\Services\InventoryService;
 use App\Services\OrderWorkflowService;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
@@ -40,6 +42,7 @@ class ReviewTest extends TestCase
     {
         parent::setUp();
         config(['store.shipping.dataset_version' => 'factory-v1']);
+        Storage::fake('private');
         $this->customer = User::factory()->customer()->create(['full_name' => 'Nguyễn Văn Minh']);
         $this->staff = User::factory()->staff()->create();
         $this->product = Product::factory()->create(['category_id' => Category::factory()->create()->id, 'base_price' => 1_000_000, 'promotion_price' => null]);
@@ -115,12 +118,29 @@ class ReviewTest extends TestCase
     {
         $order = $this->placeOrder($quantity);
         $workflow = app(OrderWorkflowService::class);
-        $workflow->confirm($order, $this->staff, 'PENDING');
-        $workflow->pack($order, $this->staff, 'CONFIRMED');
-        $workflow->ship($order, $this->staff, 'PACKING', 'GHN', null);
-        $workflow->deliver($order, $this->staff, 'ON_DELIVERY', 'PT-'.Str::upper(Str::random(8)));
+        $order = $workflow->confirmAndPack($order, $this->staff, 'PENDING');
+        $order = $workflow->ship($order, $this->staff, 'PACKING', 'GHN', null);
+        $proof = $this->createProofImage('proof-'.$order->order_code.'.jpg', $order->order_code);
+        $order = $workflow->deliver($order, $this->staff, 'ON_DELIVERY', $proof);
 
         return $order->fresh(['items.units']);
+    }
+
+    private function createProofImage(string $name, string $seed): UploadedFile
+    {
+        $image = imagecreatetruecolor(240, 60);
+        $intSeed = crc32($seed);
+        $bgColor = imagecolorallocate($image, 200 + abs($intSeed % 50), 200 + abs(($intSeed >> 3) % 50), 200 + abs(($intSeed >> 6) % 50));
+        imagefill($image, 0, 0, $bgColor);
+        $textColor = imagecolorallocate($image, 20, 20, 20);
+        imagestring($image, 3, 10, 20, $seed, $textColor);
+        $temp = tmpfile();
+        ob_start();
+        imagejpeg($image);
+        imagedestroy($image);
+        fwrite($temp, ob_get_clean());
+
+        return new \Illuminate\Http\Testing\File($name, $temp);
     }
 
     private function placeOrder(int $quantity): Order
