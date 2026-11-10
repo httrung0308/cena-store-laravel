@@ -131,14 +131,17 @@
                 <h2 class="text-xl font-bold text-main">Hủy đơn hàng</h2>
                 <p class="mt-1 text-xs sm:text-sm text-muted">Bạn có thể tự hủy khi đơn còn chờ cửa hàng xác nhận.</p>
                 <button type="button" class="mt-4 rounded-xl border border-error/40 bg-error-bg px-5 py-2 text-xs font-semibold text-error-text transition hover:bg-error-bg/80" x-show="!open" x-on:click="open = true">Hủy đơn này</button>
-                <form method="POST" action="{{ route('orders.cancel', $order->order_code) }}" class="mt-4 space-y-3" x-cloak x-show="open">
+                <form method="POST" action="{{ route('orders.cancel', $order->order_code) }}" class="mt-4 space-y-3" x-cloak x-show="open" x-data="{ cancelling: false }" x-on:submit="if (cancelling) { $event.preventDefault(); return false; } cancelling = true">
                     @csrf
                     <input type="hidden" name="expected_status" value="{{ $order->order_status->value }}">
                     <label for="cancel-reason" class="block text-xs font-bold uppercase tracking-wider text-muted">Lý do hủy</label>
                     <textarea id="cancel-reason" name="reason" rows="2" minlength="5" maxlength="500" required class="input w-full" placeholder="Ví dụ: đặt nhầm size">{{ old('reason') }}</textarea>
                     @error('reason')<p class="text-xs font-medium text-error">{{ $message }}</p>@enderror
                     <div class="flex gap-3 pt-1">
-                        <button type="submit" class="rounded-xl bg-error px-5 py-2 text-xs font-semibold text-white transition hover:opacity-90">Xác nhận hủy</button>
+                        <button type="submit" :disabled="cancelling" class="rounded-xl bg-error px-5 py-2 text-xs font-semibold text-white transition hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed">
+                            <span x-show="!cancelling">Xác nhận hủy</span>
+                            <span x-cloak x-show="cancelling" class="inline-flex items-center gap-1.5"><x-ui.spinner :compact="true" /> Đang hủy...</span>
+                        </button>
                         <button type="button" class="btn-secondary px-5 py-2 text-xs font-semibold" x-on:click="open = false">Không hủy</button>
                     </div>
                 </form>

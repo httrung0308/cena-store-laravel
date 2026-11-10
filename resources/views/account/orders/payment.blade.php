@@ -34,16 +34,22 @@
                     <button class="btn w-full py-3 text-sm font-semibold shadow-card">Thử thanh toán lại</button>
                 </form>
             @else
-                <div class="grid gap-3 sm:grid-cols-2">
-                    <form method="POST" action="{{ route('orders.payment.complete', $order->order_code) }}">
+                <div class="grid gap-3 sm:grid-cols-2" x-data="{ paying: false }">
+                    <form method="POST" action="{{ route('orders.payment.complete', $order->order_code) }}" x-on:submit="if (paying) { $event.preventDefault(); return false; } paying = true">
                         @csrf
                         <input type="hidden" name="result" value="success">
-                        <button class="btn w-full py-3 text-sm font-semibold shadow-card">Mô phỏng thành công</button>
+                        <button :disabled="paying" class="btn w-full py-3 text-sm font-semibold shadow-card disabled:opacity-50 disabled:cursor-not-allowed">
+                            <span x-show="!paying">Mô phỏng thành công</span>
+                            <span x-cloak x-show="paying" class="inline-flex items-center gap-1.5"><x-ui.spinner :compact="true" /> Đang xử lý...</span>
+                        </button>
                     </form>
-                    <form method="POST" action="{{ route('orders.payment.complete', $order->order_code) }}">
+                    <form method="POST" action="{{ route('orders.payment.complete', $order->order_code) }}" x-on:submit="if (paying) { $event.preventDefault(); return false; } paying = true">
                         @csrf
                         <input type="hidden" name="result" value="failure">
-                        <button class="btn-pill w-full py-3 text-sm font-semibold border-error/40 text-error hover:bg-error-bg">Mô phỏng thất bại</button>
+                        <button :disabled="paying" class="btn-pill w-full py-3 text-sm font-semibold border-error/40 text-error hover:bg-error-bg disabled:opacity-50 disabled:cursor-not-allowed">
+                            <span x-show="!paying">Mô phỏng thất bại</span>
+                            <span x-cloak x-show="paying" class="inline-flex items-center gap-1.5"><x-ui.spinner :compact="true" /> Đang xử lý...</span>
+                        </button>
                     </form>
                 </div>
             @endif

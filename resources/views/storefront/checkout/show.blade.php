@@ -22,7 +22,7 @@
             </div>
         @endif
 
-        <form method="POST" action="{{ route('checkout.store') }}" class="grid grid-cols-1 gap-10 lg:grid-cols-2" x-data="{ submitting: false }" x-on:submit="submitting = true">
+        <form method="POST" action="{{ route('checkout.store') }}" class="grid grid-cols-1 gap-10 lg:grid-cols-2" x-data="{ submitting: false }" x-on:submit="if (submitting) { $event.preventDefault(); return false; } submitting = true">
             @csrf
             <input type="hidden" name="checkout_key" value="{{ $checkoutKey }}">
             <input type="hidden" name="fingerprint" value="{{ $quote['fingerprint'] }}">
@@ -57,10 +57,12 @@
                     </div>
                 @endforelse
                 <a href="{{ route('account.addresses.create', ['return_to' => 'checkout']) }}" class="inline-flex items-center gap-1.5 text-sm font-semibold text-accent hover:text-accent-hover hover:underline transition-colors">+ Thêm địa chỉ mới</a>
+                @error('address_id')<p role="alert" class="mt-1 text-xs font-semibold text-error">{{ $message }}</p>@enderror
 
                 <div class="pt-2">
                     <label for="checkout-note" class="mb-2 block text-sm font-semibold text-main">Ghi chú cho cửa hàng (không bắt buộc)</label>
                     <textarea id="checkout-note" name="customer_note" rows="3" maxlength="1000" class="input w-full" placeholder="Ví dụ: giao giờ hành chính">{{ old('customer_note') }}</textarea>
+                    @error('customer_note')<p role="alert" class="mt-1 text-xs font-semibold text-error">{{ $message }}</p>@enderror
                 </div>
                 <div class="space-y-3 pt-2">
                     <p class="text-sm font-semibold text-main">Phương thức thanh toán</p>
@@ -74,6 +76,7 @@
                             <span class="text-sm font-medium text-main">Trả trước (mô phỏng)</span>
                         </label>
                     </div>
+                    @error('payment_method')<p role="alert" class="text-xs font-semibold text-error">{{ $message }}</p>@enderror
                 </div>
             </section>
 
@@ -115,7 +118,11 @@
                 </div>
                 <button type="submit" class="btn mt-6 w-full py-3.5 text-base shadow-card font-semibold disabled:cursor-not-allowed disabled:opacity-40"
                     @disabled($quote['fingerprint'] === null || $quote['problems'] !== []) x-bind:disabled="submitting || {{ $quote['fingerprint'] === null || $quote['problems'] !== [] ? 'true' : 'false' }}">
-                    <span x-text="submitting ? 'Đang xử lý...' : 'Đặt hàng'">Đặt hàng</span>
+                    <span x-show="!submitting">Đặt hàng</span>
+                    <span x-cloak x-show="submitting" class="inline-flex items-center gap-2">
+                        <x-ui.spinner :compact="true" />
+                        <span>Đang xử lý đặt hàng...</span>
+                    </span>
                 </button>
                 @if (! $address)<p class="mt-3 text-sm font-medium text-error">Vui lòng thêm hoặc chọn địa chỉ giao hàng.</p>@endif
             </section>
