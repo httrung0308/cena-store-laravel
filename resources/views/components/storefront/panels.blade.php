@@ -44,7 +44,10 @@
     </div>
 
     <div aria-live="polite" class="space-y-2 text-sm">
-        <p x-show="$store.cart.error" x-text="$store.cart.error" role="alert" class="rounded-xl border border-error/30 bg-error-bg px-3.5 py-2.5 text-error-text font-medium text-xs"></p>
+        <div x-show="$store.cart.error" role="alert" class="flex items-center justify-between rounded-xl border border-error/30 bg-error-bg px-3.5 py-2.5 text-error-text font-medium text-xs">
+            <span x-text="$store.cart.error" class="flex-1 break-words"></span>
+            <button type="button" @click="$store.cart.error = ''" class="ml-2 text-error-text/70 hover:text-error-text font-bold text-sm leading-none" aria-label="Đóng thông báo">×</button>
+        </div>
         <template x-for="notice in $store.cart.notices" :key="notice"><p x-text="notice" class="rounded-xl border border-warning/30 bg-warning-bg px-3.5 py-2.5 text-warning-text font-medium text-xs"></p></template>
     </div>
 
@@ -64,11 +67,11 @@
                     <p x-show="item.notice" x-text="item.notice" class="text-xs text-error font-medium"></p>
                     <div class="mt-2 flex items-center justify-between">
                         <div class="flex items-center rounded-lg border border-border bg-surface-card shadow-subtle">
-                            <button type="button" class="px-2.5 py-1 text-muted hover:text-main disabled:opacity-30" aria-label="Giảm số lượng" x-bind:disabled="$store.cart.isBusy() || item.quantity <= 1" @click="$store.cart.update(item, item.quantity - 1)">−</button>
+                            <button type="button" class="px-2.5 py-1 text-muted hover:text-main disabled:opacity-30 rounded-md focus-visible:ring-1 focus-visible:ring-accent focus-visible:ring-offset-1 focus-visible:ring-offset-surface-card" aria-label="Giảm số lượng" x-bind:disabled="$store.cart.isBusy() || item.quantity <= 1" @click="$store.cart.update(item, item.quantity - 1)">−</button>
                             <span class="w-7 text-center text-xs font-bold text-main" x-text="item.quantity"></span>
-                            <button type="button" class="px-2.5 py-1 text-muted hover:text-main disabled:opacity-30" aria-label="Tăng số lượng" x-bind:disabled="$store.cart.isBusy() || item.quantity >= item.max_quantity" @click="$store.cart.update(item, item.quantity + 1)">+</button>
+                            <button type="button" class="px-2.5 py-1 text-muted hover:text-main disabled:opacity-30 rounded-md focus-visible:ring-1 focus-visible:ring-accent focus-visible:ring-offset-1 focus-visible:ring-offset-surface-card" aria-label="Tăng số lượng" x-bind:disabled="$store.cart.isBusy() || item.quantity >= item.max_quantity" @click="$store.cart.update(item, item.quantity + 1)">+</button>
                         </div>
-                        <button type="button" class="text-xs text-muted hover:text-error underline disabled:opacity-30" x-bind:disabled="$store.cart.isBusy()" @click="$store.cart.remove(item)">Xóa</button>
+                        <button type="button" class="text-xs text-muted hover:text-error underline disabled:opacity-30 rounded focus-visible:ring-1 focus-visible:ring-error focus-visible:ring-offset-1 focus-visible:ring-offset-surface-card" x-bind:disabled="$store.cart.isBusy()" @click="$store.cart.remove(item)">Xóa</button>
                     </div>
                 </div>
                 <p class="shrink-0 text-sm font-bold text-main" x-text="$store.cart.price(item.line_total)"></p>

@@ -1,5 +1,11 @@
 const types = new Set(['success', 'error', 'warning', 'info']);
-export function toastsController({ schedule = setTimeout, cancel = clearTimeout, now = Date.now, timeout = 5000 } = {}) {
+const defaultTimeouts = {
+    success: 5000,
+    info: 5000,
+    warning: 10000,
+    error: 0,
+};
+export function toastsController({ schedule = setTimeout, cancel = clearTimeout, now = Date.now, timeout = null } = {}) {
     let nextId = 0;
     const timers = new Map();
     function safe(item) {
@@ -12,7 +18,8 @@ export function toastsController({ schedule = setTimeout, cancel = clearTimeout,
             const toast = safe(item);
             if (!toast) return null;
             this.items.push(toast);
-            if (timeout > 0) this._schedule(toast.id, timeout);
+            const delay = typeof timeout === 'number' ? timeout : (defaultTimeouts[toast.type] ?? 5000);
+            if (delay > 0) this._schedule(toast.id, delay);
             return toast.id;
         },
         _schedule(id, delay) {

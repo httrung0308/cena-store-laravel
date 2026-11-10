@@ -179,7 +179,7 @@ html[data-theme='dark'] .theme-logo-light {
 }
 
 * {
-  @apply ring-accent/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2;
+  @apply ring-accent/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-surface-card;
   scrollbar-width: thin;
   scrollbar-color: var(--border) transparent;
   -ms-overflow-style: none;
@@ -242,7 +242,7 @@ html {
 
 @layer components {
   .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-accent px-5 py-3 text-sm font-semibold text-accent-text shadow-sm transition-colors hover:bg-accent-hover hover:shadow-card active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40;
+    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-accent px-5 py-3 text-sm font-semibold text-accent-text shadow-sm transition-colors hover:bg-accent-hover hover:shadow-card active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-surface-card;
   }
 
   .btn-secondary {

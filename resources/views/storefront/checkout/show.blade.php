@@ -154,7 +154,12 @@
                 async fetchQuote(method = null, address = null) {
                     if (method) this.paymentMethod = method;
                     if (address) this.addressId = address;
+                    const isCouponAction = method === null && address === null;
                     const inputVal = document.getElementById('checkout-coupon')?.value?.trim() ?? '';
+                    if (isCouponAction && !inputVal && !this.appliedCoupon) {
+                        this.couponError = '';
+                        return;
+                    }
                     this.couponCode = inputVal;
                     this.loadingQuote = true;
                     try {
