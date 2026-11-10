@@ -453,6 +453,20 @@
         "created_at"
       ],
       "owner": "afterSalesRequest.unit.item.order.user_id"
+    },
+    "notifications": {
+      "class": "App\\Models\\StoreNotification",
+      "resource": "App\\Http\\Resources\\Customer\\StoreNotificationResource",
+      "fields": [
+        "id",
+        "order_code",
+        "order_status",
+        "order_status_label",
+        "read_at",
+        "created_at",
+        "url"
+      ],
+      "owner": "user_id"
     }
   }
 }

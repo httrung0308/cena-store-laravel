@@ -23,7 +23,7 @@ class SchemaContractTest extends TestCase
         sort($expected);
         sort($actual);
         $this->assertSame($expected, $actual);
-        $this->assertCount(43, $actual);
+        $this->assertCount(44, $actual);
         $this->assertFalse(Schema::hasTable('password_reset_tokens'));
     }
 
@@ -283,6 +283,7 @@ class SchemaContractTest extends TestCase
             'file mime' => ['after_sales_attachments', ['mime_type' => 'image/svg+xml'], 3819],
             'ledger origin' => ['sales_ledger_entries', ['order_id' => null, 'inventory_movement_id' => null], 3819],
             'outbox status' => ['outbox_events', ['status' => 'UNKNOWN'], 3819],
+            'notification status' => ['notifications', ['order_status' => 'UNKNOWN'], 3819],
         ];
     }
 
@@ -349,6 +350,7 @@ class SchemaContractTest extends TestCase
             'after_sales_histories' => ['to_status' => 'NEW', 'event_type' => 'CREATED'],
             'after_sales_attachments' => ['mime_type' => 'image/jpeg', 'size_bytes' => 1024],
             'sales_ledger_entries' => ['type' => 'SALE_RECOGNIZED'], 'outbox_events' => ['aggregate_type' => 'ORDER', 'aggregate_id' => 1],
+            'notifications' => ['order_status' => 'PACKING'],
         ];
         if ($table === 'carts' || $table === 'sales_ledger_entries') {
             $data[$table === 'carts' ? 'user_id' : 'order_id'] = $this->row($table === 'carts' ? 'users' : 'orders');

@@ -4495,6 +4495,105 @@
         }
       ],
       "checks": []
+    },
+    "notifications": {
+      "number": 37,
+      "columns": {
+        "id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": true
+        },
+        "user_id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "order_id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "order_status_history_id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "notification_key": {
+          "type": "varchar(180)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "order_status": {
+          "type": "varchar(30)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "read_at": {
+          "type": "datetime(6)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "created_at": {
+          "type": "datetime(6)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        }
+      },
+      "foreign_keys": [
+        {
+          "column": "user_id",
+          "table": "users",
+          "references": "id",
+          "on_delete": "RESTRICT"
+        },
+        {
+          "column": "order_id",
+          "table": "orders",
+          "references": "id",
+          "on_delete": "RESTRICT"
+        },
+        {
+          "column": "order_status_history_id",
+          "table": "order_status_histories",
+          "references": "id",
+          "on_delete": "RESTRICT"
+        }
+      ],
+      "indexes": [
+        {
+          "columns": [
+            "order_status_history_id"
+          ],
+          "unique": true
+        },
+        {
+          "columns": [
+            "notification_key"
+          ],
+          "unique": true
+        },
+        {
+          "columns": [
+            "user_id",
+            "read_at",
+            "created_at",
+            "id"
+          ],
+          "unique": false
+        }
+      ],
+      "checks": [
+        "notifications_status_allowed_check"
+      ]
     }
   }
 }

@@ -1010,5 +1010,40 @@
     ],
     "enums": {},
     "enum_cases": {}
+  },
+  "notifications": {
+    "class": "App\\Models\\StoreNotification",
+    "belongs_to": [
+      {
+        "column": "user_id",
+        "relation": "user",
+        "class": "App\\Models\\User",
+        "history": true
+      },
+      {
+        "column": "order_id",
+        "relation": "order",
+        "class": "App\\Models\\Order",
+        "history": false
+      },
+      {
+        "column": "order_status_history_id",
+        "relation": "statusHistory",
+        "class": "App\\Models\\OrderStatusHistory",
+        "history": false
+      }
+    ],
+    "enums": {
+      "order_status": "App\\Enums\\OrderStatus"
+    },
+    "enum_cases": {
+      "order_status": [
+        "PACKING",
+        "ON_DELIVERY",
+        "DELIVERED",
+        "CANCELLED",
+        "FAILED"
+      ]
+    }
   }
 }
