@@ -2,8 +2,10 @@
 
 namespace App\Services;
 
+use App\Enums\ClassificationGroup;
 use App\Enums\ProductImageSourceType;
 use App\Models\Category;
+use App\Models\Classification;
 use App\Models\Product;
 use App\Models\ProductColor;
 use App\Models\ProductImage;
@@ -48,6 +50,20 @@ final class CatalogQueryService
             $query->whereHas('category', fn (Builder $category) => $category->where(fn (Builder $slug) => $slug
                 ->where('slug', $filters['category'])
                 ->orWhereHas('parent', fn (Builder $parent) => $parent->where('slug', $filters['category']))));
+        }
+        if (! empty($filters['silhouette'])) {
+            $query->whereHas('classifications', fn (Builder $q) => $q
+                ->where('classifications.classification_group', ClassificationGroup::Silhouette->value)
+                ->where('classifications.is_active', true)
+                ->whereIn('classifications.slug', (array) $filters['silhouette'])
+            );
+        }
+        if (! empty($filters['activity'])) {
+            $query->whereHas('classifications', fn (Builder $q) => $q
+                ->where('classifications.classification_group', ClassificationGroup::Activity->value)
+                ->where('classifications.is_active', true)
+                ->whereIn('classifications.slug', (array) $filters['activity'])
+            );
         }
 
         match ($filters['sort'] ?? 'newest') {
@@ -136,7 +152,7 @@ final class CatalogQueryService
     }
 
     /**
-     * @return array{genderOptions: list<array{value: string, label: string}>, colorOptions: list<array{value: string, label: string}>, categoryOptions: list<array{slug: string, name: string}>}
+     * @return array{genderOptions: list<array{value: string, label: string}>, colorOptions: list<array{value: string, label: string}>, categoryOptions: list<array{slug: string, name: string}>, silhouetteOptions: list<array{value: string, label: string}>, activityOptions: list<array{value: string, label: string}>}
      */
     public function filterOptions(): array
     {
@@ -159,6 +175,20 @@ final class CatalogQueryService
                 ->values()->all(),
             'categoryOptions' => $categories
                 ->map(fn (Category $category): array => ['slug' => $category->slug, 'name' => ($category->parent_id ? '— ' : '').$category->name])
+                ->all(),
+            'silhouetteOptions' => Classification::query()
+                ->where('classification_group', ClassificationGroup::Silhouette->value)
+                ->where('is_active', true)
+                ->orderBy('sort_order')->orderBy('name')
+                ->get(['slug', 'name'])
+                ->map(fn (Classification $c): array => ['value' => $c->slug, 'label' => $c->name])
+                ->all(),
+            'activityOptions' => Classification::query()
+                ->where('classification_group', ClassificationGroup::Activity->value)
+                ->where('is_active', true)
+                ->orderBy('sort_order')->orderBy('name')
+                ->get(['slug', 'name'])
+                ->map(fn (Classification $c): array => ['value' => $c->slug, 'label' => $c->name])
                 ->all(),
         ];
     }

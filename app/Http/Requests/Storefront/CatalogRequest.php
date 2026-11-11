@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Storefront;
 
+use App\Enums\ClassificationGroup;
 use App\Exceptions\DomainException;
 use App\Support\Money;
 use App\Support\ShoeSize;
@@ -38,6 +39,24 @@ class CatalogRequest extends FormRequest
             'search' => ['nullable', 'string', 'max:150'],
             'category' => ['nullable', 'string', 'max:200', 'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/D'],
             'gender' => ['nullable', Rule::in(['men', 'women', 'kids', 'unisex'])],
+            'silhouette' => ['nullable', 'array', 'max:20'],
+            'silhouette.*' => [
+                'string',
+                'distinct',
+                'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/D',
+                Rule::exists('classifications', 'slug')
+                    ->where('classification_group', ClassificationGroup::Silhouette->value)
+                    ->where('is_active', true),
+            ],
+            'activity' => ['nullable', 'array', 'max:20'],
+            'activity.*' => [
+                'string',
+                'distinct',
+                'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/D',
+                Rule::exists('classifications', 'slug')
+                    ->where('classification_group', ClassificationGroup::Activity->value)
+                    ->where('is_active', true),
+            ],
             'colors' => ['nullable', 'array', 'max:12'],
             'colors.*' => ['string', 'distinct', Rule::in(array_keys(config('store.palette')))],
             'size' => ['nullable', 'string', static function (string $attribute, mixed $value, Closure $fail): void {
@@ -58,7 +77,7 @@ class CatalogRequest extends FormRequest
     }
 
     /**
-     * @return array{search?: string, category?: string, gender?: string, colors?: list<string>, size?: string, min_price?: int, max_price?: int, promotion: bool, in_stock: bool, sort: string, page?: int, style_color?: string}
+     * @return array{search?: string, category?: string, gender?: string, silhouette?: list<string>, activity?: list<string>, colors?: list<string>, size?: string, min_price?: int, max_price?: int, promotion: bool, in_stock: bool, sort: string, page?: int, style_color?: string}
      */
     public function filters(): array
     {

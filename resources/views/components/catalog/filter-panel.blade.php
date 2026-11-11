@@ -1,4 +1,4 @@
-@props(['action' => null, 'resetUrl' => null, 'filters' => [], 'genderOptions' => [], 'colorOptions' => [], 'categoryOptions' => []])
+@props(['action' => null, 'resetUrl' => null, 'filters' => [], 'genderOptions' => [], 'colorOptions' => [], 'categoryOptions' => [], 'silhouetteOptions' => [], 'activityOptions' => []])
 @php
     $filters = is_array($filters) ? $filters : [];
     $sortOptions = ['newest' => 'Mới nhất', 'price_asc' => 'Giá tăng', 'price_desc' => 'Giá giảm', 'name_asc' => 'Tên A–Z', 'name_desc' => 'Tên Z–A'];
@@ -20,6 +20,12 @@
     </div>
 
     <x-forms.choice-group name="gender" label="Giới tính" mode="radio" :options="$genderOptions" :value="$filters['gender'] ?? ''" />
+    @if (! empty($silhouetteOptions))
+        <x-forms.choice-group name="silhouette" label="Kiểu dáng" mode="checkbox" :options="$silhouetteOptions" :value="$filters['silhouette'] ?? []" />
+    @endif
+    @if (! empty($activityOptions))
+        <x-forms.choice-group name="activity" label="Mục đích sử dụng" mode="checkbox" :options="$activityOptions" :value="$filters['activity'] ?? []" />
+    @endif
     <x-forms.choice-group name="colors" label="Màu" mode="checkbox" :options="$colorOptions" :value="$filters['colors'] ?? []" />
     <x-forms.text-field name="size" label="Size" :value="$filters['size'] ?? ''" />
     <x-forms.text-field name="min_price" label="Giá tối thiểu (VND)" :value="$filters['min_price'] ?? ''" />
