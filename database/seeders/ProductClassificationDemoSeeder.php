@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Enums\ClassificationGroup;
+use App\Enums\ProductImageSourceType;
 use App\Models\Category;
 use App\Models\Classification;
 use App\Models\Product;
@@ -434,6 +435,42 @@ class ProductClassificationDemoSeeder extends Seeder
         ],
     ];
 
+    /**
+     * Bản đồ hình ảnh riêng biệt, chân thực và cố định cho từng mẫu giày demo.
+     *
+     * @var array<string, string>
+     */
+    private const DEMO_IMAGES = [
+        'demo-pegasus-41-men' => 'https://images.unsplash.com/photo-1584735935682-2f2b69dff9d2?w=600&auto=format&fit=crop&q=80',
+        'demo-invincible-3-men' => 'https://images.unsplash.com/photo-1600185365926-3a2ce3cdb9eb?w=600&auto=format&fit=crop&q=80',
+        'demo-metcon-9-men' => 'https://images.unsplash.com/photo-1587563871167-1ee9c731aefb?w=600&auto=format&fit=crop&q=80',
+        'demo-acg-mountain-fly-men' => 'https://images.unsplash.com/photo-1539185441755-769473a23570?w=600&auto=format&fit=crop&q=80',
+        'demo-giannis-immortality-men' => 'https://images.unsplash.com/photo-1579338559194-a162d19bf842?w=600&auto=format&fit=crop&q=80',
+        'demo-alphafly-3-ekiden-long-name' => 'https://images.unsplash.com/photo-1606107557195-0e29a4b5b4aa?w=600&auto=format&fit=crop&q=80',
+        'demo-calm-mule-men' => 'https://images.unsplash.com/photo-1603808033192-082d6919d3e1?w=600&auto=format&fit=crop&q=80',
+        'demo-air-max-sc-women' => 'https://images.unsplash.com/photo-1588117305388-c2631a279f82?w=600&auto=format&fit=crop&q=80',
+        'demo-downshifter-13-women' => 'https://images.unsplash.com/photo-1525966222134-fcfa99b8ae77?w=600&auto=format&fit=crop&q=80',
+        'demo-court-vision-women' => 'https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=600&auto=format&fit=crop&q=80',
+        'demo-icon-classic-sandals-women' => 'https://images.unsplash.com/photo-1562273138-f46be4ebdf33?w=600&auto=format&fit=crop&q=80',
+        'demo-free-metcon-5-women' => 'https://images.unsplash.com/photo-1582588678413-dbf45f4823e9?w=600&auto=format&fit=crop&q=80',
+        'demo-tanjun-ease-women' => 'https://images.unsplash.com/photo-1515955656352-a1fa3ffcd111?w=600&auto=format&fit=crop&q=80',
+        'demo-structure-25-women-unclassified' => 'https://images.unsplash.com/photo-1549298916-b41d501d3772?w=600&auto=format&fit=crop&q=80',
+        'demo-flex-runner-3-kids' => 'https://images.unsplash.com/photo-1508609349937-5ec4ae374ebf?w=600&auto=format&fit=crop&q=80',
+        'demo-star-runner-4-kids' => 'https://images.unsplash.com/photo-1514989940723-e8e51635b782?w=600&auto=format&fit=crop&q=80',
+        'demo-sunray-protect-kids' => 'https://images.unsplash.com/photo-1503449377594-32dd9ac4467c?w=600&auto=format&fit=crop&q=80',
+        'demo-court-borough-kids' => 'https://images.unsplash.com/photo-1511556532299-8f662fc26c06?w=600&auto=format&fit=crop&q=80',
+        'demo-team-hustle-kids' => 'https://images.unsplash.com/photo-1556906781-9a412961c28c?w=600&auto=format&fit=crop&q=80',
+        'demo-kawa-slide-kids' => 'https://images.unsplash.com/photo-1533681476418-47b233652878?w=600&auto=format&fit=crop&q=80',
+        'demo-revolution-7-kids-unclassified' => 'https://images.unsplash.com/photo-1575537302964-96cd47c06b1b?w=600&auto=format&fit=crop&q=80',
+        'demo-air-force-1-unisex' => 'https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?w=600&auto=format&fit=crop&q=80',
+        'demo-dunk-low-panda-unisex' => 'https://images.unsplash.com/photo-1597045566677-8cf032ed6634?w=600&auto=format&fit=crop&q=80',
+        'demo-blazer-mid-77-unisex' => 'https://images.unsplash.com/photo-1607522370275-f14206abe5d3?w=600&auto=format&fit=crop&q=80',
+        'demo-calm-slide-unisex' => 'https://images.unsplash.com/photo-1560769629-975ec94e6a86?w=600&auto=format&fit=crop&q=80',
+        'demo-manoa-leather-boots-unisex' => 'https://images.unsplash.com/photo-1608256246200-53e635b5b65f?w=600&auto=format&fit=crop&q=80',
+        'demo-air-monarch-iv-unisex' => 'https://images.unsplash.com/photo-1552346154-21d32810aba3?w=600&auto=format&fit=crop&q=80',
+        'demo-air-presto-unisex-unclassified' => 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600&auto=format&fit=crop&q=80',
+    ];
+
     public function run(ProductManagementService $products, StockImportService $imports): void
     {
         if (! app()->environment(['local', 'testing'])) {
@@ -494,6 +531,19 @@ class ProductClassificationDemoSeeder extends Seeder
                 if ($existing->is_featured !== (bool) $entry['is_featured']) {
                     $existing->forceFill(['is_featured' => (bool) $entry['is_featured']])->save();
                 }
+
+                // Cập nhật ảnh đại diện đa dạng theo từng mẫu mã (thay thế ảnh mặc định cũ)
+                $targetImageUrl = self::DEMO_IMAGES[$entry['slug']] ?? null;
+                if ($targetImageUrl) {
+                    $color = $existing->colors()->first();
+                    if ($color) {
+                        $thumb = $color->thumbnail;
+                        if ($thumb && $thumb->source_type === ProductImageSourceType::ExternalUrl) {
+                            $thumb->forceFill(['external_url' => $targetImageUrl])->save();
+                        }
+                    }
+                }
+
                 $updated++;
 
                 continue;
@@ -536,7 +586,7 @@ class ProductClassificationDemoSeeder extends Seeder
                         ], $sizes),
                         'images' => [
                             [
-                                'external_url' => 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600&auto=format&fit=crop&q=80',
+                                'external_url' => self::DEMO_IMAGES[$entry['slug']] ?? 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600&auto=format&fit=crop&q=80',
                                 'alt_text' => $entry['name'],
                                 'is_thumbnail' => 1,
                             ],
