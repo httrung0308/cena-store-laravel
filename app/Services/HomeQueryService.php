@@ -36,16 +36,28 @@ final class HomeQueryService
     {
         $categories = $this->categories();
 
+        // 1. Lấy 8 sản phẩm nổi bật
+        $featured = $this->featuredProducts(8);
+        $featuredIds = array_map(fn (array $item): int => (int) $item['product']['id'], $featured);
+
+        // 2. Lấy 8-10 sản phẩm giảm giá, ưu tiên loại trừ sản phẩm đã xuất hiện ở Featured
+        $sale = $this->saleProducts(10, $featuredIds);
+        $saleIds = array_map(fn (array $item): int => (int) $item['product']['id'], $sale);
+
+        // 3. Lấy 6 sản phẩm mới đăng bán, ưu tiên loại trừ sản phẩm đã xuất hiện ở Featured và Sale
+        $excludedForNew = array_values(array_unique(array_merge($featuredIds, $saleIds)));
+        $new = $this->newProducts(6, $excludedForNew);
+
         return [
             'banners' => $this->banners(),
             'categories' => $categories,
             'genderCategories' => $categories,
             'silhouettes' => $this->silhouettes(),
             'activities' => $this->activities(),
-            'featuredProducts' => $this->featuredProducts(),
-            'saleProducts' => $this->saleProducts(),
-            'newProducts' => $this->newProducts(),
-            'articles' => $this->latestArticles(),
+            'featuredProducts' => $featured,
+            'saleProducts' => $sale,
+            'newProducts' => $new,
+            'articles' => $this->latestArticles(6),
         ];
     }
 
@@ -118,7 +130,7 @@ final class HomeQueryService
     }
 
     /** @return list<array{product: array<string, mixed>, detailUrl: string, imageUrl: string}> */
-    public function featuredProducts(int $limit = 6): array
+    public function featuredProducts(int $limit = 8): array
     {
         return $this->baseProductQuery()
             ->where('products.is_featured', true)
@@ -129,32 +141,72 @@ final class HomeQueryService
             ->all();
     }
 
-    /** @return list<array{product: array<string, mixed>, detailUrl: string, imageUrl: string}> */
-    public function saleProducts(int $limit = 6): array
+    /**
+     * @param  list<int>  $excludeIds
+     * @return list<array{product: array<string, mixed>, detailUrl: string, imageUrl: string}>
+     */
+    public function saleProducts(int $limit = 10, array $excludeIds = []): array
     {
-        return $this->baseProductQuery()
+        $query = $this->baseProductQuery()
             ->whereNotNull('products.promotion_price')
-            ->whereRaw('products.promotion_price < products.base_price')
-            ->orderByRaw('((products.base_price - products.promotion_price) / products.base_price) DESC')
+            ->whereRaw('products.promotion_price < products.base_price');
+
+        if (! empty($excludeIds)) {
+            $query->whereNotIn('products.id', $excludeIds);
+        }
+
+        $items = $query->orderByRaw('((products.base_price - products.promotion_price) / products.base_price) DESC')
             ->limit($limit)
-            ->get()
-            ->map(fn (Product $p): array => $this->transformProduct($p))
-            ->all();
+            ->get();
+
+        // Nếu sau khi loại trừ không đủ tối thiểu 4 sản phẩm, lấy thêm bù từ danh sách sale ban đầu
+        if ($items->count() < 4 && ! empty($excludeIds)) {
+            $needed = $limit - $items->count();
+            $fallback = $this->baseProductQuery()
+                ->whereNotNull('products.promotion_price')
+                ->whereRaw('products.promotion_price < products.base_price')
+                ->whereIn('products.id', $excludeIds)
+                ->orderByRaw('((products.base_price - products.promotion_price) / products.base_price) DESC')
+                ->limit($needed)
+                ->get();
+            $items = $items->merge($fallback);
+        }
+
+        return $items->map(fn (Product $p): array => $this->transformProduct($p))->all();
     }
 
-    /** @return list<array{product: array<string, mixed>, detailUrl: string, imageUrl: string}> */
-    public function newProducts(int $limit = 6): array
+    /**
+     * @param  list<int>  $excludeIds
+     * @return list<array{product: array<string, mixed>, detailUrl: string, imageUrl: string}>
+     */
+    public function newProducts(int $limit = 6, array $excludeIds = []): array
     {
-        return $this->baseProductQuery()
-            ->orderByDesc('products.created_at')
+        $query = $this->baseProductQuery();
+
+        if (! empty($excludeIds)) {
+            $query->whereNotIn('products.id', $excludeIds);
+        }
+
+        $items = $query->orderByDesc('products.created_at')
             ->limit($limit)
-            ->get()
-            ->map(fn (Product $p): array => $this->transformProduct($p))
-            ->all();
+            ->get();
+
+        // Nếu sau khi loại trừ không đủ tối thiểu 4 sản phẩm, lấy bù các sản phẩm mới khác
+        if ($items->count() < 4 && ! empty($excludeIds)) {
+            $needed = $limit - $items->count();
+            $fallback = $this->baseProductQuery()
+                ->whereIn('products.id', $excludeIds)
+                ->orderByDesc('products.created_at')
+                ->limit($needed)
+                ->get();
+            $items = $items->merge($fallback);
+        }
+
+        return $items->map(fn (Product $p): array => $this->transformProduct($p))->all();
     }
 
     /** @return Collection<int, Article> */
-    public function latestArticles(int $limit = 5): Collection
+    public function latestArticles(int $limit = 6): Collection
     {
         return Article::query()
             ->published()
@@ -203,17 +255,22 @@ final class HomeQueryService
             ];
         }
 
-        $effectivePrice = Money::integer($product->promotion_price ?? $product->base_price);
+        $basePrice = (int) $product->base_price;
+        $effectivePrice = Money::integer($product->promotion_price ?? $basePrice);
+        $hasDiscount = is_numeric($product->promotion_price) && ((int) $product->promotion_price < $basePrice);
+        $discountPercent = $hasDiscount && $basePrice > 0 ? (int) round((($basePrice - (int) $product->promotion_price) / $basePrice) * 100) : 0;
 
         return [
             'product' => [
                 'id' => $product->id,
                 'name' => $product->name,
                 'brand_line' => $product->brand_line,
-                'base_price' => $product->base_price,
+                'base_price' => $basePrice,
                 'effective_price' => $effectivePrice,
                 'sold_out' => ! $available,
                 'from_price' => false,
+                'has_discount' => $hasDiscount,
+                'discount_percent' => $discountPercent,
                 'colors' => $colors,
             ],
             'detailUrl' => $colors[0]['url'] ?? route('shoes.show', $product->slug),
