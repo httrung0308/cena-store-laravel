@@ -1032,5 +1032,18 @@
     ],
     "enums": {},
     "enum_cases": {}
+  },
+  "classifications": {
+    "class": "App\\Models\\Classification",
+    "belongs_to": [],
+    "enums": {
+      "classification_group": "App\\Enums\\ClassificationGroup"
+    },
+    "enum_cases": {
+      "classification_group": [
+        "SILHOUETTE",
+        "ACTIVITY"
+      ]
+    }
   }
 }

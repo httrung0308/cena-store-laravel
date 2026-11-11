@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
-#[Fillable(['name', 'slug', 'classification_group', 'description', 'sort_order', 'is_active'])]
+#[Fillable(['name', 'slug', 'classification_group', 'description', 'sort_order'])]
 #[Hidden([])]
 class Classification extends DomainModel
 {
