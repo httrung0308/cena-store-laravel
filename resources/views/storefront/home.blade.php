@@ -200,103 +200,13 @@
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-start">
 
         {{-- =================================================================
-             CỘT TRÁI: NỘI DUNG CHÍNH (lg:col-span-8 xl:col-span-9)
+             CỘT TRÁI: NỘI DUNG CHÍNH (3 KHU VỰC SẢN PHẨM + CAM KẾT DỊCH VỤ)
+             (order-1 lg:col-span-8 xl:col-span-9)
              ================================================================= --}}
-        <main class="lg:col-span-8 xl:col-span-9 space-y-10 sm:space-y-12 min-w-0">
+        <main class="order-1 lg:col-span-8 xl:col-span-9 space-y-10 sm:space-y-12 min-w-0">
 
             {{-- -------------------------------------------------------------
-                 A. DANH MỤC & PHÂN LOẠI
-                 ------------------------------------------------------------- --}}
-            <section id="categories" aria-labelledby="heading-categories" class="space-y-3.5">
-                <div class="flex items-center justify-between border-b border-border/80 pb-3">
-                    <h2 id="heading-categories" class="text-xl sm:text-2xl font-extrabold text-main tracking-tight">
-                        Danh mục & Phân loại
-                    </h2>
-                    <a href="{{ route('shoes.index') }}" class="text-xs font-bold text-accent hover:text-accent-hover flex items-center gap-1 group">
-                        <span>Xem toàn bộ danh mục và phân loại</span>
-                        <svg class="w-3.5 h-3.5 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-                    </a>
-                </div>
-
-                {{-- 1. Nhóm Đối tượng (4 ô điều hướng gọn nhẹ với SVG inline, không nhầm lẫn với thẻ sản phẩm) --}}
-                <div class="space-y-2">
-                    <h3 class="text-xs font-bold uppercase tracking-wider text-muted font-mono">
-                        Đối tượng
-                    </h3>
-
-                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3">
-                        @foreach ($categories as $category)
-                            <a href="{{ $category['url'] }}"
-                               class="group flex items-center gap-3 p-2.5 sm:px-3 sm:py-2.5 rounded-xl border border-border bg-surface-card hover:bg-surface hover:border-accent text-main transition-colors shadow-subtle">
-                                <div class="w-8 h-8 rounded-lg bg-surface flex items-center justify-center shrink-0 border border-border/70 group-hover:border-accent group-hover:text-accent text-muted transition-colors">
-                                    @if ($category['slug'] === 'men')
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 3h5m0 0v5m0-5l-6 6M14 14a5 5 0 11-10 0 5 5 0 0110 0z"/></svg>
-                                    @elseif ($category['slug'] === 'women')
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14a5 5 0 100-10 5 5 0 000 10zm0 0v6m-3-3h6"/></svg>
-                                    @elseif ($category['slug'] === 'kids')
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                                    @else
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
-                                    @endif
-                                </div>
-                                <span class="font-bold text-xs sm:text-sm text-main group-hover:text-accent transition-colors truncate">
-                                    {{ $category['name'] }}
-                                </span>
-                                <svg class="w-3.5 h-3.5 text-muted/60 group-hover:text-accent group-hover:translate-x-0.5 ml-auto shrink-0 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-                            </a>
-                        @endforeach
-                    </div>
-                </div>
-
-                {{-- 2. Nhóm Kiểu dáng & Mục đích sử dụng (Phân biệt rõ nét, tối ưu không gian, mở rộng linh hoạt đến 20 mục) --}}
-                @if ($silhouettes->isNotEmpty() || $activities->isNotEmpty())
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 pt-1">
-                        @if ($silhouettes->isNotEmpty())
-                            <div class="p-3.5 sm:p-4 rounded-xl bg-surface-card border border-border shadow-subtle space-y-2.5">
-                                <div class="flex items-center justify-between pb-1.5 border-b border-border/50">
-                                    <h3 class="text-xs font-bold uppercase tracking-wider text-muted font-mono flex items-center gap-1.5">
-                                        <svg class="w-3.5 h-3.5 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"/></svg>
-                                        <span>Kiểu dáng</span>
-                                    </h3>
-                                    <span class="text-[10px] font-mono text-muted">{{ $silhouettes->count() }} mục</span>
-                                </div>
-                                <div class="flex flex-wrap gap-1.5 sm:gap-2 max-h-[110px] overflow-y-auto scrollbar-none">
-                                    @foreach ($silhouettes as $silhouette)
-                                        <a href="{{ route('shoes.index', ['silhouette' => [$silhouette->slug]]) }}"
-                                           class="inline-flex items-center px-2.5 py-1.5 rounded-lg text-xs font-medium bg-surface hover:bg-surface-card text-main hover:text-accent border border-border hover:border-accent transition-colors shadow-subtle">
-                                            {{ $silhouette->name }}
-                                        </a>
-                                    @endforeach
-                                </div>
-                            </div>
-                        @endif
-
-                        @if ($activities->isNotEmpty())
-                            <div class="p-3.5 sm:p-4 rounded-xl bg-surface-card border border-border shadow-subtle space-y-2.5">
-                                <div class="flex items-center justify-between pb-1.5 border-b border-border/50">
-                                    <h3 class="text-xs font-bold uppercase tracking-wider text-muted font-mono flex items-center gap-1.5">
-                                        <svg class="w-3.5 h-3.5 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                                        <span>Mục đích sử dụng</span>
-                                    </h3>
-                                    <span class="text-[10px] font-mono text-muted">{{ $activities->count() }} mục</span>
-                                </div>
-                                <div class="flex flex-wrap gap-1.5 sm:gap-2 max-h-[110px] overflow-y-auto scrollbar-none">
-                                    @foreach ($activities as $activity)
-                                        <a href="{{ route('shoes.index', ['activity' => [$activity->slug]]) }}"
-                                           class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium bg-accent/5 hover:bg-accent/15 text-main hover:text-accent border border-accent/25 hover:border-accent transition-colors shadow-subtle gap-1.5">
-                                            <span class="w-1.5 h-1.5 rounded-full bg-accent"></span>
-                                            <span>{{ $activity->name }}</span>
-                                        </a>
-                                    @endforeach
-                                </div>
-                            </div>
-                        @endif
-                    </div>
-                @endif
-            </section>
-
-            {{-- -------------------------------------------------------------
-                 B. KHU VỰC 1: SẢN PHẨM NỔI BẬT — INTERACTIVE SPOTLIGHT
+                 A. KHU VỰC 1: SẢN PHẨM NỔI BẬT — INTERACTIVE SPOTLIGHT
                  ------------------------------------------------------------- --}}
             <section aria-labelledby="heading-featured" class="space-y-5">
                 <div class="flex items-center justify-between border-b border-border/80 pb-3">
@@ -649,23 +559,21 @@
         </main>
 
         {{-- =================================================================
-             CỘT PHẢI: SIDEBAR BÀI VIẾT (CUỘN TỰ NHIÊN, KHÔNG STICKY)
-             (lg:col-span-4 xl:col-span-3 space-y-6)
+             CỘT PHẢI: BÀI VIẾT & DANH MỤC PHÂN LOẠI
+             (order-2 lg:col-span-4 xl:col-span-3 space-y-5 lg:sticky lg:top-24 self-start lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto scrollbar-none)
              ================================================================= --}}
-        <aside class="hidden lg:block lg:col-span-4 xl:col-span-3 space-y-6">
+        <aside class="order-2 lg:col-span-4 xl:col-span-3 space-y-5 lg:sticky lg:top-24 self-start lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto scrollbar-none">
 
-            {{-- KHỐI: BÀI VIẾT MỚI (CHỈ TIÊU ĐỀ VÀ LIÊN KẾT) --}}
+            {{-- KHỐI 1: BÀI VIẾT (Ở TRÊN CÙNG ĐỂ THẤY NGAY KHI VÀO TRANG) --}}
             <div class="rounded-2xl border border-border bg-surface-card p-5 shadow-card space-y-4">
                 <div class="flex items-center justify-between pb-3.5 border-b border-border/80">
-                    <div>
-                        <span class="text-[10px] font-bold uppercase tracking-wider text-accent font-mono">GÓC BẠN ĐỌC</span>
-                        <h3 class="font-extrabold text-base text-main mt-0.5 flex items-center gap-2">
-                            <svg class="w-4 h-4 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"/></svg>
-                            Bài viết mới
-                        </h3>
-                    </div>
-                    <a href="{{ route('news.index') }}" class="text-xs font-bold text-accent hover:text-accent-hover">
-                        Tất cả →
+                    <h3 class="font-extrabold text-base sm:text-lg text-main flex items-center gap-2">
+                        <svg class="w-4 h-4 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"/></svg>
+                        <span>Bài viết</span>
+                    </h3>
+                    <a href="{{ route('news.index') }}" class="text-xs font-bold text-accent hover:text-accent-hover flex items-center gap-1 group">
+                        <span>Tất cả bài viết</span>
+                        <svg class="w-3.5 h-3.5 transform group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
                     </a>
                 </div>
 
@@ -686,19 +594,105 @@
                                             {{ $article->published_at?->format('d/m/Y') }}
                                         </time>
                                         <span>•</span>
-                                        <span class="group-hover:underline">Chi tiết →</span>
+                                        <span class="group-hover:underline text-accent font-medium">Chi tiết →</span>
                                     </div>
                                 </a>
                             </li>
                         @endforeach
                     </ul>
                 @endif
+            </div>
 
+            {{-- KHỐI 2: DANH MỤC & PHÂN LOẠI (NẰM DƯỚI BÀI VIẾT) --}}
+            <div id="categories" class="rounded-2xl border border-border bg-surface-card p-5 shadow-card space-y-4">
+                <div class="flex items-center justify-between pb-3.5 border-b border-border/80">
+                    <h3 class="font-extrabold text-base sm:text-lg text-main flex items-center gap-2">
+                        <svg class="w-4 h-4 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"/></svg>
+                        <span>Danh mục & Phân loại</span>
+                    </h3>
+                    <a href="{{ route('shoes.index') }}" class="text-muted hover:text-accent transition-colors" title="Xem tất cả">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                    </a>
+                </div>
+
+                {{-- 1. Nhóm Đối tượng (4 ô gọn gàng 2x2) --}}
+                <div class="space-y-2">
+                    <h4 class="text-xs font-bold uppercase tracking-wider text-muted font-mono">
+                        Đối tượng
+                    </h4>
+
+                    <div class="grid grid-cols-2 gap-2">
+                        @foreach ($categories as $category)
+                            <a href="{{ $category['url'] }}"
+                               class="group flex items-center gap-2.5 p-2 rounded-xl border border-border bg-surface hover:bg-surface-card hover:border-accent text-main transition-colors shadow-subtle">
+                                <div class="w-7 h-7 rounded-lg bg-surface-card flex items-center justify-center shrink-0 border border-border/70 group-hover:border-accent group-hover:text-accent text-muted transition-colors">
+                                    @if ($category['slug'] === 'men')
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 3h5m0 0v5m0-5l-6 6M14 14a5 5 0 11-10 0 5 5 0 0110 0z"/></svg>
+                                    @elseif ($category['slug'] === 'women')
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14a5 5 0 100-10 5 5 0 000 10zm0 0v6m-3-3h6"/></svg>
+                                    @elseif ($category['slug'] === 'kids')
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                    @else
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                                    @endif
+                                </div>
+                                <span class="font-bold text-xs text-main group-hover:text-accent transition-colors truncate">
+                                    {{ $category['name'] }}
+                                </span>
+                            </a>
+                        @endforeach
+                    </div>
+                </div>
+
+                {{-- 2. Nhóm Kiểu dáng --}}
+                @if ($silhouettes->isNotEmpty())
+                    <div class="space-y-2 pt-1 border-t border-border/50">
+                        <div class="flex items-center justify-between">
+                            <h4 class="text-xs font-bold uppercase tracking-wider text-muted font-mono flex items-center gap-1.5">
+                                <svg class="w-3 h-3 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"/></svg>
+                                <span>Kiểu dáng</span>
+                            </h4>
+                            <span class="text-[10px] font-mono text-muted">{{ $silhouettes->count() }} mục</span>
+                        </div>
+                        <div class="flex flex-wrap gap-1.5 max-h-[95px] overflow-y-auto scrollbar-none">
+                            @foreach ($silhouettes as $silhouette)
+                                <a href="{{ route('shoes.index', ['silhouette' => [$silhouette->slug]]) }}"
+                                   class="inline-flex items-center px-2 py-1 rounded-lg text-xs font-medium bg-surface hover:bg-surface-card text-main hover:text-accent border border-border hover:border-accent transition-colors shadow-subtle">
+                                    {{ $silhouette->name }}
+                                </a>
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
+
+                {{-- 3. Nhóm Mục đích sử dụng --}}
+                @if ($activities->isNotEmpty())
+                    <div class="space-y-2 pt-1 border-t border-border/50">
+                        <div class="flex items-center justify-between">
+                            <h4 class="text-xs font-bold uppercase tracking-wider text-muted font-mono flex items-center gap-1.5">
+                                <svg class="w-3 h-3 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                                <span>Mục đích</span>
+                            </h4>
+                            <span class="text-[10px] font-mono text-muted">{{ $activities->count() }} mục</span>
+                        </div>
+                        <div class="flex flex-wrap gap-1.5 max-h-[95px] overflow-y-auto scrollbar-none">
+                            @foreach ($activities as $activity)
+                                <a href="{{ route('shoes.index', ['activity' => [$activity->slug]]) }}"
+                                   class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-accent/5 hover:bg-accent/15 text-main hover:text-accent border border-accent/25 hover:border-accent transition-colors shadow-subtle gap-1.5">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-accent"></span>
+                                    <span>{{ $activity->name }}</span>
+                                </a>
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
+
+                {{-- Nút xem toàn bộ danh mục và phân loại --}}
                 <div class="pt-2 border-t border-border/80">
-                    <a href="{{ route('news.index') }}"
-                       class="w-full inline-flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl text-xs font-bold border border-border bg-surface hover:bg-surface-card text-main hover:text-accent transition-all shadow-subtle group">
-                        <span>Xem tất cả bài viết</span>
-                        <svg class="w-3.5 h-3.5 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                    <a href="{{ route('shoes.index') }}"
+                       class="w-full inline-flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-bold border border-border bg-surface hover:bg-surface-card text-main hover:text-accent transition-colors shadow-subtle group">
+                        <span>Xem toàn bộ danh mục và phân loại</span>
+                        <svg class="w-3.5 h-3.5 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
                     </a>
                 </div>
             </div>
@@ -706,31 +700,6 @@
         </aside>
 
     </div>
-
-    {{-- HIỂN THỊ DANH SÁCH BÀI VIẾT GỌN CHO MOBILE (< 1024px) --}}
-    @if ($articles->isNotEmpty())
-        <div class="block lg:hidden rounded-2xl bg-surface-card border border-border p-5 space-y-3 shadow-card">
-            <div class="flex items-center justify-between pb-2 border-b border-border/80">
-                <span class="text-xs font-bold uppercase tracking-wider text-accent font-mono flex items-center gap-1.5">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"/></svg>
-                    Bài viết mới nhất
-                </span>
-                <a href="{{ route('news.index') }}" class="text-xs font-bold text-accent hover:underline">
-                    Tất cả →
-                </a>
-            </div>
-            <ul class="divide-y divide-border/60">
-                @foreach ($articles->take(4) as $article)
-                    <li class="py-2.5 first:pt-1 last:pb-1">
-                        <a href="{{ route('news.show', $article->slug) }}" class="text-xs sm:text-sm font-semibold text-main hover:text-accent line-clamp-1 transition-colors">
-                            {{ $article->title }}
-                        </a>
-                        <span class="text-[10px] text-muted">{{ $article->published_at?->format('d/m/Y') }}</span>
-                    </li>
-                @endforeach
-            </ul>
-        </div>
-    @endif
 
 </div>
 @endsection
