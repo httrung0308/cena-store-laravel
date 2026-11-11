@@ -4580,6 +4580,135 @@
         "shipment_delivery_proofs_mime_check",
         "shipment_delivery_proofs_size_check"
       ]
+    },
+    "classifications": {
+      "number": 38,
+      "columns": {
+        "id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": true
+        },
+        "name": {
+          "type": "varchar(100)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "slug": {
+          "type": "varchar(120)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "classification_group": {
+          "type": "varchar(20)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "description": {
+          "type": "text",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "sort_order": {
+          "type": "smallint unsigned",
+          "nullable": false,
+          "default": "1",
+          "auto_increment": false
+        },
+        "is_active": {
+          "type": "tinyint(1)",
+          "nullable": false,
+          "default": "1",
+          "auto_increment": false
+        },
+        "created_at": {
+          "type": "datetime(6)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "updated_at": {
+          "type": "datetime(6)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        }
+      },
+      "foreign_keys": [],
+      "indexes": [
+        {
+          "columns": [
+            "classification_group",
+            "slug"
+          ],
+          "unique": true
+        },
+        {
+          "columns": [
+            "classification_group",
+            "is_active",
+            "sort_order"
+          ],
+          "unique": false
+        }
+      ],
+      "checks": [
+        "classifications_group_allowed_check",
+        "classifications_is_active_boolean_check"
+      ]
+    },
+    "product_classifications": {
+      "number": 39,
+      "columns": {
+        "product_id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "classification_id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        }
+      },
+      "foreign_keys": [
+        {
+          "column": "product_id",
+          "table": "products",
+          "references": "id",
+          "on_delete": "CASCADE"
+        },
+        {
+          "column": "classification_id",
+          "table": "classifications",
+          "references": "id",
+          "on_delete": "RESTRICT"
+        }
+      ],
+      "indexes": [
+        {
+          "columns": [
+            "product_id",
+            "classification_id"
+          ],
+          "unique": true
+        },
+        {
+          "columns": [
+            "classification_id",
+            "product_id"
+          ],
+          "unique": false
+        }
+      ],
+      "checks": []
     }
   }
 }

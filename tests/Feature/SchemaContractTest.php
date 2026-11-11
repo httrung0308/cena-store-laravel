@@ -23,7 +23,7 @@ class SchemaContractTest extends TestCase
         sort($expected);
         sort($actual);
         $this->assertSame($expected, $actual);
-        $this->assertCount(44, $actual);
+        $this->assertCount(46, $actual);
         $this->assertFalse(Schema::hasTable('password_reset_tokens'));
     }
 
@@ -50,7 +50,9 @@ class SchemaContractTest extends TestCase
         $this->assertSame('utf8mb4_unicode_ci', $options->TABLE_COLLATION);
         $indexes = DB::select('SELECT INDEX_NAME, NON_UNIQUE, GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX) AS names FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? GROUP BY INDEX_NAME, NON_UNIQUE', [$database, $table]);
         $keys = array_map(static fn (object $index): array => ['columns' => explode(',', $index->names), 'unique' => (int) $index->NON_UNIQUE === 0], $indexes);
-        $this->assertContains(['columns' => ['id'], 'unique' => true], $keys);
+        if (isset($expected['columns']['id'])) {
+            $this->assertContains(['columns' => ['id'], 'unique' => true], $keys);
+        }
         foreach ($expected['indexes'] as $index) {
             $this->assertContains($index, $keys, $table.' index '.implode(',', $index['columns']));
         }
