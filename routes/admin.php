@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\ArticleController;
+use App\Http\Controllers\Admin\BannerController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\ClassificationController;
 use App\Http\Controllers\Admin\CouponController;
@@ -64,6 +65,9 @@ Route::patch('reviews/{review}/visibility', [ReviewController::class, 'visibilit
 Route::middleware('role:admin')->group(function (): void {
     Route::resource('articles', ArticleController::class)->except(['show', 'destroy']);
     Route::patch('articles/{article}/hide', [ArticleController::class, 'hide'])->name('articles.hide');
+
+    Route::resource('banners', BannerController::class)->except('show');
+    Route::patch('banners/{banner}/toggle-active', [BannerController::class, 'toggleActive'])->name('banners.toggle-active');
 
     Route::resource('classifications', ClassificationController::class)->except('show');
     Route::patch('classifications/{classification}/toggle-active', [ClassificationController::class, 'toggleActive'])->name('classifications.toggle-active');
