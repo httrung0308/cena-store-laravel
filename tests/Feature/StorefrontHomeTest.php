@@ -132,7 +132,7 @@ class StorefrontHomeTest extends TestCase
         $response = $this->get(route('home'));
 
         $response->assertOk()
-            ->assertSee('Khám phá theo đối tượng')
+            ->assertSee('Đối tượng')
             ->assertSee('Giày Nam')
             ->assertSee('Giày Nữ')
             ->assertSee('Trẻ Em')
@@ -155,8 +155,8 @@ class StorefrontHomeTest extends TestCase
 
         $response->assertOk()
             ->assertSee('Sản phẩm nổi bật')
-            ->assertSee('Ưu đãi hấp dẫn')
-            ->assertSee('Mới đăng bán')
+            ->assertSee('Sản phẩm giảm giá')
+            ->assertSee('Sản phẩm mới')
             ->assertSee('Xem sản phẩm giảm giá trước')
             ->assertSee('Xem sản phẩm giảm giá kế tiếp')
             ->assertSee('Bài viết mới');

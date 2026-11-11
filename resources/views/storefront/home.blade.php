@@ -205,61 +205,46 @@
         <main class="lg:col-span-8 xl:col-span-9 space-y-14 sm:space-y-16 min-w-0">
 
             {{-- -------------------------------------------------------------
-                 A. KHÁM PHÁ THEO ĐỐI TƯỢNG, KIỂU DÁNG & MỤC ĐÍCH (DISCOVERY HUB)
+                 A. DANH MỤC & PHÂN LOẠI
                  ------------------------------------------------------------- --}}
-            <section id="categories" aria-labelledby="heading-categories" class="space-y-6">
-                <div class="flex items-end justify-between border-b border-border/80 pb-4">
-                    <div>
-                        <span class="text-xs font-bold uppercase tracking-wider text-accent font-mono">BỘ LỌC MUA SẮM</span>
-                        <h2 id="heading-categories" class="text-2xl sm:text-3xl font-extrabold text-main mt-1 tracking-tight">
-                            Khám phá giày theo nhu cầu
-                        </h2>
-                    </div>
+            <section id="categories" aria-labelledby="heading-categories" class="space-y-4">
+                <div class="flex items-center justify-between border-b border-border/80 pb-3">
+                    <h2 id="heading-categories" class="text-xl sm:text-2xl font-extrabold text-main tracking-tight">
+                        Danh mục & Phân loại
+                    </h2>
                     <a href="{{ route('shoes.index') }}" class="text-xs font-bold text-accent hover:text-accent-hover flex items-center gap-1 group">
-                        Xem tất cả giày
-                        <svg class="w-4 h-4 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                        <span>Xem toàn bộ danh mục và phân loại</span>
+                        <svg class="w-3.5 h-3.5 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
                     </a>
                 </div>
 
-                {{-- 1. Nhóm Khám phá theo đối tượng (4 Portal Cards thanh thoát, không nhầm lẫn với thẻ sản phẩm) --}}
-                <div class="space-y-3">
-                    <div class="flex items-center justify-between">
-                        <h3 class="text-xs sm:text-sm font-bold uppercase tracking-wider text-muted font-mono flex items-center gap-2">
-                            <span class="w-2 h-2 rounded-full bg-accent"></span>
-                            Khám phá theo đối tượng
-                        </h3>
-                    </div>
+                {{-- 1. Nhóm Đối tượng (4 ô điều hướng gọn nhẹ với SVG inline, không nhầm lẫn với thẻ sản phẩm) --}}
+                <div class="space-y-2">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-muted font-mono">
+                        Đối tượng
+                    </h3>
 
-                    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
-                        @forelse ($categories as $category)
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3">
+                        @foreach ($categories as $category)
                             <a href="{{ $category['url'] }}"
-                               class="group block bg-surface-card rounded-2xl p-3 sm:p-3.5 border border-border hover:border-accent transition-all duration-200 shadow-card hover:shadow-card-hover">
-                                <div class="aspect-[16/11] sm:aspect-[4/3] rounded-xl overflow-hidden bg-surface mb-3 relative">
-                                    <img src="{{ $category['image'] }}"
-                                         alt="{{ $category['name'] }}"
-                                         class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                                         loading="lazy"
-                                         decoding="async">
-                                    <div class="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-60 group-hover:opacity-30 transition-opacity"></div>
-                                </div>
-                                <div class="px-1 pb-0.5">
-                                    <h4 class="font-bold text-base text-main group-hover:text-accent transition-colors flex items-center justify-between">
-                                        <span>{{ $category['name'] }}</span>
-                                        <svg class="w-4 h-4 text-muted group-hover:text-accent group-hover:translate-x-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-                                    </h4>
-                                    <p class="text-xs text-muted mt-0.5 line-clamp-1">
-                                        {{ $category['tagline'] }}
-                                    </p>
-                                    @if (! empty($category['sr_label']))
-                                        <span class="sr-only">{{ $category['sr_label'] }}</span>
+                               class="group flex items-center gap-3 p-2.5 sm:px-3 sm:py-2.5 rounded-xl border border-border bg-surface-card hover:bg-surface hover:border-accent text-main transition-colors shadow-subtle">
+                                <div class="w-8 h-8 rounded-lg bg-surface flex items-center justify-center shrink-0 border border-border/70 group-hover:border-accent group-hover:text-accent text-muted transition-colors">
+                                    @if ($category['slug'] === 'men')
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 3h5m0 0v5m0-5l-6 6M14 14a5 5 0 11-10 0 5 5 0 0110 0z"/></svg>
+                                    @elseif ($category['slug'] === 'women')
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14a5 5 0 100-10 5 5 0 000 10zm0 0v6m-3-3h6"/></svg>
+                                    @elseif ($category['slug'] === 'kids')
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                    @else
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
                                     @endif
                                 </div>
+                                <span class="font-bold text-xs sm:text-sm text-main group-hover:text-accent transition-colors truncate">
+                                    {{ $category['name'] }}
+                                </span>
+                                <svg class="w-3.5 h-3.5 text-muted/60 group-hover:text-accent group-hover:translate-x-0.5 ml-auto shrink-0 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
                             </a>
-                        @empty
-                            <div class="col-span-full text-center py-8 text-sm text-muted">
-                                Đang cập nhật danh mục...
-                            </div>
-                        @endforelse
+                        @endforeach
                     </div>
                 </div>
 
@@ -322,20 +307,14 @@
             {{-- -------------------------------------------------------------
                  B. KHU VỰC 1: SẢN PHẨM NỔI BẬT — INTERACTIVE SPOTLIGHT
                  ------------------------------------------------------------- --}}
-            <section aria-labelledby="heading-featured" class="space-y-6">
-                <div class="flex items-end justify-between border-b border-border/80 pb-4">
-                    <div>
-                        <span class="text-xs font-bold uppercase tracking-wider text-accent font-mono">TUYỂN CHỌN ĐẶC BIỆT</span>
-                        <h2 id="heading-featured" class="text-2xl sm:text-3xl font-extrabold text-main mt-1 tracking-tight flex items-center gap-2.5">
-                            <span>Sản phẩm nổi bật</span>
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded text-[10px] font-bold bg-accent/15 text-accent border border-accent/25">
-                                Hot
-                            </span>
-                        </h2>
-                    </div>
+            <section aria-labelledby="heading-featured" class="space-y-5">
+                <div class="flex items-center justify-between border-b border-border/80 pb-3">
+                    <h2 id="heading-featured" class="text-xl sm:text-2xl font-extrabold text-main tracking-tight">
+                        Sản phẩm nổi bật
+                    </h2>
                     <a href="{{ route('shoes.index', ['sort' => 'featured']) }}" class="text-xs font-bold text-accent hover:text-accent-hover flex items-center gap-1 group">
-                        Xem tất cả nổi bật
-                        <svg class="w-4 h-4 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                        <span>Xem tất cả</span>
+                        <svg class="w-3.5 h-3.5 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
                     </a>
                 </div>
 
@@ -413,8 +392,8 @@
                                 <div class="space-y-3">
                                     {{-- Huy hiệu và tiêu đề --}}
                                     <div class="flex items-center justify-between">
-                                        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-accent text-accent-text">
-                                            Tiêu điểm tuyển chọn
+                                        <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-accent text-accent-text">
+                                            Nổi bật
                                         </span>
                                         <template x-if="current.product.has_discount">
                                             <span class="badge-ruby text-[10px]" x-text="'-' + current.product.discount_percent + '%'"></span>
@@ -559,21 +538,15 @@
                          x-init="setTimeout(() => checkScroll(), 300)"
                          class="space-y-5">
 
-                        <div class="flex items-end justify-between border-b border-border/80 pb-4">
-                            <div>
-                                <span class="text-xs font-bold uppercase tracking-wider text-accent font-mono">TIẾT KIỆM NHIỀU HƠN</span>
-                                <h2 id="heading-sale" class="text-2xl sm:text-3xl font-extrabold text-main mt-1 tracking-tight flex items-center gap-2.5">
-                                    <span>Ưu đãi hấp dẫn</span>
-                                    <span class="badge-ruby text-[11px]">
-                                        Giảm giá
-                                    </span>
-                                </h2>
-                            </div>
+                        <div class="flex items-center justify-between border-b border-border/80 pb-3">
+                            <h2 id="heading-sale" class="text-xl sm:text-2xl font-extrabold text-main tracking-tight">
+                                Sản phẩm giảm giá
+                            </h2>
 
                             <div class="flex items-center gap-3">
                                 <a href="{{ route('shoes.index', ['on_sale' => 1]) }}" class="hidden sm:inline-flex text-xs font-bold text-accent hover:text-accent-hover items-center gap-1 group">
-                                    Xem tất cả ưu đãi
-                                    <svg class="w-4 h-4 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                                    <span>Xem tất cả</span>
+                                    <svg class="w-3.5 h-3.5 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
                                 </a>
 
                                 {{-- Nút chuyển sản phẩm kệ trượt --}}
@@ -611,19 +584,16 @@
             @endif
 
             {{-- -------------------------------------------------------------
-                 D. KHU VỰC 3: MỚI ĐĂNG BÁN — PRODUCT GRID
+                 D. KHU VỰC 3: SẢN PHẨM MỚI — PRODUCT GRID
                  ------------------------------------------------------------- --}}
-            <section aria-labelledby="heading-new" class="space-y-6">
-                <div class="flex items-end justify-between border-b border-border/80 pb-4">
-                    <div>
-                        <span class="text-xs font-bold uppercase tracking-wider text-accent font-mono">BỘ SƯU TẬP MỚI</span>
-                        <h2 id="heading-new" class="text-2xl sm:text-3xl font-extrabold text-main mt-1 tracking-tight">
-                            Mới đăng bán
-                        </h2>
-                    </div>
+            <section aria-labelledby="heading-new" class="space-y-5">
+                <div class="flex items-center justify-between border-b border-border/80 pb-3">
+                    <h2 id="heading-new" class="text-xl sm:text-2xl font-extrabold text-main tracking-tight">
+                        Sản phẩm mới
+                    </h2>
                     <a href="{{ route('shoes.index', ['sort' => 'newest']) }}" class="text-xs font-bold text-accent hover:text-accent-hover flex items-center gap-1 group">
-                        Xem tất cả
-                        <svg class="w-4 h-4 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                        <span>Xem tất cả</span>
+                        <svg class="w-3.5 h-3.5 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
                     </a>
                 </div>
 
