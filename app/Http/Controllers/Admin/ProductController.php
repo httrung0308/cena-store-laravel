@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\ProductRequest;
 use App\Models\Category;
+use App\Models\Classification;
 use App\Models\Product;
 use App\Services\ProductManagementService;
 use Illuminate\Contracts\View\View;
@@ -39,7 +40,23 @@ class ProductController extends Controller
             'variants' => $c->variants->map(fn ($v) => ['id' => $v->id, 'sku' => $v->sku, 'size_value' => $v->size_value, 'price_override' => $v->price_override, 'is_active' => $v->is_active])->all(),
             'images' => $c->images->map(fn ($i) => ['id' => $i->id, 'external_url' => $i->external_url, 'alt_text' => $i->alt_text, 'thumbnail' => $i->is_thumbnail, 'existingUrl' => $i->storage_path ? Storage::disk('public')->url($i->storage_path) : $i->external_url])->all()])->all() : [];
 
-        return view('admin.products.form', ['product' => $product, 'categories' => Category::orderBy('display_order')->get(['id', 'name'])->toArray(), 'colors' => $colors]);
+        $classifications = Classification::query()
+            ->orderBy('classification_group')
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get();
+
+        $selectedClassificationIds = $product->exists
+            ? $product->classifications()->pluck('classifications.id')->all()
+            : [];
+
+        return view('admin.products.form', [
+            'product' => $product,
+            'categories' => Category::orderBy('display_order')->get(['id', 'name'])->toArray(),
+            'colors' => $colors,
+            'classifications' => $classifications,
+            'selectedClassificationIds' => $selectedClassificationIds,
+        ]);
     }
 
     public function store(ProductRequest $request, ProductManagementService $service): RedirectResponse

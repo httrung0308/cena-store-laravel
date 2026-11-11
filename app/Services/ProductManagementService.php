@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Exceptions\DomainException;
 use App\Models\Category;
+use App\Models\Classification;
 use App\Models\Product;
 use App\Models\ProductColor;
 use App\Models\ProductImage;
@@ -54,6 +55,7 @@ final class ProductManagementService
             'base_price' => ['required', 'integer', 'min:1'], 'promotion_price' => ['nullable', 'integer', 'min:1', 'lte:base_price'],
             'warranty_months' => ['required', 'integer', 'between:0,120'], 'exchange_days' => ['required', 'integer', 'between:0,365'],
             'is_active' => ['required', 'boolean'], 'is_featured' => ['sometimes', 'boolean'],
+            'classification_ids' => ['nullable', 'array'], 'classification_ids.*' => ['integer', Rule::exists('classifications', 'id')],
             'colors' => ['required', 'array', 'list', 'min:1', 'max:20'], 'colors.*.id' => ['nullable', 'integer', 'min:1'],
             'colors.*.style_color_code' => ['required', 'string', 'max:50', 'regex:/^[A-Za-z0-9_-]+$/D'],
             'colors.*.color_name' => ['required', 'string', 'max:100'], 'colors.*.color_key' => ['required', Rule::in(array_keys(config('store.palette')))],
@@ -82,6 +84,20 @@ final class ProductManagementService
         $data = Validator::make($this->orderedInput($input), $this->rules($product))->validate();
         $data['base_price'] = Money::integer($data['base_price']);
         $data['promotion_price'] = isset($data['promotion_price']) ? Money::integer($data['promotion_price']) : null;
+        if (! empty($data['classification_ids'])) {
+            $existingIds = $product?->exists ? $product->classifications()->pluck('classifications.id')->all() : [];
+            $newIds = array_diff($data['classification_ids'], $existingIds);
+            if (! empty($newIds)) {
+                $inactiveNames = Classification::query()
+                    ->whereIn('id', $newIds)
+                    ->where('is_active', false)
+                    ->pluck('name')
+                    ->all();
+                if (! empty($inactiveNames)) {
+                    $this->invalid('classification_ids', 'Không thể gắn mới nhãn đang tạm ngưng: '.implode(', ', $inactiveNames).'.');
+                }
+            }
+        }
         $paths = [];
         try {
             foreach ($data['colors'] as $ci => &$color) {
@@ -149,6 +165,9 @@ final class ProductManagementService
                 $current->forceFill(array_intersect_key($data, array_flip(['name', 'slug', 'brand_line', 'description', 'base_price', 'promotion_price', 'warranty_months', 'exchange_days', 'is_active', 'is_featured'])));
                 $current->category_id = $category->id;
                 $current->save();
+                if (array_key_exists('classification_ids', $data)) {
+                    $current->classifications()->sync($data['classification_ids'] ?? []);
+                }
                 $colors = ProductColor::where('product_id', $current->id)->orderBy('id')->lockForUpdate()->get()->keyBy('id');
                 $allVariants = ProductVariant::whereIn('product_color_id', $colors->keys())->orderBy('id')->lockForUpdate()->get()->keyBy('id');
                 $seenColors = [];
