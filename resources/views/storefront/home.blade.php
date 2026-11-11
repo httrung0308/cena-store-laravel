@@ -205,89 +205,113 @@
         <main class="lg:col-span-8 xl:col-span-9 space-y-14 sm:space-y-16 min-w-0">
 
             {{-- -------------------------------------------------------------
-                 A. KHÁM PHÁ THEO ĐỐI TƯỢNG (4 CATEGORY CARDS NGUYÊN BẢN V4)
+                 A. KHÁM PHÁ THEO ĐỐI TƯỢNG, KIỂU DÁNG & MỤC ĐÍCH (DISCOVERY HUB)
                  ------------------------------------------------------------- --}}
             <section id="categories" aria-labelledby="heading-categories" class="space-y-6">
                 <div class="flex items-end justify-between border-b border-border/80 pb-4">
                     <div>
-                        <span class="text-xs font-bold uppercase tracking-wider text-accent font-mono">PHÂN MỤC NỔI BẬT</span>
+                        <span class="text-xs font-bold uppercase tracking-wider text-accent font-mono">BỘ LỌC MUA SẮM</span>
                         <h2 id="heading-categories" class="text-2xl sm:text-3xl font-extrabold text-main mt-1 tracking-tight">
-                            Khám phá theo đối tượng
+                            Khám phá giày theo nhu cầu
                         </h2>
                     </div>
                     <a href="{{ route('shoes.index') }}" class="text-xs font-bold text-accent hover:text-accent-hover flex items-center gap-1 group">
-                        Xem tất cả
+                        Xem tất cả giày
                         <svg class="w-4 h-4 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
                     </a>
                 </div>
 
-                <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
-                    @forelse ($categories as $category)
-                        <a href="{{ $category['url'] }}"
-                           class="group block bg-surface-card rounded-2xl p-3 sm:p-3.5 border border-border hover:border-accent transition-all duration-200 shadow-card hover:shadow-card-hover">
-                            <div class="aspect-[4/5] rounded-xl overflow-hidden bg-surface mb-3 relative">
-                                <img src="{{ $category['image'] }}"
-                                     alt="{{ $category['name'] }}"
-                                     class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                                     loading="lazy"
-                                     decoding="async">
-                                @if (! empty($category['badge']))
-                                    <span class="absolute top-2.5 right-2.5 px-2 py-0.5 rounded-md text-[10px] font-bold tracking-wider {{ $category['badge'] === 'HOT' ? 'bg-accent text-accent-text' : 'bg-accent-sub text-accent-sub-text' }}">
-                                        {{ $category['badge'] }}
-                                    </span>
-                                @endif
-                            </div>
-                            <div class="px-1 pb-1">
-                                <h3 class="font-bold text-base text-main group-hover:text-accent transition-colors">
-                                    {{ $category['name'] }}
-                                </h3>
-                                <p class="text-xs text-muted mt-0.5 flex items-center justify-between">
-                                    <span>{{ $category['tagline'] }}</span>
+                {{-- 1. Nhóm Khám phá theo đối tượng (4 Portal Cards thanh thoát, không nhầm lẫn với thẻ sản phẩm) --}}
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-xs sm:text-sm font-bold uppercase tracking-wider text-muted font-mono flex items-center gap-2">
+                            <span class="w-2 h-2 rounded-full bg-accent"></span>
+                            Khám phá theo đối tượng
+                        </h3>
+                    </div>
+
+                    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
+                        @forelse ($categories as $category)
+                            <a href="{{ $category['url'] }}"
+                               class="group block bg-surface-card rounded-2xl p-3 sm:p-3.5 border border-border hover:border-accent transition-all duration-200 shadow-card hover:shadow-card-hover">
+                                <div class="aspect-[16/11] sm:aspect-[4/3] rounded-xl overflow-hidden bg-surface mb-3 relative">
+                                    <img src="{{ $category['image'] }}"
+                                         alt="{{ $category['name'] }}"
+                                         class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                         loading="lazy"
+                                         decoding="async">
+                                    <div class="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-60 group-hover:opacity-30 transition-opacity"></div>
+                                </div>
+                                <div class="px-1 pb-0.5">
+                                    <h4 class="font-bold text-base text-main group-hover:text-accent transition-colors flex items-center justify-between">
+                                        <span>{{ $category['name'] }}</span>
+                                        <svg class="w-4 h-4 text-muted group-hover:text-accent group-hover:translate-x-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                                    </h4>
+                                    <p class="text-xs text-muted mt-0.5 line-clamp-1">
+                                        {{ $category['tagline'] }}
+                                    </p>
                                     @if (! empty($category['sr_label']))
                                         <span class="sr-only">{{ $category['sr_label'] }}</span>
                                     @endif
-                                    <svg class="w-3.5 h-3.5 text-muted group-hover:text-accent group-hover:translate-x-1 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-                                </p>
+                                </div>
+                            </a>
+                        @empty
+                            <div class="col-span-full text-center py-8 text-sm text-muted">
+                                Đang cập nhật danh mục...
                             </div>
-                        </a>
-                    @empty
-                        <div class="col-span-full text-center py-8 text-sm text-muted">
-                            Đang cập nhật danh mục...
-                        </div>
-                    @endforelse
+                        @endforelse
+                    </div>
                 </div>
 
-                {{-- Cụm chip lọc theo Kiểu dáng & Mục đích --}}
+                {{-- 2. Nhóm Kiểu dáng & Mục đích sử dụng (Trình bày cân xứng, rõ ràng 2 cột) --}}
                 @if ($silhouettes->isNotEmpty() || $activities->isNotEmpty())
-                    <div class="p-4 sm:p-5 rounded-2xl bg-surface-card border border-border shadow-subtle space-y-3.5">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         @if ($silhouettes->isNotEmpty())
-                            <div class="flex flex-wrap items-center gap-2">
-                                <span class="text-[11px] font-bold uppercase tracking-wider text-muted font-mono min-w-[70px]">
-                                    Kiểu dáng:
-                                </span>
-                                <div class="flex flex-wrap gap-2">
-                                    @foreach ($silhouettes as $silhouette)
-                                        <a href="{{ route('shoes.index', ['silhouette' => [$silhouette->slug]]) }}"
-                                           class="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-medium bg-surface hover:bg-surface-card text-main hover:text-accent border border-border hover:border-accent transition-colors shadow-subtle">
-                                            {{ $silhouette->name }}
-                                        </a>
-                                    @endforeach
+                            <div class="p-4 sm:p-5 rounded-2xl bg-surface-card border border-border shadow-subtle space-y-3 flex flex-col justify-between">
+                                <div class="space-y-2.5">
+                                    <div class="flex items-center justify-between">
+                                        <h3 class="text-xs sm:text-sm font-bold uppercase tracking-wider text-muted font-mono flex items-center gap-2">
+                                            <svg class="w-4 h-4 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"/></svg>
+                                            Kiểu dáng thiết kế
+                                        </h3>
+                                        <span class="text-[11px] text-muted">{{ $silhouettes->count() }} kiểu</span>
+                                    </div>
+                                    <div class="flex flex-wrap gap-2">
+                                        @foreach ($silhouettes as $silhouette)
+                                            <a href="{{ route('shoes.index', ['silhouette' => [$silhouette->slug]]) }}"
+                                               class="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-medium bg-surface hover:bg-surface-card text-main hover:text-accent border border-border hover:border-accent transition-colors shadow-subtle">
+                                                {{ $silhouette->name }}
+                                            </a>
+                                        @endforeach
+                                    </div>
+                                </div>
+                                <div class="pt-2 text-[11px] text-muted border-t border-border/50">
+                                    Chọn kiểu cổ giày phù hợp trang phục hàng ngày
                                 </div>
                             </div>
                         @endif
 
                         @if ($activities->isNotEmpty())
-                            <div class="flex flex-wrap items-center gap-2 pt-2.5 border-t border-border/60">
-                                <span class="text-[11px] font-bold uppercase tracking-wider text-muted font-mono min-w-[70px]">
-                                    Mục đích:
-                                </span>
-                                <div class="flex flex-wrap gap-2">
-                                    @foreach ($activities as $activity)
-                                        <a href="{{ route('shoes.index', ['activity' => [$activity->slug]]) }}"
-                                           class="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-medium bg-surface hover:bg-surface-card text-main hover:text-accent border border-border hover:border-accent transition-colors shadow-subtle">
-                                            {{ $activity->name }}
-                                        </a>
-                                    @endforeach
+                            <div class="p-4 sm:p-5 rounded-2xl bg-surface-card border border-border shadow-subtle space-y-3 flex flex-col justify-between">
+                                <div class="space-y-2.5">
+                                    <div class="flex items-center justify-between">
+                                        <h3 class="text-xs sm:text-sm font-bold uppercase tracking-wider text-muted font-mono flex items-center gap-2">
+                                            <svg class="w-4 h-4 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                                            Mục đích sử dụng
+                                        </h3>
+                                        <span class="text-[11px] text-muted">{{ $activities->count() }} hoạt động</span>
+                                    </div>
+                                    <div class="flex flex-wrap gap-2">
+                                        @foreach ($activities as $activity)
+                                            <a href="{{ route('shoes.index', ['activity' => [$activity->slug]]) }}"
+                                               class="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-medium bg-surface hover:bg-surface-card text-main hover:text-accent border border-border hover:border-accent transition-colors shadow-subtle">
+                                                {{ $activity->name }}
+                                            </a>
+                                        @endforeach
+                                    </div>
+                                </div>
+                                <div class="pt-2 text-[11px] text-muted border-t border-border/50">
+                                    Tối ưu độ đệm và chuyển động cho từng môn thể thao
                                 </div>
                             </div>
                         @endif
@@ -385,8 +409,8 @@
                         <div class="grid grid-cols-1 md:grid-cols-12 gap-5 items-stretch">
 
                             {{-- CARD LỚN TIÊU ĐIỂM (LEAD SPOTLIGHT CARD - Chiếm 7/12 trên md/lg) --}}
-                            <div class="md:col-span-7 xl:col-span-7 rounded-2xl border border-border bg-surface-card p-5 sm:p-6 shadow-card flex flex-col justify-between group relative overflow-hidden">
-                                <div class="space-y-4">
+                            <div class="md:col-span-7 xl:col-span-7 rounded-2xl border border-border bg-surface-card p-4 sm:p-5 shadow-card flex flex-col justify-between group relative overflow-hidden">
+                                <div class="space-y-3">
                                     {{-- Huy hiệu và tiêu đề --}}
                                     <div class="flex items-center justify-between">
                                         <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-accent text-accent-text">
@@ -397,8 +421,8 @@
                                         </template>
                                     </div>
 
-                                    {{-- Ảnh lớn --}}
-                                    <div class="aspect-square rounded-xl overflow-hidden bg-surface relative border border-border/60">
+                                    {{-- Ảnh lớn: Giảm chiều cao tối đa để vừa vặn ở zoom 100% --}}
+                                    <div class="aspect-[16/10] sm:aspect-[4/3] max-h-[250px] rounded-xl overflow-hidden bg-surface relative border border-border/60">
                                         <a :href="current.detailUrl" class="block w-full h-full">
                                             <img :src="current.imageUrl"
                                                  :alt="current.product.name"
@@ -414,13 +438,13 @@
                                     </div>
 
                                     {{-- Thông tin sản phẩm --}}
-                                    <div class="space-y-1.5">
-                                        <p class="text-xs font-mono font-bold uppercase tracking-wider text-muted" x-text="current.product.brand_line || 'Cena Store'"></p>
-                                        <h3 class="text-lg sm:text-xl font-extrabold text-main leading-snug">
+                                    <div class="space-y-1">
+                                        <p class="text-[11px] font-mono font-bold uppercase tracking-wider text-muted" x-text="current.product.brand_line || 'Cena Store'"></p>
+                                        <h3 class="text-base sm:text-lg font-extrabold text-main leading-snug line-clamp-1">
                                             <a :href="current.detailUrl" class="hover:text-accent transition-colors" x-text="current.product.name"></a>
                                         </h3>
-                                        <div class="flex items-baseline gap-2.5 pt-1">
-                                            <span class="text-xl sm:text-2xl font-black text-accent" x-text="formatPrice(current.product.effective_price)"></span>
+                                        <div class="flex items-baseline gap-2.5 pt-0.5">
+                                            <span class="text-lg sm:text-xl font-black text-accent" x-text="formatPrice(current.product.effective_price)"></span>
                                             <template x-if="current.product.has_discount">
                                                 <span class="text-xs text-muted line-through" x-text="formatPrice(current.product.base_price)"></span>
                                             </template>
@@ -429,12 +453,12 @@
 
                                     {{-- Dải phối màu sắc nếu có --}}
                                     <template x-if="current.product.colors && current.product.colors.length > 0">
-                                        <div class="flex flex-wrap items-center gap-1.5 pt-1">
+                                        <div class="flex flex-wrap items-center gap-1.5 pt-0.5">
                                             <span class="text-[11px] text-muted mr-1">Màu sắc:</span>
                                             <template x-for="color in current.product.colors" :key="color.id">
                                                 <a :href="color.url"
                                                    :title="color.name"
-                                                   class="w-6 h-6 rounded-md overflow-hidden border border-border/80 hover:border-accent shadow-subtle transition-transform hover:scale-110">
+                                                   class="w-5 h-5 rounded-md overflow-hidden border border-border/80 hover:border-accent shadow-subtle transition-transform hover:scale-110">
                                                     <img :src="color.image_url" :alt="color.name" class="w-full h-full object-cover">
                                                 </a>
                                             </template>
@@ -443,25 +467,25 @@
                                 </div>
 
                                 {{-- CTA Button --}}
-                                <div class="pt-5 mt-4 border-t border-border/60 flex items-center justify-between">
-                                    <span class="text-xs text-muted">Bảo hành 6T • Đổi size 7N</span>
+                                <div class="pt-3.5 mt-3 border-t border-border/60 flex items-center justify-between">
+                                    <span class="text-[11px] text-muted">Bảo hành 6T • Đổi size 7N</span>
                                     <a :href="current.detailUrl"
-                                       class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-accent hover:bg-accent-hover text-accent-text font-bold text-xs tracking-wider uppercase transition-all shadow-md transform hover:-translate-y-0.5">
+                                       class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-accent hover:bg-accent-hover text-accent-text font-bold text-xs tracking-wider uppercase transition-all shadow-md transform hover:-translate-y-0.5">
                                         Xem chi tiết
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
                                     </a>
                                 </div>
                             </div>
 
                             {{-- DANH SÁCH CARD NHỎ TƯƠNG TÁC (Chiếm 5/12 trên md/lg) --}}
                             <div class="md:col-span-5 xl:col-span-5 flex flex-col justify-between space-y-2">
-                                <div class="space-y-2 overflow-y-auto max-h-[540px] pr-1 scrollbar-none">
+                                <div class="space-y-2 overflow-y-auto max-h-[380px] sm:max-h-[410px] pr-1 scrollbar-none">
                                     <template x-for="(item, idx) in items" :key="item.product.id">
                                         <div @mouseenter="select(idx)"
                                              @click="select(idx, true)"
                                              :class="active === idx ? 'border-accent bg-accent/5 ring-1 ring-accent/30 shadow-sm' : 'border-border bg-surface-card hover:border-accent/50 hover:bg-surface'"
-                                             class="p-2.5 sm:p-3 rounded-xl border transition-all duration-200 cursor-pointer flex items-center gap-3 group/item">
-                                            <div class="w-14 h-14 shrink-0 rounded-lg overflow-hidden bg-surface border border-border/60">
+                                             class="p-2 sm:p-2.5 rounded-xl border transition-all duration-200 cursor-pointer flex items-center gap-2.5 group/item">
+                                            <div class="w-12 h-12 shrink-0 rounded-lg overflow-hidden bg-surface border border-border/60">
                                                 <img :src="item.imageUrl" :alt="item.product.name" class="w-full h-full object-cover group-hover/item:scale-105 transition-transform duration-300">
                                             </div>
                                             <div class="flex-1 min-w-0">
@@ -481,7 +505,7 @@
                                 </div>
 
                                 {{-- Điều khiển thủ công & Trạng thái --}}
-                                <div class="pt-3 border-t border-border/60 flex items-center justify-between text-xs text-muted">
+                                <div class="pt-2.5 border-t border-border/60 flex items-center justify-between text-xs text-muted">
                                     <div class="flex items-center gap-1.5 font-mono">
                                         <span>Mục</span>
                                         <span class="font-bold text-main" x-text="active + 1"></span>
@@ -608,7 +632,7 @@
                         Đang cập nhật các mẫu giày mới nhất.
                     </div>
                 @else
-                    <div class="grid grid-cols-2 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-5">
+                    <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3.5 sm:gap-4.5">
                         @foreach ($newProducts as $item)
                             <x-catalog.product-card :product="$item['product']" :detail-url="$item['detailUrl']" :image-url="$item['imageUrl']" />
                         @endforeach
@@ -664,12 +688,12 @@
         </main>
 
         {{-- =================================================================
-             CỘT PHẢI: STICKY SIDEBAR BÀI VIẾT & TIỆN ÍCH HỖ TRỢ
-             (lg:col-span-4 xl:col-span-3 sticky top-24)
+             CỘT PHẢI: SIDEBAR BÀI VIẾT (CUỘN TỰ NHIÊN, KHÔNG STICKY)
+             (lg:col-span-4 xl:col-span-3 space-y-6)
              ================================================================= --}}
-        <aside class="hidden lg:block lg:col-span-4 xl:col-span-3 sticky top-24 space-y-5">
+        <aside class="hidden lg:block lg:col-span-4 xl:col-span-3 space-y-6">
 
-            {{-- KHỐI 1: BÀI VIẾT MỚI (CHỈ TIÊU ĐỀ VÀ LIÊN KẾT) --}}
+            {{-- KHỐI: BÀI VIẾT MỚI (CHỈ TIÊU ĐỀ VÀ LIÊN KẾT) --}}
             <div class="rounded-2xl border border-border bg-surface-card p-5 shadow-card space-y-4">
                 <div class="flex items-center justify-between pb-3.5 border-b border-border/80">
                     <div>
@@ -715,25 +739,6 @@
                         <span>Xem tất cả bài viết</span>
                         <svg class="w-3.5 h-3.5 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
                     </a>
-                </div>
-            </div>
-
-            {{-- KHỐI 2: CẨM NANG & HỖ TRỢ CHỌN SIZE NHANH --}}
-            <div class="rounded-2xl border border-border bg-surface-card p-5 shadow-subtle space-y-3.5">
-                <span class="text-[10px] font-bold uppercase tracking-wider text-accent font-mono">DỊCH VỤ AN TÂM</span>
-                <h4 class="font-bold text-sm text-main">Tư vấn size giày chuẩn</h4>
-                <p class="text-xs text-muted leading-relaxed">
-                    Bạn chưa rõ form giày ôm hay rộng? Hãy đo chiều dài bàn chân để chọn size chính xác nhất.
-                </p>
-                <div class="space-y-2 pt-1 text-xs">
-                    <div class="flex items-center gap-2 text-main font-medium">
-                        <svg class="w-4 h-4 text-accent shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                        <span>Hỗ trợ đổi cỡ chân trong 7 ngày</span>
-                    </div>
-                    <div class="flex items-center gap-2 text-main font-medium">
-                        <svg class="w-4 h-4 text-accent shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                        <span>Kiểm tra hàng trước khi nhận</span>
-                    </div>
                 </div>
             </div>
 

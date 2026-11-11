@@ -159,7 +159,7 @@ class StorefrontHomeTest extends TestCase
             ->assertSee('Mới đăng bán')
             ->assertSee('Xem sản phẩm giảm giá trước')
             ->assertSee('Xem sản phẩm giảm giá kế tiếp')
-            ->assertSee('Tư vấn size giày chuẩn');
+            ->assertSee('Bài viết mới');
     }
 
     public function test_home_query_service_prioritizes_deduplication(): void

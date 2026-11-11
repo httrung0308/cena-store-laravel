@@ -44,9 +44,9 @@ final class HomeQueryService
         $sale = $this->saleProducts(10, $featuredIds);
         $saleIds = array_map(fn (array $item): int => (int) $item['product']['id'], $sale);
 
-        // 3. Lấy 6 sản phẩm mới đăng bán, ưu tiên loại trừ sản phẩm đã xuất hiện ở Featured và Sale
+        // 3. Lấy 8 sản phẩm mới đăng bán, ưu tiên loại trừ sản phẩm đã xuất hiện ở Featured và Sale
         $excludedForNew = array_values(array_unique(array_merge($featuredIds, $saleIds)));
-        $new = $this->newProducts(6, $excludedForNew);
+        $new = $this->newProducts(8, $excludedForNew);
 
         return [
             'banners' => $this->banners(),
@@ -77,7 +77,7 @@ final class HomeQueryService
                 'tagline' => 'Vững vàng & Tăng tốc',
                 'image' => asset('legacy/img/men.jpg'),
                 'url' => route('shoes.index', ['gender' => 'men']),
-                'badge' => 'HOT',
+                'badge' => null,
             ],
             [
                 'name' => 'Giày Nữ',
@@ -86,7 +86,7 @@ final class HomeQueryService
                 'sr_label' => 'Fresh summer collection avaible now',
                 'image' => asset('legacy/img/women.jpg'),
                 'url' => route('shoes.index', ['gender' => 'women']),
-                'badge' => '-25%',
+                'badge' => null,
             ],
             [
                 'name' => 'Trẻ Em',
@@ -179,7 +179,7 @@ final class HomeQueryService
      * @param  list<int>  $excludeIds
      * @return list<array{product: array<string, mixed>, detailUrl: string, imageUrl: string}>
      */
-    public function newProducts(int $limit = 6, array $excludeIds = []): array
+    public function newProducts(int $limit = 8, array $excludeIds = []): array
     {
         $query = $this->baseProductQuery();
 
