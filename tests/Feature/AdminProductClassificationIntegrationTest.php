@@ -65,13 +65,13 @@ class AdminProductClassificationIntegrationTest extends TestCase
 
     public function test_can_save_product_with_classifications_and_is_featured(): void
     {
-        $c1 = Classification::query()->create([
+        $c1 = Classification::forceCreate([
             'name' => 'Sneaker',
             'slug' => 'sneaker-'.uniqid(),
             'classification_group' => ClassificationGroup::Silhouette,
             'is_active' => true,
         ]);
-        $c2 = Classification::query()->create([
+        $c2 = Classification::forceCreate([
             'name' => 'Chạy bộ',
             'slug' => 'chay-bo-'.uniqid(),
             'classification_group' => ClassificationGroup::Activity,
@@ -94,17 +94,17 @@ class AdminProductClassificationIntegrationTest extends TestCase
 
     public function test_can_update_product_classifications_sync(): void
     {
-        $c1 = Classification::query()->create([
+        $c1 = Classification::forceCreate([
             'name' => 'Tag 1',
             'slug' => 'tag-1-'.uniqid(),
             'classification_group' => ClassificationGroup::Silhouette,
         ]);
-        $c2 = Classification::query()->create([
+        $c2 = Classification::forceCreate([
             'name' => 'Tag 2',
             'slug' => 'tag-2-'.uniqid(),
             'classification_group' => ClassificationGroup::Activity,
         ]);
-        $c3 = Classification::query()->create([
+        $c3 = Classification::forceCreate([
             'name' => 'Tag 3',
             'slug' => 'tag-3-'.uniqid(),
             'classification_group' => ClassificationGroup::Activity,
@@ -153,7 +153,7 @@ class AdminProductClassificationIntegrationTest extends TestCase
 
     public function test_cannot_attach_newly_inactive_classification(): void
     {
-        $inactive = Classification::query()->create([
+        $inactive = Classification::forceCreate([
             'name' => 'Inactive Tag',
             'slug' => 'inactive-'.uniqid(),
             'classification_group' => ClassificationGroup::Activity,
@@ -170,14 +170,14 @@ class AdminProductClassificationIntegrationTest extends TestCase
 
     public function test_existing_inactive_classification_is_preserved_when_not_modified(): void
     {
-        $cActive = Classification::query()->create([
+        $cActive = Classification::forceCreate([
             'name' => 'Active Tag',
             'slug' => 'active-'.uniqid(),
             'classification_group' => ClassificationGroup::Silhouette,
             'is_active' => true,
         ]);
 
-        $cOld = Classification::query()->create([
+        $cOld = Classification::forceCreate([
             'name' => 'Old Inactive Tag',
             'slug' => 'old-inactive-'.uniqid(),
             'classification_group' => ClassificationGroup::Activity,
@@ -226,7 +226,7 @@ class AdminProductClassificationIntegrationTest extends TestCase
 
     public function test_admin_product_form_renders_classifications_picker_and_featured_checkbox(): void
     {
-        $c = Classification::query()->create([
+        $c = Classification::forceCreate([
             'name' => 'Sneaker Test',
             'slug' => 'sneaker-test-'.uniqid(),
             'classification_group' => ClassificationGroup::Silhouette,

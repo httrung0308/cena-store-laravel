@@ -17,7 +17,7 @@ class ClassificationDatabaseTest extends TestCase
     {
         $product = Product::factory()->create();
 
-        $classification = Classification::query()->create([
+        $classification = Classification::forceCreate([
             'name' => 'Sneaker',
             'slug' => 'sneaker-'.uniqid(),
             'classification_group' => ClassificationGroup::Silhouette,
@@ -33,7 +33,7 @@ class ClassificationDatabaseTest extends TestCase
 
     public function test_slug_is_unique_within_same_classification_group(): void
     {
-        Classification::query()->create([
+        Classification::forceCreate([
             'name' => 'Running A',
             'slug' => 'running-test-slug',
             'classification_group' => ClassificationGroup::Activity,
@@ -42,7 +42,7 @@ class ClassificationDatabaseTest extends TestCase
 
         // Same group, same slug -> should fail unique
         $this->expectException(QueryException::class);
-        Classification::query()->create([
+        Classification::forceCreate([
             'name' => 'Running B',
             'slug' => 'running-test-slug',
             'classification_group' => ClassificationGroup::Activity,
@@ -54,14 +54,14 @@ class ClassificationDatabaseTest extends TestCase
     {
         $uniqueSlug = 'cross-group-'.uniqid();
 
-        $c1 = Classification::query()->create([
+        $c1 = Classification::forceCreate([
             'name' => 'Cross Silhouette',
             'slug' => $uniqueSlug,
             'classification_group' => ClassificationGroup::Silhouette,
             'sort_order' => 1,
         ]);
 
-        $c2 = Classification::query()->create([
+        $c2 = Classification::forceCreate([
             'name' => 'Cross Activity',
             'slug' => $uniqueSlug,
             'classification_group' => ClassificationGroup::Activity,
@@ -76,7 +76,7 @@ class ClassificationDatabaseTest extends TestCase
     {
         $product = Product::factory()->create();
 
-        $classification = Classification::query()->create([
+        $classification = Classification::forceCreate([
             'name' => 'Restrict Test',
             'slug' => 'restrict-'.uniqid(),
             'classification_group' => ClassificationGroup::Silhouette,
@@ -92,14 +92,14 @@ class ClassificationDatabaseTest extends TestCase
     {
         $product = Product::factory()->create();
 
-        $active = Classification::query()->create([
+        $active = Classification::forceCreate([
             'name' => 'Active Tag',
             'slug' => 'active-'.uniqid(),
             'classification_group' => ClassificationGroup::Activity,
             'is_active' => true,
         ]);
 
-        $inactive = Classification::query()->create([
+        $inactive = Classification::forceCreate([
             'name' => 'Inactive Tag',
             'slug' => 'inactive-'.uniqid(),
             'classification_group' => ClassificationGroup::Activity,

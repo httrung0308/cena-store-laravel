@@ -27,7 +27,7 @@ class AdminClassificationCrudTest extends TestCase
 
     public function test_admin_can_view_classification_list(): void
     {
-        Classification::query()->create([
+        Classification::forceCreate([
             'name' => 'Sneaker Test Tag',
             'slug' => 'sneaker-test-tag-'.uniqid(),
             'classification_group' => ClassificationGroup::Silhouette,
@@ -73,7 +73,7 @@ class AdminClassificationCrudTest extends TestCase
 
     public function test_admin_can_update_classification(): void
     {
-        $classification = Classification::query()->create([
+        $classification = Classification::forceCreate([
             'name' => 'Old Name',
             'slug' => 'old-slug-'.uniqid(),
             'classification_group' => ClassificationGroup::Silhouette,
@@ -104,7 +104,7 @@ class AdminClassificationCrudTest extends TestCase
 
     public function test_admin_can_toggle_active_status(): void
     {
-        $classification = Classification::query()->create([
+        $classification = Classification::forceCreate([
             'name' => 'Toggle Tag',
             'slug' => 'toggle-tag-'.uniqid(),
             'classification_group' => ClassificationGroup::Silhouette,
@@ -121,7 +121,7 @@ class AdminClassificationCrudTest extends TestCase
     public function test_cannot_change_group_when_classification_has_products(): void
     {
         $product = Product::factory()->create();
-        $classification = Classification::query()->create([
+        $classification = Classification::forceCreate([
             'name' => 'Fixed Group Tag',
             'slug' => 'fixed-group-'.uniqid(),
             'classification_group' => ClassificationGroup::Silhouette,
@@ -145,7 +145,7 @@ class AdminClassificationCrudTest extends TestCase
     public function test_cannot_delete_classification_with_linked_products(): void
     {
         $product = Product::factory()->create();
-        $classification = Classification::query()->create([
+        $classification = Classification::forceCreate([
             'name' => 'In Use Tag',
             'slug' => 'in-use-'.uniqid(),
             'classification_group' => ClassificationGroup::Silhouette,
@@ -160,7 +160,7 @@ class AdminClassificationCrudTest extends TestCase
 
     public function test_can_delete_unused_classification(): void
     {
-        $classification = Classification::query()->create([
+        $classification = Classification::forceCreate([
             'name' => 'Unused Tag',
             'slug' => 'unused-'.uniqid(),
             'classification_group' => ClassificationGroup::Silhouette,

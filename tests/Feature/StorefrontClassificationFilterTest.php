@@ -38,7 +38,7 @@ class StorefrontClassificationFilterTest extends TestCase
         $this->menCat = Category::factory()->create(['gender_group' => GenderGroup::Men, 'is_active' => true]);
         $this->womenCat = Category::factory()->create(['gender_group' => GenderGroup::Women, 'is_active' => true]);
 
-        $this->sneaker = Classification::query()->create([
+        $this->sneaker = Classification::forceCreate([
             'name' => 'Sneaker',
             'slug' => 'sneaker-'.uniqid(),
             'classification_group' => ClassificationGroup::Silhouette,
@@ -46,7 +46,7 @@ class StorefrontClassificationFilterTest extends TestCase
             'sort_order' => 1,
         ]);
 
-        $this->boots = Classification::query()->create([
+        $this->boots = Classification::forceCreate([
             'name' => 'Boots',
             'slug' => 'boots-'.uniqid(),
             'classification_group' => ClassificationGroup::Silhouette,
@@ -54,7 +54,7 @@ class StorefrontClassificationFilterTest extends TestCase
             'sort_order' => 2,
         ]);
 
-        $this->running = Classification::query()->create([
+        $this->running = Classification::forceCreate([
             'name' => 'Chạy bộ',
             'slug' => 'running-'.uniqid(),
             'classification_group' => ClassificationGroup::Activity,
@@ -62,7 +62,7 @@ class StorefrontClassificationFilterTest extends TestCase
             'sort_order' => 1,
         ]);
 
-        $this->lifestyle = Classification::query()->create([
+        $this->lifestyle = Classification::forceCreate([
             'name' => 'Thời trang',
             'slug' => 'lifestyle-'.uniqid(),
             'classification_group' => ClassificationGroup::Activity,
@@ -70,7 +70,7 @@ class StorefrontClassificationFilterTest extends TestCase
             'sort_order' => 2,
         ]);
 
-        $this->inactiveTag = Classification::query()->create([
+        $this->inactiveTag = Classification::forceCreate([
             'name' => 'Tag Ẩn',
             'slug' => 'tag-an-'.uniqid(),
             'classification_group' => ClassificationGroup::Silhouette,
