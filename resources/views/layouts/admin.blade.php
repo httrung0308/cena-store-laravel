@@ -12,6 +12,7 @@
         ['route' => 'admin.reports.index', 'label' => 'Báo cáo', 'icon' => 'chart'],
     ];
     if (auth()->user()?->hasRole(App\Enums\RoleSlug::Admin)) {
+        $sections[] = ['route' => 'admin.classifications.index', 'label' => 'Phân loại', 'icon' => 'tag'];
         $sections[] = ['route' => 'admin.users.index', 'label' => 'Người dùng', 'icon' => 'users'];
         $sections[] = ['route' => 'admin.articles.index', 'label' => 'Bài viết', 'icon' => 'document'];
     }
