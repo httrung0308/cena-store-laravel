@@ -4709,6 +4709,91 @@
         }
       ],
       "checks": []
+    },
+    "banners": {
+      "number": 40,
+      "columns": {
+        "id": {
+          "type": "bigint unsigned",
+          "nullable": false,
+          "default": null,
+          "auto_increment": true
+        },
+        "title": {
+          "type": "varchar(150)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "subtitle": {
+          "type": "varchar(255)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "image_path": {
+          "type": "varchar(255)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "mobile_image_path": {
+          "type": "varchar(255)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "link_url": {
+          "type": "varchar(500)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "cta_text": {
+          "type": "varchar(50)",
+          "nullable": true,
+          "default": null,
+          "auto_increment": false
+        },
+        "sort_order": {
+          "type": "smallint unsigned",
+          "nullable": false,
+          "default": "1",
+          "auto_increment": false
+        },
+        "is_active": {
+          "type": "tinyint(1)",
+          "nullable": false,
+          "default": "1",
+          "auto_increment": false
+        },
+        "created_at": {
+          "type": "datetime(6)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        },
+        "updated_at": {
+          "type": "datetime(6)",
+          "nullable": false,
+          "default": null,
+          "auto_increment": false
+        }
+      },
+      "foreign_keys": [],
+      "indexes": [
+        {
+          "columns": [
+            "is_active",
+            "sort_order",
+            "id"
+          ],
+          "unique": false
+        }
+      ],
+      "checks": [
+        "banners_is_active_boolean_check"
+      ]
     }
   }
 }
