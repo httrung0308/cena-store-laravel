@@ -49,7 +49,11 @@ class BannerDatabaseTest extends TestCase
             'is_active' => false,
         ]);
 
-        $activeBanners = Banner::query()->active()->ordered()->get();
+        $activeBanners = Banner::query()
+            ->whereIn('id', [$active1->id, $active2->id, $inactive->id])
+            ->active()
+            ->ordered()
+            ->get();
 
         $this->assertCount(2, $activeBanners);
         $this->assertSame($active2->id, $activeBanners->first()->id);
