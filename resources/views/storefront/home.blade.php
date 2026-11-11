@@ -202,12 +202,12 @@
         {{-- =================================================================
              CỘT TRÁI: NỘI DUNG CHÍNH (lg:col-span-8 xl:col-span-9)
              ================================================================= --}}
-        <main class="lg:col-span-8 xl:col-span-9 space-y-14 sm:space-y-16 min-w-0">
+        <main class="lg:col-span-8 xl:col-span-9 space-y-10 sm:space-y-12 min-w-0">
 
             {{-- -------------------------------------------------------------
                  A. DANH MỤC & PHÂN LOẠI
                  ------------------------------------------------------------- --}}
-            <section id="categories" aria-labelledby="heading-categories" class="space-y-4">
+            <section id="categories" aria-labelledby="heading-categories" class="space-y-3.5">
                 <div class="flex items-center justify-between border-b border-border/80 pb-3">
                     <h2 id="heading-categories" class="text-xl sm:text-2xl font-extrabold text-main tracking-tight">
                         Danh mục & Phân loại
@@ -248,55 +248,46 @@
                     </div>
                 </div>
 
-                {{-- 2. Nhóm Kiểu dáng & Mục đích sử dụng (Trình bày cân xứng, rõ ràng 2 cột) --}}
+                {{-- 2. Nhóm Kiểu dáng & Mục đích sử dụng (Phân biệt rõ nét, tối ưu không gian, mở rộng linh hoạt đến 20 mục) --}}
                 @if ($silhouettes->isNotEmpty() || $activities->isNotEmpty())
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 pt-1">
                         @if ($silhouettes->isNotEmpty())
-                            <div class="p-4 sm:p-5 rounded-2xl bg-surface-card border border-border shadow-subtle space-y-3 flex flex-col justify-between">
-                                <div class="space-y-2.5">
-                                    <div class="flex items-center justify-between">
-                                        <h3 class="text-xs sm:text-sm font-bold uppercase tracking-wider text-muted font-mono flex items-center gap-2">
-                                            <svg class="w-4 h-4 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"/></svg>
-                                            Kiểu dáng thiết kế
-                                        </h3>
-                                        <span class="text-[11px] text-muted">{{ $silhouettes->count() }} kiểu</span>
-                                    </div>
-                                    <div class="flex flex-wrap gap-2">
-                                        @foreach ($silhouettes as $silhouette)
-                                            <a href="{{ route('shoes.index', ['silhouette' => [$silhouette->slug]]) }}"
-                                               class="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-medium bg-surface hover:bg-surface-card text-main hover:text-accent border border-border hover:border-accent transition-colors shadow-subtle">
-                                                {{ $silhouette->name }}
-                                            </a>
-                                        @endforeach
-                                    </div>
+                            <div class="p-3.5 sm:p-4 rounded-xl bg-surface-card border border-border shadow-subtle space-y-2.5">
+                                <div class="flex items-center justify-between pb-1.5 border-b border-border/50">
+                                    <h3 class="text-xs font-bold uppercase tracking-wider text-muted font-mono flex items-center gap-1.5">
+                                        <svg class="w-3.5 h-3.5 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"/></svg>
+                                        <span>Kiểu dáng</span>
+                                    </h3>
+                                    <span class="text-[10px] font-mono text-muted">{{ $silhouettes->count() }} mục</span>
                                 </div>
-                                <div class="pt-2 text-[11px] text-muted border-t border-border/50">
-                                    Chọn kiểu cổ giày phù hợp trang phục hàng ngày
+                                <div class="flex flex-wrap gap-1.5 sm:gap-2 max-h-[110px] overflow-y-auto scrollbar-none">
+                                    @foreach ($silhouettes as $silhouette)
+                                        <a href="{{ route('shoes.index', ['silhouette' => [$silhouette->slug]]) }}"
+                                           class="inline-flex items-center px-2.5 py-1.5 rounded-lg text-xs font-medium bg-surface hover:bg-surface-card text-main hover:text-accent border border-border hover:border-accent transition-colors shadow-subtle">
+                                            {{ $silhouette->name }}
+                                        </a>
+                                    @endforeach
                                 </div>
                             </div>
                         @endif
 
                         @if ($activities->isNotEmpty())
-                            <div class="p-4 sm:p-5 rounded-2xl bg-surface-card border border-border shadow-subtle space-y-3 flex flex-col justify-between">
-                                <div class="space-y-2.5">
-                                    <div class="flex items-center justify-between">
-                                        <h3 class="text-xs sm:text-sm font-bold uppercase tracking-wider text-muted font-mono flex items-center gap-2">
-                                            <svg class="w-4 h-4 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                                            Mục đích sử dụng
-                                        </h3>
-                                        <span class="text-[11px] text-muted">{{ $activities->count() }} hoạt động</span>
-                                    </div>
-                                    <div class="flex flex-wrap gap-2">
-                                        @foreach ($activities as $activity)
-                                            <a href="{{ route('shoes.index', ['activity' => [$activity->slug]]) }}"
-                                               class="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-medium bg-surface hover:bg-surface-card text-main hover:text-accent border border-border hover:border-accent transition-colors shadow-subtle">
-                                                {{ $activity->name }}
-                                            </a>
-                                        @endforeach
-                                    </div>
+                            <div class="p-3.5 sm:p-4 rounded-xl bg-surface-card border border-border shadow-subtle space-y-2.5">
+                                <div class="flex items-center justify-between pb-1.5 border-b border-border/50">
+                                    <h3 class="text-xs font-bold uppercase tracking-wider text-muted font-mono flex items-center gap-1.5">
+                                        <svg class="w-3.5 h-3.5 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                                        <span>Mục đích sử dụng</span>
+                                    </h3>
+                                    <span class="text-[10px] font-mono text-muted">{{ $activities->count() }} mục</span>
                                 </div>
-                                <div class="pt-2 text-[11px] text-muted border-t border-border/50">
-                                    Tối ưu độ đệm và chuyển động cho từng môn thể thao
+                                <div class="flex flex-wrap gap-1.5 sm:gap-2 max-h-[110px] overflow-y-auto scrollbar-none">
+                                    @foreach ($activities as $activity)
+                                        <a href="{{ route('shoes.index', ['activity' => [$activity->slug]]) }}"
+                                           class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium bg-accent/5 hover:bg-accent/15 text-main hover:text-accent border border-accent/25 hover:border-accent transition-colors shadow-subtle gap-1.5">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-accent"></span>
+                                            <span>{{ $activity->name }}</span>
+                                        </a>
+                                    @endforeach
                                 </div>
                             </div>
                         @endif
@@ -400,17 +391,17 @@
                                         </template>
                                     </div>
 
-                                    {{-- Ảnh lớn: Giảm chiều cao tối đa để vừa vặn ở zoom 100% --}}
-                                    <div class="aspect-[16/10] sm:aspect-[4/3] max-h-[250px] rounded-xl overflow-hidden bg-surface relative border border-border/60">
-                                        <a :href="current.detailUrl" class="block w-full h-full">
+                                    {{-- Khung ảnh sản phẩm tiêu điểm: Căn giữa hoàn hảo, tỷ lệ cân đối ở zoom 100% --}}
+                                    <div class="h-[210px] sm:h-[230px] w-full rounded-xl overflow-hidden bg-surface/40 relative border border-border/60 flex items-center justify-center p-3">
+                                        <a :href="current.detailUrl" class="w-full h-full flex items-center justify-center">
                                             <img :src="current.imageUrl"
                                                  :alt="current.product.name"
-                                                 class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
+                                                 class="max-h-full max-w-full object-contain object-center group-hover:scale-105 transition-transform duration-500 ease-out"
                                                  loading="eager"
                                                  fetchpriority="high">
                                         </a>
                                         <template x-if="current.product.sold_out">
-                                            <span class="absolute bottom-3 left-3 rounded-full bg-main px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-white shadow-sm">
+                                            <span class="absolute bottom-2.5 left-2.5 rounded-md bg-main px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white shadow-sm">
                                                 Hết hàng
                                             </span>
                                         </template>
@@ -458,14 +449,14 @@
 
                             {{-- DANH SÁCH CARD NHỎ TƯƠNG TÁC (Chiếm 5/12 trên md/lg) --}}
                             <div class="md:col-span-5 xl:col-span-5 flex flex-col justify-between space-y-2">
-                                <div class="space-y-2 overflow-y-auto max-h-[380px] sm:max-h-[410px] pr-1 scrollbar-none">
+                                <div class="space-y-2 overflow-y-auto max-h-[350px] sm:max-h-[370px] pr-1 scrollbar-none">
                                     <template x-for="(item, idx) in items" :key="item.product.id">
                                         <div @mouseenter="select(idx)"
                                              @click="select(idx, true)"
                                              :class="active === idx ? 'border-accent bg-accent/5 ring-1 ring-accent/30 shadow-sm' : 'border-border bg-surface-card hover:border-accent/50 hover:bg-surface'"
                                              class="p-2 sm:p-2.5 rounded-xl border transition-all duration-200 cursor-pointer flex items-center gap-2.5 group/item">
-                                            <div class="w-12 h-12 shrink-0 rounded-lg overflow-hidden bg-surface border border-border/60">
-                                                <img :src="item.imageUrl" :alt="item.product.name" class="w-full h-full object-cover group-hover/item:scale-105 transition-transform duration-300">
+                                            <div class="w-12 h-12 shrink-0 rounded-lg overflow-hidden bg-surface/50 border border-border/60 flex items-center justify-center p-1">
+                                                <img :src="item.imageUrl" :alt="item.product.name" class="max-h-full max-w-full object-contain group-hover/item:scale-105 transition-transform duration-300">
                                             </div>
                                             <div class="flex-1 min-w-0">
                                                 <h4 class="text-xs sm:text-sm font-bold text-main line-clamp-1 group-hover/item:text-accent transition-colors" x-text="item.product.name"></h4>
