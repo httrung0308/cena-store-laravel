@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Services;
 
-use App\Models\ProductImage;
 use Illuminate\Support\Facades\Storage;
 use Throwable;
 
@@ -183,8 +182,6 @@ final class ProductImageThumbnailService
 
     /**
      * Load an image file into a GD image resource with EXIF orientation correction.
-     *
-     * @return \GdImage|null
      */
     private function loadImage(string $path): ?\GdImage
     {
