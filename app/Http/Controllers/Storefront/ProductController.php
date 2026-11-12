@@ -16,15 +16,20 @@ class ProductController extends Controller
     public function index(CatalogRequest $request, CatalogQueryService $catalog): View
     {
         $filters = $request->filters();
-
-        return view('catalog.index', [
+        $data = [
             'paginator' => $catalog->listing($filters),
             'filterProps' => $catalog->filterOptions() + [
                 'filters' => $filters,
                 'action' => route('shoes.index'),
                 'resetUrl' => route('shoes.index'),
             ],
-        ]);
+        ];
+
+        if ($request->header('X-Catalog-Partial') === '1') {
+            return view('components.catalog.listing', $data);
+        }
+
+        return view('catalog.index', $data);
     }
 
     public function show(CatalogRequest $request, string $slug, CatalogQueryService $catalog, ReviewService $reviews): View

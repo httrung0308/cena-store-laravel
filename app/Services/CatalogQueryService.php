@@ -165,16 +165,24 @@ final class CatalogQueryService
         return [
             'genderOptions' => [
                 ['value' => '', 'label' => 'Tất cả'],
-                ['value' => 'men', 'label' => 'Men'],
-                ['value' => 'women', 'label' => 'Women'],
-                ['value' => 'kids', 'label' => 'Kids'],
+                ['value' => 'men', 'label' => 'Nam'],
+                ['value' => 'women', 'label' => 'Nữ'],
+                ['value' => 'kids', 'label' => 'Trẻ em'],
                 ['value' => 'unisex', 'label' => 'Unisex'],
             ],
             'colorOptions' => collect(config('store.palette'))
-                ->map(fn (array $palette, string $key): array => ['value' => $key, 'label' => $palette['label']])
+                ->map(fn (array $palette, string $key): array => [
+                    'value' => $key,
+                    'label' => $this->colorLabel($key, $palette['label']),
+                    'hex' => $palette['hex'],
+                ])
                 ->values()->all(),
             'categoryOptions' => $categories
-                ->map(fn (Category $category): array => ['slug' => $category->slug, 'name' => ($category->parent_id ? '— ' : '').$category->name])
+                ->map(fn (Category $category): array => [
+                    'slug' => $category->slug,
+                    'name' => ($category->parent_id ? '— ' : '').$category->name,
+                    'is_root_gender' => $category->parent_id === null && in_array($category->slug, ['men', 'women', 'kids', 'unisex'], true),
+                ])
                 ->all(),
             'silhouetteOptions' => Classification::query()
                 ->where('classification_group', ClassificationGroup::Silhouette->value)
@@ -358,5 +366,25 @@ final class CatalogQueryService
         }
 
         return asset(self::FALLBACK_IMAGE);
+    }
+
+    /** Vietnamese display label for canonical color palette keys. */
+    private function colorLabel(string $key, string $fallback): string
+    {
+        return match ($key) {
+            'red' => 'Đỏ',
+            'blue' => 'Xanh dương',
+            'green' => 'Xanh lá',
+            'yellow' => 'Vàng',
+            'black' => 'Đen',
+            'white' => 'Trắng',
+            'gray' => 'Xám',
+            'pink' => 'Hồng',
+            'purple' => 'Tím',
+            'orange' => 'Cam',
+            'brown' => 'Nâu',
+            'lime' => 'Xanh chanh',
+            default => $fallback,
+        };
     }
 }

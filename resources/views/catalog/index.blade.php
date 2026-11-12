@@ -7,9 +7,9 @@
         <span>/</span>
         <span class="font-medium text-main">Danh mục giày</span>
     </nav>
-    <div class="mb-6 flex flex-col border-b border-border pb-5 sm:flex-row sm:items-baseline sm:justify-between">
+    <div class="mb-5 flex flex-col border-b border-border pb-4 sm:flex-row sm:items-baseline sm:justify-between">
         <div>
-            <h1 class="text-3xl font-extrabold tracking-tight text-main sm:text-4xl">Tất Cả Sản Phẩm <span class="ml-2 text-xs font-bold tracking-widest text-accent uppercase font-mono">Shoes</span></h1>
+            <h1 class="text-2xl font-extrabold tracking-tight text-main sm:text-3xl">Tất Cả Sản Phẩm</h1>
             <p class="mt-1 text-xs font-normal text-muted sm:text-sm">Những mẫu giày thể thao chính hãng tuyển chọn cho cảm giác nâng niu tự nhiên.</p>
         </div>
     </div>
