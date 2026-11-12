@@ -32,6 +32,7 @@ use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use RuntimeException;
+use Tests\TestCase;
 
 class FailedDeliveryReturnTest extends TestCase
 {
