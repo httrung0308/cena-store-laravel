@@ -653,20 +653,20 @@
                     </div>
                 </div>
 
-                {{-- 2. Nhóm Kiểu dáng --}}
+                {{-- 2. Nhóm Kiểu dáng (không cuộn nội bộ, hiển thị theo thứ tự Admin chọn) --}}
                 @if ($silhouettes->isNotEmpty())
                     <div class="space-y-2 pt-1 border-t border-border/50">
                         <div class="flex items-center justify-between">
                             <h4 class="text-xs font-bold uppercase tracking-wider text-muted font-mono flex items-center gap-1.5">
-                                <svg class="w-3 h-3 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"/></svg>
+                                <svg class="w-3 h-3 text-accent shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"/></svg>
                                 <span>Kiểu dáng</span>
                             </h4>
                             <span class="text-[10px] font-mono text-muted">{{ $silhouettes->count() }} mục</span>
                         </div>
-                        <div class="flex flex-wrap gap-1.5 max-h-[95px] overflow-y-auto scrollbar-none">
+                        <div class="flex flex-wrap gap-1.5">
                             @foreach ($silhouettes as $silhouette)
                                 <a href="{{ route('shoes.index', ['silhouette' => [$silhouette->slug]]) }}"
-                                   class="inline-flex items-center px-2 py-1 rounded-lg text-xs font-medium bg-surface hover:bg-surface-card text-main hover:text-accent border border-border hover:border-accent transition-colors shadow-subtle">
+                                   class="inline-flex max-w-full items-center px-2 py-1 rounded-lg text-left text-xs font-medium leading-snug bg-surface hover:bg-surface-card text-main hover:text-accent border border-border hover:border-accent transition-colors shadow-subtle break-words">
                                     {{ $silhouette->name }}
                                 </a>
                             @endforeach
@@ -674,25 +674,34 @@
                     </div>
                 @endif
 
-                {{-- 3. Nhóm Mục đích sử dụng --}}
+                {{-- 3. Nhóm Mục đích sử dụng (không cuộn nội bộ, hiển thị theo thứ tự Admin chọn) --}}
                 @if ($activities->isNotEmpty())
                     <div class="space-y-2 pt-1 border-t border-border/50">
                         <div class="flex items-center justify-between">
                             <h4 class="text-xs font-bold uppercase tracking-wider text-muted font-mono flex items-center gap-1.5">
-                                <svg class="w-3 h-3 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                                <svg class="w-3 h-3 text-accent shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                                 <span>Mục đích</span>
                             </h4>
                             <span class="text-[10px] font-mono text-muted">{{ $activities->count() }} mục</span>
                         </div>
-                        <div class="flex flex-wrap gap-1.5 max-h-[95px] overflow-y-auto scrollbar-none">
+                        <div class="flex flex-wrap gap-1.5">
                             @foreach ($activities as $activity)
                                 <a href="{{ route('shoes.index', ['activity' => [$activity->slug]]) }}"
-                                   class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-accent/5 hover:bg-accent/15 text-main hover:text-accent border border-accent/25 hover:border-accent transition-colors shadow-subtle gap-1.5">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-accent"></span>
-                                    <span>{{ $activity->name }}</span>
+                                   class="inline-flex max-w-full items-center px-2.5 py-1 rounded-full text-left text-xs font-medium leading-snug bg-accent/5 hover:bg-accent/15 text-main hover:text-accent border border-accent/25 hover:border-accent transition-colors shadow-subtle gap-1.5 break-words">
+                                    <span class="w-1.5 h-1.5 shrink-0 rounded-full bg-accent" aria-hidden="true"></span>
+                                    <span class="min-w-0 break-words">{{ $activity->name }}</span>
                                 </a>
                             @endforeach
                         </div>
+                    </div>
+                @endif
+
+                @if ($silhouettes->isEmpty() && $activities->isEmpty())
+                    <div class="pt-2 border-t border-border/50">
+                        <a href="{{ route('categories.index') }}" class="inline-flex items-center gap-1 text-xs font-semibold text-accent hover:text-accent-hover transition-colors">
+                            <span>Khám phá đầy đủ kiểu dáng &amp; mục đích</span>
+                            <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                        </a>
                     </div>
                 @endif
             </div>

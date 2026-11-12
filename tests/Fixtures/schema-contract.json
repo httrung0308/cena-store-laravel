@@ -4626,6 +4626,12 @@
           "default": "1",
           "auto_increment": false
         },
+        "show_in_home_nav": {
+          "type": "tinyint(1)",
+          "nullable": false,
+          "default": "0",
+          "auto_increment": false
+        },
         "created_at": {
           "type": "datetime(6)",
           "nullable": false,
@@ -4655,11 +4661,21 @@
             "sort_order"
           ],
           "unique": false
+        },
+        {
+          "columns": [
+            "classification_group",
+            "is_active",
+            "show_in_home_nav",
+            "sort_order"
+          ],
+          "unique": false
         }
       ],
       "checks": [
         "classifications_group_allowed_check",
-        "classifications_is_active_boolean_check"
+        "classifications_is_active_boolean_check",
+        "classifications_show_in_home_nav_boolean_check"
       ]
     },
     "product_classifications": {

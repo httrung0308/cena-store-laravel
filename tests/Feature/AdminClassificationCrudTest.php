@@ -171,4 +171,119 @@ class AdminClassificationCrudTest extends TestCase
 
         $this->assertDatabaseMissing('classifications', ['id' => $classification->id]);
     }
+
+    public function test_staff_cannot_toggle_home_nav(): void
+    {
+        $classification = Classification::forceCreate([
+            'name' => 'Staff Blocked Nav',
+            'slug' => 'staff-blocked-'.uniqid(),
+            'classification_group' => ClassificationGroup::Silhouette,
+            'is_active' => true,
+        ]);
+
+        $this->actingAs($this->staff)
+            ->patch(route('admin.classifications.toggle-home-nav', $classification))
+            ->assertForbidden();
+
+        $this->assertFalse($classification->fresh()->show_in_home_nav);
+    }
+
+    public function test_admin_can_toggle_and_sort_home_nav_with_max_6_active_per_group_and_reactivation_guard(): void
+    {
+        // Tạo sẵn 6 mục SILHOUETTE đang hoạt động & được chọn ở menu/trang chủ
+        for ($i = 1; $i <= 6; $i++) {
+            Classification::forceCreate([
+                'name' => "Selected Sil {$i}",
+                'slug' => 'selected-sil-'.$i.'-'.uniqid(),
+                'classification_group' => ClassificationGroup::Silhouette,
+                'sort_order' => $i,
+                'is_active' => true,
+                'show_in_home_nav' => true,
+            ]);
+        }
+
+        // 1. Không thể tạo thêm mục thứ 7 active + show_in_home_nav = 1 trong cùng nhóm SILHOUETTE
+        $this->actingAs($this->admin)->post(route('admin.classifications.store'), [
+            'name' => 'Sil Seventh Blocked',
+            'slug' => 'sil-seventh-'.uniqid(),
+            'classification_group' => 'SILHOUETTE',
+            'sort_order' => 7,
+            'is_active' => '1',
+            'show_in_home_nav' => '1',
+        ])->assertSessionHasErrors('show_in_home_nav');
+
+        // 2. Nhưng nhóm ACTIVITY vẫn độc lập và chọn được bình thường
+        $actSlug = 'act-first-'.uniqid();
+        $this->actingAs($this->admin)->post(route('admin.classifications.store'), [
+            'name' => 'Activity First Selected',
+            'slug' => $actSlug,
+            'classification_group' => 'ACTIVITY',
+            'sort_order' => 1,
+            'is_active' => '1',
+            'show_in_home_nav' => '1',
+        ])->assertRedirect(route('admin.classifications.index'));
+
+        $this->assertDatabaseHas('classifications', [
+            'slug' => $actSlug,
+            'show_in_home_nav' => 1,
+        ]);
+
+        // 3. Mục đang hoạt động thứ 7 không thể bật toggle-home-nav
+        $unselectedActive = Classification::forceCreate([
+            'name' => 'Unselected Active Sil',
+            'slug' => 'unselected-active-'.uniqid(),
+            'classification_group' => ClassificationGroup::Silhouette,
+            'sort_order' => 8,
+            'is_active' => true,
+            'show_in_home_nav' => false,
+        ]);
+
+        $this->actingAs($this->admin)
+            ->patch(route('admin.classifications.toggle-home-nav', $unselectedActive))
+            ->assertSessionHasErrors('classification');
+        $this->assertFalse($unselectedActive->fresh()->show_in_home_nav);
+
+        // 4. Mục đã chọn nhưng đang tạm ngưng: khi bật lại (toggleActive hoặc update) phải bị chặn nếu nhóm đã đủ 6
+        $inactiveSelected = Classification::forceCreate([
+            'name' => 'Inactive Selected Sil',
+            'slug' => 'inactive-selected-'.uniqid(),
+            'classification_group' => ClassificationGroup::Silhouette,
+            'sort_order' => 9,
+            'is_active' => false,
+            'show_in_home_nav' => true,
+        ]);
+
+        $this->actingAs($this->admin)
+            ->patch(route('admin.classifications.toggle-active', $inactiveSelected))
+            ->assertSessionHasErrors('classification');
+        $this->assertFalse($inactiveSelected->fresh()->is_active);
+
+        $this->actingAs($this->admin)
+            ->put(route('admin.classifications.update', $inactiveSelected), [
+                'name' => $inactiveSelected->name,
+                'slug' => $inactiveSelected->slug,
+                'classification_group' => 'SILHOUETTE',
+                'sort_order' => 9,
+                'is_active' => '1',
+                'show_in_home_nav' => '1',
+            ])->assertSessionHasErrors('show_in_home_nav');
+        $this->assertFalse($inactiveSelected->fresh()->is_active);
+
+        // 5. Khi bỏ chọn 1 mục active, mục tạm ngưng có thể kích hoạt lại thành công
+        $firstSelected = Classification::query()
+            ->where('classification_group', ClassificationGroup::Silhouette->value)
+            ->where('show_in_home_nav', true)
+            ->where('is_active', true)
+            ->firstOrFail();
+
+        $this->actingAs($this->admin)
+            ->patch(route('admin.classifications.toggle-home-nav', $firstSelected))
+            ->assertSessionHasNoErrors();
+        $this->assertFalse($firstSelected->fresh()->show_in_home_nav);
+
+        $this->actingAs($this->admin)
+            ->patch(route('admin.classifications.toggle-active', $inactiveSelected))
+            ->assertSessionHasNoErrors();
+        $this->assertTrue($inactiveSelected->fresh()->is_active);
+    }
 }

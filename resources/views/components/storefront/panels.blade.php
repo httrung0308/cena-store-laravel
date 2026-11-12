@@ -84,7 +84,7 @@
                                 @foreach ($navSilhouettes as $silhouette)
                                     <a href="{{ route('shoes.index', ['silhouette' => [$silhouette->slug]]) }}"
                                        @click="closePanel()"
-                                       class="rounded-lg border border-border bg-surface-card px-2 py-1 text-xs font-medium text-main hover:border-accent hover:text-accent">
+                                       class="max-w-full rounded-lg border border-border bg-surface-card px-2 py-1 text-left text-xs font-medium leading-snug text-main break-words hover:border-accent hover:text-accent">
                                         {{ $silhouette->name }}
                                     </a>
                                 @endforeach
@@ -99,12 +99,21 @@
                                 @foreach ($navActivities as $activity)
                                     <a href="{{ route('shoes.index', ['activity' => [$activity->slug]]) }}"
                                        @click="closePanel()"
-                                       class="inline-flex items-center gap-1 rounded-full border border-accent/25 bg-accent/5 px-2.5 py-1 text-xs font-medium text-main hover:border-accent hover:text-accent">
-                                        <span class="h-1.5 w-1.5 rounded-full bg-accent" aria-hidden="true"></span>
-                                        <span>{{ $activity->name }}</span>
+                                       class="inline-flex max-w-full items-center gap-1 rounded-full border border-accent/25 bg-accent/5 px-2.5 py-1 text-left text-xs font-medium leading-snug text-main break-words hover:border-accent hover:text-accent">
+                                        <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-accent" aria-hidden="true"></span>
+                                        <span class="min-w-0 break-words">{{ $activity->name }}</span>
                                     </a>
                                 @endforeach
                             </div>
+                        </div>
+                    @endif
+
+                    @if ($navSilhouettes->isEmpty() && $navActivities->isEmpty())
+                        <div class="border-t border-border/60 pt-2.5">
+                            <a href="{{ route('categories.index') }}" @click="closePanel()" class="inline-flex items-center gap-1 text-xs font-semibold text-accent hover:underline">
+                                <span>Xem toàn bộ kiểu dáng &amp; mục đích</span>
+                                <span aria-hidden="true">→</span>
+                            </a>
                         </div>
                     @endif
                 </div>

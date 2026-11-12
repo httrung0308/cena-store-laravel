@@ -12,6 +12,8 @@
             :record="$record"
             :groups="$groups"
             :products-count="$productsCount"
+            :home-nav-counts="$homeNavCounts"
+            :home-nav-limit="$homeNavLimit"
         />
     </div>
 @endsection

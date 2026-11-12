@@ -1,15 +1,27 @@
-@props(['action' => null, 'record' => null, 'groups' => [], 'productsCount' => 0, 'method' => 'POST'])
+@props([
+    'action' => null,
+    'record' => null,
+    'groups' => [],
+    'productsCount' => 0,
+    'homeNavCounts' => [],
+    'homeNavLimit' => 6,
+    'method' => 'POST',
+])
+@php
+    $silCount = (int) ($homeNavCounts['SILHOUETTE'] ?? 0);
+    $actCount = (int) ($homeNavCounts['ACTIVITY'] ?? 0);
+@endphp
 <form @if ($action) action="{{ $action }}" @endif method="POST" class="admin-card space-y-6">
     @csrf
     @if (in_array(strtoupper($method), ['PATCH', 'PUT'], true)) @method(strtoupper($method)) @endif
-    
+
     <div>
         <h2 class="text-base font-bold text-main">Thông tin nhãn phân loại</h2>
         <p class="text-xs text-muted mt-1">Phân loại sản phẩm đa trị giúp khách hàng dễ dàng khám phá theo kiểu dáng và mục đích sử dụng.</p>
     </div>
 
     @if ($productsCount > 0)
-        <div class="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4 text-xs text-amber-700 dark:text-amber-400">
+        <div class="rounded-xl border border-warning/30 bg-warning-bg p-4 text-xs text-warning-text">
             <strong class="font-bold">Lưu ý:</strong> Nhãn này đang được gán cho <strong>{{ $productsCount }}</strong> sản phẩm. Để đảm bảo tính toàn vẹn dữ liệu, không thể thay đổi nhóm phân loại.
         </div>
     @endif
@@ -51,7 +63,7 @@
         <div>
             <label for="classification-sort-order" class="admin-label text-muted">Thứ tự hiển thị <span class="text-error">*</span></label>
             <input type="number" id="classification-sort-order" name="sort_order" value="{{ old('sort_order', $record->sort_order ?? 1) }}" min="0" max="65535" class="input w-full border-border bg-surface text-main text-xs font-mono" required>
-            <p class="text-[11px] text-muted/70 mt-1">Số nhỏ hơn sẽ ưu tiên hiển thị trước trên bộ lọc.</p>
+            <p class="text-[11px] text-muted/70 mt-1">Số nhỏ hơn sẽ ưu tiên xếp trước trong menu Header, sidebar trang chủ, trang toàn bộ và bộ lọc.</p>
             <x-forms.field-error name="sort_order" />
         </div>
 
@@ -61,13 +73,27 @@
             <x-forms.field-error name="description" />
         </div>
 
-        <div class="pt-2">
-            <input type="hidden" name="is_active" value="0">
-            <label class="flex items-center gap-2.5 text-xs font-semibold text-main cursor-pointer select-none">
-                <input type="checkbox" name="is_active" value="1" class="native-checkbox text-accent focus:ring-accent rounded" @checked(old('is_active', $record->exists ? $record->is_active : true))>
-                <span>Kích hoạt nhãn này (Hiển thị trong bộ lọc Storefront và cho phép gán cho sản phẩm)</span>
-            </label>
-            <x-forms.field-error name="is_active" />
+        <div class="space-y-3 pt-2 border-t border-border/70">
+            <div>
+                <input type="hidden" name="is_active" value="0">
+                <label class="flex items-center gap-2.5 text-xs font-semibold text-main cursor-pointer select-none">
+                    <input type="checkbox" name="is_active" value="1" class="native-checkbox text-accent focus:ring-accent rounded" @checked(old('is_active', $record->exists ? $record->is_active : true))>
+                    <span>Kích hoạt nhãn này (Hiển thị trong trang Danh mục &amp; Phân loại, bộ lọc Storefront và cho phép gán cho sản phẩm)</span>
+                </label>
+                <x-forms.field-error name="is_active" />
+            </div>
+
+            <div class="rounded-xl border border-border bg-surface/60 p-3.5 space-y-1.5">
+                <input type="hidden" name="show_in_home_nav" value="0">
+                <label class="flex items-start gap-2.5 text-xs font-semibold text-main cursor-pointer select-none">
+                    <input type="checkbox" name="show_in_home_nav" value="1" class="native-checkbox mt-0.5 text-accent focus:ring-accent rounded" @checked(old('show_in_home_nav', $record->exists ? $record->show_in_home_nav : false))>
+                    <span>Hiển thị ở menu &amp; trang chủ</span>
+                </label>
+                <p class="text-[11px] text-muted leading-relaxed pl-6">
+                    Giới hạn tối đa <strong>{{ $homeNavLimit }} mục đang hoạt động</strong> mỗi nhóm (hiện có: Kiểu dáng <strong>{{ $silCount }}/{{ $homeNavLimit }}</strong> · Mục đích <strong>{{ $actCount }}/{{ $homeNavLimit }}</strong>). Nhãn đang tạm ngưng sẽ không hiển thị ra Storefront.
+                </p>
+                <x-forms.field-error name="show_in_home_nav" />
+            </div>
         </div>
     </div>
 

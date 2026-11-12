@@ -71,4 +71,5 @@ Route::middleware('role:admin')->group(function (): void {
 
     Route::resource('classifications', ClassificationController::class)->except('show');
     Route::patch('classifications/{classification}/toggle-active', [ClassificationController::class, 'toggleActive'])->name('classifications.toggle-active');
+    Route::patch('classifications/{classification}/toggle-home-nav', [ClassificationController::class, 'toggleHomeNav'])->name('classifications.toggle-home-nav');
 });

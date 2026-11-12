@@ -122,19 +122,19 @@
                             </ul>
                         </div>
 
-                        {{-- 2. Kiểu dáng (giới hạn 8 mục) --}}
+                        {{-- 2. Kiểu dáng (tối đa 6 mục do Admin chọn) --}}
                         <div class="space-y-2.5 border-border/60 md:border-l md:pl-5">
                             <p class="text-[11px] font-bold uppercase tracking-wider text-muted font-mono">
                                 Kiểu dáng
                             </p>
                             @if ($navSilhouettes->isEmpty())
-                                <p class="text-xs text-muted">Đang cập nhật.</p>
+                                <p class="text-xs text-muted">Chưa chọn mục hiển thị.</p>
                             @else
                                 <div class="flex flex-wrap gap-1.5">
                                     @foreach ($navSilhouettes as $silhouette)
                                         <a href="{{ route('shoes.index', ['silhouette' => [$silhouette->slug]]) }}"
                                            @click="closeMenu()"
-                                           class="inline-flex items-center rounded-lg border border-border bg-surface px-2.5 py-1 text-xs font-medium text-main transition-colors hover:border-accent hover:bg-surface-card hover:text-accent">
+                                           class="inline-flex max-w-full items-center rounded-lg border border-border bg-surface px-2.5 py-1 text-left text-xs font-medium leading-snug text-main break-words transition-colors hover:border-accent hover:bg-surface-card hover:text-accent">
                                             {{ $silhouette->name }}
                                         </a>
                                     @endforeach
@@ -142,21 +142,21 @@
                             @endif
                         </div>
 
-                        {{-- 3. Mục đích sử dụng (giới hạn 8 mục) --}}
+                        {{-- 3. Mục đích sử dụng (tối đa 6 mục do Admin chọn) --}}
                         <div class="space-y-2.5 border-border/60 md:border-l md:pl-5">
                             <p class="text-[11px] font-bold uppercase tracking-wider text-muted font-mono">
                                 Mục đích sử dụng
                             </p>
                             @if ($navActivities->isEmpty())
-                                <p class="text-xs text-muted">Đang cập nhật.</p>
+                                <p class="text-xs text-muted">Chưa chọn mục hiển thị.</p>
                             @else
                                 <div class="flex flex-wrap gap-1.5">
                                     @foreach ($navActivities as $activity)
                                         <a href="{{ route('shoes.index', ['activity' => [$activity->slug]]) }}"
                                            @click="closeMenu()"
-                                           class="inline-flex items-center gap-1.5 rounded-full border border-accent/25 bg-accent/5 px-2.5 py-1 text-xs font-medium text-main transition-colors hover:border-accent hover:bg-accent/15 hover:text-accent">
-                                            <span class="h-1.5 w-1.5 rounded-full bg-accent" aria-hidden="true"></span>
-                                            <span>{{ $activity->name }}</span>
+                                           class="inline-flex max-w-full items-center gap-1.5 rounded-full border border-accent/25 bg-accent/5 px-2.5 py-1 text-left text-xs font-medium leading-snug text-main break-words transition-colors hover:border-accent hover:bg-accent/15 hover:text-accent">
+                                            <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-accent" aria-hidden="true"></span>
+                                            <span class="min-w-0 break-words">{{ $activity->name }}</span>
                                         </a>
                                     @endforeach
                                 </div>
@@ -165,7 +165,7 @@
                     </div>
 
                     <div class="mt-4 flex items-center justify-between border-t border-border/70 pt-3">
-                        <span class="text-[11px] text-muted">Hiển thị nhóm nổi bật</span>
+                        <span class="text-[11px] text-muted">Hiển thị theo lựa chọn quản trị</span>
                         <a href="{{ route('categories.index') }}"
                            @click="closeMenu()"
                            class="inline-flex items-center gap-1 text-xs font-bold text-accent transition-colors hover:text-accent-hover">

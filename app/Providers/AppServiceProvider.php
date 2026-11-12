@@ -43,8 +43,8 @@ class AppServiceProvider extends ServiceProvider
 
             $view->with([
                 'navGenderCategories' => $home->categories(),
-                'navSilhouettes' => $home->silhouettes()->take(8),
-                'navActivities' => $home->activities()->take(8),
+                'navSilhouettes' => $home->homeNavSilhouettes(),
+                'navActivities' => $home->homeNavActivities(),
             ]);
         });
     }

@@ -52,8 +52,8 @@ final class HomeQueryService
             'banners' => $this->banners(),
             'categories' => $categories,
             'genderCategories' => $categories,
-            'silhouettes' => $this->silhouettes(),
-            'activities' => $this->activities(),
+            'silhouettes' => $this->homeNavSilhouettes(),
+            'activities' => $this->homeNavActivities(),
             'featuredProducts' => $featured,
             'saleProducts' => $sale,
             'newProducts' => $new,
@@ -126,6 +126,30 @@ final class HomeQueryService
             ->active()
             ->orderBy('sort_order')
             ->orderBy('id')
+            ->get();
+    }
+
+    /** @return Collection<int, Classification> */
+    public function homeNavSilhouettes(): Collection
+    {
+        return Classification::query()
+            ->group(ClassificationGroup::Silhouette)
+            ->homeNav()
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->limit(ClassificationManagementService::MAX_HOME_NAV_PER_GROUP)
+            ->get();
+    }
+
+    /** @return Collection<int, Classification> */
+    public function homeNavActivities(): Collection
+    {
+        return Classification::query()
+            ->group(ClassificationGroup::Activity)
+            ->homeNav()
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->limit(ClassificationManagementService::MAX_HOME_NAV_PER_GROUP)
             ->get();
     }
 

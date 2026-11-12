@@ -120,24 +120,48 @@ class StorefrontRedesignTest extends TestCase
 
     public function test_header_menu_caps_classifications_includes_search_and_keeps_role_links_in_footer(): void
     {
-        for ($i = 1; $i <= 12; $i++) {
-            Classification::forceCreate([
+        Classification::query()->update(['show_in_home_nav' => false]);
+
+        $selectedSil = [];
+        for ($i = 1; $i <= 6; $i++) {
+            $selectedSil[] = Classification::forceCreate([
                 'name' => sprintf('Header Sil %02d', $i),
                 'slug' => 'header-sil-'.$i.'-'.uniqid(),
                 'classification_group' => ClassificationGroup::Silhouette,
-                'sort_order' => 100 + $i,
+                'sort_order' => $i,
                 'is_active' => true,
-            ]);
-            Classification::forceCreate([
-                'name' => sprintf('Header Act %02d', $i),
-                'slug' => 'header-act-'.$i.'-'.uniqid(),
-                'classification_group' => ClassificationGroup::Activity,
-                'sort_order' => 100 + $i,
-                'is_active' => true,
+                'show_in_home_nav' => true,
             ]);
         }
 
-        // Trên /news: Header chỉ hiển thị tối đa 8 mục mỗi nhóm (không tràn 12 mục), Bài viết đang active
+        $unselectedSil = Classification::forceCreate([
+            'name' => 'Header Sil Unselected 07',
+            'slug' => 'header-sil-unselected-'.uniqid(),
+            'classification_group' => ClassificationGroup::Silhouette,
+            'sort_order' => 7,
+            'is_active' => true,
+            'show_in_home_nav' => false,
+        ]);
+
+        $inactiveSelectedAct = Classification::forceCreate([
+            'name' => 'Header Act Inactive Selected',
+            'slug' => 'header-act-inactive-'.uniqid(),
+            'classification_group' => ClassificationGroup::Activity,
+            'sort_order' => 1,
+            'is_active' => false,
+            'show_in_home_nav' => true,
+        ]);
+
+        $selectedAct = Classification::forceCreate([
+            'name' => 'Header Act Active Selected',
+            'slug' => 'header-act-active-'.uniqid(),
+            'classification_group' => ClassificationGroup::Activity,
+            'sort_order' => 2,
+            'is_active' => true,
+            'show_in_home_nav' => true,
+        ]);
+
+        // Trên /news: Header và mobile menu chỉ hiển thị các mục active được chọn theo thứ tự, Bài viết đang active
         $this->get(route('news.index'))->assertOk()
             ->assertSee('Sản phẩm')
             ->assertSee('Danh mục &amp; Phân loại', false)
@@ -148,16 +172,22 @@ class StorefrontRedesignTest extends TestCase
             ->assertSee('id="notice-panel"', false)
             ->assertSee('Chế độ giao diện')
             ->assertSee('aria-current="page"', false)
-            ->assertDontSee('Header Sil 12')
-            ->assertDontSee('Header Act 12');
+            ->assertSeeInOrder([$selectedSil[0]->name, $selectedSil[5]->name])
+            ->assertSee($selectedAct->name)
+            ->assertDontSee($unselectedSil->name)
+            ->assertDontSee($inactiveSelectedAct->name);
 
-        // Trên /shoes: Sản phẩm active
-        $this->get(route('shoes.index'))->assertOk()
-            ->assertSee('aria-current="page"', false);
-
-        // Trên /categories: Danh mục & Phân loại active
+        // Trang toàn bộ /categories và bộ lọc /shoes vẫn hiển thị cả mục active chưa chọn ở menu
         $this->get(route('categories.index'))->assertOk()
-            ->assertSee('aria-current="page"', false);
+            ->assertSee('aria-current="page"', false)
+            ->assertSee($selectedSil[0]->name)
+            ->assertSee($unselectedSil->name)
+            ->assertDontSee($inactiveSelectedAct->name);
+
+        // Trên /shoes: Sản phẩm active, bộ lọc có cả mục chưa chọn ở menu
+        $this->get(route('shoes.index'))->assertOk()
+            ->assertSee('aria-current="page"', false)
+            ->assertSee($unselectedSil->name);
 
         // Staff thấy cả Đơn hàng của tôi và Trang quản trị ở footer
         $staff = User::factory()->staff()->create();

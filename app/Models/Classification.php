@@ -17,6 +17,7 @@ class Classification extends DomainModel
     protected $attributes = [
         'sort_order' => 1,
         'is_active' => true,
+        'show_in_home_nav' => false,
     ];
 
     /** @return array<string, string> */
@@ -27,6 +28,7 @@ class Classification extends DomainModel
             'classification_group' => ClassificationGroup::class,
             'sort_order' => 'integer',
             'is_active' => 'boolean',
+            'show_in_home_nav' => 'boolean',
             'created_at' => 'immutable_datetime',
             'updated_at' => 'immutable_datetime',
         ];
@@ -41,6 +43,12 @@ class Classification extends DomainModel
     public function scopeActive(Builder $query): void
     {
         $query->where('is_active', true);
+    }
+
+    /** @param Builder<Classification> $query */
+    public function scopeHomeNav(Builder $query): void
+    {
+        $query->where('is_active', true)->where('show_in_home_nav', true);
     }
 
     /** @param Builder<Classification> $query */

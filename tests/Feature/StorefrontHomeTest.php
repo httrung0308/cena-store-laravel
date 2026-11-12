@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\ArticleStatus;
+use App\Enums\ClassificationGroup;
 use App\Enums\GenderGroup;
 use App\Enums\ProductImageSourceType;
 use App\Models\Article;
@@ -129,21 +130,59 @@ class StorefrontHomeTest extends TestCase
 
     public function test_home_renders_gender_categories_and_active_classifications(): void
     {
-        $response = $this->get(route('home'));
+        Classification::query()->update(['show_in_home_nav' => false]);
 
-        $response->assertOk()
+        // Khi chưa chọn mục nào -> không tự lấy mục khác thay thế, giữ lối vào trang toàn bộ
+        $unselected = Classification::forceCreate([
+            'name' => 'Unselected Active Tag '.Str::random(4),
+            'slug' => 'unselected-active-'.uniqid(),
+            'classification_group' => ClassificationGroup::Silhouette,
+            'sort_order' => 1,
+            'is_active' => true,
+            'show_in_home_nav' => false,
+        ]);
+
+        $this->get(route('home'))->assertOk()
             ->assertSee('Đối tượng')
             ->assertSee('Giày Nam')
             ->assertSee('Giày Nữ')
             ->assertSee('Trẻ Em')
             ->assertSee('Unisex')
             ->assertSee(route('categories.index'), false)
-            ->assertDontSee('Xem toàn bộ danh mục và phân loại');
+            ->assertDontSee('Xem toàn bộ danh mục và phân loại')
+            ->assertDontSee($unselected->name);
 
-        $activeClass = Classification::active()->first();
-        if ($activeClass) {
-            $response->assertSee($activeClass->name);
-        }
+        // Khi Admin chọn 2 mục active và 1 mục inactive -> chỉ hiển thị 2 mục active theo thứ tự sort_order
+        $second = Classification::forceCreate([
+            'name' => 'Sidebar Second '.Str::random(4),
+            'slug' => 'sidebar-second-'.uniqid(),
+            'classification_group' => ClassificationGroup::Silhouette,
+            'sort_order' => 20,
+            'is_active' => true,
+            'show_in_home_nav' => true,
+        ]);
+        $first = Classification::forceCreate([
+            'name' => 'Sidebar First '.Str::random(4),
+            'slug' => 'sidebar-first-'.uniqid(),
+            'classification_group' => ClassificationGroup::Silhouette,
+            'sort_order' => 5,
+            'is_active' => true,
+            'show_in_home_nav' => true,
+        ]);
+        $inactiveSelected = Classification::forceCreate([
+            'name' => 'Sidebar Inactive Selected '.Str::random(4),
+            'slug' => 'sidebar-inactive-'.uniqid(),
+            'classification_group' => ClassificationGroup::Silhouette,
+            'sort_order' => 1,
+            'is_active' => false,
+            'show_in_home_nav' => true,
+        ]);
+
+        $this->get(route('home'))->assertOk()
+            ->assertSeeInOrder([$first->name, $second->name])
+            ->assertSee('2 mục')
+            ->assertDontSee($unselected->name)
+            ->assertDontSee($inactiveSelected->name);
     }
 
     public function test_home_renders_three_separate_product_sections(): void
