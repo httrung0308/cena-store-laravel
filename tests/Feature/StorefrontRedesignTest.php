@@ -2,7 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Enums\ClassificationGroup;
 use App\Models\Address;
+use App\Models\Classification;
 use App\Models\User;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
@@ -16,11 +18,18 @@ class StorefrontRedesignTest extends TestCase
         $this->get(route('shoes.index'))
             ->assertOk()
             ->assertSee('<title>Giày — Shoes — Cena</title>', false)
-            ->assertSee('Giày nam')
-            ->assertSee('Chính sách')
+            ->assertSee('Khám phá')
+            ->assertSee('Danh mục &amp; Phân loại', false)
+            ->assertSee('Chính sách &amp; Hỗ trợ', false)
             ->assertSee('Thanh toán khi nhận hàng (COD)')
+            ->assertSee('Miễn phí vận chuyển đơn từ 2.000.000 ₫')
             ->assertSee('không phải website chính thức của Nike')
-            ->assertSee('href="'.route('register').'"', false);
+            ->assertSee('href="'.route('register').'"', false)
+            ->assertDontSee('Bộ Sưu Tập')
+            ->assertDontSee('1900 0000')
+            ->assertDontSee('hotro@cena.test')
+            ->assertDontSee('12 Nguyễn Văn Bảo')
+            ->assertDontSee('Miễn phí vận chuyển mọi đơn');
     }
 
     public function test_auth_pages_are_full_screen_without_navbar_and_link_to_each_other(): void
@@ -107,5 +116,53 @@ class StorefrontRedesignTest extends TestCase
         $this->actingAs(User::factory()->administrator()->create())->get(route('home'))
             ->assertSee('href="'.route('admin.dashboard').'"', false)
             ->assertDontSee('href="'.route('orders.index').'"', false);
+    }
+
+    public function test_header_menu_caps_classifications_includes_search_and_keeps_role_links_in_footer(): void
+    {
+        for ($i = 1; $i <= 12; $i++) {
+            Classification::forceCreate([
+                'name' => sprintf('Header Sil %02d', $i),
+                'slug' => 'header-sil-'.$i.'-'.uniqid(),
+                'classification_group' => ClassificationGroup::Silhouette,
+                'sort_order' => 100 + $i,
+                'is_active' => true,
+            ]);
+            Classification::forceCreate([
+                'name' => sprintf('Header Act %02d', $i),
+                'slug' => 'header-act-'.$i.'-'.uniqid(),
+                'classification_group' => ClassificationGroup::Activity,
+                'sort_order' => 100 + $i,
+                'is_active' => true,
+            ]);
+        }
+
+        // Trên /news: Header chỉ hiển thị tối đa 8 mục mỗi nhóm (không tràn 12 mục), Bài viết đang active
+        $this->get(route('news.index'))->assertOk()
+            ->assertSee('Sản phẩm')
+            ->assertSee('Danh mục &amp; Phân loại', false)
+            ->assertSee('Bài viết')
+            ->assertSee('name="search"', false)
+            ->assertSee('id="header-categories-menu"', false)
+            ->assertSee('href="'.route('categories.index').'"', false)
+            ->assertSee('id="notice-panel"', false)
+            ->assertSee('Chế độ giao diện')
+            ->assertSee('aria-current="page"', false)
+            ->assertDontSee('Header Sil 12')
+            ->assertDontSee('Header Act 12');
+
+        // Trên /shoes: Sản phẩm active
+        $this->get(route('shoes.index'))->assertOk()
+            ->assertSee('aria-current="page"', false);
+
+        // Trên /categories: Danh mục & Phân loại active
+        $this->get(route('categories.index'))->assertOk()
+            ->assertSee('aria-current="page"', false);
+
+        // Staff thấy cả Đơn hàng của tôi và Trang quản trị ở footer
+        $staff = User::factory()->staff()->create();
+        $this->actingAs($staff)->get(route('shoes.index'))->assertOk()
+            ->assertSee('href="'.route('orders.index').'"', false)
+            ->assertSee('href="'.route('admin.dashboard').'"', false);
     }
 }

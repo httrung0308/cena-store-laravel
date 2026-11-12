@@ -2,10 +2,13 @@
 
 namespace App\Providers;
 
+use App\Services\HomeQueryService;
 use App\Services\OutboxDeliveryRegistry;
 use App\Support\BusinessClock;
 use Illuminate\Foundation\Console\ServeCommand;
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\View\View as BladeView;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -33,5 +36,16 @@ class AppServiceProvider extends ServiceProvider
         if ($this->app->runningInConsole()) {
             ServeCommand::$passthroughVariables = array_values(array_unique([...ServeCommand::$passthroughVariables, 'TEMP', 'TMP', 'TMPDIR']));
         }
+
+        View::composer(['components.storefront.navigation', 'components.storefront.panels'], function (BladeView $view): void {
+            /** @var HomeQueryService $home */
+            $home = app(HomeQueryService::class);
+
+            $view->with([
+                'navGenderCategories' => $home->categories(),
+                'navSilhouettes' => $home->silhouettes()->take(8),
+                'navActivities' => $home->activities()->take(8),
+            ]);
+        });
     }
 }

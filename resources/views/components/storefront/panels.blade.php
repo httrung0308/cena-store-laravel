@@ -1,35 +1,148 @@
 @php
     $isAdminAccount = auth()->user()?->hasRole(App\Enums\RoleSlug::Admin) ?? false;
+    $navGenderCategories = $navGenderCategories ?? [];
+    $navSilhouettes = $navSilhouettes ?? collect();
+    $navActivities = $navActivities ?? collect();
 @endphp
 {{-- Click-catcher; the account dropdown keeps the page undimmed like a menu, other panels dim it. --}}
 <div x-cloak x-show="panel" class="fixed inset-0 z-30" x-bind:class="panel === 'account' ? 'bg-transparent' : 'bg-black/50'" @click="closePanel()" x-transition.opacity></div>
-<section id="mobile-menu" x-cloak x-show="panel === 'menu'" x-transition.opacity role="dialog" aria-modal="true" aria-label="Menu" class="fixed inset-0 z-40 flex flex-col items-center justify-center gap-6 bg-surface-card p-6" @keydown.tab="trapFocus($event)">
-    <button type="button" class="btn-icon absolute right-6 top-6" @click="closePanel()" aria-label="Close menu"><x-storefront.icon name="close"/></button>
-    <a href="{{ route('home') }}" class="mb-4" @click="closePanel()">
-        <img src="{{ asset('cena-logo.svg') }}" alt="Cena" class="theme-logo-light h-9 w-auto">
-        <img src="{{ asset('cena-logo-white.svg') }}" alt="Cena" class="theme-logo-dark h-9 w-auto">
-    </a>
-    @foreach (['Giày Nam' => 'men', 'Giày Nữ' => 'women', 'Trẻ Em' => 'kids', 'Unisex' => 'unisex'] as $label => $gender)
-        <a href="{{ route('shoes.index', ['gender' => $gender]) }}" class="text-lg font-bold text-muted transition-colors hover:text-accent" @click="closePanel()">{{ $label }}</a>
-    @endforeach
-    <a href="{{ route('shoes.index') }}" class="text-lg font-bold text-accent transition-colors hover:text-accent-hover flex items-center gap-1.5" @click="closePanel()">
-        <span>Bộ Sưu Tập</span>
-        <span class="w-2 h-2 rounded-full bg-accent-sub" aria-hidden="true"></span>
-    </a>
-    <a href="{{ route('news.index') }}" class="text-lg font-bold text-muted transition-colors hover:text-accent" @click="closePanel()">News</a>
-    <div class="mt-4 flex items-center gap-1.5 rounded-xl border border-border bg-surface p-1 text-xs">
-        <button type="button" @click="setTheme('light')" class="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 font-medium transition" :class="theme === 'light' ? 'bg-surface-card text-accent shadow-sm font-semibold' : 'text-muted hover:text-main'" aria-label="Giao diện Sáng">
-            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
-            <span>Sáng</span>
-        </button>
-        <button type="button" @click="setTheme('dark')" class="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 font-medium transition" :class="theme === 'dark' ? 'bg-surface-card text-accent shadow-sm font-semibold' : 'text-muted hover:text-main'" aria-label="Giao diện Tối">
-            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
-            <span>Tối</span>
-        </button>
-        <button type="button" @click="setTheme('system')" class="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 font-medium transition" :class="theme === 'system' ? 'bg-surface-card text-accent shadow-sm font-semibold' : 'text-muted hover:text-main'" aria-label="Giao diện Theo hệ thống">
-            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></svg>
-            <span>Hệ thống</span>
-        </button>
+<section id="mobile-menu" x-cloak x-show="panel === 'menu'" x-transition.opacity role="dialog" aria-modal="true" aria-label="Menu" class="fixed inset-0 z-40 flex flex-col overflow-y-auto bg-surface-card p-6 pt-16 pb-8" @keydown.tab="trapFocus($event)">
+    <button type="button" data-autofocus class="btn-icon fixed right-5 top-4" @click="closePanel()" aria-label="Close menu"><x-storefront.icon name="close"/></button>
+    <div class="mx-auto flex w-full max-w-sm flex-col gap-5">
+        <a href="{{ route('home') }}" class="self-start" @click="closePanel()">
+            <img src="{{ asset('cena-logo.svg') }}" alt="Cena" class="theme-logo-light h-8 w-auto">
+            <img src="{{ asset('cena-logo-white.svg') }}" alt="Cena" class="theme-logo-dark h-8 w-auto">
+        </a>
+
+        {{-- Tìm kiếm trên mobile --}}
+        <form action="{{ route('shoes.index') }}" method="GET" role="search" class="flex items-center gap-2">
+            <div class="relative flex-1">
+                <svg class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35m1.85-5.15a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                </svg>
+                <input type="search"
+                       name="search"
+                       value="{{ request('search') }}"
+                       placeholder="Tìm kiếm giày..."
+                       aria-label="Tìm kiếm sản phẩm"
+                       class="input w-full py-2 pl-9 pr-3 text-sm">
+            </div>
+            <button type="submit" class="btn py-2 px-3.5 text-xs">Tìm</button>
+        </form>
+
+        <nav class="flex flex-col divide-y divide-border/70 border-y border-border/70" aria-label="Menu di động">
+            <a href="{{ route('shoes.index') }}"
+               @click="closePanel()"
+               @class([
+                   'py-3.5 text-base transition-colors',
+                   'font-bold text-accent' => request()->routeIs('shoes.*'),
+                   'font-semibold text-main hover:text-accent' => ! request()->routeIs('shoes.*'),
+               ])>
+                Sản phẩm
+            </a>
+
+            <div x-data="{ catOpen: false }" class="py-3.5">
+                <div class="flex items-center justify-between gap-2">
+                    <a href="{{ route('categories.index') }}"
+                       @click="closePanel()"
+                       @class([
+                           'flex-1 text-base transition-colors',
+                           'font-bold text-accent' => request()->routeIs('categories.index'),
+                           'font-semibold text-main hover:text-accent' => ! request()->routeIs('categories.index'),
+                       ])>
+                        Danh mục &amp; Phân loại
+                    </a>
+                    <button type="button"
+                            @click="catOpen = !catOpen"
+                            :aria-expanded="catOpen.toString()"
+                            aria-label="Mở rộng danh mục và phân loại"
+                            class="rounded-lg border border-border bg-surface p-1.5 text-muted transition-colors hover:text-accent">
+                        <svg class="h-4 w-4 transition-transform duration-150" :class="catOpen && 'rotate-180'" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <div x-cloak x-show="catOpen" class="mt-3 space-y-3 rounded-xl border border-border/70 bg-surface/50 p-3">
+                    <div class="space-y-1.5">
+                        <p class="text-[11px] font-bold uppercase tracking-wider text-muted font-mono">Đối tượng</p>
+                        <div class="grid grid-cols-2 gap-1.5">
+                            @foreach (['Giày Nam' => 'men', 'Giày Nữ' => 'women', 'Trẻ Em' => 'kids', 'Unisex' => 'unisex'] as $label => $gender)
+                                <a href="{{ route('shoes.index', ['gender' => $gender]) }}"
+                                   @click="closePanel()"
+                                   class="rounded-lg border border-border bg-surface-card px-2.5 py-1.5 text-xs font-semibold text-main hover:border-accent hover:text-accent">
+                                    {{ $label }}
+                                </a>
+                            @endforeach
+                        </div>
+                    </div>
+
+                    @if ($navSilhouettes->isNotEmpty())
+                        <div class="space-y-1.5 border-t border-border/60 pt-2.5">
+                            <p class="text-[11px] font-bold uppercase tracking-wider text-muted font-mono">Kiểu dáng</p>
+                            <div class="flex flex-wrap gap-1.5">
+                                @foreach ($navSilhouettes as $silhouette)
+                                    <a href="{{ route('shoes.index', ['silhouette' => [$silhouette->slug]]) }}"
+                                       @click="closePanel()"
+                                       class="rounded-lg border border-border bg-surface-card px-2 py-1 text-xs font-medium text-main hover:border-accent hover:text-accent">
+                                        {{ $silhouette->name }}
+                                    </a>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
+
+                    @if ($navActivities->isNotEmpty())
+                        <div class="space-y-1.5 border-t border-border/60 pt-2.5">
+                            <p class="text-[11px] font-bold uppercase tracking-wider text-muted font-mono">Mục đích sử dụng</p>
+                            <div class="flex flex-wrap gap-1.5">
+                                @foreach ($navActivities as $activity)
+                                    <a href="{{ route('shoes.index', ['activity' => [$activity->slug]]) }}"
+                                       @click="closePanel()"
+                                       class="inline-flex items-center gap-1 rounded-full border border-accent/25 bg-accent/5 px-2.5 py-1 text-xs font-medium text-main hover:border-accent hover:text-accent">
+                                        <span class="h-1.5 w-1.5 rounded-full bg-accent" aria-hidden="true"></span>
+                                        <span>{{ $activity->name }}</span>
+                                    </a>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
+                </div>
+            </div>
+
+            <a href="{{ route('news.index') }}"
+               @click="closePanel()"
+               @class([
+                   'py-3.5 text-base transition-colors',
+                   'font-bold text-accent' => request()->routeIs('news.*'),
+                   'font-semibold text-main hover:text-accent' => ! request()->routeIs('news.*'),
+               ])>
+                Bài viết
+            </a>
+        </nav>
+
+        <div class="flex items-center justify-between gap-2 pt-1">
+            @auth
+                <a href="{{ route('account.index') }}" @click="closePanel()" class="btn-secondary flex-1 py-2 text-xs">Tài khoản của tôi</a>
+            @else
+                <a href="{{ route('login') }}" @click="closePanel()" class="btn flex-1 py-2 text-xs">Đăng nhập</a>
+            @endauth
+        </div>
+
+        <div class="flex items-center justify-center gap-1.5 rounded-xl border border-border bg-surface p-1 text-xs">
+            <button type="button" @click="setTheme('light')" class="flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2.5 py-1.5 font-medium transition" :class="theme === 'light' ? 'bg-surface-card text-accent shadow-sm font-semibold' : 'text-muted hover:text-main'" aria-label="Giao diện Sáng">
+                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+                <span>Sáng</span>
+            </button>
+            <button type="button" @click="setTheme('dark')" class="flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2.5 py-1.5 font-medium transition" :class="theme === 'dark' ? 'bg-surface-card text-accent shadow-sm font-semibold' : 'text-muted hover:text-main'" aria-label="Giao diện Tối">
+                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+                <span>Tối</span>
+            </button>
+            <button type="button" @click="setTheme('system')" class="flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2.5 py-1.5 font-medium transition" :class="theme === 'system' ? 'bg-surface-card text-accent shadow-sm font-semibold' : 'text-muted hover:text-main'" aria-label="Giao diện Theo hệ thống">
+                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></svg>
+                <span>Hệ thống</span>
+            </button>
+        </div>
     </div>
 </section>
 @unless ($isAdminAccount)

@@ -33,7 +33,7 @@ class SharedFoundationTest extends TestCase
             ->assertViewIs('catalog.index')
             ->assertSee('Shoes')
             ->assertSee('aria-controls="cart-panel"', false)
-            ->assertSee('Mua sắm')
+            ->assertSee('Khám phá')
             ->assertDontSee('legacy-navigation', false);
     }
 

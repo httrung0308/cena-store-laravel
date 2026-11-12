@@ -1,60 +1,80 @@
-{{-- Storefront footer: brand + contact, shop links, account links, store policies, demo disclaimer. --}}
+{{-- Storefront footer: 4-column compact layout with verified store links and policies. --}}
 @php
-    $shopLinks = [
-        ['href' => route('shoes.index', ['gender' => 'men']), 'label' => 'Giày nam'],
-        ['href' => route('shoes.index', ['gender' => 'women']), 'label' => 'Giày nữ'],
-        ['href' => route('shoes.index', ['gender' => 'kids']), 'label' => 'Giày trẻ em'],
-        ['href' => route('shoes.index', ['gender' => 'unisex']), 'label' => 'Unisex'],
+    $exploreLinks = [
         ['href' => route('shoes.index'), 'label' => 'Tất cả sản phẩm'],
+        ['href' => route('categories.index'), 'label' => 'Danh mục & Phân loại'],
+        ['href' => route('news.index'), 'label' => 'Bài viết'],
     ];
-    $isAdminAccount = auth()->user()?->hasRole(App\Enums\RoleSlug::Admin) ?? false;
-    $accountLinks = auth()->check()
-        ? [['href' => route('account.index'), 'label' => 'Tài khoản của tôi'], ['href' => route('orders.index'), 'label' => 'Theo dõi đơn hàng'], ['href' => route('account.addresses.index'), 'label' => 'Sổ địa chỉ']]
-        : [['href' => route('login'), 'label' => 'Đăng nhập'], ['href' => route('register'), 'label' => 'Đăng ký']];
-    if ($isAdminAccount) {
-        $accountLinks = [['href' => route('account.index'), 'label' => 'Tài khoản của tôi'], ['href' => route('admin.dashboard'), 'label' => 'Trang quản trị']];
+
+    $accountUser = auth()->user();
+    $isAdminAccount = $accountUser?->hasRole(App\Enums\RoleSlug::Admin) ?? false;
+    $isBackOffice = $accountUser !== null && $accountUser->roles()->whereIn('slug', ['admin', 'staff'])->exists();
+
+    if ($accountUser !== null) {
+        $accountLinks = array_values(array_filter([
+            ['href' => route('account.index'), 'label' => 'Tài khoản của tôi'],
+            $isAdminAccount ? null : ['href' => route('orders.index'), 'label' => 'Đơn hàng của tôi'],
+            $isBackOffice ? ['href' => route('admin.dashboard'), 'label' => 'Trang quản trị'] : null,
+        ]));
+    } else {
+        $accountLinks = [
+            ['href' => route('login'), 'label' => 'Đăng nhập'],
+            ['href' => route('register'), 'label' => 'Đăng ký'],
+        ];
     }
-    $policies = ['Thanh toán khi nhận hàng (COD)', 'Miễn phí vận chuyển mọi đơn', 'Đổi size trong 7 ngày', 'Bảo hành keo, đế 6 tháng'];
-    $icon = 'h-4 w-4 shrink-0';
+
+    $freeShipThreshold = number_format((int) config('store.shipping.free_threshold'), 0, ',', '.').' ₫';
+    $policyItems = [
+        'Thanh toán khi nhận hàng (COD)',
+        'Miễn phí vận chuyển đơn từ '.$freeShipThreshold,
+        'Đổi size và bảo hành theo chính sách từng sản phẩm',
+    ];
 @endphp
-<footer class="mt-20 w-full border-t-4 border-accent bg-[var(--footer-bg)] text-[var(--footer-text)] text-xs">
-    <div class="mx-auto grid max-w-7xl gap-10 px-5 py-14 sm:grid-cols-2 sm:px-10 lg:grid-cols-4">
+<footer class="mt-14 w-full border-t-4 border-accent bg-[var(--footer-bg)] text-[var(--footer-text)] text-xs">
+    <div class="mx-auto grid max-w-7xl gap-8 px-5 py-9 sm:grid-cols-2 sm:px-8 lg:grid-cols-4 lg:py-10">
         <div>
-            <a href="{{ route('home') }}" class="inline-block" aria-label="Cena — trang chủ"><img src="{{ asset('cena-logo-white.svg') }}" alt="Cena" class="h-10 w-auto"></a>
-            <p class="mt-3 text-sm leading-relaxed text-[var(--footer-muted)]">Thể thao là không ngừng bỏ cuộc. Giày chạy bộ, thời trang và thể thao cho cả gia đình.</p>
-            <ul class="mt-5 space-y-2.5 text-sm text-[var(--footer-muted)]">
-                <li class="flex items-center gap-2.5"><svg class="{{ $icon }}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> 12 Nguyễn Văn Bảo, Gò Vấp, TP. Hồ Chí Minh</li>
-                <li class="flex items-center gap-2.5"><svg class="{{ $icon }}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg> 1900 0000</li>
-                <li class="flex items-center gap-2.5"><svg class="{{ $icon }}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><path d="m22 6-10 7L2 6"/></svg> hotro@cena.test</li>
-            </ul>
+            <a href="{{ route('home') }}" class="inline-block" aria-label="Cena — trang chủ">
+                <img src="{{ asset('cena-logo-white.svg') }}" alt="Cena" class="h-9 w-auto">
+            </a>
+            <p class="mt-3 max-w-xs text-xs leading-relaxed text-[var(--footer-text)]/80 sm:text-sm">
+                Thể thao là không ngừng bỏ cuộc. Giày chạy bộ, thời trang và thể thao cho cả gia đình.
+            </p>
         </div>
-        <nav aria-label="Mua sắm">
-            <h3 class="text-xs font-bold uppercase tracking-wider text-white">Mua sắm</h3>
-            <ul class="mt-4 space-y-2 text-sm text-[var(--footer-muted)]">
-                @foreach ($shopLinks as $link)
-                    <li><a href="{{ $link['href'] }}" class="transition hover:text-white hover:underline">{{ $link['label'] }}</a></li>
+
+        <nav aria-label="Khám phá">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-white">Khám phá</h3>
+            <ul class="mt-3.5 space-y-2 text-xs text-[var(--footer-text)]/85 sm:text-sm">
+                @foreach ($exploreLinks as $link)
+                    <li>
+                        <a href="{{ $link['href'] }}" class="transition-colors hover:text-white hover:underline">{{ $link['label'] }}</a>
+                    </li>
                 @endforeach
             </ul>
         </nav>
+
         <nav aria-label="Tài khoản">
             <h3 class="text-xs font-bold uppercase tracking-wider text-white">Tài khoản</h3>
-            <ul class="mt-4 space-y-2 text-sm text-[var(--footer-muted)]">
+            <ul class="mt-3.5 space-y-2 text-xs text-[var(--footer-text)]/85 sm:text-sm">
                 @foreach ($accountLinks as $link)
-                    <li><a href="{{ $link['href'] }}" class="transition hover:text-white hover:underline">{{ $link['label'] }}</a></li>
+                    <li>
+                        <a href="{{ $link['href'] }}" class="transition-colors hover:text-white hover:underline">{{ $link['label'] }}</a>
+                    </li>
                 @endforeach
             </ul>
         </nav>
+
         <div>
-            <h3 class="text-xs font-bold uppercase tracking-wider text-white">Chính sách</h3>
-            <ul class="mt-4 space-y-2 text-sm text-[var(--footer-muted)]">
-                @foreach ($policies as $policy)
-                    <li class="flex items-center gap-2.5"><svg class="{{ $icon }}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="m3.27 6.96 8.73 5.05 8.73-5.05M12 22.08V12"/></svg> {{ $policy }}</li>
+            <h3 class="text-xs font-bold uppercase tracking-wider text-white">Chính sách &amp; Hỗ trợ</h3>
+            <ul class="mt-3.5 space-y-2 text-xs leading-relaxed text-[var(--footer-text)]/85 sm:text-sm">
+                @foreach ($policyItems as $policy)
+                    <li>{{ $policy }}</li>
                 @endforeach
             </ul>
         </div>
     </div>
+
     <div class="border-t border-[var(--footer-border)]">
-        <div class="mx-auto flex max-w-7xl flex-col gap-2 px-5 py-6 text-xs text-[var(--footer-muted)] sm:flex-row sm:items-center sm:justify-between sm:px-10">
+        <div class="mx-auto flex max-w-7xl flex-col gap-1.5 px-5 py-4 text-xs text-[var(--footer-text)]/75 sm:flex-row sm:items-center sm:justify-between sm:px-8">
             <p>© {{ now()->year }} Cena — Cena là cửa hàng độc lập, không phải website chính thức của Nike.</p>
             <p>Hình ảnh sản phẩm là ảnh minh họa.</p>
         </div>
