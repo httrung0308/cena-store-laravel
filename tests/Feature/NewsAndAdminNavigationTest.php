@@ -2,10 +2,14 @@
 
 namespace Tests\Feature;
 
+use App\Enums\ArticleStatus;
 use App\Models\Article;
 use App\Models\Order;
 use App\Models\User;
+use Database\Seeders\SampleArticlesSeeder;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class NewsAndAdminNavigationTest extends TestCase
@@ -140,5 +144,29 @@ class NewsAndAdminNavigationTest extends TestCase
             ->assertDontSee('href="'.route('admin.articles.index').'"', false)
             ->assertDontSee('href="'.route('admin.users.index').'"', false)
             ->assertDontSee('Nội dung &amp; Hệ thống', false);
+    }
+
+    public function test_sample_articles_seeder_is_idempotent_creates_two_public_pages_and_no_fake_feedback(): void
+    {
+        Storage::fake('public');
+        config(['store.demo.enabled' => true]);
+        User::factory()->administrator()->create();
+
+        $beforeCount = Article::query()->count();
+        $this->seed(SampleArticlesSeeder::class);
+        $afterFirst = Article::query()->count();
+        $this->assertSame($beforeCount + 13, $afterFirst);
+
+        // Re-running does not duplicate or overwrite
+        $this->seed(SampleArticlesSeeder::class);
+        $this->assertSame($afterFirst, Article::query()->count());
+        $this->assertSame(0, DB::table('article_feedback')->count());
+
+        $this->assertGreaterThanOrEqual(11, Article::query()->published()->count());
+        $this->assertSame(1, Article::query()->where('status', ArticleStatus::Draft)->where('title', 'like', '%bản nháp%')->count());
+        $this->assertSame(1, Article::query()->where('status', ArticleStatus::Hidden)->where('title', 'like', '%đã ẩn%')->count());
+
+        $this->get(route('news.index'))->assertOk();
+        $this->get(route('news.index', ['page' => 2]))->assertOk()->assertSee('data-news-card', false);
     }
 }

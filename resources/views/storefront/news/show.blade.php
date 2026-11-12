@@ -48,12 +48,9 @@
             <form method="POST" action="{{ route('news.feedback', $article->slug) }}" class="mt-4 flex flex-wrap justify-center gap-3">
                 @csrf
                 @foreach (['yes' => ['👍', 'Có', true], 'no' => ['👎', 'Không', false]] as $value => [$icon, $label, $isHelpful])
-                    <button type="submit"
-                            name="helpful"
-                            value="{{ $value }}"
+                    <button type="submit" name="helpful" value="{{ $value }}" aria-pressed="{{ $myFeedback === $isHelpful ? 'true' : 'false' }}"
                             @click.prevent="submit('{{ $value }}')"
                             :disabled="busy"
-                            aria-pressed="{{ $myFeedback === $isHelpful ? 'true' : 'false' }}"
                             :aria-pressed="(myFeedback === {{ $isHelpful ? 'true' : 'false' }}).toString()"
                             :class="myFeedback === {{ $isHelpful ? 'true' : 'false' }}
                                 ? 'bg-accent text-accent-text shadow-sm border-accent'
@@ -84,7 +81,7 @@
                     <span x-show="helpfulCount > 0"
                           @if ($helpfulCount <= 0) style="display: none;" @endif
                           class="mt-1 block font-medium text-main"
-                          x-text="helpfulCount + ' người thấy bài viết này hữu ích.'">
+                          x-text="helpfulSummary">
                         @if ($helpfulCount > 0)
                             {{ $helpfulCount }} người thấy bài viết này hữu ích.
                         @endif

@@ -91,14 +91,14 @@
             @endif
 
             @if ($articles->isNotEmpty())
-                <div class="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3 sm:gap-6">
+                <div class="mt-6 space-y-4">
                     @foreach ($articles as $article)
                         @php($isLead = $showFeaturedMarker && $loop->first)
-                        <article @if ($isLead) data-news-featured @endif class="group flex h-full flex-col rounded-2xl border border-border bg-surface-card p-3.5 shadow-subtle transition-[box-shadow,border-color] duration-200 hover:border-accent/40 hover:shadow-card sm:p-4" data-news-card>
-                            <a href="{{ route('news.show', $article->slug) }}" class="block aspect-[16/10] overflow-hidden rounded-xl border border-border/60 bg-surface">
-                                <img src="{{ $article->coverUrl() }}" alt="{{ $article->title }}" loading="{{ $loop->index < 3 ? 'eager' : 'lazy' }}" decoding="async" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105">
+                        <article class="group flex flex-col gap-4 rounded-2xl border border-border bg-surface-card p-3.5 shadow-subtle transition-[box-shadow,border-color] duration-200 hover:border-accent/40 hover:shadow-card sm:flex-row sm:items-center sm:gap-5 sm:p-4" data-news-card{{ $isLead ? ' data-news-featured' : '' }}>
+                            <a href="{{ route('news.show', $article->slug) }}" class="block aspect-[16/10] w-full shrink-0 overflow-hidden rounded-xl border border-border/60 bg-surface sm:w-52 md:w-60">
+                                <img src="{{ $article->coverUrl() }}" alt="{{ $article->title }}" loading="{{ $loop->index < 4 ? 'eager' : 'lazy' }}" decoding="async" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105">
                             </a>
-                            <div class="mt-3.5 flex min-w-0 flex-1 flex-col justify-between gap-3">
+                            <div class="flex min-w-0 flex-1 flex-col justify-between gap-2.5">
                                 <div class="space-y-1.5">
                                     <time class="block text-[11px] font-semibold uppercase tracking-wider text-muted">{{ $article->published_at->setTimezone($tz)->format('d/m/Y') }}</time>
                                     <h2 class="text-base font-bold leading-snug text-main line-clamp-2 break-words sm:text-lg">
@@ -106,7 +106,7 @@
                                     </h2>
                                     <p class="line-clamp-2 text-xs text-muted leading-relaxed sm:text-sm">{{ $article->summary }}</p>
                                 </div>
-                                <a href="{{ route('news.show', $article->slug) }}" class="inline-flex items-center gap-1 text-xs font-semibold text-accent hover:text-accent-hover hover:underline">
+                                <a href="{{ route('news.show', $article->slug) }}" class="inline-flex items-center gap-1 self-start text-xs font-semibold text-accent hover:text-accent-hover hover:underline">
                                     <span>Đọc bài</span>
                                     <span aria-hidden="true">→</span>
                                 </a>

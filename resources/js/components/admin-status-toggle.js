@@ -66,6 +66,9 @@ export function adminStatusToggle({ regionSelector = '#admin-list-region' } = {}
 
                 if (typeof body?.message === 'string' && body.message !== '') {
                     this.statusMessage = body.message;
+                    window.dispatchEvent(new CustomEvent('cena-toast', {
+                        detail: { message: body.message, type: 'success' },
+                    }));
                 }
 
                 await this.refreshRegion();

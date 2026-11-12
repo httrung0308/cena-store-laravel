@@ -40,6 +40,7 @@
             <x-storefront.footer/>
         </div>
         <x-storefront.panels/>
+        <x-ui.toasts/>
     </div>
     @stack('scripts')
 </body>

@@ -258,6 +258,7 @@
         </main>
     </div>
 
+    <x-ui.toasts />
     @stack('scripts')
 </body>
 </html>

@@ -18,6 +18,10 @@ export function articleFeedback({ action = '', initialAnswer = null, initialHelp
             return '';
         },
 
+        get helpfulSummary() {
+            return this.helpfulCount > 0 ? `${this.helpfulCount} người thấy bài viết này hữu ích.` : '';
+        },
+
         async submit(choice) {
             if (this.busy || !this.action) return;
             if (choice !== 'yes' && choice !== 'no') return;
@@ -66,6 +70,9 @@ export function articleFeedback({ action = '', initialAnswer = null, initialHelp
                     this.helpfulCount = body.helpful_count;
                 }
                 this.saved = true;
+                window.dispatchEvent(new CustomEvent('cena-toast', {
+                    detail: { message: body?.message || 'Cảm ơn bạn đã góp ý!', type: 'success' },
+                }));
             } catch {
                 this.errorMessage = 'Không kết nối được máy chủ. Vui lòng thử lại.';
             } finally {
