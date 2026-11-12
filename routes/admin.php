@@ -25,12 +25,15 @@ Route::view('/', 'admin.dashboard')->name('dashboard');
 Route::get('reports', [ReportController::class, 'index'])->name('reports.index');
 
 Route::resource('categories', CategoryController::class)->except(['show', 'destroy']);
+Route::patch('categories/{category}/activate', [CategoryController::class, 'activate'])->name('categories.activate');
 Route::patch('categories/{category}/deactivate', [CategoryController::class, 'deactivate'])->name('categories.deactivate');
 
 Route::resource('suppliers', SupplierController::class)->except(['show', 'destroy']);
+Route::patch('suppliers/{supplier}/activate', [SupplierController::class, 'activate'])->name('suppliers.activate');
 Route::patch('suppliers/{supplier}/deactivate', [SupplierController::class, 'deactivate'])->name('suppliers.deactivate');
 
 Route::resource('products', ProductController::class)->except(['show', 'destroy']);
+Route::patch('products/{product}/activate', [ProductController::class, 'activate'])->name('products.activate');
 Route::patch('products/{product}/deactivate', [ProductController::class, 'deactivate'])->name('products.deactivate');
 
 Route::post('stock-imports/spreadsheet', [StockImportController::class, 'spreadsheet'])->name('stock-imports.spreadsheet');
@@ -55,6 +58,7 @@ Route::middleware('role:admin')->prefix('users')->name('users.')->whereNumber('u
 
 Route::middleware('role:admin')->group(function (): void {
     Route::resource('coupons', CouponController::class)->except(['show', 'destroy']);
+    Route::patch('coupons/{coupon}/activate', [CouponController::class, 'activate'])->name('coupons.activate');
     Route::patch('coupons/{coupon}/deactivate', [CouponController::class, 'deactivate'])->name('coupons.deactivate');
 });
 

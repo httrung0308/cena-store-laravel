@@ -13,35 +13,13 @@
     $silCount = (int) ($homeNavCounts['SILHOUETTE'] ?? 0);
     $actCount = (int) ($homeNavCounts['ACTIVITY'] ?? 0);
 @endphp
-<section class="space-y-5" aria-label="Danh mục phân loại">
-    {{-- Thống kê giới hạn hiển thị tại menu Header & trang chủ --}}
-    <div class="rounded-2xl border border-border bg-surface-card p-4 shadow-sm flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
-        <div class="space-y-0.5">
-            <h2 class="text-xs font-bold uppercase tracking-wider text-main">
-                Hiển thị ở menu Header &amp; trang chủ
-            </h2>
-            <p class="text-xs text-muted">
-                Mỗi nhóm chọn tối đa <strong class="text-main">{{ $homeNavLimit }} phân loại đang hoạt động</strong>; sắp xếp theo cột <strong>Thứ tự</strong> tăng dần.
-            </p>
-        </div>
-
-        <div class="flex flex-wrap items-center gap-2 text-xs">
-            <span class="inline-flex items-center gap-2 rounded-xl border border-border bg-surface px-3 py-1.5 font-semibold text-main">
-                <span class="text-muted">Kiểu dáng:</span>
-                <span class="font-mono font-bold {{ $silCount >= $homeNavLimit ? 'text-accent-sub' : 'text-accent' }}">{{ $silCount }} / {{ $homeNavLimit }}</span>
-            </span>
-            <span class="inline-flex items-center gap-2 rounded-xl border border-border bg-surface px-3 py-1.5 font-semibold text-main">
-                <span class="text-muted">Mục đích:</span>
-                <span class="font-mono font-bold {{ $actCount >= $homeNavLimit ? 'text-accent-sub' : 'text-accent' }}">{{ $actCount }} / {{ $homeNavLimit }}</span>
-            </span>
-        </div>
-    </div>
-
+<section x-data="adminStatusToggle()" class="space-y-5" aria-label="Danh mục phân loại">
     @if ($searchUrl)
         <div class="flex flex-col lg:flex-row gap-3 items-stretch lg:items-center justify-between">
             <form method="GET" action="{{ $searchUrl }}" class="flex-1 max-w-md">
+                <label for="classification-search" class="sr-only">Tìm nhãn phân loại</label>
                 <div class="relative">
-                    <input type="text" name="search" value="{{ $search }}" placeholder="Tìm theo tên nhãn, slug..." class="input w-full pl-9 text-xs border-border bg-surface text-main placeholder:text-muted">
+                    <input id="classification-search" type="text" name="search" value="{{ $search }}" placeholder="Tìm theo tên nhãn, slug..." class="input w-full pl-9 text-xs border-border bg-surface text-main placeholder:text-muted">
                     <svg class="w-4 h-4 text-muted absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                 </div>
                 @if ($group)<input type="hidden" name="group" value="{{ $group }}">@endif
@@ -69,6 +47,32 @@
             </div>
         </div>
     @endif
+
+    <x-admin.ajax-feedback />
+
+    <div id="admin-list-region" x-ref="region" class="space-y-5">
+    {{-- Thống kê giới hạn hiển thị tại menu Header & trang chủ --}}
+    <div class="rounded-2xl border border-border bg-surface-card p-4 shadow-sm flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+        <div class="space-y-0.5">
+            <h2 class="text-xs font-bold uppercase tracking-wider text-main">
+                Hiển thị ở menu Header &amp; trang chủ
+            </h2>
+            <p class="text-xs text-muted">
+                Mỗi nhóm chọn tối đa <strong class="text-main">{{ $homeNavLimit }} phân loại đang hoạt động</strong>; sắp xếp theo cột <strong>Thứ tự</strong> tăng dần.
+            </p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2 text-xs">
+            <span class="inline-flex items-center gap-2 rounded-xl border border-border bg-surface px-3 py-1.5 font-semibold text-main">
+                <span class="text-muted">Kiểu dáng:</span>
+                <span class="font-mono font-bold {{ $silCount >= $homeNavLimit ? 'text-accent-sub' : 'text-accent' }}">{{ $silCount }} / {{ $homeNavLimit }}</span>
+            </span>
+            <span class="inline-flex items-center gap-2 rounded-xl border border-border bg-surface px-3 py-1.5 font-semibold text-main">
+                <span class="text-muted">Mục đích:</span>
+                <span class="font-mono font-bold {{ $actCount >= $homeNavLimit ? 'text-accent-sub' : 'text-accent' }}">{{ $actCount }} / {{ $homeNavLimit }}</span>
+            </span>
+        </div>
+    </div>
 
     <div class="bg-surface-card rounded-2xl border border-border overflow-hidden shadow-sm">
         <div class="overflow-x-auto">
@@ -137,21 +141,24 @@
                             <div class="inline-flex items-center gap-1.5">
                                 <a class="px-2.5 py-1 text-accent hover:bg-surface rounded-lg font-bold transition-colors" href="{{ route('admin.classifications.edit', $item) }}">Sửa</a>
 
-                                <form method="POST" action="{{ route('admin.classifications.toggle-home-nav', $item) }}" class="inline-block">
+                                <form method="POST" action="{{ route('admin.classifications.toggle-home-nav', $item) }}" @submit.prevent="submitToggle($event, 'cls-nav-{{ $item->id }}')" class="inline-block">
                                     @csrf
                                     @method('PATCH')
+                                    <input type="hidden" name="show_in_home_nav" value="{{ $item->show_in_home_nav ? 0 : 1 }}">
                                     <button type="submit"
                                             @disabled(! $canEnableHomeNav)
+                                            :disabled="isBusy() || {{ ! $canEnableHomeNav ? 'true' : 'false' }}"
                                             title="{{ ! $canEnableHomeNav ? 'Nhóm đã đạt tối đa '.$homeNavLimit.' mục đang hoạt động hiển thị ở menu & trang chủ' : '' }}"
                                             class="px-2.5 py-1 rounded-lg font-bold transition-colors disabled:opacity-40 disabled:cursor-not-allowed {{ $item->show_in_home_nav ? 'text-muted hover:bg-surface hover:text-main' : 'text-accent hover:bg-accent/10' }}">
                                         {{ $item->show_in_home_nav ? 'Ẩn khỏi menu' : 'Hiện ở menu' }}
                                     </button>
                                 </form>
 
-                                <form method="POST" action="{{ route('admin.classifications.toggle-active', $item) }}" class="inline-block">
+                                <form method="POST" action="{{ route('admin.classifications.toggle-active', $item) }}" @submit.prevent="submitToggle($event, 'cls-active-{{ $item->id }}')" class="inline-block">
                                     @csrf
                                     @method('PATCH')
-                                    <button class="px-2.5 py-1 {{ $item->is_active ? 'text-warning hover:bg-warning-bg' : 'text-success hover:bg-success-bg' }} rounded-lg font-bold transition-colors" type="submit">
+                                    <input type="hidden" name="active" value="{{ $item->is_active ? 0 : 1 }}">
+                                    <button :disabled="isBusy()" class="px-2.5 py-1 {{ $item->is_active ? 'text-warning hover:bg-warning-bg' : 'text-success hover:bg-success-bg' }} rounded-lg font-bold transition-colors disabled:opacity-40 disabled:cursor-not-allowed" type="submit">
                                         {{ $item->is_active ? 'Tạm ngưng' : 'Kích hoạt' }}
                                     </button>
                                 </form>
@@ -173,5 +180,6 @@
             </table>
         </div>
         @if ($paginator)<x-ui.pagination :paginator="$paginator" />@endif
+    </div>
     </div>
 </section>

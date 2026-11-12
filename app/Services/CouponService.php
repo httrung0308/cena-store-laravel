@@ -16,7 +16,7 @@ final class CouponService
     {
         abort_unless($admin->hasRole(RoleSlug::Admin), 403);
 
-        return DB::transaction(function () use ($admin, $coupon, $data): Coupon {
+        return DB::transaction(function () use ($coupon, $data): Coupon {
             if ($coupon !== null) {
                 $coupon = Coupon::query()->whereKey($coupon->id)->lockForUpdate()->firstOrFail();
             } else {
@@ -39,9 +39,20 @@ final class CouponService
         });
     }
 
-    public function deactivate(User $admin, Coupon $coupon): void
+    public function setActive(User $admin, Coupon $coupon, bool $active): Coupon
     {
         abort_unless($admin->hasRole(RoleSlug::Admin), 403);
-        $coupon->forceFill(['is_active' => false])->save();
+
+        return DB::transaction(function () use ($coupon, $active): Coupon {
+            $locked = Coupon::query()->whereKey($coupon->id)->lockForUpdate()->firstOrFail();
+            $locked->forceFill(['is_active' => $active])->save();
+
+            return $locked->refresh();
+        });
+    }
+
+    public function deactivate(User $admin, Coupon $coupon): void
+    {
+        $this->setActive($admin, $coupon, false);
     }
 }

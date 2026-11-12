@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Review;
 use App\Services\ReviewService;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
@@ -35,11 +36,16 @@ class ReviewController extends Controller
         return back()->with('status', 'Đã lưu phản hồi.');
     }
 
-    public function visibility(Request $request, Review $review): RedirectResponse
+    public function visibility(Request $request, Review $review): RedirectResponse|JsonResponse
     {
         $visible = (bool) $request->validate(['visible' => ['required', 'boolean']])['visible'];
         $this->reviews->setVisible($review, $visible);
+        $message = $visible ? 'Đã hiện đánh giá.' : 'Đã ẩn đánh giá.';
 
-        return back()->with('status', $visible ? 'Đã hiện đánh giá.' : 'Đã ẩn đánh giá.');
+        if ($request->expectsJson()) {
+            return response()->json(['message' => $message, 'is_visible' => $visible]);
+        }
+
+        return back()->with('status', $message);
     }
 }

@@ -8,9 +8,12 @@
 @endsection
 @php($images = app(App\Services\CatalogQueryService::class))
 @section('content')
-    <x-admin.search-form :action="route('admin.products.index')" id="product-search" label="Tìm sản phẩm" placeholder="Tìm kiếm theo tên sản phẩm, mã slug..." :value="request('search', '')" />
+    <div x-data="adminStatusToggle()" class="space-y-6">
+        <x-admin.search-form :action="route('admin.products.index')" id="product-search" label="Tìm sản phẩm" placeholder="Tìm kiếm theo tên sản phẩm, mã slug..." :value="request('search', '')" />
 
-    <div class="bg-surface-card rounded-2xl border border-border overflow-hidden shadow-sm">
+        <x-admin.ajax-feedback />
+
+        <div id="admin-list-region" x-ref="region" class="bg-surface-card rounded-2xl border border-border overflow-hidden shadow-sm">
         <div class="overflow-x-auto">
             <table class="w-full text-left text-xs text-muted border-collapse">
                 <thead class="bg-surface text-main font-bold border-b border-border">
@@ -72,10 +75,16 @@
                         <td class="p-4 text-right whitespace-nowrap">
                             <a class="px-2.5 py-1 text-accent hover:bg-surface rounded-lg font-bold mr-1 inline-block transition-colors" href="{{ route('admin.products.edit', $product) }}">Sửa</a>
                             @if ($product->is_active)
-                                <form method="POST" action="{{ route('admin.products.deactivate', $product) }}" class="inline-block">
+                                <form method="POST" action="{{ route('admin.products.deactivate', $product) }}" @submit.prevent="submitToggle($event, 'product-{{ $product->id }}')" class="inline-block">
                                     @csrf
                                     @method('PATCH')
-                                    <button class="px-2.5 py-1 text-error hover:bg-error-bg rounded-lg font-bold transition-colors">Ngừng</button>
+                                    <button type="submit" :disabled="isBusy()" class="px-2.5 py-1 text-error hover:bg-error-bg rounded-lg font-bold transition-colors disabled:opacity-40 disabled:cursor-not-allowed">Ngừng</button>
+                                </form>
+                            @else
+                                <form method="POST" action="{{ route('admin.products.activate', $product) }}" @submit.prevent="submitToggle($event, 'product-{{ $product->id }}')" class="inline-block">
+                                    @csrf
+                                    @method('PATCH')
+                                    <button type="submit" :disabled="isBusy()" class="px-2.5 py-1 text-success hover:bg-success-bg rounded-lg font-bold transition-colors disabled:opacity-40 disabled:cursor-not-allowed">Mở bán</button>
                                 </form>
                             @endif
                         </td>
@@ -87,5 +96,6 @@
             </table>
         </div>
         <x-ui.pagination :paginator="$products" />
+        </div>
     </div>
 @endsection

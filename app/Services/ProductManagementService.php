@@ -256,12 +256,20 @@ final class ProductManagementService
         }
     }
 
+    public function setActive(User $actor, Product $product, bool $active): Product
+    {
+        return DB::transaction(function () use ($actor, $product, $active): Product {
+            ProductManagementAccess::lock($actor);
+            $locked = Product::whereKey($product->id)->lockForUpdate()->firstOrFail();
+            $locked->forceFill(['is_active' => $active])->save();
+
+            return $locked->refresh();
+        }, 3);
+    }
+
     public function deactivate(User $actor, Product $product): void
     {
-        DB::transaction(function () use ($actor, $product): void {
-            ProductManagementAccess::lock($actor);
-            Product::whereKey($product->id)->lockForUpdate()->firstOrFail()->forceFill(['is_active' => false])->save();
-        }, 3);
+        $this->setActive($actor, $product, false);
     }
 
     private function documented(ProductVariant $variant): bool

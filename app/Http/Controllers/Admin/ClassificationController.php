@@ -8,6 +8,7 @@ use App\Http\Requests\Admin\ClassificationRequest;
 use App\Models\Classification;
 use App\Services\ClassificationManagementService;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
@@ -81,20 +82,42 @@ class ClassificationController extends Controller
         return to_route('admin.classifications.index')->with('status', 'Đã cập nhật nhãn phân loại.');
     }
 
-    public function toggleActive(Request $request, Classification $classification, ClassificationManagementService $service): RedirectResponse
+    public function toggleActive(Request $request, Classification $classification, ClassificationManagementService $service): RedirectResponse|JsonResponse
     {
-        $updated = $service->toggleActive($request->user(), $classification);
+        $target = $request->has('active')
+            ? (bool) $request->validate(['active' => ['required', 'boolean']])['active']
+            : null;
+        $updated = $service->toggleActive($request->user(), $classification, $target);
         $statusText = $updated->is_active ? 'Đã kích hoạt nhãn.' : 'Đã chuyển nhãn sang trạng thái tạm ngưng.';
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => $statusText,
+                'is_active' => $updated->is_active,
+                'show_in_home_nav' => $updated->show_in_home_nav,
+            ]);
+        }
 
         return back(fallback: route('admin.classifications.index'))->with('status', $statusText);
     }
 
-    public function toggleHomeNav(Request $request, Classification $classification, ClassificationManagementService $service): RedirectResponse
+    public function toggleHomeNav(Request $request, Classification $classification, ClassificationManagementService $service): RedirectResponse|JsonResponse
     {
-        $updated = $service->toggleHomeNav($request->user(), $classification);
+        $target = $request->has('show_in_home_nav')
+            ? (bool) $request->validate(['show_in_home_nav' => ['required', 'boolean']])['show_in_home_nav']
+            : null;
+        $updated = $service->toggleHomeNav($request->user(), $classification, $target);
         $statusText = $updated->show_in_home_nav
             ? 'Đã chọn hiển thị nhãn ở menu & trang chủ.'
             : 'Đã bỏ hiển thị nhãn khỏi menu & trang chủ.';
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => $statusText,
+                'is_active' => $updated->is_active,
+                'show_in_home_nav' => $updated->show_in_home_nav,
+            ]);
+        }
 
         return back(fallback: route('admin.classifications.index'))->with('status', $statusText);
     }

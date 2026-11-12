@@ -5,11 +5,12 @@
     <a href="{{ route('admin.banners.create') }}" class="px-5 py-2.5 bg-accent hover:bg-accent-hover text-accent-text text-xs font-bold rounded-xl transition-colors shadow-md flex items-center gap-1.5">+ Thêm banner mới</a>
 @endsection
 @section('content')
-<section class="space-y-6" aria-label="Danh sách banner trang chủ">
+<section x-data="adminStatusToggle()" class="space-y-6" aria-label="Danh sách banner trang chủ">
     <div class="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
         <form method="GET" action="{{ route('admin.banners.index') }}" class="flex-1 max-w-md">
+            <label for="banner-search" class="sr-only">Tìm banner</label>
             <div class="relative">
-                <input type="text" name="search" value="{{ $search }}" placeholder="Tìm theo tiêu đề, phụ đề..." class="input w-full pl-9 text-xs border-border bg-surface text-main placeholder:text-muted">
+                <input id="banner-search" type="text" name="search" value="{{ $search }}" placeholder="Tìm theo tiêu đề, phụ đề..." class="input w-full pl-9 text-xs border-border bg-surface text-main placeholder:text-muted">
                 <svg class="w-4 h-4 text-muted absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
             </div>
             @if ($active !== '')<input type="hidden" name="active" value="{{ $active }}">@endif
@@ -31,7 +32,9 @@
         </div>
     </div>
 
-    <div class="bg-surface-card rounded-2xl border border-border overflow-hidden shadow-sm">
+    <x-admin.ajax-feedback />
+
+    <div id="admin-list-region" x-ref="region" class="bg-surface-card rounded-2xl border border-border overflow-hidden shadow-sm">
         <div class="overflow-x-auto">
             <table class="w-full text-left text-xs text-muted border-collapse">
                 <thead class="bg-surface text-main font-bold border-b border-border">
@@ -81,11 +84,12 @@
                             {{ $item->sort_order }}
                         </td>
                         <td class="p-4 text-center">
-                            <form method="POST" action="{{ route('admin.banners.toggle-active', $item) }}">
+                            <form method="POST" action="{{ route('admin.banners.toggle-active', $item) }}" @submit.prevent="submitToggle($event, 'banner-{{ $item->id }}')">
                                 @csrf
                                 @method('PATCH')
-                                <button type="submit" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold transition-transform active:scale-95 {{ $item->is_active ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20' : 'bg-surface text-muted border border-border' }}">
-                                    <span class="w-1.5 h-1.5 rounded-full {{ $item->is_active ? 'bg-emerald-500' : 'bg-muted/40' }}" aria-hidden="true"></span>
+                                <input type="hidden" name="active" value="{{ $item->is_active ? 0 : 1 }}">
+                                <button type="submit" :disabled="isBusy()" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold transition-transform active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed {{ $item->is_active ? 'bg-success-bg text-success-text border border-success/30' : 'bg-surface text-muted border border-border' }}">
+                                    <span class="w-1.5 h-1.5 rounded-full {{ $item->is_active ? 'bg-success' : 'bg-muted/40' }}" aria-hidden="true"></span>
                                     {{ $item->is_active ? 'Hiển thị' : 'Đang ẩn' }}
                                 </button>
                             </form>

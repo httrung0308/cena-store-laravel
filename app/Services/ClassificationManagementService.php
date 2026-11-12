@@ -98,12 +98,12 @@ final class ClassificationManagementService
         });
     }
 
-    public function toggleActive(User $actor, Classification $classification): Classification
+    public function toggleActive(User $actor, Classification $classification, ?bool $targetActive = null): Classification
     {
-        return DB::transaction(function () use ($classification): Classification {
+        return DB::transaction(function () use ($classification, $targetActive): Classification {
             $this->lockGroupRows($classification->classification_group->value);
             $current = Classification::whereKey($classification->id)->lockForUpdate()->firstOrFail();
-            $nextActive = ! $current->is_active;
+            $nextActive = $targetActive ?? ! $current->is_active;
 
             if ($nextActive && $current->show_in_home_nav) {
                 $this->assertWithinHomeNavLimit(
@@ -119,12 +119,12 @@ final class ClassificationManagementService
         });
     }
 
-    public function toggleHomeNav(User $actor, Classification $classification): Classification
+    public function toggleHomeNav(User $actor, Classification $classification, ?bool $targetShow = null): Classification
     {
-        return DB::transaction(function () use ($classification): Classification {
+        return DB::transaction(function () use ($classification, $targetShow): Classification {
             $this->lockGroupRows($classification->classification_group->value);
             $current = Classification::whereKey($classification->id)->lockForUpdate()->firstOrFail();
-            $nextShow = ! $current->show_in_home_nav;
+            $nextShow = $targetShow ?? ! $current->show_in_home_nav;
 
             if ($nextShow && $current->is_active) {
                 $this->assertWithinHomeNavLimit(

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Article;
 use App\Services\ArticleService;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
@@ -17,10 +18,27 @@ class NewsController extends Controller
 
     public function __construct(private readonly ArticleService $articles) {}
 
-    public function index(): View
+    public function index(Request $request): View
     {
+        $validated = $request->validate([
+            'search' => ['nullable', 'string', 'max:150'],
+        ]);
+        $search = trim((string) ($validated['search'] ?? ''));
+
+        $articles = Article::query()
+            ->published()
+            ->when($search !== '', function ($query) use ($search): void {
+                $escaped = addcslashes($search, '%_\\');
+                $query->where('title', 'like', '%'.$escaped.'%');
+            })
+            ->orderByDesc('published_at')
+            ->orderByDesc('id')
+            ->paginate(9)
+            ->withQueryString();
+
         return view('storefront.news.index', [
-            'articles' => Article::query()->published()->orderByDesc('published_at')->orderByDesc('id')->paginate(9),
+            'articles' => $articles,
+            'search' => $search,
         ]);
     }
 
@@ -38,11 +56,20 @@ class NewsController extends Controller
     }
 
     /** "Was this helpful?" from any reader, signed in or not; answering again changes the answer. */
-    public function feedback(Request $request, string $slug): RedirectResponse
+    public function feedback(Request $request, string $slug): RedirectResponse|JsonResponse
     {
         $data = $request->validate(['helpful' => ['required', 'in:yes,no']]);
         $article = Article::query()->published()->where('slug', $slug)->firstOrFail();
-        $this->articles->recordFeedback($article, $request->user(), $request->session()->getId(), $data['helpful'] === 'yes');
+        $isHelpful = $data['helpful'] === 'yes';
+        $this->articles->recordFeedback($article, $request->user(), $request->session()->getId(), $isHelpful);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => 'Cảm ơn bạn đã góp ý!',
+                'my_feedback' => $isHelpful,
+                'helpful_count' => $article->feedback()->where('is_helpful', true)->count(),
+            ]);
+        }
 
         return redirect()->to(route('news.show', $article->slug).'#article-feedback')->with('feedback_saved', true);
     }

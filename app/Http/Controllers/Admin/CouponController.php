@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Coupon;
 use App\Services\CouponService;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -47,11 +48,28 @@ final class CouponController extends Controller
         return to_route('admin.coupons.index')->with('status', 'Đã lưu coupon.');
     }
 
-    public function deactivate(Request $request, Coupon $coupon, CouponService $coupons): RedirectResponse
+    public function activate(Request $request, Coupon $coupon, CouponService $coupons): RedirectResponse|JsonResponse
     {
-        $coupons->deactivate($request->user(), $coupon);
+        $updated = $coupons->setActive($request->user(), $coupon, true);
+        $message = 'Đã bật coupon.';
 
-        return to_route('admin.coupons.index')->with('status', 'Đã tắt coupon.');
+        if ($request->expectsJson()) {
+            return response()->json(['message' => $message, 'is_active' => $updated->is_active]);
+        }
+
+        return back(fallback: route('admin.coupons.index'))->with('status', $message);
+    }
+
+    public function deactivate(Request $request, Coupon $coupon, CouponService $coupons): RedirectResponse|JsonResponse
+    {
+        $updated = $coupons->setActive($request->user(), $coupon, false);
+        $message = 'Đã tắt coupon.';
+
+        if ($request->expectsJson()) {
+            return response()->json(['message' => $message, 'is_active' => $updated->is_active]);
+        }
+
+        return back(fallback: route('admin.coupons.index'))->with('status', $message);
     }
 
     /** @return array<string, mixed> */

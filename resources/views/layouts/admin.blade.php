@@ -1,23 +1,59 @@
 {{-- Admin layout matching .ai/preview/mau-v4-cham-thep-dem/admin-san-pham.html --}}
 @php
-    $pageTitle = $title ?? trim($__env->yieldContent('title', 'Quản trị'));
-    $sections = [
-        ['route' => 'admin.dashboard', 'label' => 'Tổng quan', 'icon' => 'home'],
-        ['route' => 'admin.products.index', 'label' => 'Sản phẩm', 'icon' => 'box'],
-        ['route' => 'admin.categories.index', 'label' => 'Danh mục', 'icon' => 'tag'],
-        ['route' => 'admin.suppliers.index', 'label' => 'Nhà cung cấp', 'icon' => 'truck'],
-        ['route' => 'admin.stock-imports.index', 'label' => 'Nhập kho', 'icon' => 'archive'],
-        ['route' => 'admin.orders.index', 'label' => 'Đơn hàng', 'icon' => 'cart'],
-        ['route' => 'admin.reviews.index', 'label' => 'Đánh giá', 'icon' => 'star'],
-        ['route' => 'admin.reports.index', 'label' => 'Báo cáo', 'icon' => 'chart'],
+    $rawPageTitle = $title ?? trim($__env->yieldContent('title', 'Quản trị'));
+    $pageTitle = html_entity_decode((string) $rawPageTitle, ENT_QUOTES, 'UTF-8');
+    $currentUser = auth()->user();
+    $isAdmin = $currentUser?->hasRole(App\Enums\RoleSlug::Admin) ?? false;
+    $roleLabel = $currentUser?->roles->map(fn ($role) => $role->slug->label())->join(', ') ?: 'Nhân viên';
+
+    $navGroups = [
+        [
+            'label' => 'Tổng quan',
+            'items' => [
+                ['route' => 'admin.dashboard', 'active' => 'admin.dashboard', 'label' => 'Tổng quan', 'icon' => 'home'],
+                ['route' => 'admin.reports.index', 'active' => 'admin.reports.*', 'label' => 'Báo cáo', 'icon' => 'chart'],
+            ],
+        ],
+        [
+            'label' => 'Bán hàng & Khuyến mãi',
+            'items' => [
+                ['route' => 'admin.orders.index', 'active' => 'admin.orders.*', 'label' => 'Đơn hàng', 'icon' => 'cart'],
+                ['route' => 'admin.reviews.index', 'active' => 'admin.reviews.*', 'label' => 'Đánh giá', 'icon' => 'star'],
+                ['route' => 'admin.coupons.index', 'active' => 'admin.coupons.*', 'label' => 'Mã giảm giá', 'icon' => 'ticket', 'admin_only' => true],
+            ],
+        ],
+        [
+            'label' => 'Kho & Sản phẩm',
+            'items' => [
+                ['route' => 'admin.products.index', 'active' => 'admin.products.*', 'label' => 'Sản phẩm', 'icon' => 'box'],
+                ['route' => 'admin.categories.index', 'active' => 'admin.categories.*', 'label' => 'Danh mục', 'icon' => 'tag'],
+                ['route' => 'admin.classifications.index', 'active' => 'admin.classifications.*', 'label' => 'Phân loại', 'icon' => 'layers', 'admin_only' => true],
+                ['route' => 'admin.suppliers.index', 'active' => 'admin.suppliers.*', 'label' => 'Nhà cung cấp', 'icon' => 'truck'],
+                ['route' => 'admin.stock-imports.index', 'active' => 'admin.stock-imports.*', 'label' => 'Nhập kho', 'icon' => 'archive'],
+            ],
+        ],
+        [
+            'label' => 'Nội dung & Hệ thống',
+            'items' => [
+                ['route' => 'admin.banners.index', 'active' => 'admin.banners.*', 'label' => 'Banner', 'icon' => 'image', 'admin_only' => true],
+                ['route' => 'admin.articles.index', 'active' => 'admin.articles.*', 'label' => 'Bài viết', 'icon' => 'document', 'admin_only' => true],
+                ['route' => 'admin.users.index', 'active' => 'admin.users.*', 'label' => 'Người dùng', 'icon' => 'users', 'admin_only' => true],
+            ],
+        ],
     ];
-    if (auth()->user()?->hasRole(App\Enums\RoleSlug::Admin)) {
-        $sections[] = ['route' => 'admin.banners.index', 'label' => 'Banner', 'icon' => 'image'];
-        $sections[] = ['route' => 'admin.classifications.index', 'label' => 'Phân loại', 'icon' => 'tag'];
-        $sections[] = ['route' => 'admin.users.index', 'label' => 'Người dùng', 'icon' => 'users'];
-        $sections[] = ['route' => 'admin.articles.index', 'label' => 'Bài viết', 'icon' => 'document'];
-    }
-    $onDashboard = request()->routeIs('admin.dashboard');
+
+    $visibleGroups = collect($navGroups)
+        ->map(function (array $group) use ($isAdmin): array {
+            $group['items'] = collect($group['items'])
+                ->filter(fn (array $item): bool => (! ($item['admin_only'] ?? false) || $isAdmin) && Route::has($item['route']))
+                ->values()
+                ->all();
+
+            return $group;
+        })
+        ->filter(fn (array $group): bool => $group['items'] !== [])
+        ->values()
+        ->all();
 @endphp
 <!doctype html>
 <html lang="vi" data-theme="light">
@@ -43,7 +79,7 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @stack('head')
 </head>
-<body class="selection:bg-accent selection:text-white min-h-screen flex flex-col font-sans bg-bg text-main antialiased" x-data="{ ...storefrontShell(), sidebarOpen: false }">
+<body class="selection:bg-accent selection:text-white min-h-screen flex flex-col font-sans bg-bg text-main antialiased" x-data="adminShell" @keydown.escape.window="closeSidebar()">
 
     <!-- Top Admin Bar -->
     <header class="bg-accent text-accent-text text-xs py-2 px-4 sm:px-6 flex items-center justify-between font-medium shrink-0 z-30">
@@ -53,8 +89,8 @@
             <span class="hidden sm:inline text-white/80">· Hệ thống quản trị cửa hàng</span>
         </div>
         <div class="flex items-center gap-3 sm:gap-4 text-xs font-semibold">
-            @if (auth()->check())
-                <span class="text-white/70 hidden lg:inline">{{ auth()->user()->full_name }} ({{ auth()->user()->role?->label() ?? 'Nhân viên' }})</span>
+            @if ($currentUser)
+                <span class="text-white/80 hidden lg:inline">{{ $currentUser->full_name }} ({{ $roleLabel }})</span>
             @endif
             {{-- Theme toggle --}}
             <div x-data="{ themeOpen: false }" class="relative">
@@ -103,7 +139,7 @@
             <img src="{{ asset('cena-logo-white.svg') }}" alt="Cena" class="h-5 w-auto">
             <span class="text-[10px] font-bold uppercase bg-accent text-accent-text px-2 py-0.5 rounded">Admin</span>
         </a>
-        <button type="button" @click="sidebarOpen = !sidebarOpen" class="p-2 rounded-lg bg-[var(--admin-sidebar-hover)] text-[var(--admin-sidebar-text)] hover:text-white focus:outline-none" aria-label="Mở menu quản trị">
+        <button type="button" @click="sidebarOpen = !sidebarOpen" :aria-expanded="sidebarOpen.toString()" aria-controls="admin-sidebar" class="p-2 rounded-lg bg-[var(--admin-sidebar-hover)] text-[var(--admin-sidebar-text)] hover:text-white focus:outline-none" aria-label="Mở menu quản trị">
             <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path x-show="!sidebarOpen" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
                 <path x-show="sidebarOpen" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
@@ -117,52 +153,62 @@
         <div x-cloak x-show="sidebarOpen" @click="sidebarOpen = false" class="fixed inset-0 z-40 bg-black/50 md:hidden" aria-hidden="true"></div>
 
         <!-- Sidebar -->
-        <aside :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'" class="fixed inset-y-0 left-0 z-50 md:static md:z-auto w-64 bg-[var(--admin-sidebar-bg)] text-[var(--admin-sidebar-text)] p-6 flex flex-col justify-between shrink-0 border-r border-[var(--admin-sidebar-border)] transition-transform duration-200 ease-in-out md:transition-none">
+        <aside id="admin-sidebar" :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'" class="fixed inset-y-0 left-0 z-50 md:static md:z-auto w-64 bg-[var(--admin-sidebar-bg)] text-[var(--admin-sidebar-text)] p-5 flex flex-col justify-between shrink-0 border-r border-[var(--admin-sidebar-border)] transition-transform duration-200 ease-in-out md:transition-none overflow-y-auto">
             <div>
-                <!-- Brand in Admin Sidebar (desktop) -->
-                <div class="hidden md:flex items-center justify-between mb-8 pb-4 border-b border-[var(--admin-sidebar-border)]">
-                    <a href="{{ route('admin.dashboard') }}" class="flex items-center gap-2">
+                <!-- Brand in Admin Sidebar (desktop & mobile drawer) -->
+                <div class="flex items-center justify-between mb-6 pb-4 border-b border-[var(--admin-sidebar-border)]">
+                    <a href="{{ route('admin.dashboard') }}" @click="closeSidebar()" class="flex items-center gap-2">
                         <img src="{{ asset('cena-logo-white.svg') }}" alt="Cena" class="h-6 w-auto">
-                        <span class="text-[10px] font-bold uppercase bg-accent text-accent-text px-2 py-0.5 rounded">Admin</span>
+                        <span class="text-[10px] font-bold uppercase bg-accent text-accent-text px-2 py-0.5 rounded">{{ $isAdmin ? 'Admin' : 'Staff' }}</span>
                     </a>
+                    <button type="button" @click="closeSidebar()" class="md:hidden p-1.5 rounded-lg text-[var(--admin-sidebar-muted)] hover:bg-[var(--admin-sidebar-hover)] hover:text-white" aria-label="Đóng menu quản trị">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                    </button>
                 </div>
 
                 <!-- Admin Navigation Menu -->
-                <nav class="space-y-1.5 text-xs font-semibold" aria-label="Main navigation">
-                    @foreach ($sections as $section)
-                        @php($active = request()->routeIs(str_replace('.index', '.*', $section['route'])))
-                        @if (Route::has($section['route']))
-                            <a href="{{ route($section['route']) }}" @class([
-                                'flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors',
-                                'bg-accent text-accent-text font-bold shadow-md' => $active,
-                                'hover:bg-[var(--admin-sidebar-hover)] text-[var(--admin-sidebar-muted)] hover:text-white' => ! $active,
-                            ]) @if ($active) aria-current="page" @endif>
-                                @if ($section['icon'] === 'home')
-                                    <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
-                                @elseif ($section['icon'] === 'box')
-                                    <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
-                                @elseif ($section['icon'] === 'image')
-                                    <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                                @elseif ($section['icon'] === 'tag')
-                                    <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
-                                @elseif ($section['icon'] === 'truck')
-                                    <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
-                                @elseif ($section['icon'] === 'archive')
-                                    <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
-                                @elseif ($section['icon'] === 'cart')
-                                    <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
-                                @elseif ($section['icon'] === 'star')
-                                    <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/></svg>
-                                @elseif ($section['icon'] === 'chart')
-                                    <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
-                                @elseif ($section['icon'] === 'users')
-                                    <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
-                                @elseif ($section['icon'] === 'document')
-                                    <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                                @endif
-                                <span>{{ $section['label'] }}</span>
-                            </a>
-                        @endif
+                <nav class="space-y-5 text-xs font-semibold" aria-label="Điều hướng quản trị">
+                    @foreach ($visibleGroups as $group)
+                        <div class="space-y-1">
+                            <p class="px-3 pb-1 text-[10px] font-bold uppercase tracking-wider text-[var(--admin-sidebar-muted)]/75">{{ $group['label'] }}</p>
+                            @foreach ($group['items'] as $section)
+                                @php($active = request()->routeIs($section['active']))
+                                <a href="{{ route($section['route']) }}" @click="closeSidebar()" @class([
+                                    'flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors',
+                                    'bg-accent text-accent-text font-bold shadow-md' => $active,
+                                    'hover:bg-[var(--admin-sidebar-hover)] text-[var(--admin-sidebar-muted)] hover:text-white' => ! $active,
+                                ]) @if ($active) aria-current="page" @endif>
+                                    @if ($section['icon'] === 'home')
+                                        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                                    @elseif ($section['icon'] === 'box')
+                                        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                                    @elseif ($section['icon'] === 'image')
+                                        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                    @elseif ($section['icon'] === 'tag')
+                                        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/></svg>
+                                    @elseif ($section['icon'] === 'layers')
+                                        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+                                    @elseif ($section['icon'] === 'ticket')
+                                        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z"/></svg>
+                                    @elseif ($section['icon'] === 'truck')
+                                        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                                    @elseif ($section['icon'] === 'archive')
+                                        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>
+                                    @elseif ($section['icon'] === 'cart')
+                                        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
+                                    @elseif ($section['icon'] === 'star')
+                                        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/></svg>
+                                    @elseif ($section['icon'] === 'chart')
+                                        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                                    @elseif ($section['icon'] === 'users')
+                                        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                                    @elseif ($section['icon'] === 'document')
+                                        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                    @endif
+                                    <span>{{ $section['label'] }}</span>
+                                </a>
+                            @endforeach
+                        </div>
                     @endforeach
                 </nav>
             </div>

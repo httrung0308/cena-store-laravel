@@ -78,11 +78,12 @@ final class BannerManagementService
         }
     }
 
-    public function toggleActive(User $actor, Banner $banner): Banner
+    public function toggleActive(User $actor, Banner $banner, ?bool $targetActive = null): Banner
     {
-        return DB::transaction(function () use ($banner): Banner {
+        return DB::transaction(function () use ($banner, $targetActive): Banner {
             $current = Banner::whereKey($banner->id)->lockForUpdate()->firstOrFail();
-            $current->forceFill(['is_active' => ! $current->is_active])->save();
+            $nextActive = $targetActive ?? ! $current->is_active;
+            $current->forceFill(['is_active' => $nextActive])->save();
 
             return $current->refresh();
         });

@@ -1,9 +1,10 @@
 @props(['suppliers' => [], 'searchUrl' => null, 'search' => '', 'paginator' => null])
-<section class="space-y-6" aria-label="Nhà cung cấp">
+<section x-data="adminStatusToggle()" class="space-y-6" aria-label="Nhà cung cấp">
     @if ($searchUrl)
         <x-admin.search-form :action="$searchUrl" id="supplier-search" label="Tìm nhà cung cấp" placeholder="Tìm kiếm theo mã, tên nhà cung cấp..." :value="$search" />
     @endif
-    <div class="bg-surface-card rounded-2xl border border-border overflow-hidden shadow-sm">
+    <x-admin.ajax-feedback />
+    <div id="admin-list-region" x-ref="region" class="bg-surface-card rounded-2xl border border-border overflow-hidden shadow-sm">
         <div class="overflow-x-auto">
             <table class="w-full text-left text-xs text-muted border-collapse">
                 <thead class="bg-surface text-main font-bold border-b border-border">
@@ -40,10 +41,16 @@
                                     <a class="px-2.5 py-1 text-accent hover:bg-surface rounded-lg font-bold transition-colors" href="{{ $supplier['editUrl'] }}">Sửa</a>
                                 @endif
                                 @if ($supplier['deactivateUrl'] ?? null)
-                                    <form action="{{ $supplier['deactivateUrl'] }}" method="POST" class="inline-block">
+                                    <form action="{{ $supplier['deactivateUrl'] }}" method="POST" @submit.prevent="submitToggle($event, 'supplier-{{ $supplier['id'] ?? $loop->index }}')" class="inline-block">
                                         @csrf
                                         @method('PATCH')
-                                        <button type="submit" class="px-2.5 py-1 text-error hover:bg-error-bg rounded-lg font-bold transition-colors">Ngừng hoạt động</button>
+                                        <button type="submit" :disabled="isBusy()" class="px-2.5 py-1 text-error hover:bg-error-bg rounded-lg font-bold transition-colors disabled:opacity-40 disabled:cursor-not-allowed">Ngừng hoạt động</button>
+                                    </form>
+                                @elseif ($supplier['activateUrl'] ?? null)
+                                    <form action="{{ $supplier['activateUrl'] }}" method="POST" @submit.prevent="submitToggle($event, 'supplier-{{ $supplier['id'] ?? $loop->index }}')" class="inline-block">
+                                        @csrf
+                                        @method('PATCH')
+                                        <button type="submit" :disabled="isBusy()" class="px-2.5 py-1 text-success hover:bg-success-bg rounded-lg font-bold transition-colors disabled:opacity-40 disabled:cursor-not-allowed">Kích hoạt</button>
                                     </form>
                                 @endif
                             </div>

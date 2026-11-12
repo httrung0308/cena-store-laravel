@@ -2,13 +2,16 @@ import Alpine from 'alpinejs';
 import { Chart } from 'chart.js/auto';
 
 import { addressSelector } from './components/address-selector';
+import { adminStatusToggle } from './components/admin-status-toggle';
 import { articleEditor } from './components/article-editor';
+import { articleFeedback } from './components/article-feedback';
 import { articleForm } from './components/article-form';
 import { bindAddToCartButtons, cartStore } from './components/cart';
 import { catalogListing } from './components/catalog-filter';
 import { colorVariants } from './components/color-variants';
 import { dialogController } from './components/dialog';
 import { galleryController } from './components/gallery';
+import { newsListing } from './components/news-listing';
 import { passwordField } from './components/password-field';
 import { productImages } from './components/product-images';
 import { reportCharts } from './components/report-charts';
@@ -17,12 +20,15 @@ import { variantPicker } from './components/variant-picker';
 
 // Shared Blade components use these names in x-data, e.g. x-data="variantPicker({...})".
 Alpine.data('addressSelector', addressSelector);
+Alpine.data('adminStatusToggle', adminStatusToggle);
 Alpine.data('articleEditor', articleEditor);
+Alpine.data('articleFeedback', articleFeedback);
 Alpine.data('articleForm', articleForm);
 Alpine.data('catalogListing', catalogListing);
 Alpine.data('colorVariants', colorVariants);
 Alpine.data('dialogController', dialogController);
 Alpine.data('galleryController', galleryController);
+Alpine.data('newsListing', newsListing);
 Alpine.data('passwordField', passwordField);
 Alpine.data('productImages', productImages);
 Alpine.data('reportCharts', reportCharts);
@@ -33,30 +39,50 @@ Alpine.data('variantPicker', variantPicker);
 Alpine.store('cart', cartStore({ csrfToken: document.querySelector('meta[name="csrf-token"]')?.content ?? '' }));
 bindAddToCartButtons(Alpine.store('cart'));
 
-Alpine.data('storefrontShell', () => ({
-    theme: 'light',
+function themeMixin() {
+    return {
+        theme: 'light',
+        initTheme() {
+            try {
+                this.theme = localStorage.getItem('cena-theme') || 'light';
+            } catch (e) {
+                this.theme = 'light';
+            }
+            this.applyTheme(this.theme);
+        },
+        setTheme(t) {
+            this.theme = t;
+            try {
+                localStorage.setItem('cena-theme', t);
+            } catch (e) {}
+            this.applyTheme(t);
+        },
+        applyTheme(t) {
+            try {
+                document.documentElement.setAttribute('data-theme', t);
+            } catch (e) {}
+        },
+    };
+}
+
+Alpine.data('adminShell', () => ({
+    ...themeMixin(),
+    sidebarOpen: false,
     init() {
         this.initTheme();
+        this.$watch('sidebarOpen', (open) => {
+            document.documentElement.classList.toggle('overflow-hidden', open);
+        });
     },
-    initTheme() {
-        try {
-            this.theme = localStorage.getItem('cena-theme') || 'light';
-        } catch (e) {
-            this.theme = 'light';
-        }
-        this.applyTheme(this.theme);
+    closeSidebar() {
+        this.sidebarOpen = false;
     },
-    setTheme(t) {
-        this.theme = t;
-        try {
-            localStorage.setItem('cena-theme', t);
-        } catch (e) {}
-        this.applyTheme(t);
-    },
-    applyTheme(t) {
-        try {
-            document.documentElement.setAttribute('data-theme', t);
-        } catch (e) {}
+}));
+
+Alpine.data('storefrontShell', () => ({
+    ...themeMixin(),
+    init() {
+        this.initTheme();
     },
     panel: null,
     noticeTitle: '',

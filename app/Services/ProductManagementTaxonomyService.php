@@ -76,11 +76,19 @@ final class ProductManagementTaxonomyService
         }
     }
 
+    public function setActive(User $actor, Category|Supplier $record, bool $active): Category|Supplier
+    {
+        return DB::transaction(function () use ($actor, $record, $active): Category|Supplier {
+            ProductManagementAccess::lock($actor);
+            $locked = $record::whereKey($record->id)->lockForUpdate()->firstOrFail();
+            $locked->forceFill(['is_active' => $active])->save();
+
+            return $locked->refresh();
+        }, 3);
+    }
+
     public function deactivate(User $actor, Category|Supplier $record): void
     {
-        DB::transaction(function () use ($actor, $record): void {
-            ProductManagementAccess::lock($actor);
-            $record::whereKey($record->id)->lockForUpdate()->firstOrFail()->forceFill(['is_active' => false])->save();
-        }, 3);
+        $this->setActive($actor, $record, false);
     }
 }

@@ -7,6 +7,7 @@ use App\Http\Requests\Admin\BannerRequest;
 use App\Models\Banner;
 use App\Services\BannerManagementService;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
@@ -71,12 +72,20 @@ class BannerController extends Controller
         return redirect()->route('admin.banners.index')->with('success', "Đã cập nhật banner '{$banner->title}' thành công.");
     }
 
-    public function toggleActive(Banner $banner, BannerManagementService $service): RedirectResponse
+    public function toggleActive(Request $request, Banner $banner, BannerManagementService $service): RedirectResponse|JsonResponse
     {
-        $updated = $service->toggleActive(request()->user(), $banner);
+        $target = $request->has('active')
+            ? (bool) $request->validate(['active' => ['required', 'boolean']])['active']
+            : null;
+        $updated = $service->toggleActive($request->user(), $banner, $target);
         $status = $updated->is_active ? 'kích hoạt' : 'ẩn';
+        $message = "Đã {$status} banner '{$updated->title}'.";
 
-        return back()->with('success', "Đã {$status} banner '{$updated->title}'.");
+        if ($request->expectsJson()) {
+            return response()->json(['message' => $message, 'is_active' => $updated->is_active]);
+        }
+
+        return back()->with('success', $message);
     }
 
     public function destroy(Banner $banner, BannerManagementService $service): RedirectResponse

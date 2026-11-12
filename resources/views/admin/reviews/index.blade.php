@@ -3,7 +3,7 @@
 @section('eyebrow', 'QUẢN TRỊ ĐÁNH GIÁ')
 @php($tz = (string) config('store.business_timezone'))
 @section('content')
-    <div class="space-y-6">
+    <div x-data="adminStatusToggle()" class="space-y-6">
         <div class="bg-surface-card p-4 rounded-2xl border border-border mb-6 flex flex-col md:flex-row items-center justify-between gap-4 text-xs shadow-sm">
             <form method="GET" action="{{ route('admin.reviews.index') }}" class="flex flex-wrap items-center gap-3 w-full">
                 <label class="flex items-center gap-2 text-xs font-bold text-main">Hiển thị
@@ -16,6 +16,10 @@
                 <button type="submit" class="px-4 py-2 bg-accent hover:bg-accent-hover text-accent-text text-xs font-bold rounded-xl transition-colors shadow-sm">Lọc</button>
             </form>
         </div>
+
+        <x-admin.ajax-feedback />
+
+        <div id="admin-list-region" x-ref="region" class="space-y-6">
 
         @forelse ($reviews as $review)
             <article class="admin-card space-y-3">
@@ -42,12 +46,12 @@
                         <textarea id="reply-{{ $review->id }}" name="admin_reply" rows="2" maxlength="2000" class="input w-full border-border bg-surface text-main text-xs leading-relaxed" placeholder="Nhập câu trả lời cho khách...">{{ $review->admin_reply }}</textarea>
                         <button type="submit" class="px-4 py-2 bg-surface hover:bg-border/40 text-muted hover:text-main text-xs font-bold rounded-xl border border-border w-fit transition-colors">Lưu phản hồi</button>
                     </form>
-                    <form method="POST" action="{{ route('admin.reviews.visibility', $review) }}" class="self-end">
+                    <form method="POST" action="{{ route('admin.reviews.visibility', $review) }}" @submit.prevent="submitToggle($event, 'review-{{ $review->id }}')" class="self-end">
                         @csrf
                         @method('PATCH')
                         <input type="hidden" name="visible" value="{{ $review->is_visible ? 0 : 1 }}">
-                        <button type="submit" @class([
-                            'px-4 py-2 text-xs font-bold rounded-xl border transition-colors',
+                        <button type="submit" :disabled="isBusy()" @class([
+                            'px-4 py-2 text-xs font-bold rounded-xl border transition-colors disabled:opacity-40 disabled:cursor-not-allowed',
                             'border-error/30 text-error hover:bg-error-bg' => $review->is_visible,
                             'border-border bg-surface text-main hover:bg-border/40' => ! $review->is_visible,
                         ])>{{ $review->is_visible ? 'Ẩn đánh giá' : 'Hiện lại' }}</button>
@@ -58,5 +62,6 @@
             <div class="admin-card p-12 text-center text-xs text-muted">Chưa có đánh giá.</div>
         @endforelse
         <x-ui.pagination :paginator="$reviews" />
+        </div>
     </div>
 @endsection

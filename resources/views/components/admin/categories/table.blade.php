@@ -1,10 +1,11 @@
 @props(['categories' => [], 'search' => '', 'searchUrl' => null, 'paginator' => null])
 @php($groups = collect(App\Enums\GenderGroup::cases())->mapWithKeys(fn ($group) => [$group->value => $group->label()]))
-<section class="space-y-6" aria-label="Danh mục">
+<section x-data="adminStatusToggle()" class="space-y-6" aria-label="Danh mục">
     @if ($searchUrl)
         <x-admin.search-form :action="$searchUrl" id="category-search" label="Tìm danh mục" placeholder="Tìm kiếm theo tên danh mục, slug..." :value="$search" />
     @endif
-    <div class="bg-surface-card rounded-2xl border border-border overflow-hidden shadow-sm">
+    <x-admin.ajax-feedback />
+    <div id="admin-list-region" x-ref="region" class="bg-surface-card rounded-2xl border border-border overflow-hidden shadow-sm">
         <div class="overflow-x-auto">
             <table class="w-full text-left text-xs text-muted border-collapse">
                 <thead class="bg-surface text-main font-bold border-b border-border">
@@ -40,10 +41,16 @@
                                     <a class="px-2.5 py-1 text-accent hover:bg-surface rounded-lg font-bold transition-colors" href="{{ $category['editUrl'] }}">Sửa</a>
                                 @endif
                                 @if ($category['deactivateUrl'] ?? null)
-                                    <form method="POST" action="{{ $category['deactivateUrl'] }}" class="inline-block">
+                                    <form method="POST" action="{{ $category['deactivateUrl'] }}" @submit.prevent="submitToggle($event, 'category-{{ $category['id'] ?? $loop->index }}')" class="inline-block">
                                         @csrf
                                         @method('PATCH')
-                                        <button class="px-2.5 py-1 text-error hover:bg-error-bg rounded-lg font-bold transition-colors" type="submit">Ẩn</button>
+                                        <button class="px-2.5 py-1 text-error hover:bg-error-bg rounded-lg font-bold transition-colors disabled:opacity-40 disabled:cursor-not-allowed" :disabled="isBusy()" type="submit">Ẩn</button>
+                                    </form>
+                                @elseif ($category['activateUrl'] ?? null)
+                                    <form method="POST" action="{{ $category['activateUrl'] }}" @submit.prevent="submitToggle($event, 'category-{{ $category['id'] ?? $loop->index }}')" class="inline-block">
+                                        @csrf
+                                        @method('PATCH')
+                                        <button class="px-2.5 py-1 text-success hover:bg-success-bg rounded-lg font-bold transition-colors disabled:opacity-40 disabled:cursor-not-allowed" :disabled="isBusy()" type="submit">Hiện</button>
                                     </form>
                                 @endif
                             </div>

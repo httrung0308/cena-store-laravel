@@ -9,6 +9,7 @@ use App\Models\Classification;
 use App\Models\Product;
 use App\Services\ProductManagementService;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -73,10 +74,27 @@ class ProductController extends Controller
         return to_route('admin.products.edit', $product)->with('status', 'Đã lưu sản phẩm.');
     }
 
-    public function deactivate(Request $request, Product $product, ProductManagementService $service): RedirectResponse
+    public function activate(Request $request, Product $product, ProductManagementService $service): RedirectResponse|JsonResponse
     {
-        $service->deactivate($request->user(), $product);
+        $updated = $service->setActive($request->user(), $product, true);
+        $message = 'Đã mở bán lại sản phẩm.';
 
-        return to_route('admin.products.index')->with('status', 'Đã ngừng bán; chứng từ và lịch sử vẫn được giữ.');
+        if ($request->expectsJson()) {
+            return response()->json(['message' => $message, 'is_active' => $updated->is_active]);
+        }
+
+        return back(fallback: route('admin.products.index'))->with('status', $message);
+    }
+
+    public function deactivate(Request $request, Product $product, ProductManagementService $service): RedirectResponse|JsonResponse
+    {
+        $updated = $service->setActive($request->user(), $product, false);
+        $message = 'Đã ngừng bán; chứng từ và lịch sử vẫn được giữ.';
+
+        if ($request->expectsJson()) {
+            return response()->json(['message' => $message, 'is_active' => $updated->is_active]);
+        }
+
+        return back(fallback: route('admin.products.index'))->with('status', $message);
     }
 }
