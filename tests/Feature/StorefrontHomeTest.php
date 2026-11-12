@@ -136,7 +136,9 @@ class StorefrontHomeTest extends TestCase
             ->assertSee('Giày Nam')
             ->assertSee('Giày Nữ')
             ->assertSee('Trẻ Em')
-            ->assertSee('Unisex');
+            ->assertSee('Unisex')
+            ->assertSee(route('categories.index'), false)
+            ->assertDontSee('Xem toàn bộ danh mục và phân loại');
 
         $activeClass = Classification::active()->first();
         if ($activeClass) {
@@ -160,6 +162,12 @@ class StorefrontHomeTest extends TestCase
             ->assertSee('Xem sản phẩm giảm giá trước')
             ->assertSee('Xem sản phẩm giảm giá kế tiếp')
             ->assertSee('Bài viết');
+
+        $variantB = $this->get(route('home', ['headings' => 'b']));
+        $variantB->assertOk()
+            ->assertSee('Sản phẩm nổi bật')
+            ->assertSee('Sản phẩm giảm giá')
+            ->assertSee('Sản phẩm mới');
     }
 
     public function test_home_query_service_prioritizes_deduplication(): void

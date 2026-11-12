@@ -169,6 +169,7 @@ class PageSmokeTest extends TestCase
     {
         // Guest pages
         $this->get(route('home'))->assertOk();
+        $this->get(route('categories.index'))->assertOk();
         $this->get(route('shoes.index'))->assertOk();
         $this->get(route('shoes.show', $this->product->slug))->assertOk();
         $this->get(route('news.index'))->assertOk();
