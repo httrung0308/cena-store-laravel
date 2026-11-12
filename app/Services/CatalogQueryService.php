@@ -89,38 +89,56 @@ final class CatalogQueryService
     }
 
     /**
-     * @return array{product: array<string, mixed>, colors: list<array<string, mixed>>, variants: list<array<string, mixed>>, albums: array<string, list<array{id: int, url: string, alt: string}>>, initialColorId: int}
+     * @return array{product: array<string, mixed>, colors: list<array<string, mixed>>, variants: list<array<string, mixed>>, albums: array<string, list<array{id: int, url: string, thumb_url: string, alt: string}>>, initialColorId: int}
      */
     public function detail(string $slug, ?string $styleColor = null): array
     {
-        $product = $this->publicProducts()->where('slug', $slug)->with($this->relations())->firstOrFail();
+        $product = $this->publicProducts()
+            ->where('slug', $slug)
+            ->with($this->relations())
+            ->with(['activeClassifications' => fn ($q) => $q->orderBy('classification_group')->orderBy('sort_order')->orderBy('name')])
+            ->firstOrFail();
+
         $colors = [];
         $variants = [];
         $albums = [];
         $initialColorId = null;
+        $maxPerVariant = (int) config('store.limits.variant_quantity', 10);
 
         foreach ($product->colors as $color) {
-            $colors[] = $this->color($product, $color);
+            $colorData = $this->color($product, $color);
+            $colorAvailable = 0;
+
             $albums[(string) $color->id] = $color->images
                 ->map(fn (ProductImage $image): array => ['id' => $image->id, 'url' => $this->imageUrl($image), 'thumb_url' => $this->imageUrl($image, 400), 'alt' => $image->alt_text ?? $product->name])
                 ->all();
+
             foreach ($color->variants as $variant) {
                 $available = max(0, $variant->stock_qty - $variant->reserved_qty);
+                $colorAvailable += $available;
                 if ($initialColorId === null && $available > 0) {
                     $initialColorId = $color->id;
                 }
                 $price = $this->price($product, $variant);
+                $hasDiscount = $price < $product->base_price && $product->base_price > 0;
+                $discountPercent = $hasDiscount ? (int) round((($product->base_price - $price) / $product->base_price) * 100) : 0;
+
                 $variants[] = [
                     'id' => $variant->id,
                     'product_color_id' => $color->id,
                     'size_value' => $variant->size_value,
                     'is_active' => true,
                     'available_qty' => $available,
+                    'max_cart_qty' => min($available, $maxPerVariant),
                     'effective_price' => $price,
                     'price_label' => $this->formatVnd($price),
-                    'base_price_label' => $price < $product->base_price ? $this->formatVnd($product->base_price) : null,
+                    'base_price_label' => $hasDiscount ? $this->formatVnd($product->base_price) : null,
+                    'discount_percent' => $discountPercent,
                 ];
             }
+
+            $colorData['has_available'] = $colorAvailable > 0;
+            $colors[] = $colorData;
         }
 
         if ($styleColor !== null && $styleColor !== '') {
@@ -128,6 +146,11 @@ final class CatalogQueryService
             abort_if($chosen === null, 404);
             $initialColorId = $chosen['id'];
         }
+
+        $prices = array_column($variants, 'effective_price');
+        $minPrice = $prices !== [] ? min($prices) : Money::integer($product->base_price);
+        $maxPrice = $prices !== [] ? max($prices) : $minPrice;
+        $genderSlug = strtolower($product->category->gender_group?->value ?? '');
 
         return [
             'product' => [
@@ -137,18 +160,64 @@ final class CatalogQueryService
                 'brand_line' => $product->brand_line,
                 'description' => $product->description,
                 'specifications' => $product->specifications,
+                'category_id' => $product->category_id,
                 'category' => $product->category->name,
+                'category_slug' => $product->category->slug,
+                'gender_slug' => $genderSlug,
+                'category_url' => $product->category->parent_id !== null
+                    ? route('shoes.index', ['category' => $product->category->slug])
+                    : ($genderSlug !== '' ? route('shoes.index', ['gender' => $genderSlug]) : route('shoes.index')),
+                'classifications' => $product->activeClassifications->map(fn (Classification $c): array => [
+                    'name' => $c->name,
+                    'slug' => $c->slug,
+                    'group' => $c->classification_group->value,
+                    'url' => $c->classification_group === ClassificationGroup::Silhouette
+                        ? route('shoes.index', ['silhouette' => [$c->slug]])
+                        : route('shoes.index', ['activity' => [$c->slug]]),
+                ])->values()->all(),
                 'warranty_months' => $product->warranty_months,
                 'exchange_days' => $product->exchange_days,
                 'rating_avg' => (float) $product->rating_avg,
                 'reviews_count' => (int) $product->reviews_count,
-                'price_label' => $this->formatVnd(min(array_column($variants, 'effective_price'))),
+                'price_label' => $this->formatVnd($minPrice),
+                'max_price_label' => $this->formatVnd($maxPrice),
+                'price_varies' => $minPrice !== $maxPrice,
+                'free_shipping_threshold' => config('store.shipping.free_threshold'),
             ],
             'colors' => $colors,
             'variants' => $variants,
             'albums' => $albums,
             'initialColorId' => $initialColorId ?? $colors[0]['id'],
         ];
+    }
+
+    /**
+     * Public active products in the same category/gender for cross-discovery below the detail fold.
+     *
+     * @return list<array{product: array<string, mixed>, detailUrl: string, imageUrl: string}>
+     */
+    public function relatedProducts(int $productId, int $categoryId, string $genderGroup = '', int $limit = 4): array
+    {
+        $matches = $this->matchingVariants([]);
+        $query = $this->publicProducts()
+            ->where('products.id', '!=', $productId)
+            ->whereExists((clone $matches)->selectRaw('1'))
+            ->select('products.*')
+            ->selectSub((clone $matches)->selectRaw('MIN('.self::PRICE.')'), 'matching_price')
+            ->with($this->relations())
+            ->orderByRaw('CASE WHEN products.category_id = ? THEN 0 ELSE 1 END', [$categoryId])
+            ->when($genderGroup !== '', fn (Builder $q) => $q->whereHas('category', fn (Builder $c) => $c->where('gender_group', strtoupper($genderGroup))))
+            ->orderByDesc('products.is_featured')
+            ->orderByDesc('products.id')
+            ->limit($limit)
+            ->get();
+
+        $allVariantIds = $query
+            ->flatMap(fn (Product $p) => $p->colors->flatMap(fn (ProductColor $c) => $c->variants->pluck('id')))
+            ->flip()
+            ->all();
+
+        return $query->map(fn (Product $p): array => $this->card($p, $allVariantIds))->all();
     }
 
     /**

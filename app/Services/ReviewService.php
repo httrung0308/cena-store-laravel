@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Enums\ErrorCode;
 use App\Enums\OrderPaymentStatus;
 use App\Enums\OrderStatus;
+use App\Enums\RoleSlug;
 use App\Exceptions\DomainException;
 use App\Models\Order;
 use App\Models\OrderItemUnit;
@@ -104,6 +105,164 @@ final class ReviewService
     public function visibleFor(int $productId): Builder
     {
         return $this->reviewsOf($productId)->where('r.is_visible', true)->orderByDesc('r.created_at')->orderByDesc('r.id');
+    }
+
+    /** Visible reviews filtered by star tier (1..5, grouping half-stars up cleanly) or store replies. */
+    public function visibleFilteredFor(int $productId, ?int $starTier = null, bool $withReplyOnly = false): Builder
+    {
+        $query = $this->visibleFor($productId);
+
+        if ($starTier !== null && $starTier >= 1 && $starTier <= 5) {
+            if ($starTier === 1) {
+                $query->where('r.rating', '<=', 1.0);
+            } else {
+                $query->where('r.rating', '>', (string) ($starTier - 1).'.0')
+                    ->where('r.rating', '<=', (string) $starTier.'.0');
+            }
+        }
+
+        if ($withReplyOnly) {
+            $query->whereNotNull('r.admin_reply')->where('r.admin_reply', '!=', '');
+        }
+
+        return $query;
+    }
+
+    /** Public aggregate statistics derived strictly from visible reviews (never includes hidden reviews). */
+    public function summaryFor(int $productId): array
+    {
+        $rows = $this->reviewsOf($productId)
+            ->where('r.is_visible', true)
+            ->get(['r.rating', 'r.admin_reply']);
+
+        $total = $rows->count();
+        $breakdown = [5 => 0, 4 => 0, 3 => 0, 2 => 0, 1 => 0];
+        $replyCount = 0;
+        $sum = 0.0;
+
+        foreach ($rows as $row) {
+            $rating = (float) $row->rating;
+            $sum += $rating;
+            $bucket = max(1, min(5, (int) ceil($rating)));
+            $breakdown[$bucket]++;
+            if (is_string($row->admin_reply) && trim($row->admin_reply) !== '') {
+                $replyCount++;
+            }
+        }
+
+        return [
+            'total' => $total,
+            'average' => $total > 0 ? round($sum / $total, 2) : 0.0,
+            'breakdown' => $breakdown,
+            'with_reply_count' => $replyCount,
+        ];
+    }
+
+    /**
+     * Eligibility state of the signed-in visitor for reviewing one product based strictly on delivered & paid pairs.
+     *
+     * @return array{
+     *     status: 'guest'|'admin'|'can_review'|'already_reviewed'|'pending_delivery'|'not_purchased',
+     *     pending_units: list<array{unit_id: int, order_code: string, color_name: string, size_value: string}>,
+     *     reviewed_units: list<array{unit_id: int, order_code: string, color_name: string, size_value: string, rating: string, comment: string, is_visible: bool}>,
+     *     pending_order: ?array{order_code: string, order_url: string}
+     * }
+     */
+    public function customerReviewState(?User $user, int $productId): array
+    {
+        $empty = [
+            'status' => 'guest',
+            'pending_units' => [],
+            'reviewed_units' => [],
+            'pending_order' => null,
+        ];
+
+        if ($user === null) {
+            return $empty;
+        }
+
+        if ($user->hasRole(RoleSlug::Admin)) {
+            return [...$empty, 'status' => 'admin'];
+        }
+
+        $units = DB::table('order_item_units as u')
+            ->join('order_items as oi', 'oi.id', '=', 'u.order_item_id')
+            ->join('orders as o', 'o.id', '=', 'oi.order_id')
+            ->join('product_variants as v', 'v.id', '=', 'oi.variant_id')
+            ->join('product_colors as c', 'c.id', '=', 'v.product_color_id')
+            ->leftJoin('reviews as r', 'r.order_item_unit_id', '=', 'u.id')
+            ->where('c.product_id', $productId)
+            ->where('o.user_id', $user->id)
+            ->orderByDesc('o.id')
+            ->orderBy('u.unit_no')
+            ->get([
+                'u.id as unit_id',
+                'o.order_code',
+                'o.order_status',
+                'o.payment_status',
+                'c.color_name',
+                'oi.size_value_snapshot',
+                'r.id as review_id',
+                'r.rating as review_rating',
+                'r.comment as review_comment',
+                'r.is_visible as review_is_visible',
+            ]);
+
+        $pendingUnits = [];
+        $reviewedUnits = [];
+        $pendingOrder = null;
+
+        foreach ($units as $row) {
+            $eligibleOrder = $row->order_status === OrderStatus::Delivered->value
+                && $row->payment_status === OrderPaymentStatus::Paid->value;
+
+            if (! $eligibleOrder) {
+                if ($pendingOrder === null && $row->order_status !== OrderStatus::Cancelled->value) {
+                    $pendingOrder = [
+                        'order_code' => $row->order_code,
+                        'order_url' => route('orders.show', $row->order_code),
+                    ];
+                }
+
+                continue;
+            }
+
+            if ($row->review_id === null) {
+                $pendingUnits[] = [
+                    'unit_id' => (int) $row->unit_id,
+                    'order_code' => $row->order_code,
+                    'color_name' => $row->color_name,
+                    'size_value' => $row->size_value_snapshot,
+                ];
+            } else {
+                $reviewedUnits[] = [
+                    'unit_id' => (int) $row->unit_id,
+                    'order_code' => $row->order_code,
+                    'color_name' => $row->color_name,
+                    'size_value' => $row->size_value_snapshot,
+                    'rating' => number_format((float) $row->review_rating, 1, '.', ''),
+                    'comment' => (string) $row->review_comment,
+                    'is_visible' => (bool) $row->review_is_visible,
+                ];
+            }
+        }
+
+        if ($pendingUnits !== []) {
+            $status = 'can_review';
+        } elseif ($reviewedUnits !== []) {
+            $status = 'already_reviewed';
+        } elseif ($pendingOrder !== null) {
+            $status = 'pending_delivery';
+        } else {
+            $status = 'not_purchased';
+        }
+
+        return [
+            'status' => $status,
+            'pending_units' => $pendingUnits,
+            'reviewed_units' => $reviewedUnits,
+            'pending_order' => $pendingOrder,
+        ];
     }
 
     private function lockProduct(OrderItemUnit $unit): Product

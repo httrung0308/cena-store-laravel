@@ -35,10 +35,22 @@ class ProductController extends Controller
     public function show(CatalogRequest $request, string $slug, CatalogQueryService $catalog, ReviewService $reviews): View
     {
         $detail = $catalog->detail($slug, $request->validated('style_color'));
-        $detail['reviews'] = $reviews->visibleFor($detail['product']['id'])
+        $productId = $detail['product']['id'];
+
+        $rawRatingFilter = $request->query('review_rating');
+        $reviewRatingFilter = is_numeric($rawRatingFilter) && (int) $rawRatingFilter >= 1 && (int) $rawRatingFilter <= 5
+            ? (int) $rawRatingFilter
+            : null;
+        $reviewWithReply = $request->boolean('with_reply');
+
+        $reviewPaginator = $reviews->visibleFilteredFor($productId, $reviewRatingFilter, $reviewWithReply)
             ->join('users as author', 'author.id', '=', 'r.user_id')
-            ->limit(20)
-            ->get(['r.rating', 'r.comment', 'r.admin_reply', 'r.created_at', 'author.full_name', 'c.color_name', 'oi.size_value_snapshot'])
+            ->select(['r.rating', 'r.comment', 'r.admin_reply', 'r.created_at', 'author.full_name', 'c.color_name', 'oi.size_value_snapshot'])
+            ->paginate(6, ['*'], 'review_page')
+            ->withQueryString()
+            ->fragment('product-reviews');
+
+        $detail['reviews'] = $reviewPaginator->getCollection()
             ->map(fn (object $review): array => [
                 'rating' => (float) $review->rating,
                 'comment' => $review->comment,
@@ -47,6 +59,19 @@ class ProductController extends Controller
                 'author' => $this->maskName($review->full_name),
                 'purchase' => trim($review->color_name.' · Size '.$review->size_value_snapshot),
             ])->all();
+
+        $detail['reviewPaginator'] = $reviewPaginator;
+        $detail['reviewSummary'] = $reviews->summaryFor($productId);
+        $detail['reviewFilters'] = [
+            'rating' => $reviewRatingFilter,
+            'with_reply' => $reviewWithReply,
+        ];
+        $detail['customerReviewState'] = $reviews->customerReviewState($request->user(), $productId);
+        $detail['relatedProducts'] = $catalog->relatedProducts(
+            $productId,
+            (int) $detail['product']['category_id'],
+            (string) $detail['product']['gender_slug']
+        );
 
         return view('catalog.show', $detail);
     }
