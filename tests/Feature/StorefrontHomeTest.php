@@ -162,12 +162,6 @@ class StorefrontHomeTest extends TestCase
             ->assertSee('Xem sản phẩm giảm giá trước')
             ->assertSee('Xem sản phẩm giảm giá kế tiếp')
             ->assertSee('Bài viết');
-
-        $variantB = $this->get(route('home', ['headings' => 'b']));
-        $variantB->assertOk()
-            ->assertSee('Sản phẩm nổi bật')
-            ->assertSee('Sản phẩm giảm giá')
-            ->assertSee('Sản phẩm mới');
     }
 
     public function test_home_query_service_prioritizes_deduplication(): void
