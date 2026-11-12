@@ -9,8 +9,10 @@ import { articleForm } from './components/article-form';
 import { bindAddToCartButtons, cartStore } from './components/cart';
 import { catalogListing } from './components/catalog-filter';
 import { colorVariants } from './components/color-variants';
+import { currencyInput } from './components/currency-input';
 import { dialogController } from './components/dialog';
 import { galleryController } from './components/gallery';
+import { liveSlug } from './components/live-slug';
 import { newsListing } from './components/news-listing';
 import { passwordField } from './components/password-field';
 import { productImages } from './components/product-images';
@@ -26,8 +28,10 @@ Alpine.data('articleFeedback', articleFeedback);
 Alpine.data('articleForm', articleForm);
 Alpine.data('catalogListing', catalogListing);
 Alpine.data('colorVariants', colorVariants);
+Alpine.data('currencyInput', currencyInput);
 Alpine.data('dialogController', dialogController);
 Alpine.data('galleryController', galleryController);
+Alpine.data('liveSlug', liveSlug);
 Alpine.data('newsListing', newsListing);
 Alpine.data('passwordField', passwordField);
 Alpine.data('productImages', productImages);
@@ -115,6 +119,35 @@ Alpine.data('storefrontShell', () => ({
         if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
     },
 }));
+// Auto scroll to first form error on load
+document.addEventListener('DOMContentLoaded', () => {
+    const firstError = document.querySelector('[aria-invalid="true"], .border-error, [role="alert"]');
+    if (firstError) {
+        firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        if (typeof firstError.focus === 'function') {
+            try { firstError.focus(); } catch (e) {}
+        }
+    }
+});
+
+// Submit guard against accidental double submits
+document.addEventListener('submit', (e) => {
+    const form = e.target;
+    if (!(form instanceof HTMLFormElement)) return;
+    if (form.hasAttribute('data-no-guard')) return;
+
+    const submitButtons = form.querySelectorAll('button[type="submit"], input[type="submit"]');
+    // Allow slight delay so form data is captured
+    setTimeout(() => {
+        submitButtons.forEach(btn => {
+            if (btn instanceof HTMLButtonElement) {
+                btn.disabled = true;
+                btn.classList.add('opacity-75', 'cursor-not-allowed');
+            }
+        });
+    }, 50);
+});
+
 window.Alpine = Alpine;
 window.Chart = Chart;
 Alpine.start();

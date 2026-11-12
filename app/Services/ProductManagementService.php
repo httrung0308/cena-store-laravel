@@ -25,6 +25,45 @@ final class ProductManagementService
 {
     public function __construct(private readonly MediaService $media) {}
 
+    public static function defaultPrefix(string $productSlug, string $styleColorCode): string
+    {
+        $slugClean = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $productSlug));
+        $productPart = substr($slugClean, 0, 8);
+        if ($productPart === '') {
+            $productPart = 'CENA';
+        }
+        $colorPart = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $styleColorCode));
+        if ($colorPart === '') {
+            $colorPart = 'DEF';
+        }
+
+        return "{$productPart}-{$colorPart}";
+    }
+
+    public static function generateSkuWithPrefix(string $prefix, string|float|int $sizeValue, ?int $ignoreVariantId = null): string
+    {
+        $sizeClean = str_replace('.', '_', (string) $sizeValue);
+        $baseCandidate = "{$prefix}-{$sizeClean}";
+        $candidate = $baseCandidate;
+        $suffix = 1;
+
+        while (ProductVariant::query()
+            ->where('sku', $candidate)
+            ->when($ignoreVariantId, fn ($q) => $q->where('id', '!=', $ignoreVariantId))
+            ->exists()) {
+            $candidate = sprintf('%s-%02d', $baseCandidate, $suffix++);
+        }
+
+        return $candidate;
+    }
+
+    public static function generateSku(string $productSlug, string $styleColorCode, string|float|int $sizeValue, ?int $ignoreVariantId = null): string
+    {
+        $prefix = self::defaultPrefix($productSlug, $styleColorCode);
+
+        return self::generateSkuWithPrefix($prefix, $sizeValue, $ignoreVariantId);
+    }
+
     /** Preserve numeric form indexes through multipart merging and validated-data reconstruction. @param array<string,mixed> $data @return array<string,mixed> */
     public function orderedInput(array $data): array
     {
@@ -47,7 +86,7 @@ final class ProductManagementService
     }
 
     /** @return array<string, mixed> */
-    public function rules(?Product $product = null): array
+    public function rules(?Product $product = null, bool $allowWithoutImages = false): array
     {
         $rules = ['name' => ['required', 'string', 'max:150'], 'slug' => ['required', 'string', 'max:180', 'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/D', Rule::unique('products', 'slug')->ignore($product?->id)],
             'category_id' => ['required', 'integer', Rule::exists('categories', 'id')->whereNull('deleted_at')],
@@ -63,12 +102,15 @@ final class ProductManagementService
             'colors.*.variants' => ['nullable', 'array', 'list', 'max:100'], 'colors.*.range_start' => ['nullable', 'string'], 'colors.*.range_end' => ['nullable', 'string'],
             'colors.*.sku_prefix' => ['nullable', 'string', 'max:85', 'regex:/^[A-Za-z0-9_-]+$/D'],
             'colors.*.variants.*.id' => ['nullable', 'integer', 'min:1'], 'colors.*.variants.*.size_value' => ['required'],
-            'colors.*.variants.*.sku' => ['required', 'string', 'max:100', 'regex:/^[A-Za-z0-9_-]+$/D'],
+            'colors.*.variants.*.sku' => ['nullable', 'string', 'max:100', 'regex:/^[A-Za-z0-9_-]+$/D'],
             'colors.*.variants.*.price_override' => ['nullable', 'integer', 'min:1'], 'colors.*.variants.*.is_active' => ['sometimes', 'boolean'],
-            'colors.*.images' => ['required', 'array', 'list', 'min:1', 'max:20'], 'colors.*.images.*.id' => ['nullable', 'integer', 'min:1'],
+            'colors.*.images' => [$allowWithoutImages ? 'nullable' : 'required', 'array', 'list', 'max:20'],
+            'colors.*.images.*.id' => ['nullable', 'integer', 'min:1'],
             'colors.*.images.*.file' => ['nullable', 'file', 'mimetypes:image/jpeg,image/png,image/webp', 'max:5120'],
             'colors.*.images.*.external_url' => ['nullable', 'string', 'max:1000', 'url:https'],
-            'colors.*.images.*.alt_text' => ['required', 'string', 'max:255'], 'colors.*.images.*.is_thumbnail' => ['required', 'boolean']];
+            'colors.*.images.*.clone_source_path' => ['nullable', 'string', 'max:500'],
+            'colors.*.images.*.alt_text' => [$allowWithoutImages ? 'nullable' : 'required', 'string', 'max:255'],
+            'colors.*.images.*.is_thumbnail' => [$allowWithoutImages ? 'nullable' : 'required', 'boolean']];
         foreach (['stock_qty', 'reserved_qty', 'quarantine_qty', 'average_cost', 'unit_cost_basis', 'size_numeric'] as $field) {
             $rules[$field] = ['prohibited'];
             $rules['colors.*.variants.*.'.$field] = ['prohibited'];
@@ -78,12 +120,15 @@ final class ProductManagementService
     }
 
     /** @param array<string, mixed> $input */
-    public function save(User $actor, ?Product $product, array $input): Product
+    public function save(User $actor, ?Product $product, array $input, bool $allowWithoutImages = false): Product
     {
         DB::transaction(fn () => ProductManagementAccess::lock($actor));
-        $data = Validator::make($this->orderedInput($input), $this->rules($product))->validate();
+        $data = Validator::make($this->orderedInput($input), $this->rules($product, $allowWithoutImages))->validate();
         $data['base_price'] = Money::integer($data['base_price']);
         $data['promotion_price'] = isset($data['promotion_price']) ? Money::integer($data['promotion_price']) : null;
+        if ($allowWithoutImages) {
+            $data['is_active'] = false;
+        }
         if (! empty($data['classification_ids'])) {
             $existingIds = $product?->exists ? $product->classifications()->pluck('classifications.id')->all() : [];
             $newIds = array_diff($data['classification_ids'], $existingIds);
@@ -100,10 +145,11 @@ final class ProductManagementService
         }
         $paths = [];
         try {
+            $seenFormSkus = [];
             foreach ($data['colors'] as $ci => &$color) {
                 $variants = $color['variants'] ?? [];
                 if (! empty($color['range_start']) || ! empty($color['range_end'])) {
-                    if ($variants || empty($color['range_start']) || empty($color['range_end']) || empty($color['sku_prefix'])) {
+                    if ($variants || empty($color['range_start']) || empty($color['range_end'])) {
                         $this->invalid('colors.'.$ci.'.variants', 'Chọn dải size hoặc từng SKU, không nhập cả hai.');
                     }
                     try {
@@ -112,9 +158,16 @@ final class ProductManagementService
                         $this->invalid('colors.'.$ci.'.range_start', 'Dải size không hợp lệ.');
                     }
                     if (count($sizes) > 100) {
-                        $this->invalid('colors.'.$ci.'.range_end', 'Tối đa100 size cho mỗi màu.');
+                        $this->invalid('colors.'.$ci.'.range_end', 'Tối đa 100 size cho mỗi màu.');
                     }
-                    $variants = array_map(fn ($size) => ['size_value' => $size, 'sku' => $color['sku_prefix'].'-'.str_replace('.', '_', $size), 'price_override' => null], $sizes);
+                    $prefix = ! empty($color['sku_prefix'])
+                        ? $color['sku_prefix']
+                        : self::defaultPrefix($data['slug'], $color['style_color_code']);
+                    $variants = array_map(fn ($size) => [
+                        'size_value' => $size,
+                        'sku' => self::generateSkuWithPrefix($prefix, $size),
+                        'price_override' => null,
+                    ], $sizes);
                 }
                 if (! $variants) {
                     $this->invalid('colors.'.$ci.'.variants', 'Mỗi màu cần ít nhất một size.');
@@ -131,19 +184,40 @@ final class ProductManagementService
                     }
                     $seen[$variant['size_value']] = true;
                     $variant['price_override'] = isset($variant['price_override']) ? Money::integer($variant['price_override']) : null;
+
+                    // Auto generate SKU if empty
+                    if (empty($variant['sku'])) {
+                        $variant['sku'] = self::generateSku($data['slug'], $color['style_color_code'], $variant['size_value'], $variant['id'] ?? null);
+                    }
+
+                    // Check duplicate SKU across entire form
+                    $skuUpper = strtoupper($variant['sku']);
+                    if (isset($seenFormSkus[$skuUpper])) {
+                        throw ValidationException::withMessages([
+                            'colors' => 'Slug, mã màu, SKU hoặc size đã được sử dụng.',
+                            "colors.$ci.variants.$vi.sku" => "Mã SKU '{$variant['sku']}' bị trùng lặp trong form.",
+                        ]);
+                    }
+                    $seenFormSkus[$skuUpper] = true;
                 }
                 unset($variant);
                 $color['variants'] = $variants;
-                if (array_sum(array_column($color['images'], 'is_thumbnail')) !== 1) {
-                    $this->invalid("colors.$ci.images", 'Mỗi màu phải có đúng một ảnh đại diện.');
+
+                $images = $color['images'] ?? [];
+                if (! $allowWithoutImages || ! empty($images)) {
+                    if (array_sum(array_column($images, 'is_thumbnail')) !== 1) {
+                        $this->invalid("colors.$ci.images", 'Mỗi màu phải có đúng một ảnh đại diện.');
+                    }
                 }
-                foreach ($color['images'] as $ii => &$image) {
+
+                foreach ($images as $ii => &$image) {
                     $file = $image['file'] ?? null;
                     $url = $image['external_url'] ?? null;
+                    $clonePath = $image['clone_source_path'] ?? null;
                     if ($file && $url) {
                         $this->invalid("colors.$ci.images.$ii", 'Chỉ chọn một nguồn ảnh.');
                     }
-                    if (! $file && ! $url && empty($image['id'])) {
+                    if (! $file && ! $url && empty($image['id']) && empty($clonePath) && ! $allowWithoutImages) {
                         $this->invalid("colors.$ci.images.$ii", 'Ảnh cần tệp JPEG/PNG/WebP hoặc URL HTTPS.');
                     }
                     if ($url && (parse_url($url, PHP_URL_USER) !== null || parse_url($url, PHP_URL_PASS) !== null)) {
@@ -152,9 +226,16 @@ final class ProductManagementService
                     if ($file instanceof UploadedFile) {
                         $image['_path'] = $this->media->stage($file);
                         $paths[] = $image['_path'];
+                    } elseif (! empty($clonePath)) {
+                        $cloned = $this->media->duplicate($clonePath);
+                        if ($cloned) {
+                            $image['_path'] = $cloned;
+                            $paths[] = $cloned;
+                        }
                     }
                 }
                 unset($image);
+                $color['images'] = $images;
             }
             unset($color);
 
@@ -217,7 +298,7 @@ final class ProductManagementService
                         $storedImage->syncOriginalAttribute('is_thumbnail');
                     }
                     $seenImages = [];
-                    foreach ($inputColor['images'] as $ii => $inputImage) {
+                    foreach ($inputColor['images'] ?? [] as $ii => $inputImage) {
                         $image = empty($inputImage['id']) ? new ProductImage : $images->get((int) $inputImage['id']);
                         abort_unless($image, 404);
                         if ($image->exists && isset($seenImages[$image->id])) {

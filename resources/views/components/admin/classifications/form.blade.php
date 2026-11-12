@@ -10,8 +10,12 @@
 @php
     $silCount = (int) ($homeNavCounts['SILHOUETTE'] ?? 0);
     $actCount = (int) ($homeNavCounts['ACTIVITY'] ?? 0);
+    $isNew = empty($record?->id);
+    $initialName = old('name', $record->name ?? '');
+    $initialSlug = old('slug', $record->slug ?? '');
 @endphp
-<form @if ($action) action="{{ $action }}" @endif method="POST" class="admin-card space-y-6">
+<form @if ($action) action="{{ $action }}" @endif method="POST" class="admin-card space-y-6"
+      x-data="liveSlug({ isNew: {{ $isNew ? 'true' : 'false' }}, initialName: @js($initialName), initialSlug: @js($initialSlug) })">
     @csrf
     @if (in_array(strtoupper($method), ['PATCH', 'PUT'], true)) @method(strtoupper($method)) @endif
 
@@ -29,14 +33,35 @@
     <div class="space-y-4">
         <div>
             <label for="classification-name" class="admin-label text-muted">Tên nhãn <span class="text-error">*</span></label>
-            <input type="text" id="classification-name" name="name" value="{{ old('name', $record->name ?? '') }}" class="input w-full border-border bg-surface text-main text-xs" placeholder="Ví dụ: Sneaker, Chạy bộ..." required>
+            <input type="text" id="classification-name" name="name" x-model="name" x-on:input="onNameInput" class="input w-full border-border bg-surface text-main text-xs @error('name') border-error @enderror" placeholder="Ví dụ: Sneaker, Chạy bộ..." required>
             <x-forms.field-error name="name" />
         </div>
 
         <div>
-            <label for="classification-slug" class="admin-label text-muted">Slug (Đường dẫn tĩnh) <span class="text-error">*</span></label>
-            <input type="text" id="classification-slug" name="slug" value="{{ old('slug', $record->slug ?? '') }}" class="input w-full border-border bg-surface text-main text-xs font-mono" placeholder="vi-du: sneaker, chay-bo..." required>
-            <p class="text-[11px] text-muted/70 mt-1">Chỉ gồm chữ cái thường không dấu, số và dấu gạch ngang.</p>
+            <div class="flex items-center justify-between">
+                <label for="classification-slug" class="admin-label text-muted">Slug (Đường dẫn tĩnh) <span class="text-error">*</span></label>
+                <template x-if="isLocked">
+                    <button type="button" x-on:click="unlockSlug" class="text-[11px] font-semibold text-accent hover:underline flex items-center gap-1">
+                        <span>🔒</span> Mở khóa sửa slug
+                    </button>
+                </template>
+                <template x-if="!isLocked && isNew">
+                    <button type="button" x-on:click="regenerateSlug" class="text-[11px] text-muted hover:text-main flex items-center gap-1">
+                        <span>🔄</span> Làm mới theo tên
+                    </button>
+                </template>
+            </div>
+            <div class="relative mt-1">
+                <input type="text" id="classification-slug" name="slug" x-ref="slugInput" x-model="slug" x-on:input="onSlugInput"
+                       x-bind:readonly="isLocked"
+                       x-bind:class="isLocked ? 'bg-surface-alt/70 cursor-not-allowed opacity-85' : 'bg-surface'"
+                       class="input w-full border-border bg-surface text-main text-xs font-mono @error('slug') border-error @enderror" placeholder="vi-du: sneaker, chay-bo..." required>
+            </div>
+            <p class="text-[11px] text-muted/70 mt-1">
+                <span x-show="isNew && !manuallyModified">Tự động gợi ý từ tên nhãn. Bạn có thể sửa tay.</span>
+                <span x-show="isNew && manuallyModified">Đã chỉnh sửa thủ công (không tự ghi đè khi đổi tên).</span>
+                <span x-show="!isNew && isLocked">Được khóa bảo vệ liên kết. Bấm "Mở khóa" nếu cần sửa.</span>
+            </p>
             <x-forms.field-error name="slug" />
         </div>
 

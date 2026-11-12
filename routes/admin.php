@@ -32,10 +32,16 @@ Route::resource('suppliers', SupplierController::class)->except(['show', 'destro
 Route::patch('suppliers/{supplier}/activate', [SupplierController::class, 'activate'])->name('suppliers.activate');
 Route::patch('suppliers/{supplier}/deactivate', [SupplierController::class, 'deactivate'])->name('suppliers.deactivate');
 
+Route::get('products/import/template', [ProductController::class, 'template'])->name('products.template');
+Route::post('products/import/preview', [ProductController::class, 'previewImport'])->name('products.import.preview');
+Route::post('products/import/store', [ProductController::class, 'storeImport'])->name('products.import.store');
+Route::get('products/{product}/duplicate', [ProductController::class, 'duplicate'])->name('products.duplicate');
 Route::resource('products', ProductController::class)->except(['show', 'destroy']);
 Route::patch('products/{product}/activate', [ProductController::class, 'activate'])->name('products.activate');
 Route::patch('products/{product}/deactivate', [ProductController::class, 'deactivate'])->name('products.deactivate');
+Route::get('api/variants/search', [ProductController::class, 'searchVariants'])->name('variants.search');
 
+Route::get('stock-imports/template', [StockImportController::class, 'template'])->name('stock-imports.template');
 Route::post('stock-imports/spreadsheet', [StockImportController::class, 'spreadsheet'])->name('stock-imports.spreadsheet');
 Route::resource('stock-imports', StockImportController::class)->except('destroy');
 Route::post('stock-imports/{stock_import}/post', [StockImportController::class, 'post'])->name('stock-imports.post');

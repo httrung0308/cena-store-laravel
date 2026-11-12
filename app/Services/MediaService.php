@@ -4,6 +4,7 @@ namespace App\Services;
 
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use RuntimeException;
 
 final class MediaService
@@ -23,6 +24,21 @@ final class MediaService
         $this->thumbnails->generateThumbnails($path);
 
         return $path;
+    }
+
+    public function duplicate(string $existingPath): ?string
+    {
+        if (! Storage::disk('public')->exists($existingPath)) {
+            return null;
+        }
+
+        $extension = pathinfo($existingPath, PATHINFO_EXTENSION);
+        $newFilename = Str::random(40).'.'.$extension;
+        $newPath = 'products/'.$newFilename;
+        Storage::disk('public')->copy($existingPath, $newPath);
+        $this->thumbnails->generateThumbnails($newPath);
+
+        return $newPath;
     }
 
     /** @param list<string> $paths Only server-created paths from this attempted operation. */

@@ -35,7 +35,20 @@ class CategoryController extends Controller
 
     private function form(Category $record): View
     {
-        return view('admin.categories.form', ['record' => $record, 'parents' => Category::whereNull('parent_id')->where('id', '!=', $record->id ?? 0)->orderBy('display_order')->get(['id', 'name'])->toArray(), 'genderOptions' => array_map(fn ($gender) => ['value' => $gender->value, 'label' => $gender->label()], GenderGroup::cases())]);
+        return view('admin.categories.form', [
+            'record' => $record,
+            'parents' => Category::whereNull('parent_id')
+                ->where('id', '!=', $record->id ?? 0)
+                ->orderBy('display_order')
+                ->get(['id', 'name', 'gender_group'])
+                ->map(fn ($p) => [
+                    'id' => $p->id,
+                    'name' => $p->name,
+                    'gender_group' => $p->gender_group instanceof GenderGroup ? $p->gender_group->value : (string) $p->gender_group,
+                ])
+                ->toArray(),
+            'genderOptions' => array_map(fn ($gender) => ['value' => $gender->value, 'label' => $gender->label()], GenderGroup::cases()),
+        ]);
     }
 
     public function store(CategoryRequest $request, ProductManagementTaxonomyService $service): RedirectResponse
