@@ -4813,6 +4813,34 @@
       "checks": [
         "operations_work_item_histories_status_check"
       ]
+    },
+    "shipment_return_events": {
+      "number": 40,
+      "columns": {
+        "id": {"type": "bigint unsigned", "nullable": false, "default": null, "auto_increment": true},
+        "shipment_id": {"type": "bigint unsigned", "nullable": false, "default": null, "auto_increment": false},
+        "shipment_return_item_id": {"type": "bigint unsigned", "nullable": true, "default": null, "auto_increment": false},
+        "order_item_unit_id": {"type": "bigint unsigned", "nullable": true, "default": null, "auto_increment": false},
+        "event_type": {"type": "varchar(30)", "nullable": false, "default": null, "auto_increment": false},
+        "actor_id": {"type": "bigint unsigned", "nullable": false, "default": null, "auto_increment": false},
+        "note": {"type": "varchar(1000)", "nullable": true, "default": null, "auto_increment": false},
+        "occurred_at": {"type": "datetime(6)", "nullable": false, "default": null, "auto_increment": false},
+        "created_at": {"type": "datetime(6)", "nullable": false, "default": null, "auto_increment": false}
+      },
+      "foreign_keys": [
+        {"column": "shipment_id", "table": "shipments", "references": "id", "on_delete": "RESTRICT"},
+        {"column": "shipment_return_item_id", "table": "shipment_return_items", "references": "id", "on_delete": "RESTRICT"},
+        {"column": "order_item_unit_id", "table": "order_item_units", "references": "id", "on_delete": "RESTRICT"},
+        {"column": "actor_id", "table": "users", "references": "id", "on_delete": "RESTRICT"}
+      ],
+      "indexes": [
+        {"columns": ["shipment_id", "order_item_unit_id", "event_type"], "unique": true},
+        {"columns": ["shipment_id", "occurred_at", "id"], "unique": false}
+      ],
+      "checks": [
+        "shipment_return_events_type_allowed_check",
+        "shipment_return_events_source_shape_check"
+      ]
     }
   }
 }

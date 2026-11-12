@@ -140,7 +140,7 @@ class FailedDeliveryReturnTest extends TestCase
     public function test_restock_uses_the_frozen_outgoing_cost_after_average_cost_changes(): void
     {
         $order = $this->failedOrder(quantity: 8);
-        $unit = $order->items->sole()->units->sole();
+        $unit = $order->items->sole()->units->sortBy('unit_no')->firstOrFail();
         $this->receive($this->shoe, 1, 900_000);
         $this->assertSame('900000.0000', $this->shoe->fresh()->average_cost);
         $this->actingAs($this->staff);
@@ -226,7 +226,7 @@ class FailedDeliveryReturnTest extends TestCase
         $cart->forceFill(['user_id' => $this->customer->id, 'version' => ($cart->version ?? 0) + 1])->save();
         (new CartItem)->forceFill(['cart_id' => $cart->id, 'variant_id' => $this->shoe->id, 'quantity' => $quantity])->save();
         $service = app(CheckoutService::class);
-        $order = $service->place($this->customer, $address->id, (string) Str::uuid(), $service->quote($this->customer, $address)['fingerprint']);
+        $order = $service->place($this->customer, $address->id, (string) Str::uuid(), $service->quote($this->customer, $address)['fingerprint'], null);
         $this->actingAs($this->staff);
         $this->transition($order, 'confirm');
         $this->transition($order->fresh(), 'pack');

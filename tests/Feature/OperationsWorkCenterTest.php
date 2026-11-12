@@ -69,7 +69,7 @@ class OperationsWorkCenterTest extends TestCase
     public function test_updates_enforce_legal_edges_version_and_append_actor_snapshot_history(): void
     {
         $staff = User::factory()->staff()->create();
-        $admin = User::factory()->admin()->create();
+        $admin = User::factory()->administrator()->create();
         $service = app(OperationsWorkItemService::class);
         $item = DB::transaction(fn () => $service->create($this->definition(), $staff));
 
@@ -128,7 +128,7 @@ class OperationsWorkCenterTest extends TestCase
     public function test_admin_and_staff_can_use_work_center_but_customer_and_guest_cannot(): void
     {
         $staff = User::factory()->staff()->create();
-        $admin = User::factory()->admin()->create();
+        $admin = User::factory()->administrator()->create();
         $customer = User::factory()->customer()->create();
         $item = OperationsWorkItem::factory()->create(['created_by' => $staff->id]);
 

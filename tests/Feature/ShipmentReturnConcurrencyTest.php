@@ -55,7 +55,8 @@ class ShipmentReturnConcurrencyTest extends CommittedAtomicTestCase
     {
         parent::setUp();
         config(['store.shipping.dataset_version' => 'factory-v1', 'store.shipping.hcm_province_code' => 'none']);
-        $staffRole = Role::query()->firstOrCreate(['slug' => RoleSlug::Staff], ['name' => RoleSlug::Staff->label()]);
+        $staffRole = Role::query()->where('slug', RoleSlug::Staff->value)->first()
+            ?? Role::factory()->staff()->create();
         UserRole::factory()->create(['user_id' => $this->actor->id, 'role_id' => $staffRole->id, 'assigned_at' => now()]);
         $this->customer = User::factory()->customer()->create();
 
@@ -88,7 +89,7 @@ class ShipmentReturnConcurrencyTest extends CommittedAtomicTestCase
         $this->cartId = $cart->id;
         (new CartItem)->forceFill(['cart_id' => $cart->id, 'variant_id' => $this->variant->id, 'quantity' => 1])->save();
         $checkout = app(CheckoutService::class);
-        $order = $checkout->place($this->customer, $address->id, (string) Str::uuid(), $checkout->quote($this->customer, $address)['fingerprint']);
+        $order = $checkout->place($this->customer, $address->id, (string) Str::uuid(), $checkout->quote($this->customer, $address)['fingerprint'], null);
         $this->orderIds[] = $order->id;
         $workflow = app(OrderWorkflowService::class);
         $workflow->confirm($order, $this->actor, OrderStatus::Pending->value);
@@ -114,6 +115,7 @@ class ShipmentReturnConcurrencyTest extends CommittedAtomicTestCase
             DB::table('payment_events')->whereIn('payment_id', DB::table('payments')->whereIn('order_id', $orderIds)->select('id'))->delete();
             DB::table('payments')->whereIn('order_id', $orderIds)->delete();
             DB::table('outbox_events')->where('aggregate_type', OutboxAggregateType::Order->value)->whereIn('aggregate_id', $orderIds)->delete();
+            DB::table('notifications')->whereIn('order_id', $orderIds)->delete();
             DB::table('order_status_histories')->whereIn('order_id', $orderIds)->delete();
             DB::table('shipments')->whereIn('id', $shipmentIds)->delete();
             DB::table('order_item_units')->whereIn('order_item_id', DB::table('order_items')->whereIn('order_id', $orderIds)->select('id'))->delete();

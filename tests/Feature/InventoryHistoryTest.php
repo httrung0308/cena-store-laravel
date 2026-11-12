@@ -90,10 +90,13 @@ class InventoryHistoryTest extends TestCase
         [$product, , $variant] = $this->productWithVariant();
         [, , $foreignVariant] = $this->productWithVariant('Ngoài sản phẩm');
         $employee = User::factory()->staff()->create();
-        $reference = $this->movement($variant)->reference_id;
         $businessTimezone = config('store.business_timezone');
         $today = CarbonImmutable::now($businessTimezone)->startOfDay();
-        $movements = [];
+        $referenceMovement = $this->movement($variant, [
+            'created_at' => $today->setTime(11, 59)->utc(),
+        ]);
+        $reference = $referenceMovement->reference_id;
+        $movements = [$referenceMovement];
 
         for ($index = 0; $index < 25; $index++) {
             $movements[] = $this->movement($variant, [
@@ -103,12 +106,13 @@ class InventoryHistoryTest extends TestCase
                 'created_at' => $today->setTime(12, 0)->utc()->addMinutes($index),
             ]);
         }
-        $movements[] = $this->movement($variant, [
+        $latestMatchingMovement = $this->movement($variant, [
             'action' => InventoryAction::ImportPosted,
             'reference_type' => InventoryReferenceType::StockImport,
             'reference_id' => $reference,
             'created_at' => $today->setTime(23, 59, 59, 999999)->utc(),
         ]);
+        $movements[] = $latestMatchingMovement;
         $this->movement($variant, [
             'action' => InventoryAction::ImportPosted,
             'reference_type' => InventoryReferenceType::StockImport,
@@ -140,6 +144,8 @@ class InventoryHistoryTest extends TestCase
             'created_at' => $today->setTime(12, 0)->utc()->addMinutes(30),
         ]);
 
+        $this->assertCount(27, $movements);
+
         $response = $this->actingAs($employee)->get(route('admin.products.show', [
             'product' => $product,
             'variant_id' => $variant->id,
@@ -150,11 +156,11 @@ class InventoryHistoryTest extends TestCase
             'reference_id' => $reference,
         ]))->assertOk();
 
-        $response->assertViewHas('movements', function ($paginator) use ($movements): bool {
-            return $paginator->total() === count($movements)
+        $response->assertViewHas('movements', function ($paginator) use ($latestMatchingMovement): bool {
+            return $paginator->total() === 27
                 && $paginator->perPage() === 20
                 && $paginator->count() === 20
-                && $paginator->items()[0]->id === $movements[25]->id;
+                && $paginator->items()[0]->id === $latestMatchingMovement->id;
         });
         $secondPage = $this->actingAs($employee)->get(route('admin.products.show', [
             'product' => $product,
@@ -167,7 +173,7 @@ class InventoryHistoryTest extends TestCase
             'page' => 2,
         ]))->assertOk();
 
-        $secondPage->assertViewHas('movements', fn ($paginator): bool => $paginator->count() === 6 && $paginator->currentPage() === 2);
+        $secondPage->assertViewHas('movements', fn ($paginator): bool => $paginator->count() === 7 && $paginator->currentPage() === 2);
     }
 
     public function test_reconciliation_reports_incomplete_history_without_inventing_a_balance_difference(): void

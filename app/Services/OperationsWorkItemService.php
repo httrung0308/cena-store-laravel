@@ -6,6 +6,7 @@ use App\Data\OperationsWorkItemDefinition;
 use App\Data\VerifiedOperationsSourceOutcome;
 use App\Enums\ErrorCode;
 use App\Enums\OperationsWorkItemStatus;
+use App\Enums\RoleSlug;
 use App\Exceptions\DomainException;
 use App\Models\OperationsWorkItem;
 use App\Models\OperationsWorkItemHistory;
@@ -99,7 +100,7 @@ final class OperationsWorkItemService
 
     private function appendHistory(OperationsWorkItem $item, User $actor, ?OperationsWorkItemStatus $from, OperationsWorkItemStatus $to, ?string $note, ?string $outcomeCode): void
     {
-        $roles = $actor->roles()->pluck('slug')->map(static fn ($slug): string => (string) $slug)->sort()->values()->all();
+        $roles = $actor->roles()->pluck('slug')->map(static fn (RoleSlug $slug): string => $slug->value)->sort()->values()->all();
         (new OperationsWorkItemHistory)->forceFill([
             'work_item_id' => $item->id,
             'actor_id' => $actor->id,
