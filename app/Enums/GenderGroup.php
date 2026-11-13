@@ -15,7 +15,7 @@ enum GenderGroup: string
             self::Men => 'Nam',
             self::Women => 'Nữ',
             self::Kids => 'Trẻ em',
-            self::Unisex => 'Mọi giới',
+            self::Unisex => 'Unisex',
         };
     }
 }

@@ -1,6 +1,8 @@
 {{-- Storefront page shell: Cena navbar, cart/menu panels and footer around the page.
      Use @extends('layouts.store') with @section('title') and @section('content'). --}}
-@php($pageTitle = $title ?? trim($__env->yieldContent('title', 'Cena')))
+@php
+    $pageTitle = $title ?? html_entity_decode(trim($__env->yieldContent('title', 'Cena')), ENT_QUOTES, 'UTF-8');
+@endphp
 <!doctype html>
 <html lang="vi" data-theme="light">
 <head>

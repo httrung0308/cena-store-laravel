@@ -1,6 +1,8 @@
 {{-- Full-screen sign-in / sign-up shell: Cena branded background, no navbar or footer, Cena logo back to home.
      Sections: title, heading, subheading (optional), switch (link to the other form), content (the form). --}}
-@php($pageTitle = $title ?? trim($__env->yieldContent('title', 'Cena')))
+@php
+    $pageTitle = $title ?? html_entity_decode(trim($__env->yieldContent('title', 'Cena')), ENT_QUOTES, 'UTF-8');
+@endphp
 <!doctype html>
 <html lang="vi" data-theme="light">
 <head>
@@ -71,7 +73,7 @@
 
     <main class="relative z-10 flex flex-1 items-center justify-center px-4 py-8 sm:px-6">
         <div class="w-full max-w-xl rounded-3xl border border-border bg-surface-card p-6 shadow-elevated sm:p-10">
-            <h1 class="text-center text-2xl sm:text-3xl font-extrabold leading-tight text-main tracking-tight">@yield('heading', $pageTitle)</h1>
+            <h1 class="text-center text-2xl sm:text-3xl font-extrabold leading-tight text-main tracking-tight">{{ $__env->hasSection('heading') ? html_entity_decode(trim($__env->yieldContent('heading')), ENT_QUOTES, 'UTF-8') : $pageTitle }}</h1>
             @hasSection('subheading')
                 <p class="mt-2 text-center text-sm text-muted sm:text-base leading-relaxed">@yield('subheading')</p>
             @endif
