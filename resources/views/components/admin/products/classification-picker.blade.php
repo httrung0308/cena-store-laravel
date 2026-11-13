@@ -19,8 +19,7 @@
     <div class="grid gap-6 md:grid-cols-2">
         {{-- SILHOUETTE GROUP --}}
         <div class="rounded-xl border border-border bg-surface/30 p-4 space-y-3">
-            <div class="flex items-center gap-2">
-                <span class="text-base">👟</span>
+            <div>
                 <h3 class="text-xs font-bold uppercase tracking-wider text-main">Kiểu dáng giày (Silhouette)</h3>
             </div>
             
@@ -53,8 +52,7 @@
 
         {{-- ACTIVITY GROUP --}}
         <div class="rounded-xl border border-border bg-surface/30 p-4 space-y-3">
-            <div class="flex items-center gap-2">
-                <span class="text-base">🏃</span>
+            <div>
                 <h3 class="text-xs font-bold uppercase tracking-wider text-main">Mục đích sử dụng (Activity)</h3>
             </div>
             

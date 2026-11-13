@@ -24,13 +24,14 @@
                 <div class="flex items-center justify-between">
                     <label for="product-slug" class="admin-label">Đường dẫn slug <span class="text-error">*</span></label>
                     <template x-if="isLocked">
-                        <button type="button" x-on:click="unlockSlug" class="text-[11px] font-semibold text-accent hover:underline flex items-center gap-1">
-                            <span>🔒</span> Mở khóa sửa slug
+                        <button type="button" x-on:click="unlockSlug" class="text-[11px] font-semibold text-accent hover:underline inline-flex items-center gap-1">
+                            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                            <span>Mở khóa sửa slug</span>
                         </button>
                     </template>
                     <template x-if="!isLocked && isNew">
-                        <button type="button" x-on:click="regenerateSlug" class="text-[11px] text-muted hover:text-main flex items-center gap-1">
-                            <span>🔄</span> Làm mới theo tên
+                        <button type="button" x-on:click="regenerateSlug" class="text-[11px] text-muted hover:text-main inline-flex items-center gap-1">
+                            <span>Làm mới theo tên</span>
                         </button>
                     </template>
                 </div>

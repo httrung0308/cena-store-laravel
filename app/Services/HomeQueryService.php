@@ -57,7 +57,7 @@ final class HomeQueryService
             'featuredProducts' => $featured,
             'saleProducts' => $sale,
             'newProducts' => $new,
-            'articles' => $this->latestArticles(6),
+            'articles' => $this->latestArticles(4),
         ];
     }
 
@@ -230,7 +230,7 @@ final class HomeQueryService
     }
 
     /** @return Collection<int, Article> */
-    public function latestArticles(int $limit = 6): Collection
+    public function latestArticles(int $limit = 4): Collection
     {
         return Article::query()
             ->published()

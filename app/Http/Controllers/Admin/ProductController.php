@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\RoleSlug;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\ProductRequest;
 use App\Models\Category;
@@ -32,6 +33,57 @@ class ProductController extends Controller
     public function create(): View
     {
         return $this->form(new Product);
+    }
+
+    public function show(Request $request, Product $product): View
+    {
+        $product->load([
+            'category.parent',
+            'classifications' => fn ($q) => $q->orderBy('classification_group')->orderBy('sort_order')->orderBy('name'),
+            'colors' => fn ($q) => $q->orderBy('display_order')->orderBy('id'),
+            'colors.images' => fn ($q) => $q->orderByDesc('is_thumbnail')->orderBy('display_order')->orderBy('id'),
+            'colors.variants' => fn ($q) => $q->orderBy('size_numeric')->orderBy('id'),
+        ]);
+
+        $canViewCost = $request->user()?->hasRole(RoleSlug::Admin) ?? false;
+
+        $blockingReasons = [];
+        if (! $product->is_active) {
+            $blockingReasons[] = 'Sản phẩm đang ở trạng thái Ngừng bán.';
+        }
+        $categoryActive = (bool) $product->category?->is_active
+            && ($product->category?->parent_id === null || (bool) $product->category?->parent?->is_active);
+        if (! $categoryActive) {
+            $blockingReasons[] = 'Danh mục (hoặc danh mục cha) đang bị ẩn.';
+        }
+
+        $hasSellableColor = $product->colors->contains(function ($color) {
+            return $color->is_active
+                && $color->images->isNotEmpty()
+                && $color->variants->contains('is_active', true);
+        });
+        if (! $hasSellableColor) {
+            $blockingReasons[] = 'Chưa có phối màu nào đang bán kèm ảnh và ít nhất một size đang mở bán.';
+        }
+
+        $isPubliclyVisible = $blockingReasons === [];
+
+        $allVariants = $product->colors->flatMap->variants;
+        $totals = [
+            'colors' => $product->colors->count(),
+            'variants' => $allVariants->count(),
+            'stock' => (int) $allVariants->sum('stock_qty'),
+            'reserved' => (int) $allVariants->sum('reserved_qty'),
+            'quarantine' => (int) $allVariants->sum('quarantine_qty'),
+        ];
+
+        return view('admin.products.show', [
+            'product' => $product,
+            'canViewCost' => $canViewCost,
+            'isPubliclyVisible' => $isPubliclyVisible,
+            'blockingReasons' => $blockingReasons,
+            'totals' => $totals,
+        ]);
     }
 
     public function edit(Product $product): View

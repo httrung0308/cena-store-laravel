@@ -11,7 +11,7 @@
     $initialMinOrder = old('min_order_amount', $coupon->min_order_amount ?? 0);
     $initialMaxDiscount = old('max_discount_amount', $coupon->max_discount_amount ?? '');
 @endphp
-<div class="max-w-3xl">
+<div class="max-w-3xl mx-auto">
     <form method="POST" action="{{ $coupon->exists ? route('admin.coupons.update', $coupon) : route('admin.coupons.store') }}"
           class="admin-card space-y-6"
           x-data="{

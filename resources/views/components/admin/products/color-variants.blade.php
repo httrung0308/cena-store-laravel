@@ -118,7 +118,7 @@
             {{-- Quick sequence generator --}}
             <details class="rounded-xl border border-border p-3 bg-surface-alt/20">
                 <summary class="cursor-pointer text-xs font-semibold text-main hover:text-accent">
-                    ⚡ Sinh nhanh dải size (chỉ dùng khi chưa nhập SKU riêng)
+                    Sinh nhanh dải size (chỉ dùng khi chưa nhập SKU riêng)
                 </summary>
                 <div class="grid gap-3 py-3 sm:grid-cols-3">
                     <div>

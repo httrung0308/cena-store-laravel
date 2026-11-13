@@ -5,7 +5,7 @@
     <a class="px-4 py-2 bg-surface hover:bg-border/40 text-muted hover:text-main text-xs font-bold rounded-xl border border-border transition-colors" href="{{ route('admin.classifications.index') }}">← Quay lại danh sách</a>
 @endsection
 @section('content')
-    <div class="max-w-2xl">
+    <div class="max-w-2xl mx-auto">
         <x-admin.classifications.form
             :action="$record->exists ? route('admin.classifications.update', $record) : route('admin.classifications.store')"
             :method="$record->exists ? 'PUT' : 'POST'"

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Enums\CouponType;
+use App\Models\Article;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\ProductColor;
@@ -219,5 +220,74 @@ class ProductFormEnhancementsTest extends TestCase
             'per_user_limit' => 1,
         ]);
         $resPercent->assertRedirect(route('admin.coupons.index'));
+    }
+
+    public function test_home_sidebar_limits_published_articles_to_four(): void
+    {
+        for ($i = 1; $i <= 6; $i++) {
+            Article::factory()->published()->create([
+                'author_id' => $this->admin->id,
+                'title' => "Sidebar Limit Article {$i}",
+                'published_at' => now()->subMinutes(10 - $i),
+            ]);
+        }
+
+        $response = $this->get(route('home'));
+        $response->assertOk()
+            ->assertSee('Tất cả bài viết')
+            ->assertViewHas('articles', fn ($articles) => $articles->count() === 4);
+    }
+
+    public function test_admin_and_staff_product_detail_page_respects_cost_permission_and_public_visibility(): void
+    {
+        $category = Category::factory()->create(['is_active' => true]);
+        $product = Product::factory()->create([
+            'category_id' => $category->id,
+            'name' => 'Giày Chi Tiết Quản Trị',
+            'is_active' => true,
+        ]);
+        $color = ProductColor::factory()->create([
+            'product_id' => $product->id,
+            'color_name' => 'Trắng Xanh',
+            'style_color_code' => 'WHTBLU',
+            'is_active' => true,
+        ]);
+        ProductImage::factory()->create([
+            'product_color_id' => $color->id,
+            'is_thumbnail' => true,
+        ]);
+        ProductVariant::factory()->create([
+            'product_color_id' => $color->id,
+            'sku' => 'CTQT-WHTBLU-41',
+            'size_value' => '41',
+            'stock_qty' => 12,
+            'average_cost' => '850000.0000',
+            'is_active' => true,
+        ]);
+
+        // Admin sees cost and public storefront link
+        $adminRes = $this->actingAs($this->admin)->get(route('admin.products.show', $product));
+        $adminRes->assertOk()
+            ->assertSee('Giày Chi Tiết Quản Trị')
+            ->assertSee('CTQT-WHTBLU-41')
+            ->assertSee('Giá vốn BQ')
+            ->assertSee('850.000 ₫')
+            ->assertSee('Xem ngoài cửa hàng');
+
+        // Staff sees details and stock, but NOT average cost
+        $staff = User::factory()->staff()->create();
+        $staffRes = $this->actingAs($staff)->get(route('admin.products.show', $product));
+        $staffRes->assertOk()
+            ->assertSee('Giày Chi Tiết Quản Trị')
+            ->assertSee('CTQT-WHTBLU-41')
+            ->assertDontSee('Giá vốn BQ')
+            ->assertDontSee('850.000 ₫');
+
+        // Deactivate product -> hides storefront link and shows blocking reason
+        $product->forceFill(['is_active' => false])->save();
+        $inactiveRes = $this->actingAs($this->admin)->get(route('admin.products.show', $product));
+        $inactiveRes->assertOk()
+            ->assertSee('Sản phẩm chưa hiển thị ngoài cửa hàng')
+            ->assertDontSee('Xem ngoài cửa hàng');
     }
 }

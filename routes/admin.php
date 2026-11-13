@@ -36,7 +36,7 @@ Route::get('products/import/template', [ProductController::class, 'template'])->
 Route::post('products/import/preview', [ProductController::class, 'previewImport'])->name('products.import.preview');
 Route::post('products/import/store', [ProductController::class, 'storeImport'])->name('products.import.store');
 Route::get('products/{product}/duplicate', [ProductController::class, 'duplicate'])->name('products.duplicate');
-Route::resource('products', ProductController::class)->except(['show', 'destroy']);
+Route::resource('products', ProductController::class)->except(['destroy']);
 Route::patch('products/{product}/activate', [ProductController::class, 'activate'])->name('products.activate');
 Route::patch('products/{product}/deactivate', [ProductController::class, 'deactivate'])->name('products.deactivate');
 Route::get('api/variants/search', [ProductController::class, 'searchVariants'])->name('variants.search');

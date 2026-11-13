@@ -2,25 +2,26 @@
 @section('title', ($isDuplicate ?? false) ? 'Nhân bản sản phẩm' : ($product->exists ? 'Sửa sản phẩm' : 'Thêm sản phẩm'))
 @section('eyebrow', 'QUẢN TRỊ KHO HÀNG')
 @section('actions')
-    <div class="flex items-center gap-2">
+    <div class="flex flex-wrap items-center gap-2">
         @if ($product->exists && !($isDuplicate ?? false))
-            <a class="px-4 py-2 bg-surface hover:bg-border/40 text-accent hover:text-accent-hover text-xs font-bold rounded-xl border border-border transition-colors flex items-center gap-1.5"
+            <a class="px-4 py-2 bg-surface hover:bg-border/40 text-main text-xs font-bold rounded-xl border border-border transition-colors"
+               href="{{ route('admin.products.show', $product) }}">
+                Xem chi tiết
+            </a>
+            <a class="px-4 py-2 bg-surface hover:bg-border/40 text-accent hover:text-accent-hover text-xs font-bold rounded-xl border border-border transition-colors"
                href="{{ route('admin.products.duplicate', $product) }}">
-                <span>📋</span> <span>Nhân bản sản phẩm này</span>
+                Nhân bản sản phẩm này
             </a>
         @endif
         <a class="px-4 py-2 bg-surface hover:bg-border/40 text-muted hover:text-main text-xs font-bold rounded-xl border border-border transition-colors" href="{{ route('admin.products.index') }}">← Quay lại danh sách</a>
     </div>
 @endsection
 @section('content')
-    <div class="max-w-5xl space-y-6">
+    <div class="max-w-5xl mx-auto space-y-6">
         @if ($isDuplicate ?? false)
-            <div class="rounded-2xl border border-accent/30 bg-accent/10 p-4 text-xs text-main flex items-start gap-3">
-                <span class="text-base">📋</span>
-                <div class="space-y-1">
-                    <p class="font-bold text-accent">Đang tạo bản sao từ sản phẩm: {{ $originalProduct->name ?? '' }}</p>
-                    <p class="text-muted">Thông tin phối màu và size đã được sao chép với mã SKU mới. Tồn kho bắt đầu từ 0. Tệp ảnh sẽ được nhân bản độc lập khi bạn lưu, không ảnh hưởng sản phẩm gốc.</p>
-                </div>
+            <div class="rounded-2xl border border-accent/30 bg-accent/10 p-4 text-xs text-main space-y-1">
+                <p class="font-bold text-accent">Đang tạo bản sao từ sản phẩm: {{ $originalProduct->name ?? '' }}</p>
+                <p class="text-muted">Thông tin phối màu và size đã được sao chép với mã SKU mới. Tồn kho bắt đầu từ 0. Tệp ảnh sẽ được nhân bản độc lập khi bạn lưu, không ảnh hưởng sản phẩm gốc.</p>
             </div>
         @endif
 
@@ -28,12 +29,9 @@
             $hasNoImages = $product->exists && $product->colors()->whereDoesntHave('images')->exists();
         @endphp
         @if ($hasNoImages)
-            <div class="rounded-2xl border border-warning/30 bg-warning-bg p-4 text-xs text-warning-text flex items-start gap-3">
-                <span class="text-base">⚠️</span>
-                <div class="space-y-1">
-                    <p class="font-bold">Sản phẩm chưa có đủ ảnh đại diện</p>
-                    <p>Sản phẩm này (hoặc một số phối màu) chưa có ảnh. Vui lòng tải ít nhất 1 ảnh đại diện cho mỗi màu bên dưới trước khi kích hoạt mở bán.</p>
-                </div>
+            <div class="rounded-2xl border border-warning/30 bg-warning-bg p-4 text-xs text-warning-text space-y-1">
+                <p class="font-bold">Sản phẩm chưa có đủ ảnh đại diện</p>
+                <p>Sản phẩm này (hoặc một số phối màu) chưa có ảnh. Vui lòng tải ít nhất 1 ảnh đại diện cho mỗi màu bên dưới trước khi kích hoạt mở bán.</p>
             </div>
         @endif
 

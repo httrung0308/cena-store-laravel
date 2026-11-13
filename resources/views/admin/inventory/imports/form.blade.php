@@ -5,24 +5,22 @@
     <a class="px-4 py-2 bg-surface hover:bg-border/40 text-muted hover:text-main text-xs font-bold rounded-xl border border-border transition-colors" href="{{ route('admin.stock-imports.index') }}">← Quay lại danh sách</a>
 @endsection
 @section('content')
-<div class="max-w-5xl space-y-8">
+<div class="max-w-5xl mx-auto space-y-8">
 @unless ($import->exists)
     <section class="admin-card space-y-4" aria-labelledby="spreadsheet-title" data-spreadsheet-import>
         <div class="flex flex-wrap items-center justify-between gap-3">
             <div>
-                <h2 id="spreadsheet-title" class="text-base font-bold text-main flex items-center gap-2">
-                    <span>📊</span> <span>Nhập nhanh từ file Excel / CSV</span>
-                </h2>
+                <h2 id="spreadsheet-title" class="text-base font-bold text-main">Nhập nhanh từ file Excel / CSV</h2>
                 <p class="mt-1 text-xs text-muted">File cần có dòng tiêu đề với 3 cột <strong class="text-main">SKU</strong>, <strong class="text-main">Số lượng</strong> và <strong class="text-main">Giá nhập</strong> (thứ tự cột tùy ý). Các dòng hợp lệ sẽ được điền vào phiếu bên dưới để bạn rà soát trước khi lưu.</p>
             </div>
             <div class="flex items-center gap-2">
                 <a href="{{ route('admin.stock-imports.template', ['format' => 'xlsx']) }}"
-                   class="px-3 py-1.5 bg-surface hover:bg-border/40 text-accent font-bold text-xs rounded-lg border border-border transition-colors flex items-center gap-1 shadow-sm">
-                    <span>📊</span> Tải file mẫu (.xlsx)
+                   class="px-3 py-1.5 bg-surface hover:bg-border/40 text-accent font-bold text-xs rounded-lg border border-border transition-colors shadow-sm">
+                    Tải file mẫu (.xlsx)
                 </a>
                 <a href="{{ route('admin.stock-imports.template', ['format' => 'csv']) }}"
-                   class="px-3 py-1.5 bg-surface hover:bg-border/40 text-muted hover:text-main font-bold text-xs rounded-lg border border-border transition-colors flex items-center gap-1 shadow-sm">
-                    <span>📄</span> Tải file mẫu (.csv)
+                   class="px-3 py-1.5 bg-surface hover:bg-border/40 text-muted hover:text-main font-bold text-xs rounded-lg border border-border transition-colors shadow-sm">
+                    Tải file mẫu (.csv)
                 </a>
             </div>
         </div>
