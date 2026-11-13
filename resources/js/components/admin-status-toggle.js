@@ -103,6 +103,10 @@ export function adminStatusToggle({ regionSelector = '#admin-list-region' } = {}
                 });
                 if (!response.ok || seq !== this.refreshSeq) return;
 
+                if (response.redirected && response.url && response.url !== window.location.href) {
+                    window.history.replaceState({}, '', response.url);
+                }
+
                 const html = await response.text();
                 if (seq !== this.refreshSeq) return;
 

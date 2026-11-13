@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\ClassificationGroup;
+use App\Enums\GenderGroup;
 use App\Enums\RoleSlug;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\ProductRequest;
@@ -12,22 +14,190 @@ use App\Models\ProductVariant;
 use App\Services\ProductManagementService;
 use App\Services\ProductSpreadsheetService;
 use Illuminate\Contracts\View\View;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class ProductController extends Controller
 {
-    public function index(Request $request): View
+    public function index(Request $request): View|RedirectResponse
     {
-        $data = $request->validate(['search' => ['nullable', 'string', 'max:150']]);
-        $products = Product::with(['category', 'colors' => fn ($q) => $q->orderBy('display_order')->orderBy('id'), 'colors.thumbnail'])->withCount('variants')->withSum('variants as total_stock', 'stock_qty')->when($data['search'] ?? null, fn ($q, $s) => $q->where('name', 'like', '%'.$s.'%'))->orderByDesc('id')->paginate(15)->withQueryString();
+        $data = $request->validate([
+            'search' => ['nullable', 'string', 'max:150'],
+            'categories' => ['nullable', 'array'],
+            'categories.*' => ['integer', 'min:1'],
+            'genders' => ['nullable', 'array'],
+            'genders.*' => ['string', Rule::enum(GenderGroup::class)],
+            'silhouettes' => ['nullable', 'array'],
+            'silhouettes.*' => ['integer', 'min:1'],
+            'activities' => ['nullable', 'array'],
+            'activities.*' => ['integer', 'min:1'],
+            'status' => ['nullable', Rule::in(['active', 'inactive'])],
+            'stock' => ['nullable', Rule::in(['in_stock', 'out_of_stock'])],
+            'featured' => ['nullable', Rule::in(['featured', 'not_featured'])],
+        ]);
 
-        return view('admin.products.index', compact('products'));
+        $filters = [
+            'search' => trim((string) ($data['search'] ?? '')),
+            'categories' => array_values(array_unique(array_map('intval', $data['categories'] ?? []))),
+            'genders' => array_values(array_unique(array_map('strval', $data['genders'] ?? []))),
+            'silhouettes' => array_values(array_unique(array_map('intval', $data['silhouettes'] ?? []))),
+            'activities' => array_values(array_unique(array_map('intval', $data['activities'] ?? []))),
+            'status' => $data['status'] ?? '',
+            'stock' => $data['stock'] ?? '',
+            'featured' => $data['featured'] ?? '',
+        ];
+
+        $sellableStockSubquery = DB::table('product_variants as v')
+            ->join('product_colors as c', 'c.id', '=', 'v.product_color_id')
+            ->whereColumn('c.product_id', 'products.id')
+            ->whereNull('v.deleted_at')
+            ->whereNull('c.deleted_at')
+            ->where('v.is_active', true)
+            ->where('c.is_active', true)
+            ->whereColumn('v.stock_qty', '>', 'v.reserved_qty')
+            ->selectRaw('COALESCE(SUM(v.stock_qty - v.reserved_qty), 0)');
+
+        $saleableVariantExists = static function (QueryBuilder $query): void {
+            $query->selectRaw('1')
+                ->from('product_variants as v')
+                ->join('product_colors as c', 'c.id', '=', 'v.product_color_id')
+                ->whereColumn('c.product_id', 'products.id')
+                ->whereNull('v.deleted_at')
+                ->whereNull('c.deleted_at')
+                ->where('v.is_active', true)
+                ->where('c.is_active', true)
+                ->whereColumn('v.stock_qty', '>', 'v.reserved_qty');
+        };
+
+        $query = Product::query()
+            ->select('products.*')
+            ->addSelect(['sellable_stock' => $sellableStockSubquery])
+            ->with([
+                'category',
+                'colors' => fn ($q) => $q->orderBy('display_order')->orderBy('id'),
+                'colors.thumbnail',
+            ])
+            ->withCount('variants');
+
+        if ($filters['search'] !== '') {
+            $pattern = '%'.str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $filters['search']).'%';
+            $query->where(function ($q) use ($pattern): void {
+                $q->whereRaw("products.name LIKE ? ESCAPE '!'", [$pattern])
+                    ->orWhereRaw("products.slug LIKE ? ESCAPE '!'", [$pattern]);
+            });
+        }
+
+        if ($filters['categories'] !== []) {
+            $query->whereIn('products.category_id', $filters['categories']);
+        }
+
+        if ($filters['genders'] !== []) {
+            $query->whereHas('category', fn ($q) => $q->whereIn('gender_group', $filters['genders']));
+        }
+
+        if ($filters['silhouettes'] !== []) {
+            $query->whereHas('classifications', fn ($q) => $q
+                ->where('classifications.classification_group', ClassificationGroup::Silhouette->value)
+                ->whereIn('classifications.id', $filters['silhouettes']));
+        }
+
+        if ($filters['activities'] !== []) {
+            $query->whereHas('classifications', fn ($q) => $q
+                ->where('classifications.classification_group', ClassificationGroup::Activity->value)
+                ->whereIn('classifications.id', $filters['activities']));
+        }
+
+        if ($filters['status'] === 'active') {
+            $query->where('products.is_active', true);
+        } elseif ($filters['status'] === 'inactive') {
+            $query->where('products.is_active', false);
+        }
+
+        if ($filters['stock'] === 'in_stock') {
+            $query->whereExists($saleableVariantExists);
+        } elseif ($filters['stock'] === 'out_of_stock') {
+            $query->whereNotExists($saleableVariantExists);
+        }
+
+        if ($filters['featured'] === 'featured') {
+            $query->where('products.is_featured', true);
+        } elseif ($filters['featured'] === 'not_featured') {
+            $query->where('products.is_featured', false);
+        }
+
+        $products = $query->orderByDesc('products.id')->paginate(15)->withQueryString();
+
+        if ($products->currentPage() > $products->lastPage() && $products->lastPage() >= 1) {
+            return redirect()->to($products->url($products->lastPage()));
+        }
+
+        $filterCategories = Category::with('parent')
+            ->orderBy('display_order')
+            ->orderBy('name')
+            ->get(['id', 'name', 'parent_id', 'is_active'])
+            ->map(fn (Category $cat): array => [
+                'id' => $cat->id,
+                'label' => $cat->parent ? $cat->parent->name.' › '.$cat->name : $cat->name,
+                'is_active' => (bool) $cat->is_active,
+            ])
+            ->values()
+            ->all();
+
+        $filterGenders = array_map(
+            fn (GenderGroup $g): array => ['value' => $g->value, 'label' => $g->label()],
+            GenderGroup::cases()
+        );
+
+        $filterSilhouettes = Classification::group(ClassificationGroup::Silhouette)
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get(['id', 'name', 'is_active'])
+            ->map(fn (Classification $c): array => [
+                'id' => $c->id,
+                'label' => $c->name,
+                'is_active' => (bool) $c->is_active,
+            ])
+            ->values()
+            ->all();
+
+        $filterActivities = Classification::group(ClassificationGroup::Activity)
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get(['id', 'name', 'is_active'])
+            ->map(fn (Classification $c): array => [
+                'id' => $c->id,
+                'label' => $c->name,
+                'is_active' => (bool) $c->is_active,
+            ])
+            ->values()
+            ->all();
+
+        $hasActiveFilters = $filters['search'] !== ''
+            || $filters['categories'] !== []
+            || $filters['genders'] !== []
+            || $filters['silhouettes'] !== []
+            || $filters['activities'] !== []
+            || $filters['status'] !== ''
+            || $filters['stock'] !== ''
+            || $filters['featured'] !== '';
+
+        return view('admin.products.index', compact(
+            'products',
+            'filters',
+            'hasActiveFilters',
+            'filterCategories',
+            'filterGenders',
+            'filterSilhouettes',
+            'filterActivities'
+        ));
     }
 
     public function create(): View
