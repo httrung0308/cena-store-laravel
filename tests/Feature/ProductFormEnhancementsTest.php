@@ -290,4 +290,108 @@ class ProductFormEnhancementsTest extends TestCase
             ->assertSee('Sản phẩm chưa hiển thị ngoài cửa hàng')
             ->assertDontSee('Xem ngoài cửa hàng');
     }
+
+    public function test_ajax_product_store_and_update_autofill_alt_text_and_preserve_slug_sku(): void
+    {
+        $category = Category::factory()->create();
+
+        $storeRes = $this->actingAs($this->admin)->postJson(route('admin.products.store'), [
+            'name' => 'Giày Chạy Bộ Cena AJAX',
+            'slug' => 'giay-chay-bo-cena-ajax',
+            'category_id' => $category->id,
+            'base_price' => 1500000,
+            'warranty_months' => 6,
+            'exchange_days' => 7,
+            'is_active' => true,
+            'colors' => [
+                [
+                    'color_name' => 'Đen Trắng',
+                    'style_color_code' => 'BLK',
+                    'color_key' => 'black',
+                    'primary_hex' => '#111111',
+                    'is_active' => true,
+                    'variants' => [
+                        ['size_value' => '41', 'sku' => '', 'is_active' => true],
+                    ],
+                    'images' => [
+                        ['external_url' => 'https://example.com/shoe-blk.jpg', 'alt_text' => '', 'is_thumbnail' => true],
+                    ],
+                ],
+            ],
+        ]);
+
+        $storeRes->assertCreated()
+            ->assertJsonStructure(['message', 'redirect', 'product_id']);
+
+        $product = Product::findOrFail($storeRes->json('product_id'));
+        $color = $product->colors()->with(['variants', 'images'])->firstOrFail();
+        $this->assertSame('Giày Chạy Bộ Cena AJAX - Đen Trắng', $color->images->firstOrFail()->alt_text);
+        $originalSku = $color->variants->firstOrFail()->sku;
+        $this->assertNotEmpty($originalSku);
+
+        $updateRes = $this->actingAs($this->admin)->putJson(route('admin.products.update', $product), [
+            'name' => 'Giày Chạy Bộ Cena AJAX Bản Mới',
+            'slug' => 'giay-chay-bo-cena-ajax',
+            'category_id' => $category->id,
+            'base_price' => 1600000,
+            'warranty_months' => 6,
+            'exchange_days' => 7,
+            'is_active' => true,
+            'colors' => [
+                [
+                    'id' => $color->id,
+                    'color_name' => 'Đen Trắng',
+                    'style_color_code' => 'BLK',
+                    'color_key' => 'black',
+                    'primary_hex' => '#111111',
+                    'is_active' => true,
+                    'variants' => [
+                        ['id' => $color->variants->firstOrFail()->id, 'size_value' => '41', 'sku' => $originalSku, 'is_active' => true],
+                    ],
+                    'images' => [
+                        ['id' => $color->images->firstOrFail()->id, 'external_url' => 'https://example.com/shoe-blk.jpg', 'alt_text' => '', 'is_thumbnail' => true],
+                    ],
+                ],
+            ],
+        ]);
+
+        $updateRes->assertOk()->assertJsonPath('product_id', $product->id);
+        $product->refresh();
+        $this->assertSame('giay-chay-bo-cena-ajax', $product->slug);
+        $this->assertSame($originalSku, $product->colors()->firstOrFail()->variants()->firstOrFail()->sku);
+    }
+
+    public function test_ajax_validation_returns_422_with_nested_field_errors_without_saving(): void
+    {
+        $category = Category::factory()->create();
+        Product::factory()->create(['slug' => 'slug-da-ton-tai', 'category_id' => $category->id]);
+
+        $res = $this->actingAs($this->admin)->postJson(route('admin.products.store'), [
+            'name' => 'Giày Lỗi Validation',
+            'slug' => 'slug-da-ton-tai',
+            'category_id' => $category->id,
+            'base_price' => 1000000,
+            'warranty_months' => 6,
+            'exchange_days' => 7,
+            'is_active' => true,
+            'colors' => [
+                [
+                    'color_name' => 'Đỏ',
+                    'style_color_code' => 'RED',
+                    'color_key' => 'red',
+                    'primary_hex' => '#FF0000',
+                    'variants' => [
+                        ['size_value' => '40', 'price_override' => 0, 'is_active' => true],
+                    ],
+                    'images' => [
+                        ['external_url' => 'https://example.com/red.jpg', 'alt_text' => '', 'is_thumbnail' => true],
+                    ],
+                ],
+            ],
+        ]);
+
+        $res->assertStatus(422)
+            ->assertJsonValidationErrors(['slug', 'colors.0.variants.0.price_override']);
+        $this->assertDatabaseMissing('products', ['name' => 'Giày Lỗi Validation']);
+    }
 }

@@ -153,7 +153,7 @@ class ProductController extends Controller
 
         return view('admin.products.form', [
             'product' => $clone,
-            'categories' => Category::orderBy('display_order')->get(['id', 'name'])->toArray(),
+            'categories' => $this->categoryOptions($clone->category_id),
             'colors' => $colors,
             'classifications' => $classifications,
             'selectedClassificationIds' => $selectedClassificationIds,
@@ -269,9 +269,17 @@ class ProductController extends Controller
 
     private function form(Product $product): View
     {
+        $documentedIds = app(ProductManagementService::class)->documentedVariantIds($product);
         $colors = $product->exists ? $product->colors()->with(['variants', 'images'])->orderBy('display_order')->get()->map(fn ($c) => [
             'id' => $c->id, 'color_name' => $c->color_name, 'primary_hex' => $c->primary_hex, 'style_color_code' => $c->style_color_code, 'color_key' => $c->color_key, 'is_active' => $c->is_active,
-            'variants' => $c->variants->map(fn ($v) => ['id' => $v->id, 'sku' => $v->sku, 'size_value' => $v->size_value, 'price_override' => $v->price_override, 'is_active' => $v->is_active])->all(),
+            'variants' => $c->variants->map(fn ($v) => [
+                'id' => $v->id,
+                'sku' => $v->sku,
+                'size_value' => $v->size_value,
+                'price_override' => $v->price_override,
+                'is_active' => $v->is_active,
+                'documented' => in_array($v->id, $documentedIds, true),
+            ])->all(),
             'images' => $c->images->map(fn ($i) => ['id' => $i->id, 'external_url' => $i->external_url, 'alt_text' => $i->alt_text, 'thumbnail' => $i->is_thumbnail, 'existingUrl' => $i->storage_path ? Storage::disk('public')->url($i->storage_path) : $i->external_url])->all()])->all() : [];
 
         $classifications = Classification::query()
@@ -286,25 +294,76 @@ class ProductController extends Controller
 
         return view('admin.products.form', [
             'product' => $product,
-            'categories' => Category::orderBy('display_order')->get(['id', 'name'])->toArray(),
+            'categories' => $this->categoryOptions($product->category_id),
             'colors' => $colors,
             'classifications' => $classifications,
             'selectedClassificationIds' => $selectedClassificationIds,
+            'isDuplicate' => false,
         ]);
     }
 
-    public function store(ProductRequest $request, ProductManagementService $service): RedirectResponse
+    /** @return list<array{id: int, name: string, label: string, parent_id: int|null, is_active: bool}> */
+    private function categoryOptions(?int $selectedCategoryId = null): array
     {
-        $product = $service->save($request->user(), null, $request->validated());
+        $all = Category::query()
+            ->orderBy('display_order')
+            ->orderBy('name')
+            ->get(['id', 'name', 'parent_id', 'is_active']);
 
-        return to_route('admin.products.edit', $product)->with('status', 'Đã tạo sản phẩm, màu, size và ảnh. Tồn kho bắt đầu từ0.');
+        $byId = $all->keyBy('id');
+
+        return $all
+            ->filter(fn (Category $cat) => $cat->is_active || $cat->id === $selectedCategoryId)
+            ->map(function (Category $cat) use ($byId): array {
+                $parent = $cat->parent_id ? $byId->get($cat->parent_id) : null;
+                $label = $parent ? "{$parent->name} › {$cat->name}" : $cat->name;
+
+                return [
+                    'id' => $cat->id,
+                    'name' => $cat->name,
+                    'label' => $label,
+                    'parent_id' => $cat->parent_id,
+                    'is_active' => (bool) $cat->is_active,
+                ];
+            })
+            ->values()
+            ->all();
     }
 
-    public function update(ProductRequest $request, Product $product, ProductManagementService $service): RedirectResponse
+    public function store(ProductRequest $request, ProductManagementService $service): RedirectResponse|JsonResponse
+    {
+        $product = $service->save($request->user(), null, $request->validated());
+        $message = 'Đã tạo sản phẩm, màu, size và ảnh. Tồn kho bắt đầu từ 0.';
+
+        if ($request->expectsJson()) {
+            session()->flash('status', $message);
+
+            return response()->json([
+                'message' => $message,
+                'redirect' => route('admin.products.edit', $product),
+                'product_id' => $product->id,
+            ], 201);
+        }
+
+        return to_route('admin.products.edit', $product)->with('status', $message);
+    }
+
+    public function update(ProductRequest $request, Product $product, ProductManagementService $service): RedirectResponse|JsonResponse
     {
         $service->save($request->user(), $product, $request->validated());
+        $message = 'Đã lưu sản phẩm.';
 
-        return to_route('admin.products.edit', $product)->with('status', 'Đã lưu sản phẩm.');
+        if ($request->expectsJson()) {
+            session()->flash('status', $message);
+
+            return response()->json([
+                'message' => $message,
+                'redirect' => route('admin.products.edit', $product),
+                'product_id' => $product->id,
+            ]);
+        }
+
+        return to_route('admin.products.edit', $product)->with('status', $message);
     }
 
     public function activate(Request $request, Product $product, ProductManagementService $service): RedirectResponse|JsonResponse

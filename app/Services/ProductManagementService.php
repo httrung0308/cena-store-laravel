@@ -109,7 +109,7 @@ final class ProductManagementService
             'colors.*.images.*.file' => ['nullable', 'file', 'mimetypes:image/jpeg,image/png,image/webp', 'max:5120'],
             'colors.*.images.*.external_url' => ['nullable', 'string', 'max:1000', 'url:https'],
             'colors.*.images.*.clone_source_path' => ['nullable', 'string', 'max:500'],
-            'colors.*.images.*.alt_text' => [$allowWithoutImages ? 'nullable' : 'required', 'string', 'max:255'],
+            'colors.*.images.*.alt_text' => ['nullable', 'string', 'max:255'],
             'colors.*.images.*.is_thumbnail' => [$allowWithoutImages ? 'nullable' : 'required', 'boolean']];
         foreach (['stock_qty', 'reserved_qty', 'quarantine_qty', 'average_cost', 'unit_cost_basis', 'size_numeric'] as $field) {
             $rules[$field] = ['prohibited'];
@@ -222,6 +222,9 @@ final class ProductManagementService
                     }
                     if ($url && (parse_url($url, PHP_URL_USER) !== null || parse_url($url, PHP_URL_PASS) !== null)) {
                         $this->invalid("colors.$ci.images.$ii.external_url", 'URL không được chứa tài khoản hoặc mật khẩu.');
+                    }
+                    if (trim((string) ($image['alt_text'] ?? '')) === '') {
+                        $image['alt_text'] = mb_substr(trim($data['name']).' - '.trim($color['color_name']), 0, 255);
                     }
                     if ($file instanceof UploadedFile) {
                         $image['_path'] = $this->media->stage($file);
@@ -351,6 +354,26 @@ final class ProductManagementService
     public function deactivate(User $actor, Product $product): void
     {
         $this->setActive($actor, $product, false);
+    }
+
+    /** @return list<int> */
+    public function documentedVariantIds(Product $product): array
+    {
+        if (! $product->exists) {
+            return [];
+        }
+
+        $product->loadMissing('colors.variants');
+        $ids = [];
+        foreach ($product->colors as $color) {
+            foreach ($color->variants as $variant) {
+                if ($this->documented($variant)) {
+                    $ids[] = $variant->id;
+                }
+            }
+        }
+
+        return $ids;
     }
 
     private function documented(ProductVariant $variant): bool
