@@ -119,11 +119,74 @@ final class ProductManagementService
         return $rules;
     }
 
+    /** @return array<string, string> */
+    public function validationMessages(): array
+    {
+        return [
+            'name.required' => 'Vui lòng nhập tên sản phẩm.',
+            'name.max' => 'Tên sản phẩm không được vượt quá :max ký tự.',
+            'slug.required' => 'Vui lòng nhập đường dẫn slug.',
+            'slug.max' => 'Đường dẫn slug không được vượt quá :max ký tự.',
+            'slug.regex' => 'Slug chỉ được gồm chữ thường không dấu, số và dấu gạch nối (-).',
+            'slug.unique' => 'Đường dẫn slug này đã tồn tại. Vui lòng chọn slug khác.',
+            'category_id.required' => 'Vui lòng chọn danh mục sản phẩm.',
+            'category_id.integer' => 'Danh mục sản phẩm không hợp lệ.',
+            'category_id.exists' => 'Danh mục đã chọn không tồn tại hoặc đã bị xóa.',
+            'base_price.required' => 'Vui lòng nhập giá gốc.',
+            'base_price.integer' => 'Giá gốc phải là số nguyên (VNĐ).',
+            'base_price.min' => 'Giá gốc phải lớn hơn 0.',
+            'promotion_price.integer' => 'Giá khuyến mãi phải là số nguyên (VNĐ).',
+            'promotion_price.min' => 'Giá khuyến mãi phải lớn hơn 0.',
+            'promotion_price.lte' => 'Giá khuyến mãi phải nhỏ hơn hoặc bằng giá gốc.',
+            'warranty_months.required' => 'Vui lòng nhập thời gian bảo hành.',
+            'warranty_months.integer' => 'Thời gian bảo hành phải là số nguyên.',
+            'warranty_months.between' => 'Thời gian bảo hành phải từ :min đến :max tháng.',
+            'exchange_days.required' => 'Vui lòng nhập thời hạn đổi size.',
+            'exchange_days.integer' => 'Thời hạn đổi size phải là số nguyên.',
+            'exchange_days.between' => 'Thời hạn đổi size phải từ :min đến :max ngày.',
+            'colors.required' => 'Sản phẩm phải có ít nhất một phối màu.',
+            'colors.min' => 'Sản phẩm phải có ít nhất một phối màu.',
+            'colors.*.color_name.required' => 'Vui lòng nhập tên màu.',
+            'colors.*.style_color_code.required' => 'Vui lòng nhập mã phối màu.',
+            'colors.*.style_color_code.regex' => 'Mã phối màu chỉ được gồm chữ cái, số, dấu gạch dưới hoặc gạch nối.',
+            'colors.*.primary_hex.required' => 'Vui lòng chọn mã màu HEX.',
+            'colors.*.primary_hex.regex' => 'Mã màu HEX phải có định dạng #RRGGBB (ví dụ: #111111).',
+            'colors.*.variants.*.size_value.required' => 'Vui lòng nhập size.',
+            'colors.*.variants.*.sku.regex' => 'Mã SKU chỉ được gồm chữ cái, số, dấu gạch dưới hoặc gạch nối.',
+            'colors.*.variants.*.price_override.integer' => 'Giá riêng phải là số nguyên (VNĐ).',
+            'colors.*.variants.*.price_override.min' => 'Giá riêng phải lớn hơn 0.',
+            'colors.*.images.required' => 'Mỗi phối màu cần ít nhất một ảnh.',
+            'colors.*.images.*.file.mimetypes' => 'Ảnh chỉ hỗ trợ định dạng JPEG, PNG hoặc WebP.',
+            'colors.*.images.*.file.max' => 'Dung lượng mỗi ảnh không được vượt quá 5MB.',
+            'colors.*.images.*.external_url.url' => 'URL ảnh phải bắt đầu bằng https:// hợp lệ.',
+            'colors.*.images.*.is_thumbnail.required' => 'Vui lòng chọn ảnh đại diện cho phối màu.',
+        ];
+    }
+
+    /** @return array<string, string> */
+    public function validationAttributes(): array
+    {
+        return [
+            'name' => 'tên sản phẩm',
+            'slug' => 'đường dẫn slug',
+            'category_id' => 'danh mục',
+            'base_price' => 'giá gốc',
+            'promotion_price' => 'giá khuyến mãi',
+            'warranty_months' => 'bảo hành',
+            'exchange_days' => 'đổi size',
+        ];
+    }
+
     /** @param array<string, mixed> $input */
     public function save(User $actor, ?Product $product, array $input, bool $allowWithoutImages = false): Product
     {
         DB::transaction(fn () => ProductManagementAccess::lock($actor));
-        $data = Validator::make($this->orderedInput($input), $this->rules($product, $allowWithoutImages))->validate();
+        $data = Validator::make(
+            $this->orderedInput($input),
+            $this->rules($product, $allowWithoutImages),
+            $this->validationMessages(),
+            $this->validationAttributes()
+        )->validate();
         $data['base_price'] = Money::integer($data['base_price']);
         $data['promotion_price'] = isset($data['promotion_price']) ? Money::integer($data['promotion_price']) : null;
         if ($allowWithoutImages) {

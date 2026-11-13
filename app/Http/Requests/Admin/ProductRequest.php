@@ -22,4 +22,16 @@ class ProductRequest extends FormRequest
     {
         return app(ProductManagementService::class)->rules($this->route('product'));
     }
+
+    /** @return array<string, string> */
+    public function messages(): array
+    {
+        return app(ProductManagementService::class)->validationMessages();
+    }
+
+    /** @return array<string, string> */
+    public function attributes(): array
+    {
+        return app(ProductManagementService::class)->validationAttributes();
+    }
 }
