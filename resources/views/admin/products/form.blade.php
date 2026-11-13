@@ -30,6 +30,7 @@
         ? route('admin.products.update', $product)
         : route('admin.products.store');
     $httpMethod = ($product->exists && !($isDuplicate ?? false)) ? 'PUT' : 'POST';
+    $productRoutePrefix = \Illuminate\Support\Str::before(parse_url(route('shoes.show', '__SLUG__'), PHP_URL_PATH) ?: '/shoes/__SLUG__', '__SLUG__');
 @endphp
 
 @section('content')
@@ -102,7 +103,7 @@
                         {{-- Slug tự sinh: mặc định ẩn, chỉ hiện xem trước URL và nút tùy chỉnh --}}
                         <div class="mt-2 flex flex-wrap items-center justify-between gap-2 text-[11px] text-muted">
                             <span class="truncate">
-                                Đường dẫn: <code class="font-mono text-main">/giay/<span x-text="slug || '...'"></span></code>
+                                Đường dẫn: <code class="font-mono text-main">{{ $productRoutePrefix }}<span x-text="slug || '...'"></span></code>
                             </span>
                             <button type="button" @click="showSlugEditor = !showSlugEditor"
                                     class="font-semibold text-accent hover:underline shrink-0">
