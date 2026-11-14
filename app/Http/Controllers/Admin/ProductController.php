@@ -31,8 +31,6 @@ class ProductController extends Controller
     {
         $data = $request->validate([
             'search' => ['nullable', 'string', 'max:150'],
-            'categories' => ['nullable', 'array'],
-            'categories.*' => ['integer', 'min:1'],
             'genders' => ['nullable', 'array'],
             'genders.*' => ['string', Rule::enum(GenderGroup::class)],
             'silhouettes' => ['nullable', 'array'],
@@ -46,7 +44,6 @@ class ProductController extends Controller
 
         $filters = [
             'search' => trim((string) ($data['search'] ?? '')),
-            'categories' => array_values(array_unique(array_map('intval', $data['categories'] ?? []))),
             'genders' => array_values(array_unique(array_map('strval', $data['genders'] ?? []))),
             'silhouettes' => array_values(array_unique(array_map('intval', $data['silhouettes'] ?? []))),
             'activities' => array_values(array_unique(array_map('intval', $data['activities'] ?? []))),
@@ -95,10 +92,6 @@ class ProductController extends Controller
             });
         }
 
-        if ($filters['categories'] !== []) {
-            $query->whereIn('products.category_id', $filters['categories']);
-        }
-
         if ($filters['genders'] !== []) {
             $query->whereHas('category', fn ($q) => $q->whereIn('gender_group', $filters['genders']));
         }
@@ -139,18 +132,6 @@ class ProductController extends Controller
             return redirect()->to($products->url($products->lastPage()));
         }
 
-        $filterCategories = Category::with('parent')
-            ->orderBy('display_order')
-            ->orderBy('name')
-            ->get(['id', 'name', 'parent_id', 'is_active'])
-            ->map(fn (Category $cat): array => [
-                'id' => $cat->id,
-                'label' => $cat->parent ? $cat->parent->name.' › '.$cat->name : $cat->name,
-                'is_active' => (bool) $cat->is_active,
-            ])
-            ->values()
-            ->all();
-
         $filterGenders = array_map(
             fn (GenderGroup $g): array => ['value' => $g->value, 'label' => $g->label()],
             GenderGroup::cases()
@@ -181,7 +162,6 @@ class ProductController extends Controller
             ->all();
 
         $hasActiveFilters = $filters['search'] !== ''
-            || $filters['categories'] !== []
             || $filters['genders'] !== []
             || $filters['silhouettes'] !== []
             || $filters['activities'] !== []
@@ -193,7 +173,6 @@ class ProductController extends Controller
             'products',
             'filters',
             'hasActiveFilters',
-            'filterCategories',
             'filterGenders',
             'filterSilhouettes',
             'filterActivities'

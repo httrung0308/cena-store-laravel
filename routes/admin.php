@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\ClassificationController;
 use App\Http\Controllers\Admin\CouponController;
 use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\ProductController;
+use App\Http\Controllers\Admin\ProfileController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\ReviewController;
 use App\Http\Controllers\Admin\StockImportController;
@@ -22,6 +23,7 @@ use Illuminate\Support\Facades\Route;
  * admin.suppliers.index, admin.products.index, admin.stock-imports.index.
  */
 Route::view('/', 'admin.dashboard')->name('dashboard');
+Route::get('profile', [ProfileController::class, 'show'])->name('profile.show');
 Route::get('reports', [ReportController::class, 'index'])->name('reports.index');
 
 Route::resource('categories', CategoryController::class)->except(['show', 'destroy']);

@@ -90,7 +90,19 @@
         </div>
         <div class="flex items-center gap-3 sm:gap-4 text-xs font-semibold">
             @if ($currentUser)
-                <span class="text-white/80 hidden lg:inline">{{ $currentUser->full_name }} ({{ $roleLabel }})</span>
+                <a href="{{ route('admin.profile.show') }}"
+                   @class([
+                       'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white',
+                       'bg-white/20 text-white font-bold' => request()->routeIs('admin.profile.*'),
+                       'text-white/90 hover:text-white hover:bg-white/10' => ! request()->routeIs('admin.profile.*'),
+                   ])
+                   aria-label="Tài khoản của tôi: {{ $currentUser->full_name }} ({{ $roleLabel }})">
+                    <svg class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+                    </svg>
+                    <span class="hidden lg:inline">{{ $currentUser->full_name }} ({{ $roleLabel }}) ·</span>
+                    <span class="underline decoration-white/60 hover:decoration-white">Tài khoản của tôi</span>
+                </a>
             @endif
             {{-- Theme toggle --}}
             <div x-data="{ themeOpen: false }" class="relative">
@@ -129,7 +141,7 @@
                     </button>
                 </div>
             </div>
-            <a href="{{ route('home') }}" class="underline decoration-white/60 hover:decoration-white transition-opacity">← Xem Storefront</a>
+            <a href="{{ route('home') }}" class="underline decoration-white/60 hover:decoration-white transition-opacity">← Xem cửa hàng</a>
         </div>
     </header>
 
@@ -213,11 +225,24 @@
                 </nav>
             </div>
 
-            <div class="pt-6 border-t border-[var(--admin-sidebar-border)]">
-                <a href="{{ route('home') }}" class="text-xs text-[var(--admin-sidebar-muted)] hover:text-white flex items-center gap-2 transition-colors">
-                    <span>← Xem cửa hàng khách</span>
-                </a>
-            </div>
+            @if ($currentUser)
+                <div class="pt-5 border-t border-[var(--admin-sidebar-border)]">
+                    @php($profileActive = request()->routeIs('admin.profile.*'))
+                    <a href="{{ route('admin.profile.show') }}" @click="closeSidebar()" @class([
+                        'flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors',
+                        'bg-accent text-accent-text font-bold shadow-md' => $profileActive,
+                        'hover:bg-[var(--admin-sidebar-hover)] text-[var(--admin-sidebar-muted)] hover:text-white' => ! $profileActive,
+                    ]) @if ($profileActive) aria-current="page" @endif>
+                        <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+                        </svg>
+                        <div class="min-w-0 flex-1">
+                            <span class="block text-xs font-bold truncate">Tài khoản của tôi</span>
+                            <span class="block text-[11px] opacity-80 truncate">{{ $currentUser->full_name }} · {{ $roleLabel }}</span>
+                        </div>
+                    </a>
+                </div>
+            @endif
         </aside>
 
         <!-- Main Workspace -->

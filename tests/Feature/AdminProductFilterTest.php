@@ -68,9 +68,8 @@ class AdminProductFilterTest extends TestCase
         $notFeatured = $this->createProductWithStock($catUnisex, 'Delta Not Featured', 'delta-not-featured', true, false, 5, 0, 0);
         $notFeatured->classifications()->attach([$silLow->id, $actRun->id]);
 
-        // OR within categories & silhouettes, AND across categories, genders, silhouettes, activities, status, stock, featured
+        // OR within genders & silhouettes, AND across genders, silhouettes, activities, status, stock, featured
         $response = $this->actingAs($this->staff)->get(route('admin.products.index', [
-            'categories' => [$catUnisex->id, $catMen->id],
             'genders' => [GenderGroup::Unisex->value, GenderGroup::Men->value],
             'silhouettes' => [$silLow->id, $silHigh->id],
             'activities' => [$actRun->id],
@@ -85,18 +84,24 @@ class AdminProductFilterTest extends TestCase
             ->assertDontSee('Gamma No Activity')
             ->assertDontSee('Delta Not Featured')
             ->assertSee('Cổ cao Filter')
-            ->assertSee('Giày Nam Filter');
+            ->assertSee('Đối tượng')
+            ->assertSee(GenderGroup::Men->label())
+            ->assertDontSee('Giày Nam Filter')
+            ->assertDontSee('name="categories[]"', false);
     }
 
     public function test_stock_filter_uses_saleable_quantity_and_valid_variants_independently_of_product_status(): void
     {
         $category = Category::factory()->create(['gender_group' => GenderGroup::Unisex, 'is_active' => true]);
+        $actFilter = Classification::factory()->activity()->create(['name' => 'Stock Filter Activity', 'is_active' => true]);
 
         // 1. Active product, all stock reserved (stock_qty=5, reserved_qty=5) => out_of_stock
         $allReserved = $this->createProductWithStock($category, 'Reserved Only Shoe', 'reserved-only-shoe', true, false, 5, 5, 0);
+        $allReserved->classifications()->attach([$actFilter->id]);
 
         // 2. Active product, all stock quarantined (stock_qty=0, quarantine_qty=8) => out_of_stock
         $quarantined = $this->createProductWithStock($category, 'Quarantined Only Shoe', 'quarantined-only-shoe', true, false, 0, 0, 8);
+        $quarantined->classifications()->attach([$actFilter->id]);
 
         // 3. Active product, stock on inactive variant => out_of_stock
         $inactiveVariant = Product::factory()->create([
@@ -105,6 +110,7 @@ class AdminProductFilterTest extends TestCase
             'slug' => 'inactive-variant-stock-shoe',
             'is_active' => true,
         ]);
+        $inactiveVariant->classifications()->attach([$actFilter->id]);
         $activeColor = ProductColor::factory()->create(['product_id' => $inactiveVariant->id, 'is_active' => true]);
         ProductVariant::factory()->create([
             'product_color_id' => $activeColor->id,
@@ -120,6 +126,7 @@ class AdminProductFilterTest extends TestCase
             'slug' => 'inactive-color-stock-shoe',
             'is_active' => true,
         ]);
+        $inactiveColorProd->classifications()->attach([$actFilter->id]);
         $inactiveColor = ProductColor::factory()->create(['product_id' => $inactiveColorProd->id, 'is_active' => false]);
         ProductVariant::factory()->create([
             'product_color_id' => $inactiveColor->id,
@@ -130,10 +137,11 @@ class AdminProductFilterTest extends TestCase
 
         // 5. Inactive product, valid variant with sellable stock => in_stock!
         $inactiveSellable = $this->createProductWithStock($category, 'Hidden But Sellable Shoe', 'hidden-but-sellable-shoe', false, false, 4, 1, 0);
+        $inactiveSellable->classifications()->attach([$actFilter->id]);
 
         // Filter in_stock
         $this->actingAs($this->admin)
-            ->get(route('admin.products.index', ['categories' => [$category->id], 'stock' => 'in_stock']))
+            ->get(route('admin.products.index', ['activities' => [$actFilter->id], 'stock' => 'in_stock']))
             ->assertOk()
             ->assertSee($inactiveSellable->name)
             ->assertDontSee($allReserved->name)
@@ -143,7 +151,7 @@ class AdminProductFilterTest extends TestCase
 
         // Filter out_of_stock
         $this->actingAs($this->admin)
-            ->get(route('admin.products.index', ['categories' => [$category->id], 'stock' => 'out_of_stock']))
+            ->get(route('admin.products.index', ['activities' => [$actFilter->id], 'stock' => 'out_of_stock']))
             ->assertOk()
             ->assertSee($allReserved->name)
             ->assertSee($quarantined->name)
@@ -173,13 +181,16 @@ class AdminProductFilterTest extends TestCase
 
         // Pagination redirect when page 2 becomes empty after deactivation
         $category = Category::factory()->create(['gender_group' => GenderGroup::Unisex, 'is_active' => true]);
+        $actPage = Classification::factory()->activity()->create(['name' => 'Pagination Activity', 'is_active' => true]);
         $created = [];
         for ($i = 1; $i <= 16; $i++) {
-            $created[] = $this->createProductWithStock($category, 'Page Test Shoe '.$i, 'page-test-shoe-'.$i, true, false, 1, 0, 0);
+            $p = $this->createProductWithStock($category, 'Page Test Shoe '.$i, 'page-test-shoe-'.$i, true, false, 1, 0, 0);
+            $p->classifications()->attach([$actPage->id]);
+            $created[] = $p;
         }
 
         // Order is desc by id, so $created[0] is on page 2
-        $pageTwoUrl = route('admin.products.index', ['categories' => [$category->id], 'status' => 'active', 'page' => 2]);
+        $pageTwoUrl = route('admin.products.index', ['activities' => [$actPage->id], 'status' => 'active', 'page' => 2]);
         $this->actingAs($this->staff)
             ->get($pageTwoUrl)
             ->assertOk()
@@ -192,7 +203,40 @@ class AdminProductFilterTest extends TestCase
 
         $this->actingAs($this->staff)
             ->get($pageTwoUrl)
-            ->assertRedirect(route('admin.products.index', ['categories' => [$category->id], 'status' => 'active', 'page' => 1]));
+            ->assertRedirect(route('admin.products.index', ['activities' => [$actPage->id], 'status' => 'active', 'page' => 1]));
+    }
+
+    public function test_admin_and_staff_can_view_own_profile_in_admin_layout_and_navigation_uses_xem_cua_hang(): void
+    {
+        $customer = User::factory()->customer()->create();
+
+        // Guest redirected, customer forbidden
+        $this->get(route('admin.profile.show'))->assertRedirect(route('login'));
+        $this->actingAs($customer)->get(route('admin.profile.show'))->assertForbidden();
+
+        // Staff views own profile & top bar / sidebar links
+        $staffResponse = $this->actingAs($this->staff)
+            ->get(route('admin.profile.show', ['id' => $this->admin->id, 'user_id' => $this->admin->id]));
+
+        $staffResponse->assertOk()
+            ->assertSee('Tài khoản của tôi')
+            ->assertSee('Xem cửa hàng')
+            ->assertDontSee('Xem Storefront')
+            ->assertDontSee('Xem cửa hàng khách')
+            ->assertSee($this->staff->full_name)
+            ->assertSee($this->staff->email)
+            ->assertSee('Nhân viên')
+            ->assertDontSee($this->admin->email);
+
+        // Admin views own profile
+        $adminResponse = $this->actingAs($this->admin)
+            ->get(route('admin.profile.show'));
+
+        $adminResponse->assertOk()
+            ->assertSee('Tài khoản của tôi')
+            ->assertSee($this->admin->full_name)
+            ->assertSee($this->admin->email)
+            ->assertSee('Quản trị viên');
     }
 
     private function createProductWithStock(

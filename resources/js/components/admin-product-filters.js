@@ -11,13 +11,18 @@ function normalizeSearchText(value) {
 export function adminProductFilters({
     baseUrl,
     initialFilters = {},
+    options = {},
     regionSelector = '#admin-list-region',
 } = {}) {
+    const genderMap = new Map((options.genders ?? []).map((item) => [String(item.value), item.label]));
+    const silhouetteMap = new Map((options.silhouettes ?? []).map((item) => [Number(item.id), item.label]));
+    const activityMap = new Map((options.activities ?? []).map((item) => [Number(item.id), item.label]));
+
     return {
         baseUrl,
         regionSelector,
         search: initialFilters.search ?? '',
-        categories: (initialFilters.categories ?? []).map(Number),
+        appliedSearch: initialFilters.search ?? '',
         genders: (initialFilters.genders ?? []).map(String),
         silhouettes: (initialFilters.silhouettes ?? []).map(Number),
         activities: (initialFilters.activities ?? []).map(Number),
@@ -26,12 +31,10 @@ export function adminProductFilters({
         featured: initialFilters.featured ?? '',
         openDropdown: null,
         dropdownSearch: {
-            categories: '',
             silhouettes: '',
             activities: '',
         },
         mobileFiltersOpen: Boolean(
-            (initialFilters.categories ?? []).length > 0 ||
             (initialFilters.genders ?? []).length > 0 ||
             (initialFilters.silhouettes ?? []).length > 0 ||
             (initialFilters.activities ?? []).length > 0 ||
@@ -59,7 +62,6 @@ export function adminProductFilters({
 
         activeAdvancedCount() {
             return (
-                this.categories.length +
                 this.genders.length +
                 this.silhouettes.length +
                 this.activities.length +
@@ -70,7 +72,90 @@ export function adminProductFilters({
         },
 
         hasAnyFilter() {
-            return this.search.trim() !== '' || this.activeAdvancedCount() > 0;
+            return this.appliedSearch.trim() !== '' || this.activeAdvancedCount() > 0;
+        },
+
+        activeChips() {
+            const chips = [];
+            const q = this.appliedSearch.trim();
+            if (q !== '') {
+                chips.push({
+                    key: `search:${q}`,
+                    type: 'search',
+                    groupLabel: 'Từ khóa',
+                    label: `"${q}"`,
+                });
+            }
+            this.genders.forEach((val) => {
+                chips.push({
+                    key: `gender:${val}`,
+                    type: 'genders',
+                    value: val,
+                    groupLabel: 'Đối tượng',
+                    label: genderMap.get(String(val)) ?? val,
+                });
+            });
+            this.silhouettes.forEach((id) => {
+                chips.push({
+                    key: `silhouette:${id}`,
+                    type: 'silhouettes',
+                    value: id,
+                    groupLabel: 'Kiểu dáng',
+                    label: silhouetteMap.get(Number(id)) ?? `#${id}`,
+                });
+            });
+            this.activities.forEach((id) => {
+                chips.push({
+                    key: `activity:${id}`,
+                    type: 'activities',
+                    value: id,
+                    groupLabel: 'Mục đích',
+                    label: activityMap.get(Number(id)) ?? `#${id}`,
+                });
+            });
+            if (this.status) {
+                chips.push({
+                    key: `status:${this.status}`,
+                    type: 'status',
+                    groupLabel: 'Trạng thái',
+                    label: this.status === 'active' ? 'Đang bán' : 'Ngừng bán',
+                });
+            }
+            if (this.stock) {
+                chips.push({
+                    key: `stock:${this.stock}`,
+                    type: 'stock',
+                    groupLabel: 'Tồn kho',
+                    label: this.stock === 'in_stock' ? 'Còn hàng' : 'Hết hàng',
+                });
+            }
+            if (this.featured) {
+                chips.push({
+                    key: `featured:${this.featured}`,
+                    type: 'featured',
+                    groupLabel: 'Nổi bật',
+                    label: this.featured === 'featured' ? 'Nổi bật' : 'Không nổi bật',
+                });
+            }
+            return chips;
+        },
+
+        removeChip(chip) {
+            if (!chip) return;
+            if (chip.type === 'search') {
+                this.search = '';
+                this.appliedSearch = '';
+                this.applyFilters();
+                return;
+            }
+            if (chip.type === 'genders' || chip.type === 'silhouettes' || chip.type === 'activities') {
+                this.toggleSelection(chip.type, chip.value);
+                return;
+            }
+            if (chip.type === 'status' || chip.type === 'stock' || chip.type === 'featured') {
+                this[chip.type] = '';
+                this.applyFilters();
+            }
         },
 
         toggleDropdown(name) {
@@ -118,7 +203,6 @@ export function adminProductFilters({
             if (trimmedSearch !== '') {
                 params.set('search', trimmedSearch);
             }
-            this.categories.forEach((id) => params.append('categories[]', String(id)));
             this.genders.forEach((val) => params.append('genders[]', val));
             this.silhouettes.forEach((id) => params.append('silhouettes[]', String(id)));
             this.activities.forEach((id) => params.append('activities[]', String(id)));
@@ -131,20 +215,21 @@ export function adminProductFilters({
         },
 
         applyFilters() {
+            this.appliedSearch = this.search.trim();
             const nextUrl = this.buildUrl();
             this.fetchRegion(nextUrl, { pushState: true });
         },
 
         clearAllFilters() {
             this.search = '';
-            this.categories = [];
+            this.appliedSearch = '';
             this.genders = [];
             this.silhouettes = [];
             this.activities = [];
             this.status = '';
             this.stock = '';
             this.featured = '';
-            this.dropdownSearch = { categories: '', silhouettes: '', activities: '' };
+            this.dropdownSearch = { silhouettes: '', activities: '' };
             this.openDropdown = null;
             this.applyFilters();
         },
@@ -152,7 +237,7 @@ export function adminProductFilters({
         syncFromUrl() {
             const params = new URLSearchParams(window.location.search);
             this.search = params.get('search') ?? '';
-            this.categories = params.getAll('categories[]').map(Number).filter(Boolean);
+            this.appliedSearch = this.search.trim();
             this.genders = params.getAll('genders[]').filter(Boolean);
             this.silhouettes = params.getAll('silhouettes[]').map(Number).filter(Boolean);
             this.activities = params.getAll('activities[]').map(Number).filter(Boolean);
