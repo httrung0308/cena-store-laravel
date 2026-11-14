@@ -9,5 +9,5 @@
         'editUrl' => route('admin.categories.edit', $item),
         'activateUrl' => ! $item->is_active ? route('admin.categories.activate', $item) : null,
         'deactivateUrl' => $item->is_active ? route('admin.categories.deactivate', $item) : null,
-    ]))->all()" :search="$search" :search-url="route('admin.categories.index')" :paginator="$paginator" />
+    ]))->all()" :search="$search" :gender-group="$genderGroup" :active="$active" :search-url="route('admin.categories.index')" :paginator="$paginator" />
 @endsection

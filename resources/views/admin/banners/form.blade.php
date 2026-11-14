@@ -9,14 +9,32 @@
              cta_text: @js(old('cta_text', $record->cta_text ?? '')),
              desktopPreview: @js($record->exists ? $record->imageUrl() : ''),
              mobilePreview: @js($record->exists && $record->mobile_image_path ? $record->mobileImageUrl() : ''),
+             desktopError: '',
+             mobileError: '',
+             maxFileBytes: 5 * 1024 * 1024,
              previewMode: 'desktop',
              handleFile(event, type) {
-                 const file = event.target.files[0];
-                 if (file) {
-                     const url = URL.createObjectURL(file);
-                     if (type === 'desktop') this.desktopPreview = url;
-                     if (type === 'mobile') this.mobilePreview = url;
+                 const input = event.target;
+                 const file = input.files[0];
+                 if (type === 'desktop') this.desktopError = '';
+                 if (type === 'mobile') this.mobileError = '';
+                 if (!file) return;
+                 if (file.size > this.maxFileBytes) {
+                     const sizeMb = (file.size / (1024 * 1024)).toFixed(2);
+                     const message = `Dung lượng ảnh (${sizeMb} MB) vượt quá giới hạn 5 MB. Vui lòng chọn ảnh khác.`;
+                     if (type === 'desktop') {
+                         this.desktopError = message;
+                         this.desktopPreview = @js($record->exists ? $record->imageUrl() : '');
+                     } else {
+                         this.mobileError = message;
+                         this.mobilePreview = @js($record->exists && $record->mobile_image_path ? $record->mobileImageUrl() : '');
+                     }
+                     input.value = '';
+                     return;
                  }
+                 const url = URL.createObjectURL(file);
+                 if (type === 'desktop') this.desktopPreview = url;
+                 if (type === 'mobile') this.mobilePreview = url;
              }
          }">
 
@@ -32,7 +50,7 @@
     </div>
 
     @if ($errors->any())
-        <div class="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-600 dark:text-rose-400 text-xs">
+        <div role="alert" class="p-4 rounded-xl bg-error-bg border border-error/30 text-error text-xs">
             <strong class="font-bold block mb-1">Vui lòng kiểm tra lại các thông tin sau:</strong>
             <ul class="list-disc list-inside space-y-0.5">
                 @foreach ($errors->all() as $error)
@@ -113,7 +131,7 @@
             {{-- Title --}}
             <div class="space-y-1.5 md:col-span-2">
                 <label for="title" class="block text-xs font-bold text-main">
-                    Tiêu đề banner <span class="text-rose-500">*</span>
+                    Tiêu đề banner <span class="text-error">*</span>
                 </label>
                 <input type="text" id="title" name="title" x-model="title" required maxlength="150"
                        class="input w-full text-xs bg-surface border-border text-main"
@@ -139,9 +157,12 @@
                 </label>
                 <input type="file" id="image" name="image" accept="image/jpeg,image/png,image/webp"
                        @change="handleFile($event, 'desktop')"
+                       :class="desktopError ? 'border-error ring-1 ring-error' : 'border-border'"
                        {{ $record->exists ? '' : 'required' }}
-                       class="block w-full text-xs text-muted file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-accent file:text-accent-text hover:file:bg-accent-hover cursor-pointer border border-border rounded-xl bg-surface p-1">
-                <p class="text-[11px] text-muted">Khuyến nghị kích thước 1920x640px hoặc 1600x600px. Tối đa 2MB (JPG, PNG, WebP).</p>
+                       class="block w-full text-xs text-muted file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-accent file:text-accent-text hover:file:bg-accent-hover cursor-pointer border rounded-xl bg-surface p-1">
+                <p x-cloak x-show="desktopError" x-text="desktopError" class="text-xs font-medium text-error" role="alert"></p>
+                <x-forms.field-error name="image" />
+                <p class="text-[11px] text-muted">Khuyến nghị kích thước 1920x640px hoặc 1600x600px. Tối đa 5MB (JPG, PNG, WebP).</p>
             </div>
 
             {{-- Mobile Image --}}
@@ -151,8 +172,11 @@
                 </label>
                 <input type="file" id="mobile_image" name="mobile_image" accept="image/jpeg,image/png,image/webp"
                        @change="handleFile($event, 'mobile')"
-                       class="block w-full text-xs text-muted file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-surface file:border file:border-border file:text-main hover:file:bg-surface/80 cursor-pointer border border-border rounded-xl bg-surface p-1">
-                <p class="text-[11px] text-muted">Khuyến nghị 800x800px hoặc 800x600px. Nếu không chọn, hệ thống tự crop tâm từ ảnh Desktop.</p>
+                       :class="mobileError ? 'border-error ring-1 ring-error' : 'border-border'"
+                       class="block w-full text-xs text-muted file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-surface file:border file:border-border file:text-main hover:file:bg-surface/80 cursor-pointer border rounded-xl bg-surface p-1">
+                <p x-cloak x-show="mobileError" x-text="mobileError" class="text-xs font-medium text-error" role="alert"></p>
+                <x-forms.field-error name="mobile_image" />
+                <p class="text-[11px] text-muted">Khuyến nghị 800x800px hoặc 800x600px, tối đa 5MB. Nếu không chọn, hệ thống tự crop tâm từ ảnh Desktop.</p>
             </div>
 
             {{-- Link URL --}}
@@ -180,7 +204,7 @@
             {{-- Sort Order --}}
             <div class="space-y-1.5">
                 <label for="sort_order" class="block text-xs font-bold text-main">
-                    Thứ tự hiển thị <span class="text-rose-500">*</span>
+                    Thứ tự hiển thị <span class="text-error">*</span>
                 </label>
                 <input type="number" id="sort_order" name="sort_order" value="{{ old('sort_order', $record->sort_order ?? 1) }}" min="0" max="65535" required
                        class="input w-full text-xs bg-surface border-border text-main">
@@ -190,7 +214,7 @@
             {{-- Status is_active --}}
             <div class="space-y-1.5">
                 <label for="is_active" class="block text-xs font-bold text-main">
-                    Trạng thái hiển thị <span class="text-rose-500">*</span>
+                    Trạng thái hiển thị <span class="text-error">*</span>
                 </label>
                 <select id="is_active" name="is_active" required class="select w-full text-xs bg-surface border-border text-main">
                     <option value="1" {{ old('is_active', (string) ($record->is_active ?? '1')) === '1' ? 'selected' : '' }}>

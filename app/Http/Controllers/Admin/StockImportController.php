@@ -21,15 +21,35 @@ class StockImportController extends Controller
 {
     public function index(Request $request): View
     {
-        $data = $request->validate(['search' => ['nullable', 'string', 'max:150'], 'status' => ['nullable', 'in:DRAFT,POSTED,CANCELLED']]);
-        $imports = StockImport::when($data['search'] ?? null, fn ($q, $s) => $q->where('import_code', 'like', '%'.$s.'%'))->when($data['status'] ?? null, fn ($q, $s) => $q->where('status', $s))->orderByDesc('id')->paginate(15)->withQueryString();
+        $data = $request->validate([
+            'search' => ['nullable', 'string', 'max:150'],
+            'status' => ['nullable', 'in:DRAFT,POSTED,CANCELLED'],
+            'supplier_id' => ['nullable', 'integer', 'min:1'],
+        ]);
 
-        return view('admin.inventory.imports.index', compact('imports'));
+        $imports = StockImport::when($data['search'] ?? null, fn ($q, $s) => $q->where('import_code', 'like', '%'.$s.'%'))
+            ->when($data['status'] ?? null, fn ($q, $s) => $q->where('status', $s))
+            ->when($data['supplier_id'] ?? null, fn ($q, $id) => $q->where('supplier_id', $id))
+            ->orderByDesc('id')
+            ->paginate(15)
+            ->withQueryString();
+
+        $suppliers = Supplier::orderBy('name')->get(['id', 'code', 'name']);
+        $filters = [
+            'search' => (string) ($data['search'] ?? ''),
+            'status' => (string) ($data['status'] ?? ''),
+            'supplier_id' => isset($data['supplier_id']) ? (string) $data['supplier_id'] : '',
+        ];
+
+        return view('admin.inventory.imports.index', compact('imports', 'suppliers', 'filters'));
     }
 
-    public function create(): View
+    public function create(Request $request): View
     {
-        return $this->form(new StockImport);
+        $variantId = $request->integer('variant_id');
+        $prefillVariantId = ($variantId > 0 && ProductVariant::whereKey($variantId)->exists()) ? $variantId : null;
+
+        return $this->form(new StockImport, $prefillVariantId);
     }
 
     public function edit(StockImport $stock_import): View
@@ -39,11 +59,17 @@ class StockImportController extends Controller
         return $this->form($stock_import);
     }
 
-    private function form(StockImport $import): View
+    private function form(StockImport $import, ?int $prefillVariantId = null): View
     {
-        return view('admin.inventory.imports.form', ['import' => $import, 'commandKey' => (string) Str::uuid(), 'suppliers' => Supplier::orderBy('name')->get(),
+        return view('admin.inventory.imports.form', [
+            'import' => $import,
+            'commandKey' => (string) Str::uuid(),
+            'suppliers' => Supplier::orderBy('name')->get(),
             'variants' => ProductVariant::with('color.product')->orderBy('sku')->get(),
-            'items' => $import->exists ? $import->items()->orderBy('variant_id')->get()->map(fn ($i) => ['variant_id' => $i->variant_id, 'quantity' => $i->quantity, 'unit_cost_amount' => $i->unit_cost_amount])->all() : [['variant_id' => '', 'quantity' => 1, 'unit_cost_amount' => '']]]);
+            'items' => $import->exists
+                ? $import->items()->orderBy('variant_id')->get()->map(fn ($i) => ['variant_id' => $i->variant_id, 'quantity' => $i->quantity, 'unit_cost_amount' => $i->unit_cost_amount])->all()
+                : [['variant_id' => $prefillVariantId ? (string) $prefillVariantId : '', 'quantity' => 1, 'unit_cost_amount' => '']],
+        ]);
     }
 
     /**
@@ -149,7 +175,9 @@ class StockImportController extends Controller
 
     public function show(StockImport $stock_import): View
     {
-        return view('admin.inventory.imports.show', ['import' => $stock_import->load(['items', 'createdBy', 'postedBy'])]);
+        return view('admin.inventory.imports.show', [
+            'import' => $stock_import->load(['items.variant.color.product', 'createdBy', 'postedBy']),
+        ]);
     }
 
     public function store(StockImportRequest $request, StockImportService $service): RedirectResponse

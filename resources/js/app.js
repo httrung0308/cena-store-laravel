@@ -2,6 +2,7 @@ import Alpine from 'alpinejs';
 import { Chart } from 'chart.js/auto';
 
 import { addressSelector } from './components/address-selector';
+import { adminAjaxList } from './components/admin-ajax-list';
 import { adminProductFilters } from './components/admin-product-filters';
 import { adminStatusToggle } from './components/admin-status-toggle';
 import { articleEditor } from './components/article-editor';
@@ -24,6 +25,7 @@ import { variantPicker } from './components/variant-picker';
 
 // Shared Blade components use these names in x-data, e.g. x-data="variantPicker({...})".
 Alpine.data('addressSelector', addressSelector);
+Alpine.data('adminAjaxList', adminAjaxList);
 Alpine.data('adminProductFilters', adminProductFilters);
 Alpine.data('adminStatusToggle', adminStatusToggle);
 Alpine.data('articleEditor', articleEditor);

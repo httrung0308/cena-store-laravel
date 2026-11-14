@@ -51,15 +51,52 @@
 
 @php
     $initialRows = is_array(old('items', $items)) ? array_values(old('items', $items)) : [];
+    $variantOptions = $variants->map(fn ($v) => [
+        'id' => (string) $v->id,
+        'sku' => (string) $v->sku,
+        'product' => (string) ($v->color?->product?->name ?? ''),
+        'color' => (string) ($v->color?->color_name ?? ''),
+        'size' => (string) $v->size_value,
+        'sellable' => max(0, (int) $v->stock_qty - (int) $v->reserved_qty),
+        'is_active' => (bool) $v->is_active,
+    ])->values();
 @endphp
 <form method="POST" action="{{ $import->exists ? route('admin.stock-imports.update', $import) : route('admin.stock-imports.store') }}"
       class="space-y-8"
       x-data="{
           rows: @js($initialRows),
+          variants: @js($variantOptions),
+          cleanDigits(val) {
+              return String(val ?? '').replace(/[^0-9]/g, '');
+          },
+          formatThousands(val) {
+              const clean = this.cleanDigits(val);
+              if (!clean) return '';
+              return clean.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+          },
           formatVnd(val) {
-              const clean = String(val ?? '').replace(/[^0-9]/g, '');
+              const clean = this.cleanDigits(val);
               if (!clean) return '0 ₫';
               return clean.replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ' ₫';
+          },
+          findVariant(id) {
+              const target = String(id ?? '').trim();
+              if (!target) return null;
+              return this.variants.find(v => v.id === target) ?? null;
+          },
+          filterVariants(query) {
+              const q = String(query ?? '').trim().toLowerCase();
+              if (!q) return this.variants;
+              const tokens = q.split(/\s+/).filter(Boolean);
+              return this.variants.filter(v => {
+                  const hay = (v.sku + ' ' + v.product + ' ' + v.color + ' size ' + v.size).toLowerCase();
+                  return tokens.every(t => hay.includes(t));
+              });
+          },
+          isDuplicateVariant(index) {
+              const vid = String(this.rows[index]?.variant_id ?? '').trim();
+              if (!vid) return false;
+              return this.rows.some((r, idx) => idx !== index && String(r.variant_id ?? '').trim() === vid);
           },
           get totalQuantity() {
               return this.rows.reduce((sum, r) => sum + (parseInt(r.quantity, 10) || 0), 0);
@@ -67,7 +104,7 @@
           get totalEstimatedCost() {
               return this.rows.reduce((sum, r) => {
                   const qty = parseInt(r.quantity, 10) || 0;
-                  const cost = parseInt(String(r.unit_cost_amount).replace(/[^0-9]/g, ''), 10) || 0;
+                  const cost = parseInt(this.cleanDigits(r.unit_cost_amount), 10) || 0;
                   return sum + (qty * cost);
               }, 0);
           },
@@ -115,7 +152,7 @@
         <div class="flex flex-wrap items-center justify-between gap-3">
             <div>
                 <h2 class="text-base font-bold text-main">Các dòng sản phẩm & SKU</h2>
-                <p class="text-xs text-muted mt-0.5">Chọn biến thể, số lượng nhập và đơn giá vốn tương ứng.</p>
+                <p class="text-xs text-muted mt-0.5">Tìm chọn biến thể theo SKU, tên giày, màu hoặc size; nhập số lượng và đơn giá vốn tương ứng.</p>
             </div>
             <button type="button" class="px-4 py-2 bg-accent hover:bg-accent-hover text-accent-text text-xs font-bold rounded-xl transition-colors shadow-sm"
                     x-on:click="addRow()">
@@ -129,7 +166,8 @@
 
         <div class="space-y-3">
             <template x-for="(row, i) in rows" :key="i">
-                <fieldset class="min-w-0 space-y-3 rounded-xl border border-border p-4 bg-surface/30">
+                <fieldset class="min-w-0 space-y-3 rounded-xl border p-4 transition-colors"
+                          :class="isDuplicateVariant(i) ? 'border-error bg-error-bg/20' : 'border-border bg-surface/30'">
                     <div class="flex items-center justify-between">
                         <legend class="px-2 font-bold text-main text-xs uppercase" x-text="'Dòng ' + (i + 1)"></legend>
                         <button type="button" class="text-xs font-bold text-error hover:underline" x-on:click="removeRow(i)">
@@ -138,18 +176,68 @@
                     </div>
 
                     <div class="grid gap-3 lg:grid-cols-12 items-end">
-                        <div class="lg:col-span-6">
-                            <label class="block text-xs font-semibold text-muted">SKU / Biến thể sản phẩm <span class="text-error">*</span>
-                                <select class="input mt-1 w-full border-border bg-surface text-xs font-normal text-main"
-                                        x-bind:name="'items['+i+'][variant_id]'" x-model="row.variant_id" required>
-                                    <option value="">-- Chọn SKU hoặc gõ tìm kiếm --</option>
-                                    @foreach ($variants as $variant)
-                                        <option value="{{ $variant->id }}">
-                                            {{ $variant->sku }} — {{ $variant->color?->product?->name }} / {{ $variant->color?->color_name }} / Size {{ $variant->size_value }}{{ $variant->is_active ? '' : ' (ngừng bán)' }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                            </label>
+                        <div class="lg:col-span-6 relative"
+                             x-data="{ open: false, query: '' }"
+                             @click.outside="open = false"
+                             @keydown.escape.stop="open = false">
+                            <span class="block text-xs font-semibold text-muted">SKU / Biến thể sản phẩm <span class="text-error">*</span></span>
+                            <input type="hidden" :name="'items['+i+'][variant_id]'" :value="row.variant_id">
+
+                            <button type="button"
+                                    @click="open = !open; if (open) { $nextTick(() => $refs.skuSearch?.focus()); }"
+                                    :aria-expanded="open.toString()"
+                                    aria-haspopup="listbox"
+                                    class="input mt-1 w-full border-border bg-surface text-xs text-left flex items-center justify-between gap-2 min-h-[38px]"
+                                    :class="isDuplicateVariant(i) ? 'border-error ring-1 ring-error/40' : ''">
+                                <span class="min-w-0 flex-1 truncate" x-show="findVariant(row.variant_id)" x-cloak>
+                                    <span class="font-mono font-bold text-accent" x-text="findVariant(row.variant_id)?.sku"></span>
+                                    <span class="text-main" x-text="' — ' + (findVariant(row.variant_id)?.product ?? '')"></span>
+                                    <span class="text-muted" x-text="' / ' + (findVariant(row.variant_id)?.color ?? '') + ' / Size ' + (findVariant(row.variant_id)?.size ?? '')"></span>
+                                </span>
+                                <span class="text-muted truncate" x-show="!findVariant(row.variant_id)">-- Chọn SKU hoặc gõ tìm kiếm --</span>
+                                <span class="shrink-0 flex items-center gap-1.5">
+                                    <span x-show="findVariant(row.variant_id)" x-cloak
+                                          class="px-1.5 py-0.5 rounded text-[10px] font-bold border"
+                                          :class="(findVariant(row.variant_id)?.sellable ?? 0) <= 0 ? 'bg-error-bg text-error border-error/30' : ((findVariant(row.variant_id)?.sellable ?? 0) <= 5 ? 'bg-warning-bg text-warning border-warning/30' : 'bg-surface-alt text-muted border-border')"
+                                          x-text="'Tồn: ' + (findVariant(row.variant_id)?.sellable ?? 0)"></span>
+                                    <svg class="w-4 h-4 text-muted shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                                </span>
+                            </button>
+
+                            <div x-show="open" x-cloak
+                                 class="absolute left-0 right-0 z-30 mt-1 rounded-xl border border-border bg-surface-card shadow-elevated overflow-hidden">
+                                <div class="p-2 border-b border-border bg-surface">
+                                    <label :for="'sku-search-' + i" class="sr-only">Tìm SKU, tên sản phẩm, màu sắc hoặc size</label>
+                                    <input :id="'sku-search-' + i"
+                                           x-ref="skuSearch"
+                                           type="search"
+                                           x-model="query"
+                                           placeholder="Gõ SKU, tên giày, màu, size..."
+                                           class="input w-full border-border bg-bg text-xs text-main py-1.5 px-2.5">
+                                </div>
+                                <ul role="listbox" class="max-h-60 overflow-y-auto divide-y divide-border/50">
+                                    <template x-for="v in filterVariants(query)" :key="v.id">
+                                        <li>
+                                            <button type="button"
+                                                    @click="row.variant_id = v.id; open = false; query = ''"
+                                                    class="w-full px-3 py-2 text-left text-xs hover:bg-surface transition-colors flex items-center justify-between gap-2"
+                                                    :class="String(row.variant_id) === v.id ? 'bg-accent/10' : ''">
+                                                <span class="min-w-0 flex-1">
+                                                    <span class="font-mono font-bold text-accent" x-text="v.sku"></span>
+                                                    <span class="text-error text-[10px] font-bold ml-1" x-show="!v.is_active">(ngừng bán)</span>
+                                                    <span class="block text-[11px] text-main truncate" x-text="v.product + ' · ' + v.color + ' · Size ' + v.size"></span>
+                                                </span>
+                                                <span class="shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold border"
+                                                      :class="v.sellable <= 0 ? 'bg-error-bg text-error border-error/30' : (v.sellable <= 5 ? 'bg-warning-bg text-warning border-warning/30' : 'bg-surface text-muted border-border')"
+                                                      x-text="'Tồn: ' + v.sellable + ' đôi'"></span>
+                                            </button>
+                                        </li>
+                                    </template>
+                                    <li x-show="filterVariants(query).length === 0" class="px-3 py-4 text-center text-xs text-muted">
+                                        Không tìm thấy biến thể phù hợp.
+                                    </li>
+                                </ul>
+                            </div>
                         </div>
 
                         <div class="lg:col-span-2">
@@ -162,19 +250,33 @@
 
                         <div class="lg:col-span-2">
                             <label class="text-xs font-semibold text-muted block">Giá nhập/đôi (₫) <span class="text-error">*</span>
-                                <input class="input mt-1 w-full border-border bg-surface text-xs font-mono font-normal text-main"
-                                       inputmode="numeric" pattern="[0-9]+"
-                                       x-bind:name="'items['+i+'][unit_cost_amount]'" x-model="row.unit_cost_amount" placeholder="950000" required>
+                                <input type="hidden" x-bind:name="'items['+i+'][unit_cost_amount]'" :value="cleanDigits(row.unit_cost_amount)">
+                                <div class="relative mt-1">
+                                    <input class="input w-full border-border bg-surface text-xs font-mono font-normal text-main pr-7 text-right"
+                                           type="text"
+                                           inputmode="numeric"
+                                           :value="formatThousands(row.unit_cost_amount)"
+                                           @input="row.unit_cost_amount = cleanDigits($event.target.value); $event.target.value = formatThousands(row.unit_cost_amount)"
+                                           placeholder="950.000"
+                                           required>
+                                    <span class="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-semibold text-muted">₫</span>
+                                </div>
                             </label>
                         </div>
 
                         <div class="lg:col-span-2">
                             <span class="text-[11px] font-semibold text-muted block">Thành tiền dòng</span>
                             <div class="input mt-1 w-full border-border bg-surface-alt/70 text-xs font-mono font-bold text-accent flex items-center justify-end px-3">
-                                <span x-text="formatVnd((row.quantity || 0) * (parseInt(String(row.unit_cost_amount).replace(/[^0-9]/g, '') || 0, 10)))"></span>
+                                <span x-text="formatVnd((parseInt(row.quantity, 10) || 0) * (parseInt(cleanDigits(row.unit_cost_amount), 10) || 0))"></span>
                             </div>
                         </div>
                     </div>
+
+                    <p x-show="isDuplicateVariant(i)" x-cloak role="alert"
+                       class="text-xs font-semibold text-error flex items-center gap-1.5 pt-1">
+                        <span aria-hidden="true">⚠</span>
+                        <span>Biến thể này đang bị trùng với một dòng khác trong cùng phiếu. Vui lòng chọn biến thể khác hoặc bỏ dòng thừa.</span>
+                    </p>
                 </fieldset>
             </template>
         </div>

@@ -84,6 +84,20 @@ final class ArticleService
         Article::query()->whereKey($article->id)->update(['status' => ArticleStatus::Hidden->value, 'updated_at' => $this->clock->now()->format('Y-m-d H:i:s.u')]);
     }
 
+    public function publish(Article $article): Article
+    {
+        return DB::transaction(function () use ($article): Article {
+            $record = Article::query()->whereKey($article->id)->lockForUpdate()->firstOrFail();
+            $record->status = ArticleStatus::Published;
+            if ($record->published_at === null) {
+                $record->published_at = $this->clock->now();
+            }
+            $record->save();
+
+            return $record;
+        });
+    }
+
     private function voterHash(?User $user, string $sessionId): string
     {
         return hash_hmac('sha256', $user !== null ? 'user:'.$user->id : 'session:'.$sessionId, (string) config('app.key'));

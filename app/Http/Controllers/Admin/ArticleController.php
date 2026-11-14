@@ -8,6 +8,7 @@ use App\Http\Requests\Admin\ArticleRequest;
 use App\Models\Article;
 use App\Services\ArticleService;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -61,10 +62,27 @@ class ArticleController extends Controller
         return to_route('admin.articles.index')->with('status', 'Đã lưu bài viết.');
     }
 
-    public function hide(Article $article): RedirectResponse
+    public function hide(Request $request, Article $article): RedirectResponse|JsonResponse
     {
         $this->articles->hide($article);
+        $message = 'Đã ẩn bài viết; bài vẫn được lưu lại.';
 
-        return to_route('admin.articles.index')->with('status', 'Đã ẩn bài viết; bài vẫn được lưu lại.');
+        if ($request->expectsJson()) {
+            return response()->json(['message' => $message, 'status' => ArticleStatus::Hidden->value]);
+        }
+
+        return to_route('admin.articles.index')->with('status', $message);
+    }
+
+    public function publish(Request $request, Article $article): RedirectResponse|JsonResponse
+    {
+        $updated = $this->articles->publish($article);
+        $message = 'Đã hiển thị lại bài viết.';
+
+        if ($request->expectsJson()) {
+            return response()->json(['message' => $message, 'status' => $updated->status->value]);
+        }
+
+        return to_route('admin.articles.index')->with('status', $message);
     }
 }

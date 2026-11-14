@@ -36,10 +36,15 @@
                 <textarea id="article-title" name="title" rows="1" maxlength="200" required x-model="title" placeholder="Tiêu đề bài viết" aria-invalid="{{ $errors->has('title') ? 'true' : 'false' }}"
                           x-init="$nextTick(() => { $el.style.height = $el.scrollHeight + 'px' })" x-on:input="$el.style.height = 'auto'; $el.style.height = $el.scrollHeight + 'px'" x-on:keydown.enter.prevent
                           class="block w-full resize-none overflow-hidden border-0 border-b border-border bg-transparent px-0 pb-2 text-3xl font-bold leading-tight text-main placeholder:text-muted/40 focus:border-accent focus:outline-none focus:ring-0 sm:text-4xl">{{ old('title', $article->title) }}</textarea>
-                <p class="mt-2 flex flex-wrap items-center gap-1 text-xs text-muted">
-                    <span aria-hidden="true">🔗</span> Đường dẫn: <span class="font-mono text-main">/news/<span x-text="slug">{{ $article->slug }}</span></span>
-                    <span>{{ $article->exists ? '(giữ nguyên khi sửa tiêu đề)' : '(tự tạo từ tiêu đề; nếu trùng sẽ thêm số)' }}</span>
-                </p>
+                <div class="mt-2 flex flex-wrap items-center gap-1.5 text-[11px] text-muted">
+                    <svg class="w-3.5 h-3.5 shrink-0 text-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+                        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+                    </svg>
+                    <span>Đường dẫn:</span>
+                    <code class="font-mono text-main">/news/<span x-text="slug || '...'">{{ $article->slug }}</span></code>
+                    <span class="text-muted/80">{{ $article->exists ? '· Giữ nguyên khi sửa tiêu đề' : '· Tự tạo từ tiêu đề' }}</span>
+                </div>
                 @error('title')<p role="alert" class="mt-1 text-sm text-error">{{ $message }}</p>@enderror
             </div>
 

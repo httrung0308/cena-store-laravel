@@ -77,6 +77,7 @@ Route::patch('reviews/{review}/visibility', [ReviewController::class, 'visibilit
 Route::middleware('role:admin')->group(function (): void {
     Route::resource('articles', ArticleController::class)->except(['show', 'destroy']);
     Route::patch('articles/{article}/hide', [ArticleController::class, 'hide'])->name('articles.hide');
+    Route::patch('articles/{article}/publish', [ArticleController::class, 'publish'])->name('articles.publish');
 
     Route::resource('banners', BannerController::class)->except('show');
     Route::patch('banners/{banner}/toggle-active', [BannerController::class, 'toggleActive'])->name('banners.toggle-active');

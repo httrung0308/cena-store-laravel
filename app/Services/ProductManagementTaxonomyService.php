@@ -25,7 +25,9 @@ final class ProductManagementTaxonomyService
     /** @return array<string, mixed> */
     public function supplierRules(?Supplier $supplier = null): array
     {
-        return ['code' => ['required', 'string', 'max:50', 'regex:/^[A-Za-z0-9_-]+$/D', Rule::unique('suppliers', 'code')->ignore($supplier?->id)],
+        $isUpdate = $supplier?->exists ?? false;
+
+        return ['code' => [$isUpdate ? 'required' : 'nullable', 'string', 'max:50', 'regex:/^[A-Za-z0-9_-]+$/D', Rule::unique('suppliers', 'code')->ignore($supplier?->id)],
             'name' => ['required', 'string', 'max:150'], 'phone' => ['required', 'string', 'max:20', 'regex:/^[0-9+() .-]{6,20}$/D'],
             'email' => ['nullable', 'email', 'max:255'], 'address' => ['nullable', 'string', 'max:255'], 'is_active' => ['required', 'boolean']];
     }
@@ -62,11 +64,19 @@ final class ProductManagementTaxonomyService
     /** @param array<string, mixed> $input */
     public function saveSupplier(User $actor, ?Supplier $supplier, array $input): Supplier
     {
+        if (array_key_exists('code', $input) && is_string($input['code'])) {
+            $normalizedCode = mb_strtoupper(trim($input['code']));
+            $input['code'] = $normalizedCode === '' ? null : $normalizedCode;
+        }
+
         try {
             return DB::transaction(function () use ($actor, $supplier, $input): Supplier {
                 ProductManagementAccess::lock($actor);
                 $current = $supplier ? Supplier::whereKey($supplier->id)->lockForUpdate()->firstOrFail() : new Supplier;
                 $data = Validator::make($input, $this->supplierRules($current))->validate();
+                if (! $current->exists && empty($data['code'])) {
+                    $data['code'] = $this->generateUniqueSupplierCode();
+                }
                 $current->forceFill($data)->save();
 
                 return $current->refresh();
@@ -74,6 +84,18 @@ final class ProductManagementTaxonomyService
         } catch (UniqueConstraintViolationException) {
             throw ValidationException::withMessages(['code' => 'Mã nhà cung cấp đã được sử dụng.']);
         }
+    }
+
+    private function generateUniqueSupplierCode(): string
+    {
+        $nextSequence = ((int) Supplier::query()->lockForUpdate()->max('id')) + 1;
+
+        do {
+            $candidate = sprintf('SUP-%04d', $nextSequence);
+            $nextSequence++;
+        } while (Supplier::query()->where('code', $candidate)->exists());
+
+        return $candidate;
     }
 
     public function setActive(User $actor, Category|Supplier $record, bool $active): Category|Supplier

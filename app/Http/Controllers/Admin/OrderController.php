@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\OrderPaymentStatus;
 use App\Enums\OrderStatus;
 use App\Exceptions\DomainException;
 use App\Http\Controllers\Controller;
@@ -29,6 +30,7 @@ class OrderController extends Controller
         $filters = $request->validate([
             'search' => ['nullable', 'string', 'max:100'],
             'status' => ['nullable', Rule::enum(OrderStatus::class)],
+            'payment_status' => ['nullable', Rule::enum(OrderPaymentStatus::class)],
         ]);
         $orders = Order::query()->with('items')
             ->when($filters['search'] ?? null, function ($query, string $search): void {
@@ -38,6 +40,7 @@ class OrderController extends Controller
                     ->orWhereRaw("shipping_phone LIKE ? ESCAPE '!'", [$pattern]));
             })
             ->when($filters['status'] ?? null, fn ($query, string $status) => $query->where('order_status', $status))
+            ->when($filters['payment_status'] ?? null, fn ($query, string $paymentStatus) => $query->where('payment_status', $paymentStatus))
             ->orderByDesc('created_at')->orderByDesc('id')
             ->paginate(15)->withQueryString();
 

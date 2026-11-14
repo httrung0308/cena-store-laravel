@@ -6,20 +6,114 @@
         <span>+ Tạo phiếu nháp</span>
     </a>
 @endsection
-@php($badges = ['DRAFT' => 'bg-warning-bg text-warning border border-warning/30', 'POSTED' => 'bg-success-bg text-success border border-success/30', 'CANCELLED' => 'bg-muted/15 text-muted'])
+@php
+    $badges = [
+        'DRAFT' => 'bg-warning-bg text-warning border border-warning/30',
+        'POSTED' => 'bg-success-bg text-success border border-success/30',
+        'CANCELLED' => 'bg-muted/15 text-muted',
+    ];
+    $tz = (string) config('store.business_timezone');
+    $searchValue = (string) ($filters['search'] ?? request('search', ''));
+    $statusValue = (string) ($filters['status'] ?? request('status', ''));
+    $supplierValue = (string) ($filters['supplier_id'] ?? request('supplier_id', ''));
+
+    $activeChips = [];
+    if (filled($searchValue)) {
+        $activeChips[] = [
+            'label' => 'Mã phiếu: '.$searchValue,
+            'url' => request()->fullUrlWithQuery(['search' => null, 'page' => null]),
+        ];
+    }
+    if (filled($statusValue)) {
+        $statusLabel = App\Enums\StockImportStatus::tryFrom($statusValue)?->label() ?? $statusValue;
+        $activeChips[] = [
+            'label' => 'Trạng thái: '.$statusLabel,
+            'url' => request()->fullUrlWithQuery(['status' => null, 'page' => null]),
+        ];
+    }
+    if (filled($supplierValue)) {
+        $selectedSupplier = $suppliers->firstWhere('id', (int) $supplierValue);
+        $supplierLabel = $selectedSupplier ? $selectedSupplier->code.' — '.$selectedSupplier->name : '#'.$supplierValue;
+        $activeChips[] = [
+            'label' => 'NCC: '.$supplierLabel,
+            'url' => request()->fullUrlWithQuery(['supplier_id' => null, 'page' => null]),
+        ];
+    }
+@endphp
 @section('content')
-    <div class="space-y-6">
-        <x-admin.search-form :action="route('admin.stock-imports.index')" id="import-search" label="Tìm mã phiếu" placeholder="Tìm kiếm theo mã phiếu nhập..." :value="request('search', '')">
-            <select class="bg-bg border border-border px-3 py-2 rounded-xl text-xs text-main font-semibold focus:outline-none focus:border-accent" name="status">
+    <div x-data="adminAjaxList()" class="space-y-6">
+        <x-admin.search-form :action="route('admin.stock-imports.index')"
+                             id="import-search"
+                             label="Tìm mã phiếu"
+                             placeholder="Tìm kiếm theo mã phiếu nhập..."
+                             :value="$searchValue"
+                             :ajax="true"
+                             :active-chips="$activeChips">
+            <label for="import-status-filter" class="sr-only">Trạng thái phiếu nhập</label>
+            <select id="import-status-filter"
+                    class="bg-bg border border-border px-3 py-2 rounded-xl text-xs text-main font-semibold focus:outline-none focus:border-accent"
+                    name="status"
+                    @change="submitFilter($el.form)">
                 <option value="">Tất cả trạng thái</option>
                 @foreach (App\Enums\StockImportStatus::cases() as $state)
-                    <option value="{{ $state->value }}" @selected(request('status') === $state->value)>{{ $state->label() }}</option>
+                    <option value="{{ $state->value }}" @selected($statusValue === $state->value)>{{ $state->label() }}</option>
+                @endforeach
+            </select>
+
+            <label for="import-supplier-filter" class="sr-only">Nhà cung cấp</label>
+            <select id="import-supplier-filter"
+                    class="bg-bg border border-border px-3 py-2 rounded-xl text-xs text-main font-semibold focus:outline-none focus:border-accent max-w-[220px]"
+                    name="supplier_id"
+                    @change="submitFilter($el.form)">
+                <option value="">Tất cả nhà cung cấp</option>
+                @foreach ($suppliers as $supplier)
+                    <option value="{{ $supplier->id }}" @selected($supplierValue === (string) $supplier->id)>{{ $supplier->code }} — {{ $supplier->name }}</option>
                 @endforeach
             </select>
         </x-admin.search-form>
 
-        <div class="bg-surface-card rounded-2xl border border-border overflow-hidden shadow-sm">
-            <div class="overflow-x-auto">
+        <div id="admin-list-region"
+             x-ref="region"
+             @click="handleRegionClick($event)"
+             :class="{ 'opacity-60 pointer-events-none': listLoading }"
+             class="bg-surface-card rounded-2xl border border-border overflow-hidden shadow-sm transition-opacity">
+            <div class="px-4 py-2.5 border-b border-border bg-surface/50 flex flex-wrap items-center justify-between gap-2 text-xs">
+                <span class="text-muted">
+                    Tìm thấy <strong class="text-main font-extrabold tabular-nums">{{ $imports->total() }}</strong> phiếu nhập
+                    @if (! empty($activeChips))
+                        <span class="text-accent font-semibold">(đang áp dụng bộ lọc)</span>
+                    @endif
+                </span>
+            </div>
+
+            {{-- Mobile summary cards (< md) --}}
+            <div class="md:hidden divide-y divide-border">
+                @forelse ($imports as $import)
+                    <article class="p-4 space-y-2.5">
+                        <div class="flex items-start justify-between gap-2">
+                            <a class="font-mono font-bold text-accent hover:underline text-sm" href="{{ route('admin.stock-imports.show', $import) }}">
+                                {{ $import->import_code }}
+                            </a>
+                            <span class="shrink-0 px-2.5 py-0.5 rounded-full font-bold text-[11px] {{ $badges[$import->status->value] ?? 'bg-surface text-muted border border-border' }}">
+                                {{ $import->status->label() }}
+                            </span>
+                        </div>
+                        <p class="text-xs font-bold text-main">{{ $import->supplier_name_snapshot }}</p>
+                        <div class="flex flex-wrap items-center justify-between gap-2 pt-1 text-xs">
+                            <div class="flex items-center gap-2">
+                                <span class="bg-surface text-main border border-border px-2 py-0.5 rounded-lg font-mono font-bold text-[11px]">{{ $import->total_quantity }} đôi</span>
+                                <span class="font-extrabold text-accent">{{ number_format($import->total_cost_amount, 0, ',', '.') }} ₫</span>
+                            </div>
+                            <span class="text-[11px] text-muted">{{ $import->created_at?->setTimezone($tz)->format('d/m/Y H:i') }}</span>
+                        </div>
+                    </article>
+                @empty
+                    <div class="p-10 text-center text-xs text-muted">Chưa có phiếu nhập.</div>
+                @endforelse
+            </div>
+
+            {{-- Desktop table (>= md) --}}
+            <div class="hidden md:block overflow-x-auto">
                 <table class="w-full text-left text-xs text-muted border-collapse">
                     <thead class="bg-surface text-main font-bold border-b border-border">
                         <tr>
@@ -45,7 +139,7 @@
                                 <span class="bg-surface text-main border border-border px-2.5 py-1 rounded-lg font-mono font-bold text-[11px]">{{ $import->total_quantity }} đôi</span>
                             </td>
                             <td class="p-4 whitespace-nowrap font-extrabold text-accent text-xs">{{ number_format($import->total_cost_amount, 0, ',', '.') }} ₫</td>
-                            <td class="p-4 whitespace-nowrap text-muted text-xs">{{ $import->created_at?->setTimezone(config('store.business_timezone'))->format('d/m/Y H:i') }}</td>
+                            <td class="p-4 whitespace-nowrap text-muted text-xs">{{ $import->created_at?->setTimezone($tz)->format('d/m/Y H:i') }}</td>
                         </tr>
                     @empty
                         <tr><td colspan="6" class="p-12 text-center text-xs text-muted">Chưa có phiếu nhập.</td></tr>

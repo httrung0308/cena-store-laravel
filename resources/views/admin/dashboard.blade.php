@@ -15,7 +15,7 @@
         ['route' => 'admin.coupons.index', 'label' => 'Mã giảm giá', 'description' => 'Quản lý coupon, hạn dùng và lượt sử dụng'],
         ['route' => 'admin.reviews.index', 'label' => 'Quản lý đánh giá', 'description' => 'Phản hồi, ẩn hoặc hiện đánh giá của khách'],
     ];
-    $isAdmin = $user->hasRole(App\Enums\RoleSlug::Admin);
+    $isAdmin = $user?->hasRole(App\Enums\RoleSlug::Admin);
 @endphp
 
 @section('content')
@@ -31,6 +31,14 @@
                         <p>Email: <span class="break-all font-semibold text-main">{{ $user->email }}</span></p>
                         <p>Vai trò: <span class="font-semibold text-accent">{{ $user->roles->map(fn ($role) => $role->slug->label())->join(', ') }}</span></p>
                     </div>
+                </div>
+                <div class="mt-4 pt-3 border-t border-border/60">
+                    <a href="{{ route('admin.profile.show') }}" class="inline-flex items-center gap-1.5 text-xs font-bold text-accent hover:underline">
+                        <span>Tài khoản của tôi</span>
+                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                        </svg>
+                    </a>
                 </div>
             </article>
 
@@ -71,6 +79,14 @@
                     @endif
                 @endforeach
                 @if ($isAdmin)
+                    <a href="{{ route('admin.classifications.index') }}" class="group rounded-2xl border border-border bg-surface/30 p-5 transition-colors duration-150 hover:border-accent hover:bg-surface/70">
+                        <span class="block text-base font-bold text-main group-hover:text-accent transition-colors">Quản lý phân loại</span>
+                        <span class="mt-1 block text-xs text-muted leading-relaxed">Nhãn kiểu dáng, mục đích sử dụng và hiển thị menu trang chủ</span>
+                    </a>
+                    <a href="{{ route('admin.banners.index') }}" class="group rounded-2xl border border-border bg-surface/30 p-5 transition-colors duration-150 hover:border-accent hover:bg-surface/70">
+                        <span class="block text-base font-bold text-main group-hover:text-accent transition-colors">Banner trang chủ</span>
+                        <span class="mt-1 block text-xs text-muted leading-relaxed">Ảnh banner desktop/mobile, CTA và thứ tự hiển thị</span>
+                    </a>
                     <a href="{{ route('admin.articles.index') }}" class="group rounded-2xl border border-border bg-surface/30 p-5 transition-colors duration-150 hover:border-accent hover:bg-surface/70">
                         <span class="block text-base font-bold text-main group-hover:text-accent transition-colors">Quản lý bài viết</span>
                         <span class="mt-1 block text-xs text-muted leading-relaxed">Viết, đăng và ẩn bài viết về giày (chỉ Admin)</span>

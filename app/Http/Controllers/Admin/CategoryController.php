@@ -11,16 +11,29 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class CategoryController extends Controller
 {
     public function index(Request $request): View
     {
-        $data = $request->validate(['search' => ['nullable', 'string', 'max:150'], 'active' => ['nullable', 'in:0,1']]);
-        $query = Category::query()->when($data['search'] ?? null, fn ($q, $s) => $q->where('name', 'like', '%'.$s.'%'))->when(isset($data['active']), fn ($q) => $q->where('is_active', $data['active']));
+        $data = $request->validate([
+            'search' => ['nullable', 'string', 'max:150'],
+            'gender_group' => ['nullable', Rule::enum(GenderGroup::class)],
+            'active' => ['nullable', 'in:0,1'],
+        ]);
+        $query = Category::query()
+            ->when($data['search'] ?? null, fn ($q, $s) => $q->where(fn ($sub) => $sub->where('name', 'like', '%'.$s.'%')->orWhere('slug', 'like', '%'.$s.'%')))
+            ->when($data['gender_group'] ?? null, fn ($q, $g) => $q->where('gender_group', $g))
+            ->when(isset($data['active']), fn ($q) => $q->where('is_active', $data['active']));
         $paginator = $query->orderBy('id')->paginate(15)->withQueryString();
 
-        return view('admin.categories.index', ['paginator' => $paginator, 'search' => $data['search'] ?? '']);
+        return view('admin.categories.index', [
+            'paginator' => $paginator,
+            'search' => $data['search'] ?? '',
+            'genderGroup' => $data['gender_group'] ?? '',
+            'active' => $data['active'] ?? '',
+        ]);
     }
 
     public function create(): View

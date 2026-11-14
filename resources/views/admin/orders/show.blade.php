@@ -19,7 +19,7 @@
 @endphp
 @section('content')
 <div class="grid min-w-0 gap-6 lg:grid-cols-3">
-    @if ($errors->any())<div role="alert" class="admin-card text-sm text-red-700 lg:col-span-3">@foreach ($errors->all() as $error)<p>{{ $error }}</p>@endforeach</div>@endif
+    @if ($errors->any())<div role="alert" class="admin-card text-sm text-error lg:col-span-3">@foreach ($errors->all() as $error)<p>{{ $error }}</p>@endforeach</div>@endif
     <div class="min-w-0 space-y-6 lg:col-span-2">
         <section class="admin-card space-y-3">
             <div class="flex flex-wrap items-center justify-between gap-3">
@@ -53,14 +53,12 @@
             @endforeach
         </tbody></table></div>
         <dl class="admin-card space-y-1 text-sm">
-        <dl class="admin-card space-y-1 text-sm">
             <div class="flex justify-between"><dt class="text-muted">Tạm tính</dt><dd class="text-main">{{ $vnd($order->subtotal_amount) }}</dd></div>
             @if ($order->merchandise_discount_amount > 0)<div class="flex justify-between"><dt class="text-muted">Coupon {{ $order->coupon_code_snapshot }}</dt><dd class="text-accent font-medium">−{{ $vnd($order->merchandise_discount_amount) }}</dd></div>@endif
             @if ($order->shipping_discount_amount > 0)<div class="flex justify-between"><dt class="text-muted">Giảm vận chuyển</dt><dd class="text-accent font-medium">−{{ $vnd($order->shipping_discount_amount) }}</dd></div>@endif
             <div class="flex justify-between"><dt class="text-muted">Phí vận chuyển</dt><dd class="text-main">{{ $order->shipping_fee === 0 ? 'Miễn phí' : $vnd($order->shipping_fee) }}</dd></div>
             <div class="flex justify-between text-lg font-semibold"><dt class="text-main">Tổng cộng</dt><dd class="text-main font-bold">{{ $vnd($order->total_amount) }}</dd></div>
             <div class="flex justify-between text-muted"><dt>Đã thu</dt><dd>{{ $vnd($order->paid_amount) }}</dd></div>
-        </dl>
         </dl>
 
         <section class="admin-card">
@@ -110,20 +108,50 @@
                         <span x-cloak x-show="busy" class="inline-flex items-center gap-1.5"><x-ui.spinner :compact="true" /> Đang ghi nhận...</span>
                     </button>
                 </form>
-                <form method="POST" action="{{ route('admin.orders.transition', [$order, 'fail']) }}" class="space-y-2 border-t border-border pt-4">@csrf
-                    <input type="hidden" name="expected_status" value="{{ $status->value }}">
-                    <label for="fail-reason" class="admin-label text-muted">Lý do giao thất bại</label>
-                    <input id="fail-reason" name="reason" class="input w-full border-border bg-surface text-main" required minlength="5" maxlength="500">
-                    <button class="btn-pill w-full text-error hover:bg-error-bg">Báo giao thất bại</button>
-                </form>
+                <div class="border-t border-border pt-4 [&>div]:w-full">
+                    <x-ui.dialog id="confirm-fail-order-dialog" title="Xác nhận báo giao thất bại" trigger-class="btn-pill w-full text-error hover:bg-error-bg">
+                        <x-slot:trigger>Báo giao thất bại</x-slot:trigger>
+                        <form method="POST" action="{{ route('admin.orders.transition', [$order, 'fail']) }}" class="space-y-4" x-on:submit="if (busy) { $event.preventDefault(); return false; } busy = true">
+                            @csrf
+                            <input type="hidden" name="expected_status" value="{{ $status->value }}">
+                            <p class="text-xs leading-relaxed text-muted">Thao tác này đánh dấu đơn hàng <strong class="text-main">{{ $order->order_code }}</strong> giao thất bại và hoàn trả tồn kho theo quy trình. Không thể hoàn tác.</p>
+                            <div class="space-y-1.5">
+                                <label for="fail-reason" class="admin-label text-muted">Lý do giao thất bại</label>
+                                <input id="fail-reason" name="reason" class="input w-full border-border bg-surface text-main" required minlength="5" maxlength="500" placeholder="Nhập lý do (tối thiểu 5 ký tự)...">
+                            </div>
+                            <div class="flex items-center justify-end gap-2 pt-2">
+                                <button type="button" x-on:click="closeDialog()" :disabled="busy" class="btn-pill text-xs">Đóng</button>
+                                <button type="submit" :disabled="busy" class="btn-pill bg-error-bg text-error border-error/40 hover:bg-error/15 text-xs font-bold disabled:opacity-50">
+                                    <span x-show="!busy">Xác nhận giao thất bại</span>
+                                    <span x-cloak x-show="busy" class="inline-flex items-center gap-1.5"><x-ui.spinner :compact="true" /> Đang xử lý...</span>
+                                </button>
+                            </div>
+                        </form>
+                    </x-ui.dialog>
+                </div>
             @endif
             @if ($cancellable)
-                <form method="POST" action="{{ route('admin.orders.transition', [$order, 'cancel']) }}" class="space-y-2 border-t border-border pt-4">@csrf
-                    <input type="hidden" name="expected_status" value="{{ $status->value }}">
-                    <label for="cancel-reason" class="admin-label text-muted">Lý do hủy</label>
-                    <input id="cancel-reason" name="reason" class="input w-full border-border bg-surface text-main" required minlength="5" maxlength="500">
-                    <button class="btn-pill w-full text-error hover:bg-error-bg">Hủy đơn (nhả hàng đang giữ)</button>
-                </form>
+                <div class="border-t border-border pt-4 [&>div]:w-full">
+                    <x-ui.dialog id="confirm-cancel-order-dialog" title="Xác nhận hủy đơn hàng" trigger-class="btn-pill w-full text-error hover:bg-error-bg">
+                        <x-slot:trigger>Hủy đơn (nhả hàng đang giữ)</x-slot:trigger>
+                        <form method="POST" action="{{ route('admin.orders.transition', [$order, 'cancel']) }}" class="space-y-4" x-on:submit="if (busy) { $event.preventDefault(); return false; } busy = true">
+                            @csrf
+                            <input type="hidden" name="expected_status" value="{{ $status->value }}">
+                            <p class="text-xs leading-relaxed text-muted">Hủy đơn hàng <strong class="text-main">{{ $order->order_code }}</strong> sẽ nhả toàn bộ số lượng đang giữ và cập nhật chứng từ hủy đơn. Thao tác này không thể hoàn tác.</p>
+                            <div class="space-y-1.5">
+                                <label for="cancel-reason" class="admin-label text-muted">Lý do hủy</label>
+                                <input id="cancel-reason" name="reason" class="input w-full border-border bg-surface text-main" required minlength="5" maxlength="500" placeholder="Nhập lý do hủy đơn (tối thiểu 5 ký tự)...">
+                            </div>
+                            <div class="flex items-center justify-end gap-2 pt-2">
+                                <button type="button" x-on:click="closeDialog()" :disabled="busy" class="btn-pill text-xs">Đóng</button>
+                                <button type="submit" :disabled="busy" class="btn-pill bg-error-bg text-error border-error/40 hover:bg-error/15 text-xs font-bold disabled:opacity-50">
+                                    <span x-show="!busy">Xác nhận hủy đơn</span>
+                                    <span x-cloak x-show="busy" class="inline-flex items-center gap-1.5"><x-ui.spinner :compact="true" /> Đang hủy đơn...</span>
+                                </button>
+                            </div>
+                        </form>
+                    </x-ui.dialog>
+                </div>
             @endif
             @if ($next === [] && ! $cancellable && ! in_array($status, [OrderStatus::Packing, OrderStatus::OnDelivery], true))
                 <p class="text-sm text-muted">Đơn đã kết thúc, không còn thao tác.</p>
@@ -147,10 +175,22 @@
             @foreach ($order->refunds as $refund)
                 <p class="text-main">Hoàn tiền mô phỏng: <span class="font-medium">{{ $refund->status === App\Enums\RefundStatus::Approved ? 'Đã hoàn (mô phỏng)' : $refund->status->label() }}</span> · {{ $vnd($refund->amount) }}</p>
                 @if ($refund->status === App\Enums\RefundStatus::Requested && auth()->user()->hasRole(App\Enums\RoleSlug::Admin))
-                    <form method="POST" action="{{ route('admin.orders.refunds.approve', [$order, $refund]) }}">
-                        @csrf
-                        <button class="btn-pill w-full text-warning-text hover:bg-warning-bg mt-1">Duyệt hoàn tiền mô phỏng</button>
-                    </form>
+                    <div class="[&>div]:w-full">
+                        <x-ui.dialog id="confirm-approve-refund-{{ $refund->id }}-dialog" title="Xác nhận duyệt hoàn tiền" trigger-class="btn-pill w-full text-warning-text hover:bg-warning-bg mt-1">
+                            <x-slot:trigger>Duyệt hoàn tiền mô phỏng</x-slot:trigger>
+                            <form method="POST" action="{{ route('admin.orders.refunds.approve', [$order, $refund]) }}" class="space-y-4" x-on:submit="if (busy) { $event.preventDefault(); return false; } busy = true">
+                                @csrf
+                                <p class="text-xs leading-relaxed text-muted">Xác nhận duyệt hoàn tiền mô phỏng số tiền <strong class="text-main">{{ $vnd($refund->amount) }}</strong> cho đơn hàng <strong class="text-main">{{ $order->order_code }}</strong>. Thao tác này sẽ ghi nhận chứng từ hoàn tiền và không thể hoàn tác.</p>
+                                <div class="flex items-center justify-end gap-2 pt-2">
+                                    <button type="button" x-on:click="closeDialog()" :disabled="busy" class="btn-pill text-xs">Đóng</button>
+                                    <button type="submit" :disabled="busy" class="btn-pill bg-warning-bg text-warning-text border-warning/40 hover:bg-warning/15 text-xs font-bold disabled:opacity-50">
+                                        <span x-show="!busy">Xác nhận duyệt hoàn tiền</span>
+                                        <span x-cloak x-show="busy" class="inline-flex items-center gap-1.5"><x-ui.spinner :compact="true" /> Đang duyệt...</span>
+                                    </button>
+                                </div>
+                            </form>
+                        </x-ui.dialog>
+                    </div>
                 @endif
             @endforeach
         </section>

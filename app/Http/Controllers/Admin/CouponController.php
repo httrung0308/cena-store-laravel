@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Enums\CouponType;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\CouponRequest;
 use App\Models\Coupon;
 use App\Services\CouponService;
 use Illuminate\Contracts\View\View;
@@ -16,12 +17,23 @@ final class CouponController extends Controller
 {
     public function index(Request $request): View
     {
-        $filters = $request->validate(['search' => ['nullable', 'string', 'max:50']]);
+        $filters = $request->validate([
+            'search' => ['nullable', 'string', 'max:50'],
+            'type' => ['nullable', Rule::enum(CouponType::class)],
+            'active' => ['nullable', 'in:0,1'],
+        ]);
         $coupons = Coupon::query()->withCount(['couponRedemptions as active_redemptions_count' => fn ($query) => $query->whereIn('status', ['RESERVED', 'CONSUMED'])])
             ->when($filters['search'] ?? null, fn ($query, string $search) => $query->where(fn ($inner) => $inner->where('code', 'like', '%'.$search.'%')->orWhere('name', 'like', '%'.$search.'%')))
+            ->when($filters['type'] ?? null, fn ($query, string $type) => $query->where('type', $type))
+            ->when(isset($filters['active']), fn ($query) => $query->where('is_active', $filters['active']))
             ->orderByDesc('id')->paginate(15)->withQueryString();
 
-        return view('admin.coupons.index', ['coupons' => $coupons, 'search' => $filters['search'] ?? '']);
+        return view('admin.coupons.index', [
+            'coupons' => $coupons,
+            'search' => $filters['search'] ?? '',
+            'type' => $filters['type'] ?? '',
+            'active' => $filters['active'] ?? '',
+        ]);
     }
 
     public function create(): View
@@ -34,16 +46,16 @@ final class CouponController extends Controller
         return view('admin.coupons.form', ['coupon' => $coupon, 'types' => CouponType::cases()]);
     }
 
-    public function store(Request $request, CouponService $coupons): RedirectResponse
+    public function store(CouponRequest $request, CouponService $coupons): RedirectResponse
     {
-        $coupons->save($request->user(), null, $this->validated($request));
+        $coupons->save($request->user(), null, $request->validated());
 
         return to_route('admin.coupons.index')->with('status', 'Đã tạo mã coupon.');
     }
 
-    public function update(Request $request, Coupon $coupon, CouponService $coupons): RedirectResponse
+    public function update(CouponRequest $request, Coupon $coupon, CouponService $coupons): RedirectResponse
     {
-        $coupons->save($request->user(), $coupon, $this->validated($request));
+        $coupons->save($request->user(), $coupon, $request->validated());
 
         return to_route('admin.coupons.index')->with('status', 'Đã lưu coupon.');
     }

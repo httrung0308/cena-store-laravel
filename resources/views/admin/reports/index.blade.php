@@ -203,17 +203,36 @@
                         <button type="button" x-on:click="closeDialog()" class="btn-pill !px-3" aria-label="Đóng">✕</button>
                     </header>
                     <div class="overflow-y-auto px-6 py-2">
+                        @php
+                            $lowStockSkus = array_values(array_filter(array_column($inventory['low'], 'sku')));
+                            $lowStockVariantIds = collect($inventory['low'])->pluck('variant_id', 'sku')->filter()->all();
+                            if ($lowStockSkus !== [] && count($lowStockVariantIds) < count($lowStockSkus)) {
+                                $lowStockVariantIds = \App\Models\ProductVariant::query()
+                                    ->whereIn('sku', $lowStockSkus)
+                                    ->pluck('id', 'sku')
+                                    ->all();
+                            }
+                        @endphp
                         <table class="admin-table">
-                            <thead class="sticky top-0 bg-surface"><tr><th>Sản phẩm</th><th>Màu · size</th><th class="text-right">Còn lại</th></tr></thead>
+                            <thead class="sticky top-0 bg-surface"><tr><th>Sản phẩm</th><th>Màu · size</th><th class="text-right">Còn lại</th><th class="text-right">Thao tác</th></tr></thead>
                             <tbody>
                                 @forelse ($inventory['low'] as $row)
+                                    @php $rowVariantId = $row['variant_id'] ?? ($lowStockVariantIds[$row['sku']] ?? null); @endphp
                                     <tr data-low-stock-all class="hover:bg-surface-alt/40 transition-colors">
                                         <td class="font-semibold text-main">{{ $row['product'] }}<span class="block text-xs font-normal text-muted">{{ $row['sku'] }}</span></td>
                                         <td class="text-main">{{ $row['color'] }} · {{ $row['size'] }}</td>
                                         <td class="text-right"><span @class(['badge', 'bg-error-bg text-error-text border border-error/30' => $row['sellable'] <= 0, 'bg-warning-bg text-warning-text border border-warning/30' => $row['sellable'] > 0])>{{ $row['sellable'] <= 0 ? 'Hết hàng' : $row['sellable'].' đôi' }}</span></td>
+                                        <td class="text-right whitespace-nowrap">
+                                            @if ($rowVariantId)
+                                                <a href="{{ route('admin.stock-imports.create', ['variant_id' => $rowVariantId]) }}"
+                                                   class="inline-flex items-center px-2.5 py-1 rounded-lg bg-accent/10 text-accent hover:bg-accent hover:text-accent-text font-bold text-xs transition-colors">
+                                                    Nhập kho
+                                                </a>
+                                            @endif
+                                        </td>
                                     </tr>
                                 @empty
-                                    <tr><td colspan="3" class="py-10 text-center text-muted">Không có size nào sắp hết.</td></tr>
+                                    <tr><td colspan="4" class="py-10 text-center text-muted">Không có size nào sắp hết.</td></tr>
                                 @endforelse
                             </tbody>
                         </table>

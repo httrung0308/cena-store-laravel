@@ -9,5 +9,5 @@
         'editUrl' => route('admin.suppliers.edit', $item),
         'activateUrl' => ! $item->is_active ? route('admin.suppliers.activate', $item) : null,
         'deactivateUrl' => $item->is_active ? route('admin.suppliers.deactivate', $item) : null,
-    ]))->all()" :search="$search" :search-url="route('admin.suppliers.index')" :paginator="$paginator" />
+    ]))->all()" :search="$search" :active="(string) request('active', '')" :search-url="route('admin.suppliers.index')" :paginator="$paginator" />
 @endsection
