@@ -132,177 +132,181 @@
         </div>
 
         {{-- Search & Multi-Filter Command Bar --}}
-        <form method="GET" action="{{ route('admin.products.index') }}" @submit.prevent="applyFilters()" class="admin-card !p-3 space-y-2.5">
-            <div class="flex flex-wrap items-center gap-2">
-                {{-- Primary search input --}}
-                <div class="relative flex-1 min-w-[11rem] md:w-48 xl:w-56 md:flex-none">
+        <form method="GET" action="{{ route('admin.products.index') }}" @submit.prevent="applyFilters()" class="admin-card !p-3.5 space-y-2.5">
+            {{-- Row 1: Dedicated Full-Width Search Row --}}
+            <div class="flex items-center gap-2">
+                <div class="relative flex-1">
                     <label for="product-search" class="sr-only">Tìm sản phẩm</label>
-                    <svg class="w-3.5 h-3.5 text-muted absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <svg class="w-4 h-4 text-muted absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 1010.5 18a7.5 7.5 0 006.15-3.35z" />
                     </svg>
                     <input id="product-search" type="search" name="search" x-model="search" value="{{ $filters['search'] }}"
-                           placeholder="Tìm tên sản phẩm, slug..."
-                           class="w-full pl-8 pr-2.5 py-1.5 bg-surface border border-border rounded-lg text-xs font-medium text-main placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">
+                           placeholder="Tìm kiếm theo tên sản phẩm hoặc mã slug..."
+                           class="w-full pl-10 pr-8 py-2 bg-surface border border-border rounded-xl text-xs font-medium text-main placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent">
+                    <button type="button" x-show="search !== ''" x-cloak @click="search = ''; applyFilters()"
+                            aria-label="Xóa từ khóa tìm kiếm"
+                            class="absolute right-2.5 top-1/2 -translate-y-1/2 inline-flex items-center justify-center w-5 h-5 rounded-full text-muted hover:text-main hover:bg-border/60 transition-colors">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
                 </div>
-                <button type="submit" class="px-3 py-1.5 bg-accent hover:bg-accent-hover text-accent-text text-xs font-bold rounded-lg transition-colors shadow-sm shrink-0">
+                <button type="submit" class="px-4 py-2 bg-accent hover:bg-accent-hover text-accent-text text-xs font-bold rounded-xl transition-colors shadow-sm shrink-0">
                     Tìm
                 </button>
                 <button type="button" @click="mobileFiltersOpen = !mobileFiltersOpen"
                         :aria-expanded="mobileFiltersOpen.toString()"
-                        class="md:hidden inline-flex items-center gap-1.5 px-3 py-1.5 bg-surface hover:bg-border/40 text-main text-xs font-bold rounded-lg border border-border transition-colors">
+                        class="md:hidden inline-flex items-center gap-1.5 px-3 py-2 bg-surface hover:bg-border/40 text-main text-xs font-bold rounded-xl border border-border transition-colors shrink-0">
                     <span>Bộ lọc</span>
                     <span x-show="activeAdvancedCount() > 0" x-text="activeAdvancedCount()"
                           class="inline-flex items-center justify-center min-w-[1.15rem] h-4 px-1 rounded-full bg-accent text-accent-text text-[10px] font-extrabold"></span>
                 </button>
+            </div>
 
-                {{-- Desktop / expanded mobile filter groups --}}
-                <div :class="mobileFiltersOpen ? 'flex' : 'hidden md:flex'"
-                     class="w-full md:w-auto md:flex-1 flex-wrap items-center justify-between gap-2 pt-2 md:pt-0 border-t md:border-t-0 border-border/60">
+            {{-- Row 2: 6 Direct Filters Balanced Across Full Width --}}
+            <div :class="mobileFiltersOpen ? 'grid' : 'hidden md:grid'"
+                 class="grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-2 pt-2 md:pt-0 border-t md:border-t-0 border-border/60">
 
-                    {{-- Group 1: Phân loại sản phẩm (Đối tượng, Kiểu dáng, Mục đích) --}}
-                    <div class="flex flex-wrap sm:flex-nowrap items-center gap-1.5 md:pl-2 md:border-l md:border-border/70" role="group" aria-label="Phân loại sản phẩm">
-                        <span class="text-[10px] font-extrabold uppercase tracking-wider text-muted whitespace-nowrap">Phân loại:</span>
-
-                        {{-- 1. Đối tượng (multi-select) --}}
-                        <div class="relative" @click.outside="if (openDropdown === 'genders') closeDropdown()">
-                            <button type="button" @click="toggleDropdown('genders')" :aria-expanded="(openDropdown === 'genders').toString()"
-                                    :class="genders.length > 0 ? 'border-accent/60 bg-accent/5 text-accent' : 'border-border bg-surface text-main'"
-                                    class="inline-flex items-center gap-1 px-2.5 py-1.5 border rounded-lg text-xs font-semibold whitespace-nowrap hover:border-accent/60 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
-                                <span>Đối tượng</span>
-                                <span x-show="genders.length > 0" x-text="genders.length" class="inline-flex items-center justify-center min-w-[1.1rem] h-4 px-1 rounded-full bg-accent text-accent-text text-[10px] font-extrabold"></span>
-                                <svg class="w-3 h-3 text-muted shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
-                                </svg>
-                            </button>
-                            <div x-show="openDropdown === 'genders'" x-cloak class="absolute left-0 z-30 mt-1.5 w-48 bg-surface-card border border-border rounded-xl shadow-lg p-2 space-y-1">
-                                @foreach ($filterGenders as $gender)
-                                    <label class="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-surface cursor-pointer text-xs text-main">
-                                        <input type="checkbox" name="genders[]" value="{{ $gender['value'] }}"
-                                               :checked="isSelected('genders', $el.value)"
-                                               @change="toggleSelection('genders', $el.value)"
-                                               class="rounded border-border text-accent focus:ring-accent">
-                                        <span>{{ $gender['label'] }}</span>
-                                    </label>
-                                @endforeach
-                                <div class="flex items-center justify-between pt-1.5 border-t border-border/60 text-[11px]">
-                                    <button type="button" x-show="genders.length > 0" @click="clearGroup('genders')" class="text-muted hover:text-main font-semibold">Bỏ chọn</button>
-                                    <button type="button" @click="closeDropdown()" class="ml-auto text-accent font-bold">Đóng</button>
-                                </div>
-                            </div>
-                        </div>
-
-                        {{-- 2. Kiểu dáng (multi-select, searchable) --}}
-                        <div class="relative" @click.outside="if (openDropdown === 'silhouettes') closeDropdown()">
-                            <button type="button" @click="toggleDropdown('silhouettes')" :aria-expanded="(openDropdown === 'silhouettes').toString()"
-                                    :class="silhouettes.length > 0 ? 'border-accent/60 bg-accent/5 text-accent' : 'border-border bg-surface text-main'"
-                                    class="inline-flex items-center gap-1 px-2.5 py-1.5 border rounded-lg text-xs font-semibold whitespace-nowrap hover:border-accent/60 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
-                                <span>Kiểu dáng</span>
-                                <span x-show="silhouettes.length > 0" x-text="silhouettes.length" class="inline-flex items-center justify-center min-w-[1.1rem] h-4 px-1 rounded-full bg-accent text-accent-text text-[10px] font-extrabold"></span>
-                                <svg class="w-3 h-3 text-muted shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
-                                </svg>
-                            </button>
-                            <div x-show="openDropdown === 'silhouettes'" x-cloak class="absolute left-0 z-30 mt-1.5 w-60 bg-surface-card border border-border rounded-xl shadow-lg p-2 space-y-2">
-                                <input type="search" x-ref="silhouettesSearch" x-model="dropdownSearch.silhouettes" placeholder="Tìm kiểu dáng..."
-                                       class="w-full px-2.5 py-1.5 bg-surface border border-border rounded-lg text-xs text-main placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-accent">
-                                <div class="max-h-52 overflow-y-auto space-y-0.5 pr-0.5">
-                                    @foreach ($filterSilhouettes as $item)
-                                        <label data-filter-label="{{ $item['label'] }}"
-                                               x-show="matchesDropdownSearch('silhouettes', $el.dataset.filterLabel)"
-                                               class="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-surface cursor-pointer text-xs text-main">
-                                            <input type="checkbox" name="silhouettes[]" value="{{ $item['id'] }}"
-                                                   :checked="isSelected('silhouettes', $el.value)"
-                                                   @change="toggleSelection('silhouettes', $el.value)"
-                                                   class="rounded border-border text-accent focus:ring-accent">
-                                            <span class="flex-1 truncate">{{ $item['label'] }}</span>
-                                            @if (! $item['is_active'])
-                                                <span class="text-[10px] px-1.5 py-0.5 rounded bg-muted/15 text-muted shrink-0">Ẩn</span>
-                                            @endif
-                                        </label>
-                                    @endforeach
-                                </div>
-                                <div class="flex items-center justify-between pt-1.5 border-t border-border/60 text-[11px]">
-                                    <button type="button" x-show="silhouettes.length > 0" @click="clearGroup('silhouettes')" class="text-muted hover:text-main font-semibold">Bỏ chọn</button>
-                                    <button type="button" @click="closeDropdown()" class="ml-auto text-accent font-bold">Đóng</button>
-                                </div>
-                            </div>
-                        </div>
-
-                        {{-- 3. Mục đích sử dụng (multi-select, searchable) --}}
-                        <div class="relative" @click.outside="if (openDropdown === 'activities') closeDropdown()">
-                            <button type="button" @click="toggleDropdown('activities')" :aria-expanded="(openDropdown === 'activities').toString()"
-                                    :class="activities.length > 0 ? 'border-accent/60 bg-accent/5 text-accent' : 'border-border bg-surface text-main'"
-                                    class="inline-flex items-center gap-1 px-2.5 py-1.5 border rounded-lg text-xs font-semibold whitespace-nowrap hover:border-accent/60 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
-                                <span>Mục đích</span>
-                                <span x-show="activities.length > 0" x-text="activities.length" class="inline-flex items-center justify-center min-w-[1.1rem] h-4 px-1 rounded-full bg-accent text-accent-text text-[10px] font-extrabold"></span>
-                                <svg class="w-3 h-3 text-muted shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
-                                </svg>
-                            </button>
-                            <div x-show="openDropdown === 'activities'" x-cloak class="absolute left-0 z-30 mt-1.5 w-60 bg-surface-card border border-border rounded-xl shadow-lg p-2 space-y-2">
-                                <input type="search" x-ref="activitiesSearch" x-model="dropdownSearch.activities" placeholder="Tìm mục đích sử dụng..."
-                                       class="w-full px-2.5 py-1.5 bg-surface border border-border rounded-lg text-xs text-main placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-accent">
-                                <div class="max-h-52 overflow-y-auto space-y-0.5 pr-0.5">
-                                    @foreach ($filterActivities as $item)
-                                        <label data-filter-label="{{ $item['label'] }}"
-                                               x-show="matchesDropdownSearch('activities', $el.dataset.filterLabel)"
-                                               class="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-surface cursor-pointer text-xs text-main">
-                                            <input type="checkbox" name="activities[]" value="{{ $item['id'] }}"
-                                                   :checked="isSelected('activities', $el.value)"
-                                                   @change="toggleSelection('activities', $el.value)"
-                                                   class="rounded border-border text-accent focus:ring-accent">
-                                            <span class="flex-1 truncate">{{ $item['label'] }}</span>
-                                            @if (! $item['is_active'])
-                                                <span class="text-[10px] px-1.5 py-0.5 rounded bg-muted/15 text-muted shrink-0">Ẩn</span>
-                                            @endif
-                                        </label>
-                                    @endforeach
-                                </div>
-                                <div class="flex items-center justify-between pt-1.5 border-t border-border/60 text-[11px]">
-                                    <button type="button" x-show="activities.length > 0" @click="clearGroup('activities')" class="text-muted hover:text-main font-semibold">Bỏ chọn</button>
-                                    <button type="button" @click="closeDropdown()" class="ml-auto text-accent font-bold">Đóng</button>
-                                </div>
-                            </div>
+                {{-- 1. Đối tượng (multi-select) --}}
+                <div class="relative" @click.outside="if (openDropdown === 'genders') closeDropdown()">
+                    <button type="button" @click="toggleDropdown('genders')" :aria-expanded="(openDropdown === 'genders').toString()"
+                            :class="genders.length > 0 ? 'border-accent/60 bg-accent/5 text-accent font-bold' : 'border-border bg-surface text-main font-semibold'"
+                            class="w-full inline-flex items-center justify-between gap-1.5 px-3 py-2 border rounded-xl text-xs hover:border-accent/60 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
+                        <span class="truncate">Đối tượng</span>
+                        <span class="inline-flex items-center gap-1 shrink-0">
+                            <span x-show="genders.length > 0" x-text="genders.length" class="inline-flex items-center justify-center min-w-[1.15rem] h-4 px-1 rounded-full bg-accent text-accent-text text-[10px] font-extrabold"></span>
+                            <svg class="w-3.5 h-3.5 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </span>
+                    </button>
+                    <div x-show="openDropdown === 'genders'" x-cloak class="absolute left-0 z-30 mt-1.5 w-52 bg-surface-card border border-border rounded-xl shadow-lg p-2 space-y-1">
+                        @foreach ($filterGenders as $gender)
+                            <label class="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-surface cursor-pointer text-xs text-main">
+                                <input type="checkbox" name="genders[]" value="{{ $gender['value'] }}"
+                                       :checked="isSelected('genders', $el.value)"
+                                       @change="toggleSelection('genders', $el.value)"
+                                       class="rounded border-border text-accent focus:ring-accent">
+                                <span>{{ $gender['label'] }}</span>
+                            </label>
+                        @endforeach
+                        <div class="flex items-center justify-between pt-1.5 border-t border-border/60 text-[11px]">
+                            <button type="button" x-show="genders.length > 0" @click="clearGroup('genders')" class="text-muted hover:text-main font-semibold">Bỏ chọn</button>
+                            <button type="button" @click="closeDropdown()" class="ml-auto text-accent font-bold">Đóng</button>
                         </div>
                     </div>
+                </div>
 
-                    {{-- Group 2: Trạng thái quản lý (Trạng thái bán, Tồn kho, Nổi bật) --}}
-                    <div class="flex flex-wrap sm:flex-nowrap items-center gap-1.5 xl:pl-2 xl:border-l xl:border-border/70" role="group" aria-label="Trạng thái quản lý">
-                        <span class="text-[10px] font-extrabold uppercase tracking-wider text-muted whitespace-nowrap">Quản lý:</span>
-
-                        <div>
-                            <label for="filter-status" class="sr-only">Trạng thái bán</label>
-                            <select id="filter-status" name="status" x-model="status" @change="applyFilters()"
-                                    :class="status !== '' ? 'border-accent/60 bg-accent/5 text-accent font-bold' : 'border-border bg-surface text-main font-semibold'"
-                                    class="px-2 py-1.5 border rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-accent">
-                                <option value="">Trạng thái: Tất cả</option>
-                                <option value="active">Đang bán</option>
-                                <option value="inactive">Ngừng bán</option>
-                            </select>
+                {{-- 2. Kiểu dáng (multi-select, searchable) --}}
+                <div class="relative" @click.outside="if (openDropdown === 'silhouettes') closeDropdown()">
+                    <button type="button" @click="toggleDropdown('silhouettes')" :aria-expanded="(openDropdown === 'silhouettes').toString()"
+                            :class="silhouettes.length > 0 ? 'border-accent/60 bg-accent/5 text-accent font-bold' : 'border-border bg-surface text-main font-semibold'"
+                            class="w-full inline-flex items-center justify-between gap-1.5 px-3 py-2 border rounded-xl text-xs hover:border-accent/60 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
+                        <span class="truncate">Kiểu dáng</span>
+                        <span class="inline-flex items-center gap-1 shrink-0">
+                            <span x-show="silhouettes.length > 0" x-text="silhouettes.length" class="inline-flex items-center justify-center min-w-[1.15rem] h-4 px-1 rounded-full bg-accent text-accent-text text-[10px] font-extrabold"></span>
+                            <svg class="w-3.5 h-3.5 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </span>
+                    </button>
+                    <div x-show="openDropdown === 'silhouettes'" x-cloak class="absolute left-0 z-30 mt-1.5 w-60 bg-surface-card border border-border rounded-xl shadow-lg p-2 space-y-2">
+                        <input type="search" x-ref="silhouettesSearch" x-model="dropdownSearch.silhouettes" placeholder="Tìm kiểu dáng..."
+                               class="w-full px-2.5 py-1.5 bg-surface border border-border rounded-lg text-xs text-main placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-accent">
+                        <div class="max-h-52 overflow-y-auto space-y-0.5 pr-0.5">
+                            @foreach ($filterSilhouettes as $item)
+                                <label data-filter-label="{{ $item['label'] }}"
+                                       x-show="matchesDropdownSearch('silhouettes', $el.dataset.filterLabel)"
+                                       class="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-surface cursor-pointer text-xs text-main">
+                                    <input type="checkbox" name="silhouettes[]" value="{{ $item['id'] }}"
+                                           :checked="isSelected('silhouettes', $el.value)"
+                                           @change="toggleSelection('silhouettes', $el.value)"
+                                           class="rounded border-border text-accent focus:ring-accent">
+                                    <span class="flex-1 truncate">{{ $item['label'] }}</span>
+                                    @if (! $item['is_active'])
+                                        <span class="text-[10px] px-1.5 py-0.5 rounded bg-muted/15 text-muted shrink-0">Ẩn</span>
+                                    @endif
+                                </label>
+                            @endforeach
                         </div>
-
-                        <div>
-                            <label for="filter-stock" class="sr-only">Tình trạng tồn kho</label>
-                            <select id="filter-stock" name="stock" x-model="stock" @change="applyFilters()"
-                                    :class="stock !== '' ? 'border-accent/60 bg-accent/5 text-accent font-bold' : 'border-border bg-surface text-main font-semibold'"
-                                    class="px-2 py-1.5 border rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-accent">
-                                <option value="">Tồn kho: Tất cả</option>
-                                <option value="in_stock">Còn hàng</option>
-                                <option value="out_of_stock">Hết hàng</option>
-                            </select>
-                        </div>
-
-                        <div>
-                            <label for="filter-featured" class="sr-only">Sản phẩm nổi bật</label>
-                            <select id="filter-featured" name="featured" x-model="featured" @change="applyFilters()"
-                                    :class="featured !== '' ? 'border-accent/60 bg-accent/5 text-accent font-bold' : 'border-border bg-surface text-main font-semibold'"
-                                    class="px-2 py-1.5 border rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-accent">
-                                <option value="">Nổi bật: Tất cả</option>
-                                <option value="featured">Nổi bật</option>
-                                <option value="not_featured">Không nổi bật</option>
-                            </select>
+                        <div class="flex items-center justify-between pt-1.5 border-t border-border/60 text-[11px]">
+                            <button type="button" x-show="silhouettes.length > 0" @click="clearGroup('silhouettes')" class="text-muted hover:text-main font-semibold">Bỏ chọn</button>
+                            <button type="button" @click="closeDropdown()" class="ml-auto text-accent font-bold">Đóng</button>
                         </div>
                     </div>
+                </div>
+
+                {{-- 3. Mục đích sử dụng (multi-select, searchable) --}}
+                <div class="relative" @click.outside="if (openDropdown === 'activities') closeDropdown()">
+                    <button type="button" @click="toggleDropdown('activities')" :aria-expanded="(openDropdown === 'activities').toString()"
+                            :class="activities.length > 0 ? 'border-accent/60 bg-accent/5 text-accent font-bold' : 'border-border bg-surface text-main font-semibold'"
+                            class="w-full inline-flex items-center justify-between gap-1.5 px-3 py-2 border rounded-xl text-xs hover:border-accent/60 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
+                        <span class="truncate">Mục đích</span>
+                        <span class="inline-flex items-center gap-1 shrink-0">
+                            <span x-show="activities.length > 0" x-text="activities.length" class="inline-flex items-center justify-center min-w-[1.15rem] h-4 px-1 rounded-full bg-accent text-accent-text text-[10px] font-extrabold"></span>
+                            <svg class="w-3.5 h-3.5 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </span>
+                    </button>
+                    <div x-show="openDropdown === 'activities'" x-cloak class="absolute left-0 z-30 mt-1.5 w-60 bg-surface-card border border-border rounded-xl shadow-lg p-2 space-y-2">
+                        <input type="search" x-ref="activitiesSearch" x-model="dropdownSearch.activities" placeholder="Tìm mục đích sử dụng..."
+                               class="w-full px-2.5 py-1.5 bg-surface border border-border rounded-lg text-xs text-main placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-accent">
+                        <div class="max-h-52 overflow-y-auto space-y-0.5 pr-0.5">
+                            @foreach ($filterActivities as $item)
+                                <label data-filter-label="{{ $item['label'] }}"
+                                       x-show="matchesDropdownSearch('activities', $el.dataset.filterLabel)"
+                                       class="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-surface cursor-pointer text-xs text-main">
+                                    <input type="checkbox" name="activities[]" value="{{ $item['id'] }}"
+                                           :checked="isSelected('activities', $el.value)"
+                                           @change="toggleSelection('activities', $el.value)"
+                                           class="rounded border-border text-accent focus:ring-accent">
+                                    <span class="flex-1 truncate">{{ $item['label'] }}</span>
+                                    @if (! $item['is_active'])
+                                        <span class="text-[10px] px-1.5 py-0.5 rounded bg-muted/15 text-muted shrink-0">Ẩn</span>
+                                    @endif
+                                </label>
+                            @endforeach
+                        </div>
+                        <div class="flex items-center justify-between pt-1.5 border-t border-border/60 text-[11px]">
+                            <button type="button" x-show="activities.length > 0" @click="clearGroup('activities')" class="text-muted hover:text-main font-semibold">Bỏ chọn</button>
+                            <button type="button" @click="closeDropdown()" class="ml-auto text-accent font-bold">Đóng</button>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- 4. Trạng thái bán --}}
+                <div>
+                    <label for="filter-status" class="sr-only">Trạng thái bán</label>
+                    <select id="filter-status" name="status" x-model="status" @change="applyFilters()"
+                            :class="status !== '' ? 'border-accent/60 bg-accent/5 text-accent font-bold' : 'border-border bg-surface text-main font-semibold'"
+                            class="w-full px-3 py-2 border rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-accent">
+                        <option value="">Trạng thái: Tất cả</option>
+                        <option value="active">Đang bán</option>
+                        <option value="inactive">Ngừng bán</option>
+                    </select>
+                </div>
+
+                {{-- 5. Tồn kho có thể bán --}}
+                <div>
+                    <label for="filter-stock" class="sr-only">Tình trạng tồn kho</label>
+                    <select id="filter-stock" name="stock" x-model="stock" @change="applyFilters()"
+                            :class="stock !== '' ? 'border-accent/60 bg-accent/5 text-accent font-bold' : 'border-border bg-surface text-main font-semibold'"
+                            class="w-full px-3 py-2 border rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-accent">
+                        <option value="">Tồn kho: Tất cả</option>
+                        <option value="in_stock">Còn hàng</option>
+                        <option value="out_of_stock">Hết hàng</option>
+                    </select>
+                </div>
+
+                {{-- 6. Nổi bật --}}
+                <div>
+                    <label for="filter-featured" class="sr-only">Sản phẩm nổi bật</label>
+                    <select id="filter-featured" name="featured" x-model="featured" @change="applyFilters()"
+                            :class="featured !== '' ? 'border-accent/60 bg-accent/5 text-accent font-bold' : 'border-border bg-surface text-main font-semibold'"
+                            class="w-full px-3 py-2 border rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-accent">
+                        <option value="">Nổi bật: Tất cả</option>
+                        <option value="featured">Nổi bật</option>
+                        <option value="not_featured">Không nổi bật</option>
+                    </select>
                 </div>
             </div>
 

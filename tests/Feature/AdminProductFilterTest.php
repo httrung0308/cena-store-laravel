@@ -237,6 +237,28 @@ class AdminProductFilterTest extends TestCase
             ->assertSee($this->admin->full_name)
             ->assertSee($this->admin->email)
             ->assertSee('Quản trị viên');
+
+        // Bottom-up name shortening on topbar preserves complete words from the end
+        $longNameStaff = User::factory()->staff()->create([
+            'full_name' => 'Nguyễn Hoàng Minh Phương',
+        ]);
+
+        $this->assertSame('Hoàng Minh Phương', $longNameStaff->compactDisplayName(18));
+        $this->assertSame('Minh Phương', $longNameStaff->compactDisplayName(12));
+        $this->assertSame('MP', $longNameStaff->avatarInitials());
+
+        $mediumNameUser = new User(['full_name' => 'Nguyễn Hoàng Thành']);
+        $this->assertSame('Nguyễn Hoàng Thành', $mediumNameUser->compactDisplayName(18));
+        $this->assertSame('Hoàng Thành', $mediumNameUser->compactDisplayName(12));
+        $this->assertSame('HT', $mediumNameUser->avatarInitials());
+
+        $topbarResponse = $this->actingAs($longNameStaff)
+            ->get(route('admin.products.index'));
+
+        $topbarResponse->assertOk()
+            ->assertSee('Hoàng Minh Phương')
+            ->assertSee('Minh Phương')
+            ->assertSee('Nguyễn Hoàng Minh Phương');
     }
 
     private function createProductWithStock(

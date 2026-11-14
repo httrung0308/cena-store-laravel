@@ -82,27 +82,37 @@
 <body class="selection:bg-accent selection:text-white min-h-screen flex flex-col font-sans bg-bg text-main antialiased" x-data="adminShell" @keydown.escape.window="closeSidebar()">
 
     <!-- Top Admin Bar -->
-    <header class="bg-accent text-accent-text text-xs py-2 px-4 sm:px-6 flex items-center justify-between font-medium shrink-0 z-30">
-        <div class="flex items-center gap-2">
-            <span class="w-2.5 h-2.5 rounded-full bg-accent-sub shrink-0" aria-hidden="true"></span>
-            <strong>Quản trị CENA</strong>
-            <span class="hidden sm:inline text-white/80">· Hệ thống quản trị cửa hàng</span>
+    <header class="bg-accent text-accent-text text-xs py-1.5 px-4 sm:px-6 flex items-center justify-between gap-3 font-medium shrink-0 z-30">
+        <div class="flex items-center gap-2 min-w-0">
+            <span class="w-2 h-2 rounded-full bg-accent-sub shrink-0" aria-hidden="true"></span>
+            <strong class="truncate">Quản trị CENA</strong>
+            <span class="hidden md:inline text-white/80 whitespace-nowrap">· Hệ thống quản trị cửa hàng</span>
         </div>
-        <div class="flex items-center gap-3 sm:gap-4 text-xs font-semibold">
+        <div class="flex items-center gap-2 sm:gap-3 text-xs font-semibold shrink-0">
             @if ($currentUser)
                 <a href="{{ route('admin.profile.show') }}"
+                   title="Tài khoản của tôi — {{ $currentUser->full_name }} ({{ $roleLabel }})"
+                   aria-label="Tài khoản của tôi: {{ $currentUser->full_name }} ({{ $roleLabel }})"
                    @class([
-                       'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white',
-                       'bg-white/20 text-white font-bold' => request()->routeIs('admin.profile.*'),
-                       'text-white/90 hover:text-white hover:bg-white/10' => ! request()->routeIs('admin.profile.*'),
-                   ])
-                   aria-label="Tài khoản của tôi: {{ $currentUser->full_name }} ({{ $roleLabel }})">
-                    <svg class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
-                    </svg>
-                    <span class="hidden lg:inline">{{ $currentUser->full_name }} ({{ $roleLabel }}) ·</span>
-                    <span class="underline decoration-white/60 hover:decoration-white">Tài khoản của tôi</span>
+                       'inline-flex items-center gap-2 pl-1.5 pr-2.5 py-1 rounded-xl border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white',
+                       'bg-white/20 border-white/35 text-white' => request()->routeIs('admin.profile.*'),
+                       'bg-white/10 border-white/15 text-white hover:bg-white/15 hover:border-white/30' => ! request()->routeIs('admin.profile.*'),
+                   ])>
+                    <span class="w-6 h-6 rounded-full bg-white/20 text-white text-[10px] font-extrabold inline-flex items-center justify-center shrink-0 tracking-tight" aria-hidden="true">
+                        {{ $currentUser->avatarInitials() }}
+                    </span>
+                    <span class="flex flex-col text-left leading-tight">
+                        <span class="text-[11.5px] font-bold text-white whitespace-nowrap">
+                            <span class="hidden sm:inline">{{ $currentUser->compactDisplayName(18) }}</span>
+                            <span class="sm:hidden">{{ $currentUser->compactDisplayName(12) }}</span>
+                        </span>
+                        <span class="text-[10px] font-medium text-white/80 whitespace-nowrap flex items-center gap-1">
+                            <span class="hidden sm:inline">{{ $roleLabel }} ·</span>
+                            <span>Tài khoản của tôi</span>
+                        </span>
+                    </span>
                 </a>
+                <span class="h-4 w-px bg-white/20" aria-hidden="true"></span>
             @endif
             {{-- Theme toggle --}}
             <div x-data="{ themeOpen: false }" class="relative">
@@ -141,7 +151,9 @@
                     </button>
                 </div>
             </div>
-            <a href="{{ route('home') }}" class="underline decoration-white/60 hover:decoration-white transition-opacity">← Xem cửa hàng</a>
+            <a href="{{ route('home') }}" class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 border border-white/15 text-white text-[11px] font-semibold whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white">
+                <span>← Xem cửa hàng</span>
+            </a>
         </div>
     </header>
 

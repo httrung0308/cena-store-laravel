@@ -9,11 +9,7 @@
 
 @php
     $tz = (string) config('store.business_timezone');
-    $initials = collect(preg_split('/\s+/u', trim((string) $user->full_name)) ?: [])
-        ->filter()
-        ->slice(-2)
-        ->map(fn (string $part): string => mb_strtoupper(mb_substr($part, 0, 1)))
-        ->join('') ?: 'NV';
+    $initials = $user->avatarInitials();
 @endphp
 
 @section('content')
