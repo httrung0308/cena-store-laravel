@@ -258,7 +258,10 @@ class AdminProductFilterTest extends TestCase
         $topbarResponse->assertOk()
             ->assertSee('Hoàng Minh Phương')
             ->assertSee('Minh Phương')
-            ->assertSee('Nguyễn Hoàng Minh Phương');
+            ->assertSee('Nguyễn Hoàng Minh Phương')
+            ->assertSee('absolute left-0 right-0 z-30 mt-1.5 w-full max-w-full', false)
+            ->assertSee("isSelected('genders', \$el.dataset.filterValue) ? 'bg-accent/10 text-accent font-bold border-accent/30'", false)
+            ->assertDontSee('x-text="activeAdvancedCount()"', false);
     }
 
     private function createProductWithStock(

@@ -8,6 +8,17 @@ function normalizeSearchText(value) {
         .trim();
 }
 
+function readArrayParam(params, name) {
+    const values = [];
+    const indexedPattern = new RegExp(`^${name}\\[\\d*\\]$`);
+    for (const [key, val] of params.entries()) {
+        if ((key === name || key === `${name}[]` || indexedPattern.test(key)) && val !== '') {
+            values.push(val);
+        }
+    }
+    return values;
+}
+
 export function adminProductFilters({
     baseUrl,
     initialFilters = {},
@@ -238,9 +249,13 @@ export function adminProductFilters({
             const params = new URLSearchParams(window.location.search);
             this.search = params.get('search') ?? '';
             this.appliedSearch = this.search.trim();
-            this.genders = params.getAll('genders[]').filter(Boolean);
-            this.silhouettes = params.getAll('silhouettes[]').map(Number).filter(Boolean);
-            this.activities = params.getAll('activities[]').map(Number).filter(Boolean);
+            this.genders = Array.from(new Set(readArrayParam(params, 'genders').map(String)));
+            this.silhouettes = Array.from(
+                new Set(readArrayParam(params, 'silhouettes').map(Number).filter((n) => Number.isInteger(n) && n > 0))
+            );
+            this.activities = Array.from(
+                new Set(readArrayParam(params, 'activities').map(Number).filter((n) => Number.isInteger(n) && n > 0))
+            );
             this.status = params.get('status') ?? '';
             this.stock = params.get('stock') ?? '';
             this.featured = params.get('featured') ?? '';
