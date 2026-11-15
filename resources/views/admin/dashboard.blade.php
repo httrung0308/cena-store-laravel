@@ -326,56 +326,51 @@
                                     $firstItem = $order->items->first();
                                     $totalPairs = (int) $order->items->sum('quantity');
                                     $extraItems = max(0, $order->items->count() - 1);
-                                    $nextActionLabel = match ($order->order_status) {
-                                        App\Enums\OrderStatus::Pending => 'Xác nhận đơn',
-                                        App\Enums\OrderStatus::Confirmed => 'Đóng gói',
-                                        App\Enums\OrderStatus::Packing => 'Giao vận chuyển',
-                                        default => 'Mở đơn',
-                                    };
+                                    $itemsSummary = $order->items
+                                        ->map(fn ($item) => $item->product_name_snapshot.' ('.$item->quantity.' đôi)')
+                                        ->implode(', ');
                                 @endphp
-                                <article class="p-4 space-y-2.5 text-xs">
+                                <article class="p-4 space-y-2 text-xs">
                                     <div class="flex items-start justify-between gap-2">
-                                        <div>
-                                            <a href="{{ route('admin.orders.show', $order) }}" class="font-mono font-bold text-accent hover:underline text-sm">
-                                                {{ $order->order_code }}
+                                        <div class="min-w-0">
+                                            <a href="{{ route('admin.orders.show', $order) }}"
+                                               class="inline-flex items-center gap-1 font-mono font-bold text-accent underline decoration-accent/40 underline-offset-2 hover:decoration-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded break-all">
+                                                <span>{{ $order->order_code }}</span>
+                                                <span aria-hidden="true">→</span>
                                             </a>
-                                            <p class="text-[11px] text-muted mt-0.5">Đặt lúc {{ $order->created_at->setTimezone($timezone)->format('d/m/Y H:i') }}</p>
+                                            <p class="text-[11px] text-muted mt-0.5 tabular-nums">{{ $order->created_at->setTimezone($timezone)->format('d/m/Y H:i') }}</p>
                                         </div>
                                         <x-orders.status-badge :status="$order->order_status" />
                                     </div>
                                     <div class="flex items-center justify-between gap-2">
-                                        <div>
-                                            <p class="font-bold text-main">{{ $order->shipping_name }}</p>
-                                            <p class="text-[11px] text-muted">{{ $order->shipping_phone }}</p>
+                                        <div class="min-w-0">
+                                            <p class="font-bold text-main break-words">{{ $order->shipping_name }}</p>
+                                            <p class="text-[11px] text-muted font-mono">{{ $order->shipping_phone }}</p>
                                         </div>
-                                        <span class="font-mono font-extrabold text-main text-sm">{{ $vnd($order->total_amount) }}</span>
+                                        <span class="font-mono font-extrabold text-main text-sm tabular-nums shrink-0">{{ $vnd($order->total_amount) }}</span>
                                     </div>
                                     @if ($firstItem)
-                                        <p class="text-[11px] text-muted truncate">
-                                            {{ $firstItem->product_name_snapshot }}@if ($extraItems > 0) (+{{ $extraItems }} SP khác)@endif · <strong class="text-main">{{ $totalPairs }} đôi</strong>
-                                        </p>
+                                        <div class="flex items-center gap-1 text-[11px] text-muted min-w-0">
+                                            <span class="truncate">
+                                                {{ $firstItem->product_name_snapshot }}@if ($extraItems > 0) (+{{ $extraItems }} SP khác)@endif · <strong class="text-main">{{ $totalPairs }} đôi</strong>
+                                            </span>
+                                            @if ($extraItems > 0 || mb_strlen($firstItem->product_name_snapshot) > 28)
+                                                <x-admin.tooltip :text="$itemsSummary" label="Xem đầy đủ sản phẩm" />
+                                            @endif
+                                        </div>
                                     @endif
-                                    <div class="pt-1 flex justify-end">
-                                        <a href="{{ route('admin.orders.show', $order) }}"
-                                           class="px-3 py-1.5 rounded-lg bg-accent hover:bg-accent-hover text-accent-text font-bold text-xs transition-colors">
-                                            {{ $nextActionLabel }} →
-                                        </a>
-                                    </div>
                                 </article>
                             @endforeach
                         </div>
 
                         {{-- Desktop table (>= md) --}}
-                        <div class="hidden md:block overflow-x-auto">
-                            <table class="w-full text-left text-xs text-muted border-collapse">
+                        <div class="hidden md:block">
+                            <table class="w-full table-fixed text-left text-xs text-muted border-collapse">
                                 <thead class="bg-surface text-main font-bold border-b border-border">
                                     <tr>
-                                        <th class="py-3 px-4">Mã đơn &amp; Thời gian</th>
-                                        <th class="py-3 px-4">Khách nhận</th>
-                                        <th class="py-3 px-4">Sản phẩm</th>
-                                        <th class="py-3 px-4 text-right">Tổng tiền</th>
-                                        <th class="py-3 px-4 text-center">Trạng thái</th>
-                                        <th class="py-3 px-4 text-right">Xử lý</th>
+                                        <th class="w-[44%] py-3 px-3.5">Đơn hàng &amp; Khách nhận</th>
+                                        <th class="w-[31%] py-3 px-3.5">Sản phẩm</th>
+                                        <th class="w-[25%] py-3 px-3.5 text-right">Tổng &amp; Trạng thái</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-border font-medium">
@@ -384,46 +379,50 @@
                                             $firstItem = $order->items->first();
                                             $totalPairs = (int) $order->items->sum('quantity');
                                             $extraItems = max(0, $order->items->count() - 1);
-                                            $nextActionLabel = match ($order->order_status) {
-                                                App\Enums\OrderStatus::Pending => 'Xác nhận đơn',
-                                                App\Enums\OrderStatus::Confirmed => 'Đóng gói',
-                                                App\Enums\OrderStatus::Packing => 'Giao vận chuyển',
-                                                default => 'Chi tiết',
-                                            };
+                                            $itemsSummary = $order->items
+                                                ->map(fn ($item) => $item->product_name_snapshot.' ('.$item->quantity.' đôi)')
+                                                ->implode(', ');
+                                            $hasLongName = mb_strlen((string) $order->shipping_name) > 22;
                                         @endphp
-                                        <tr class="hover:bg-surface/50 transition-colors">
-                                            <td class="py-3 px-4 whitespace-nowrap">
-                                                <a href="{{ route('admin.orders.show', $order) }}" class="font-mono font-bold text-accent hover:underline block">
-                                                    {{ $order->order_code }}
+                                        <tr class="hover:bg-surface/50 transition-colors align-top">
+                                            <td class="py-3 px-3.5 min-w-0">
+                                                <a href="{{ route('admin.orders.show', $order) }}"
+                                                   class="inline-flex items-center gap-1 font-mono font-bold text-accent underline decoration-accent/40 underline-offset-2 hover:decoration-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded break-all">
+                                                    <span>{{ $order->order_code }}</span>
+                                                    <span aria-hidden="true">→</span>
                                                 </a>
-                                                <span class="text-[11px] text-muted">{{ $order->created_at->setTimezone($timezone)->format('d/m H:i') }}</span>
+                                                <div class="mt-1 flex items-center gap-1 min-w-0">
+                                                    <span class="font-bold text-main truncate">{{ $order->shipping_name }}</span>
+                                                    @if ($hasLongName)
+                                                        <x-admin.tooltip :text="$order->shipping_name" label="Xem đầy đủ tên người nhận" />
+                                                    @endif
+                                                </div>
+                                                <span class="block text-[11px] text-muted font-mono tabular-nums">
+                                                    {{ $order->shipping_phone }} · {{ $order->created_at->setTimezone($timezone)->format('d/m H:i') }}
+                                                </span>
                                             </td>
-                                            <td class="py-3 px-4">
-                                                <span class="font-bold text-main block truncate max-w-[140px]">{{ $order->shipping_name }}</span>
-                                                <span class="text-[11px] text-muted font-mono">{{ $order->shipping_phone }}</span>
-                                            </td>
-                                            <td class="py-3 px-4 max-w-[190px]">
+                                            <td class="py-3 px-3.5 min-w-0">
                                                 @if ($firstItem)
-                                                    <span class="block truncate font-semibold text-main" title="{{ $firstItem->product_name_snapshot }}">
-                                                        {{ $firstItem->product_name_snapshot }}
-                                                    </span>
+                                                    <div class="flex items-center gap-1 min-w-0">
+                                                        <span class="block truncate font-semibold text-main">
+                                                            {{ $firstItem->product_name_snapshot }}
+                                                        </span>
+                                                        @if ($extraItems > 0 || mb_strlen($firstItem->product_name_snapshot) > 24)
+                                                            <x-admin.tooltip :text="$itemsSummary" label="Xem đầy đủ sản phẩm" />
+                                                        @endif
+                                                    </div>
                                                 @endif
-                                                <span class="text-[11px] text-muted">
+                                                <span class="inline-block mt-1 text-[11px] text-muted">
                                                     <strong class="font-mono text-main">{{ $totalPairs }} đôi</strong>@if ($extraItems > 0) · +{{ $extraItems }} SP @endif
                                                 </span>
                                             </td>
-                                            <td class="py-3 px-4 text-right whitespace-nowrap font-mono font-extrabold text-main">
-                                                {{ $vnd($order->total_amount) }}
-                                            </td>
-                                            <td class="py-3 px-4 text-center whitespace-nowrap">
-                                                <x-orders.status-badge :status="$order->order_status" />
-                                            </td>
-                                            <td class="py-3 px-4 text-right whitespace-nowrap">
-                                                <a href="{{ route('admin.orders.show', $order) }}"
-                                                   class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-accent/10 text-accent hover:bg-accent hover:text-accent-text font-bold text-xs transition-colors">
-                                                    <span>{{ $nextActionLabel }}</span>
-                                                    <span aria-hidden="true">→</span>
-                                                </a>
+                                            <td class="py-3 px-3.5 text-right whitespace-nowrap">
+                                                <span class="block font-mono font-extrabold text-main tabular-nums">
+                                                    {{ $vnd($order->total_amount) }}
+                                                </span>
+                                                <div class="mt-1.5 flex justify-end">
+                                                    <x-orders.status-badge :status="$order->order_status" />
+                                                </div>
                                             </td>
                                         </tr>
                                     @endforeach
