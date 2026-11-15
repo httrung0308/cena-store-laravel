@@ -250,13 +250,32 @@ class AdminOverviewReportsSidebarRedesignTest extends TestCase
                 ->assertViewHas('period', 'quarter')
                 ->assertViewHas('nextPeriod', ['from' => '2024-04-01', 'to' => '2024-04-01']);
 
-            // Tuesday 2024-04-02 10:00 VN -> Week starts Monday 2024-04-01 .. 2024-04-02 (capped at today)
+            // Tuesday 2024-04-02 10:00 VN -> Week starts Monday 2024-04-01 .. 2024-04-02 (capped at viewing time 10:00, not end of day)
             $clock->freeze(CarbonImmutable::parse('2024-04-02 03:00:00', 'UTC'));
+            SalesLedgerEntry::factory()->create([
+                'type' => SalesLedgerType::SaleRecognized,
+                'merchandise_revenue_delta' => 500_000,
+                'shipping_revenue_delta' => 0,
+                'cogs_delta' => 250_000,
+                'expense_delta' => 0,
+                'occurred_at' => '2024-04-02 02:55:00', // 09:55 VN (included)
+            ]);
+            SalesLedgerEntry::factory()->create([
+                'type' => SalesLedgerType::SaleRecognized,
+                'merchandise_revenue_delta' => 900_000,
+                'shipping_revenue_delta' => 0,
+                'cogs_delta' => 450_000,
+                'expense_delta' => 0,
+                'occurred_at' => '2024-04-02 03:05:00', // 10:05 VN (after viewing time, excluded)
+            ]);
             $this->actingAs($this->admin)
                 ->get(route('admin.reports.index', ['period' => 'week']))
                 ->assertOk()
                 ->assertViewHas('from', '2024-04-01')
                 ->assertViewHas('to', '2024-04-02')
+                ->assertViewHas('asOfTime', '10:00')
+                ->assertViewHas('money', fn (array $m) => $m['merchandise'] === 500_000)
+                ->assertSee('(đến 10:00)')
                 ->assertViewHas('prevPeriod', ['from' => '2024-03-25', 'to' => '2024-03-31'])
                 ->assertViewHas('nextPeriod', null);
 

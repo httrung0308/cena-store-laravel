@@ -179,7 +179,7 @@
                             Kỳ lịch · {{ $periodLabel }}
                         </span>
                     @endif
-                    <span class="font-semibold text-main">{{ $fromLabel }} – {{ $toLabel }} · {{ $rangeDays }} ngày</span>
+                    <span class="font-semibold text-main">{{ $fromLabel }} – {{ $toLabel }}@if ($asOfTime) (đến {{ $asOfTime }})@endif · {{ $rangeDays }} ngày</span>
                     <x-admin.tooltip
                         text="Số liệu tính theo giờ Việt Nam (GMT+7). Khoảng trên 31 ngày tự động gộp theo tuần (T2–CN)."
                         label="Quy ước kỳ báo cáo"
@@ -194,7 +194,7 @@
 
         {{-- Thanh Tab chuyển vùng nội dung & Các vùng báo cáo --}}
         <div class="flex flex-col">
-            <div class="flex items-end gap-1 overflow-x-auto border-b border-border whitespace-nowrap" role="tablist" aria-label="Chuyển vùng phân tích báo cáo">
+            <div class="flex items-center gap-5 sm:gap-7 overflow-x-auto overflow-y-hidden border-b border-border whitespace-nowrap" role="tablist" aria-label="Chuyển vùng phân tích báo cáo">
                 @if ($isAdmin)
                     <button type="button"
                             role="tab"
@@ -205,8 +205,8 @@
                             :tabindex="activeTab === 'finance' ? 0 : -1"
                             @click="setTab('finance')"
                             @keydown="handleTabKeydown($event, 'finance')"
-                            :class="activeTab === 'finance' ? 'bg-surface-card text-main border-t-accent border-x-border border-b border-b-surface-card -mb-px' : 'bg-transparent text-muted border-t-transparent border-x-transparent hover:text-main hover:bg-surface/60'"
-                            class="shrink-0 px-4 py-2.5 text-sm font-semibold rounded-t-xl border-t-2 border-x transition-colors cursor-pointer">
+                            :class="activeTab === 'finance' ? 'border-accent text-accent font-bold' : 'border-transparent text-muted hover:text-main hover:border-border/80'"
+                            class="shrink-0 py-3 px-1 text-sm font-semibold border-b-2 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:rounded-t-md">
                         Tài chính
                     </button>
                 @endif
@@ -219,8 +219,8 @@
                         :tabindex="activeTab === 'operations' ? 0 : -1"
                         @click="setTab('operations')"
                         @keydown="handleTabKeydown($event, 'operations')"
-                        :class="activeTab === 'operations' ? 'bg-surface-card text-main border-t-accent border-x-border border-b border-b-surface-card -mb-px' : 'bg-transparent text-muted border-t-transparent border-x-transparent hover:text-main hover:bg-surface/60'"
-                        class="shrink-0 px-4 py-2.5 text-sm font-semibold rounded-t-xl border-t-2 border-x transition-colors cursor-pointer">
+                        :class="activeTab === 'operations' ? 'border-accent text-accent font-bold' : 'border-transparent text-muted hover:text-main hover:border-border/80'"
+                        class="shrink-0 py-3 px-1 text-sm font-semibold border-b-2 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:rounded-t-md">
                     Vận hành &amp; Đơn hàng
                 </button>
                 <button type="button"
@@ -232,8 +232,8 @@
                         :tabindex="activeTab === 'inventory' ? 0 : -1"
                         @click="setTab('inventory')"
                         @keydown="handleTabKeydown($event, 'inventory')"
-                        :class="activeTab === 'inventory' ? 'bg-surface-card text-main border-t-accent border-x-border border-b border-b-surface-card -mb-px' : 'bg-transparent text-muted border-t-transparent border-x-transparent hover:text-main hover:bg-surface/60'"
-                        class="shrink-0 px-4 py-2.5 text-sm font-semibold rounded-t-xl border-t-2 border-x transition-colors inline-flex items-center gap-1.5 cursor-pointer">
+                        :class="activeTab === 'inventory' ? 'border-accent text-accent font-bold' : 'border-transparent text-muted hover:text-main hover:border-border/80'"
+                        class="shrink-0 py-3 px-1 text-sm font-semibold border-b-2 transition-colors inline-flex items-center gap-1.5 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:rounded-t-md">
                     <span>Tồn kho hiện tại</span>
                     @if ($inventory['low'] !== [])
                         <span class="inline-flex items-center justify-center rounded-full bg-error-bg text-error-text px-1.5 py-0.2 text-[10px] font-bold">{{ count($inventory['low']) }}</span>
@@ -249,8 +249,8 @@
                             :tabindex="activeTab === 'feedback' ? 0 : -1"
                             @click="setTab('feedback')"
                             @keydown="handleTabKeydown($event, 'feedback')"
-                            :class="activeTab === 'feedback' ? 'bg-surface-card text-main border-t-accent border-x-border border-b border-b-surface-card -mb-px' : 'bg-transparent text-muted border-t-transparent border-x-transparent hover:text-main hover:bg-surface/60'"
-                            class="shrink-0 px-4 py-2.5 text-sm font-semibold rounded-t-xl border-t-2 border-x transition-colors cursor-pointer">
+                            :class="activeTab === 'feedback' ? 'border-accent text-accent font-bold' : 'border-transparent text-muted hover:text-main hover:border-border/80'"
+                            class="shrink-0 py-3 px-1 text-sm font-semibold border-b-2 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:rounded-t-md">
                         Đánh giá bài viết
                     </button>
                 @endif

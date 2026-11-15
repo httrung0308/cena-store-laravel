@@ -127,12 +127,21 @@ class ReportController extends Controller
         }
 
         ['start' => $start, 'end' => $end] = $this->reports->range($from, $to);
+        $now = $this->reports->now();
+        $isOngoingToday = $period !== 'custom' && $to === $today;
+        if ($isOngoingToday && $end->greaterThan($now)) {
+            $end = $now->addSecond();
+        }
+        $asOfTime = $isOngoingToday
+            ? $now->setTimezone((string) config('store.business_timezone', 'Asia/Ho_Chi_Minh'))->format('H:i')
+            : null;
 
         return view('admin.reports.index', [
             'from' => $from,
             'to' => $to,
             'period' => $period,
             'periodLabel' => $this->periodLabel($period, CarbonImmutable::parse($from)),
+            'asOfTime' => $asOfTime,
             'periodOptions' => $this->periodOptions($todayDate),
             'prevPeriod' => $prevPeriod,
             'nextPeriod' => $nextPeriod,

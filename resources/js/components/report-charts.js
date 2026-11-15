@@ -224,7 +224,7 @@ function marginChart(Chart, canvas, periods, theme, animate = true) {
                     },
                 },
             },
-            scales: { x: createAxisX(theme), y: createAxisY(theme, (value) => `${value}%`, { grace: '10%' }) },
+            scales: { x: createAxisX(theme), y: createAxisY(theme, (value) => (Number.isFinite(Number(value)) ? percent(Number(value)) : ''), { grace: '10%' }) },
         },
     });
 }

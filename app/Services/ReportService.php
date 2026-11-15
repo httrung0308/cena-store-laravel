@@ -29,6 +29,11 @@ final class ReportService
         return $this->clock->now()->setTimezone($this->timezone())->format('Y-m-d');
     }
 
+    public function now(): CarbonImmutable
+    {
+        return $this->clock->now();
+    }
+
     /** @return array{revenue: int, merchandise: int, shipping: int, cogs: int, expense: int, profit: int} */
     public function money(CarbonImmutable $start, CarbonImmutable $end): array
     {
