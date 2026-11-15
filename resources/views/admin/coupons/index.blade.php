@@ -29,22 +29,20 @@
 @section('content')
     <div x-data="{ ...adminAjaxList(), ...adminStatusToggle() }" class="space-y-6">
         <x-admin.search-form :action="route('admin.coupons.index')" id="coupon-search" label="Tìm mã hoặc tên coupon" placeholder="Tìm mã hoặc tên coupon..." :value="$search" :ajax="true" :active-chips="$activeChips">
-            <label for="coupon-type-filter" class="sr-only">Lọc theo loại mã giảm giá</label>
-            <select id="coupon-type-filter" name="type" @change="submitFilter($el.form)"
-                    class="bg-bg border border-border px-3 py-2 rounded-xl text-xs text-main font-semibold focus:outline-none focus:ring-2 focus:ring-accent">
-                <option value="">Tất cả loại</option>
-                @foreach (App\Enums\CouponType::cases() as $couponType)
-                    <option value="{{ $couponType->value }}" @selected($typeFilter === $couponType->value)>{{ $couponType->label() }}</option>
-                @endforeach
-            </select>
+            <x-slot:filters>
+                <x-admin.filter-select id="coupon-type-filter" name="type" label="Loại:" :active="filled($typeFilter)">
+                    <option value="">Tất cả</option>
+                    @foreach (App\Enums\CouponType::cases() as $couponType)
+                        <option value="{{ $couponType->value }}" @selected($typeFilter === $couponType->value)>{{ $couponType->label() }}</option>
+                    @endforeach
+                </x-admin.filter-select>
 
-            <label for="coupon-active-filter" class="sr-only">Lọc theo trạng thái</label>
-            <select id="coupon-active-filter" name="active" @change="submitFilter($el.form)"
-                    class="bg-bg border border-border px-3 py-2 rounded-xl text-xs text-main font-semibold focus:outline-none focus:ring-2 focus:ring-accent">
-                <option value="">Tất cả trạng thái</option>
-                <option value="1" @selected($activeFilter === '1')>Đang bật</option>
-                <option value="0" @selected($activeFilter === '0')>Đã tắt</option>
-            </select>
+                <x-admin.filter-select id="coupon-active-filter" name="active" label="Trạng thái:" :active="$activeFilter !== ''">
+                    <option value="">Tất cả</option>
+                    <option value="1" @selected($activeFilter === '1')>Đang bật</option>
+                    <option value="0" @selected($activeFilter === '0')>Đã tắt</option>
+                </x-admin.filter-select>
+            </x-slot:filters>
         </x-admin.search-form>
 
         <x-admin.ajax-feedback />

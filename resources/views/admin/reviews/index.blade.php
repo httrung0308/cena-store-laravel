@@ -34,30 +34,20 @@
             :ajax="true"
             :active-chips="$activeChips"
         >
-            <label class="sr-only" for="review-rating-filter">Số sao</label>
-            <select
-                id="review-rating-filter"
-                name="rating"
-                @change="submitFilter($el.form)"
-                class="bg-bg border border-border px-3 py-2 rounded-xl text-xs text-main font-semibold focus:outline-none focus:border-accent"
-            >
-                <option value="">Tất cả số sao</option>
-                @for ($stars = 5; $stars >= 1; $stars--)
-                    <option value="{{ $stars }}" @selected((string) ($filters['rating'] ?? '') === (string) $stars)>{{ $stars }} sao</option>
-                @endfor
-            </select>
+            <x-slot:filters>
+                <x-admin.filter-select id="review-rating-filter" name="rating" label="Số sao:" :active="isset($filters['rating']) && $filters['rating'] !== ''">
+                    <option value="">Tất cả</option>
+                    @for ($stars = 5; $stars >= 1; $stars--)
+                        <option value="{{ $stars }}" @selected((string) ($filters['rating'] ?? '') === (string) $stars)>{{ $stars }} sao</option>
+                    @endfor
+                </x-admin.filter-select>
 
-            <label class="sr-only" for="review-visible-filter">Trạng thái hiển thị</label>
-            <select
-                id="review-visible-filter"
-                name="visible"
-                @change="submitFilter($el.form)"
-                class="bg-bg border border-border px-3 py-2 rounded-xl text-xs text-main font-semibold focus:outline-none focus:border-accent"
-            >
-                <option value="">Tất cả hiển thị</option>
-                <option value="1" @selected(($filters['visible'] ?? '') === '1')>Đang hiện</option>
-                <option value="0" @selected(($filters['visible'] ?? '') === '0')>Đã ẩn</option>
-            </select>
+                <x-admin.filter-select id="review-visible-filter" name="visible" label="Hiển thị:" :active="isset($filters['visible']) && $filters['visible'] !== ''">
+                    <option value="">Tất cả</option>
+                    <option value="1" @selected(($filters['visible'] ?? '') === '1')>Đang hiện</option>
+                    <option value="0" @selected(($filters['visible'] ?? '') === '0')>Đã ẩn</option>
+                </x-admin.filter-select>
+            </x-slot:filters>
         </x-admin.search-form>
 
         <x-admin.ajax-feedback />

@@ -34,31 +34,21 @@
             :ajax="true"
             :active-chips="$activeChips"
         >
-            <label class="sr-only" for="order-status-filter">Trạng thái đơn hàng</label>
-            <select
-                id="order-status-filter"
-                name="status"
-                @change="submitFilter($el.form)"
-                class="bg-bg border border-border px-3 py-2 rounded-xl text-xs text-main font-semibold focus:outline-none focus:border-accent"
-            >
-                <option value="">Tất cả trạng thái</option>
-                @foreach (App\Enums\OrderStatus::cases() as $state)
-                    <option value="{{ $state->value }}" @selected(($filters['status'] ?? '') === $state->value)>{{ $state->label() }}</option>
-                @endforeach
-            </select>
+            <x-slot:filters>
+                <x-admin.filter-select id="order-status-filter" name="status" label="Trạng thái:" :active="filled($filters['status'] ?? null)">
+                    <option value="">Tất cả</option>
+                    @foreach (App\Enums\OrderStatus::cases() as $state)
+                        <option value="{{ $state->value }}" @selected(($filters['status'] ?? '') === $state->value)>{{ $state->label() }}</option>
+                    @endforeach
+                </x-admin.filter-select>
 
-            <label class="sr-only" for="order-payment-status-filter">Trạng thái thanh toán</label>
-            <select
-                id="order-payment-status-filter"
-                name="payment_status"
-                @change="submitFilter($el.form)"
-                class="bg-bg border border-border px-3 py-2 rounded-xl text-xs text-main font-semibold focus:outline-none focus:border-accent"
-            >
-                <option value="">Tất cả thanh toán</option>
-                @foreach (App\Enums\OrderPaymentStatus::cases() as $paymentState)
-                    <option value="{{ $paymentState->value }}" @selected(($filters['payment_status'] ?? '') === $paymentState->value)>{{ $paymentState->label() }}</option>
-                @endforeach
-            </select>
+                <x-admin.filter-select id="order-payment-status-filter" name="payment_status" label="Thanh toán:" :active="filled($filters['payment_status'] ?? null)">
+                    <option value="">Tất cả</option>
+                    @foreach (App\Enums\OrderPaymentStatus::cases() as $paymentState)
+                        <option value="{{ $paymentState->value }}" @selected(($filters['payment_status'] ?? '') === $paymentState->value)>{{ $paymentState->label() }}</option>
+                    @endforeach
+                </x-admin.filter-select>
+            </x-slot:filters>
         </x-admin.search-form>
 
         <div id="admin-list-region" @click="handleRegionClick($event)" :class="{ 'opacity-60 pointer-events-none transition-opacity': listLoading }" class="space-y-4">

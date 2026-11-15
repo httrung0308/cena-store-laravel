@@ -25,22 +25,20 @@
 <section x-data="{ ...adminAjaxList(), ...adminStatusToggle() }" class="space-y-6" aria-label="Danh mục">
     @if ($searchUrl)
         <x-admin.search-form :action="$searchUrl" id="category-search" label="Tìm danh mục" placeholder="Tìm kiếm theo tên danh mục, slug..." :value="$search" :ajax="true" :active-chips="$activeChips">
-            <label for="category-gender-filter" class="sr-only">Lọc theo đối tượng</label>
-            <select id="category-gender-filter" name="gender_group" @change="submitFilter($el.form)"
-                    class="bg-bg border border-border px-3 py-2 rounded-xl text-xs text-main font-semibold focus:outline-none focus:ring-2 focus:ring-accent">
-                <option value="">Tất cả đối tượng</option>
-                @foreach (App\Enums\GenderGroup::cases() as $groupCase)
-                    <option value="{{ $groupCase->value }}" @selected($genderGroup === $groupCase->value)>{{ $groupCase->label() }}</option>
-                @endforeach
-            </select>
+            <x-slot:filters>
+                <x-admin.filter-select id="category-gender-filter" name="gender_group" label="Đối tượng:" :active="filled($genderGroup)">
+                    <option value="">Tất cả</option>
+                    @foreach (App\Enums\GenderGroup::cases() as $groupCase)
+                        <option value="{{ $groupCase->value }}" @selected($genderGroup === $groupCase->value)>{{ $groupCase->label() }}</option>
+                    @endforeach
+                </x-admin.filter-select>
 
-            <label for="category-active-filter" class="sr-only">Lọc theo trạng thái</label>
-            <select id="category-active-filter" name="active" @change="submitFilter($el.form)"
-                    class="bg-bg border border-border px-3 py-2 rounded-xl text-xs text-main font-semibold focus:outline-none focus:ring-2 focus:ring-accent">
-                <option value="">Tất cả trạng thái</option>
-                <option value="1" @selected($active === '1')>Đang hiển thị</option>
-                <option value="0" @selected($active === '0')>Đang ẩn</option>
-            </select>
+                <x-admin.filter-select id="category-active-filter" name="active" label="Trạng thái:" :active="$active !== ''">
+                    <option value="">Tất cả</option>
+                    <option value="1" @selected($active === '1')>Đang hiển thị</option>
+                    <option value="0" @selected($active === '0')>Đang ẩn</option>
+                </x-admin.filter-select>
+            </x-slot:filters>
         </x-admin.search-form>
     @endif
     <x-admin.ajax-feedback />

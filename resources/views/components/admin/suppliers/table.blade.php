@@ -19,13 +19,11 @@
 <section x-data="{ ...adminAjaxList(), ...adminStatusToggle() }" class="space-y-6" aria-label="Nhà cung cấp">
     @if ($searchUrl)
         <x-admin.search-form :action="$searchUrl" id="supplier-search" label="Tìm nhà cung cấp" placeholder="Tìm kiếm theo mã, tên nhà cung cấp..." :value="$search" :ajax="true" :active-chips="$activeChips">
-            <label for="supplier-active-filter" class="sr-only">Lọc theo trạng thái</label>
-            <select id="supplier-active-filter" name="active" @change="submitFilter($el.form)"
-                    class="bg-bg border border-border px-3 py-2 rounded-xl text-xs text-main font-semibold focus:outline-none focus:ring-2 focus:ring-accent">
-                <option value="">Tất cả trạng thái</option>
+            <x-admin.filter-select id="supplier-active-filter" name="active" label="Trạng thái:" :active="$active !== ''">
+                <option value="">Tất cả</option>
                 <option value="1" @selected($active === '1')>Hoạt động</option>
                 <option value="0" @selected($active === '0')>Đã ngừng</option>
-            </select>
+            </x-admin.filter-select>
         </x-admin.search-form>
     @endif
     <x-admin.ajax-feedback />

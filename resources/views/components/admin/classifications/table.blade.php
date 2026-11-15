@@ -46,29 +46,25 @@
 <section x-data="{ ...adminAjaxList(), ...adminStatusToggle() }" class="space-y-5" aria-label="Danh mục phân loại">
     @if ($searchUrl)
         <x-admin.search-form :action="$searchUrl" id="classification-search" label="Tìm nhãn phân loại" placeholder="Tìm theo tên nhãn, slug..." :value="$search" :ajax="true" :active-chips="$activeChips">
-            <label for="classification-group-filter" class="sr-only">Lọc theo nhóm phân loại</label>
-            <select id="classification-group-filter" name="group" @change="submitFilter($el.form)"
-                    class="bg-bg border border-border px-3 py-2 rounded-xl text-xs text-main font-semibold focus:outline-none focus:ring-2 focus:ring-accent">
-                <option value="">Tất cả nhóm</option>
-                <option value="SILHOUETTE" @selected($group === 'SILHOUETTE')>Kiểu dáng</option>
-                <option value="ACTIVITY" @selected($group === 'ACTIVITY')>Mục đích sử dụng</option>
-            </select>
+            <x-slot:filters>
+                <x-admin.filter-select id="classification-group-filter" name="group" label="Nhóm:" :active="filled($group)">
+                    <option value="">Tất cả</option>
+                    <option value="SILHOUETTE" @selected($group === 'SILHOUETTE')>Kiểu dáng</option>
+                    <option value="ACTIVITY" @selected($group === 'ACTIVITY')>Mục đích sử dụng</option>
+                </x-admin.filter-select>
 
-            <label for="classification-active-filter" class="sr-only">Lọc theo trạng thái</label>
-            <select id="classification-active-filter" name="active" @change="submitFilter($el.form)"
-                    class="bg-bg border border-border px-3 py-2 rounded-xl text-xs text-main font-semibold focus:outline-none focus:ring-2 focus:ring-accent">
-                <option value="">Tất cả trạng thái</option>
-                <option value="1" @selected($active === '1')>Hoạt động</option>
-                <option value="0" @selected($active === '0')>Tạm ngưng</option>
-            </select>
+                <x-admin.filter-select id="classification-active-filter" name="active" label="Trạng thái:" :active="$active !== ''">
+                    <option value="">Tất cả</option>
+                    <option value="1" @selected($active === '1')>Hoạt động</option>
+                    <option value="0" @selected($active === '0')>Tạm ngưng</option>
+                </x-admin.filter-select>
 
-            <label for="classification-homenav-filter" class="sr-only">Lọc hiển thị menu</label>
-            <select id="classification-homenav-filter" name="home_nav" @change="submitFilter($el.form)"
-                    class="bg-bg border border-border px-3 py-2 rounded-xl text-xs text-main font-semibold focus:outline-none focus:ring-2 focus:ring-accent">
-                <option value="">Tất cả vị trí</option>
-                <option value="1" @selected($homeNav === '1')>Hiển thị menu &amp; trang chủ</option>
-                <option value="0" @selected($homeNav === '0')>Không hiển thị menu</option>
-            </select>
+                <x-admin.filter-select id="classification-homenav-filter" name="home_nav" label="Hiển thị menu:" :active="$homeNav !== ''">
+                    <option value="">Tất cả</option>
+                    <option value="1" @selected($homeNav === '1')>Menu &amp; trang chủ</option>
+                    <option value="0" @selected($homeNav === '0')>Không hiển thị</option>
+                </x-admin.filter-select>
+            </x-slot:filters>
         </x-admin.search-form>
     @endif
 

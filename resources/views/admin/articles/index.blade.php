@@ -32,55 +32,41 @@
 @endsection
 @section('content')
     <div x-data="{ ...adminAjaxList(), ...adminStatusToggle() }" class="space-y-6">
-        <div class="bg-surface-card p-4 rounded-2xl border border-border mb-6 space-y-3 text-xs shadow-sm">
-            <form id="article-filter-form" method="GET" action="{{ route('admin.articles.index') }}" @submit.prevent="submitFilter($event.target)" class="flex flex-wrap items-center gap-3 w-full">
-                <div class="flex items-center gap-2">
-                    <label for="article-status-filter" class="sr-only">Lọc theo trạng thái bài viết</label>
-                    <select id="article-status-filter" name="status" @change="submitFilter($el.form)"
-                            class="bg-bg border border-border px-3 py-2 rounded-xl text-xs text-main font-semibold focus:outline-none focus:ring-2 focus:ring-accent">
-                        <option value="">Tất cả trạng thái</option>
+        <div class="bg-surface-card p-4 rounded-2xl border border-border mb-6 space-y-2.5 text-xs shadow-sm">
+            <form id="article-filter-form" method="GET" action="{{ route('admin.articles.index') }}" @submit.prevent="submitFilter($event.target)" class="flex flex-wrap items-center justify-between gap-3 px-3.5 py-2 rounded-xl bg-surface/80 border border-dashed border-border w-full">
+                <div class="flex flex-wrap items-center gap-x-5 gap-y-2">
+                    <x-admin.filter-select id="article-status-filter" name="status" label="Trạng thái:" :active="filled($statusFilter)">
+                        <option value="">Tất cả</option>
                         @foreach (App\Enums\ArticleStatus::cases() as $status)
                             <option value="{{ $status->value }}" @selected($statusFilter === $status->value)>{{ $status->label() }}</option>
                         @endforeach
-                    </select>
-                </div>
+                    </x-admin.filter-select>
 
-                <div class="flex items-center gap-2">
-                    <label for="article-sort-filter" class="sr-only">Sắp xếp bài viết</label>
-                    <select id="article-sort-filter" name="sort" @change="submitFilter($el.form)"
-                            class="bg-bg border border-border px-3 py-2 rounded-xl text-xs text-main font-semibold focus:outline-none focus:ring-2 focus:ring-accent">
+                    <x-admin.filter-select id="article-sort-filter" name="sort" label="Sắp xếp:" :active="$sortFilter !== 'latest'">
                         <option value="latest" @selected($sortFilter === 'latest')>Mới cập nhật</option>
                         <option value="helpful" @selected($sortFilter === 'helpful')>Hữu ích nhất</option>
                         <option value="unhelpful" @selected($sortFilter === 'unhelpful')>Không hữu ích nhất</option>
-                    </select>
+                    </x-admin.filter-select>
                 </div>
 
-                <button type="submit" class="px-4 py-2 bg-accent hover:bg-accent-hover text-accent-text text-xs font-bold rounded-xl transition-colors shadow-sm">Lọc</button>
-
-                @if ($hasActiveQuery)
-                    <a href="{{ route('admin.articles.index') }}"
-                       @click.prevent="resetFilters('{{ route('admin.articles.index') }}', $el.closest('form'))"
-                       class="px-3.5 py-2 bg-surface hover:bg-border/40 text-muted hover:text-main text-xs font-bold rounded-xl border border-border transition-colors">
-                        Xóa lọc
-                    </a>
-                @endif
+                <button type="submit" class="px-4 py-1.5 bg-accent hover:bg-accent-hover text-accent-text text-xs font-bold rounded-lg transition-colors shadow-sm shrink-0">Lọc</button>
             </form>
 
             @if (! empty($activeChips))
-                <div id="admin-filter-chips" class="flex flex-wrap items-center gap-2 pt-2 border-t border-border/60">
-                    <span class="text-[11px] font-semibold text-muted">Đang lọc:</span>
+                <div id="admin-filter-chips" class="flex flex-wrap items-center gap-1.5 pt-2 border-t border-border/60">
+                    <span class="text-[11px] font-bold text-muted mr-0.5">Đang lọc:</span>
                     @foreach ($activeChips as $chip)
                         <a href="{{ $chip['url'] }}"
                            @click.prevent="visitUrl('{{ $chip['url'] }}')"
                            aria-label="Bỏ điều kiện {{ $chip['label'] }}"
-                           class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface border border-border text-[11px] font-semibold text-main hover:border-accent/60 hover:text-accent transition-colors">
+                           class="inline-flex items-center gap-1 pl-2.5 pr-1.5 py-0.5 rounded-full bg-accent/10 text-accent border border-accent/25 text-[11px] font-semibold hover:bg-accent/15 transition-colors">
                             <span>{{ $chip['label'] }}</span>
-                            <span aria-hidden="true" class="text-muted">×</span>
+                            <span aria-hidden="true" class="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full hover:bg-accent/20 font-bold">×</span>
                         </a>
                     @endforeach
                     <a href="{{ route('admin.articles.index') }}"
                        @click.prevent="resetFilters('{{ route('admin.articles.index') }}', document.getElementById('article-filter-form'))"
-                       class="ml-auto text-[11px] font-bold text-accent hover:underline">
+                       class="ml-auto text-[11px] font-bold text-muted hover:text-error underline transition-colors">
                         Xóa tất cả
                     </a>
                 </div>

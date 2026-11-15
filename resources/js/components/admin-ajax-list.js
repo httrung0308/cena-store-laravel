@@ -5,8 +5,25 @@ export function adminAjaxList({ regionSelector = '#admin-list-region', toolbarSe
         listController: null,
 
         init() {
+            this.syncSelectHighlights();
             window.addEventListener('popstate', () => {
                 this.fetchList(window.location.href, { pushHistory: false, syncForm: true });
+            });
+        },
+
+        syncSelectHighlights() {
+            const form = document.querySelector('form[method="GET"]');
+            if (!form) return;
+            form.querySelectorAll('select[name]').forEach((el) => {
+                const isActive = el.value !== '';
+                el.classList.toggle('border-accent/60', isActive);
+                el.classList.toggle('bg-accent/5', isActive);
+                el.classList.toggle('text-accent', isActive);
+                el.classList.toggle('font-bold', isActive);
+                el.classList.toggle('border-border', !isActive);
+                el.classList.toggle('bg-surface-card', !isActive);
+                el.classList.toggle('text-main', !isActive);
+                el.classList.toggle('font-semibold', !isActive);
             });
         },
 
@@ -88,6 +105,7 @@ export function adminAjaxList({ regionSelector = '#admin-list-region', toolbarSe
                 if (syncForm) {
                     this.syncFormFromUrl(url);
                 }
+                this.syncSelectHighlights();
 
                 const response = await fetch(url, {
                     method: 'GET',

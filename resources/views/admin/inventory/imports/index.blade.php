@@ -49,27 +49,21 @@
                              :value="$searchValue"
                              :ajax="true"
                              :active-chips="$activeChips">
-            <label for="import-status-filter" class="sr-only">Trạng thái phiếu nhập</label>
-            <select id="import-status-filter"
-                    class="bg-bg border border-border px-3 py-2 rounded-xl text-xs text-main font-semibold focus:outline-none focus:border-accent"
-                    name="status"
-                    @change="submitFilter($el.form)">
-                <option value="">Tất cả trạng thái</option>
-                @foreach (App\Enums\StockImportStatus::cases() as $state)
-                    <option value="{{ $state->value }}" @selected($statusValue === $state->value)>{{ $state->label() }}</option>
-                @endforeach
-            </select>
+            <x-slot:filters>
+                <x-admin.filter-select id="import-status-filter" name="status" label="Trạng thái:" :active="filled($statusValue)">
+                    <option value="">Tất cả</option>
+                    @foreach (App\Enums\StockImportStatus::cases() as $state)
+                        <option value="{{ $state->value }}" @selected($statusValue === $state->value)>{{ $state->label() }}</option>
+                    @endforeach
+                </x-admin.filter-select>
 
-            <label for="import-supplier-filter" class="sr-only">Nhà cung cấp</label>
-            <select id="import-supplier-filter"
-                    class="bg-bg border border-border px-3 py-2 rounded-xl text-xs text-main font-semibold focus:outline-none focus:border-accent max-w-[220px]"
-                    name="supplier_id"
-                    @change="submitFilter($el.form)">
-                <option value="">Tất cả nhà cung cấp</option>
-                @foreach ($suppliers as $supplier)
-                    <option value="{{ $supplier->id }}" @selected($supplierValue === (string) $supplier->id)>{{ $supplier->code }} — {{ $supplier->name }}</option>
-                @endforeach
-            </select>
+                <x-admin.filter-select id="import-supplier-filter" name="supplier_id" label="Nhà cung cấp:" :active="filled($supplierValue)" class="max-w-[14rem] sm:max-w-[18rem] truncate">
+                    <option value="">Tất cả</option>
+                    @foreach ($suppliers as $supplier)
+                        <option value="{{ $supplier->id }}" @selected($supplierValue === (string) $supplier->id)>{{ $supplier->code }} — {{ $supplier->name }}</option>
+                    @endforeach
+                </x-admin.filter-select>
+            </x-slot:filters>
         </x-admin.search-form>
 
         <div id="admin-list-region"

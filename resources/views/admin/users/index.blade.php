@@ -34,30 +34,20 @@
             :ajax="true"
             :active-chips="$activeChips"
         >
-            <label class="sr-only" for="user-role-filter">Vai trò</label>
-            <select
-                id="user-role-filter"
-                name="role"
-                @change="submitFilter($el.form)"
-                class="bg-bg border border-border px-3 py-2 rounded-xl text-xs text-main font-semibold focus:outline-none focus:border-accent"
-            >
-                <option value="">Tất cả vai trò</option>
-                @foreach (App\Enums\RoleSlug::cases() as $role)
-                    <option value="{{ $role->value }}" @selected(($filters['role'] ?? '') === $role->value)>{{ $role->label() }}</option>
-                @endforeach
-            </select>
+            <x-slot:filters>
+                <x-admin.filter-select id="user-role-filter" name="role" label="Vai trò:" :active="filled($filters['role'] ?? null)">
+                    <option value="">Tất cả</option>
+                    @foreach (App\Enums\RoleSlug::cases() as $role)
+                        <option value="{{ $role->value }}" @selected(($filters['role'] ?? '') === $role->value)>{{ $role->label() }}</option>
+                    @endforeach
+                </x-admin.filter-select>
 
-            <label class="sr-only" for="user-active-filter">Trạng thái tài khoản</label>
-            <select
-                id="user-active-filter"
-                name="active"
-                @change="submitFilter($el.form)"
-                class="bg-bg border border-border px-3 py-2 rounded-xl text-xs text-main font-semibold focus:outline-none focus:border-accent"
-            >
-                <option value="">Tất cả trạng thái</option>
-                <option value="1" @selected(($filters['active'] ?? '') === '1')>Hoạt động</option>
-                <option value="0" @selected(($filters['active'] ?? '') === '0')>Đã khóa</option>
-            </select>
+                <x-admin.filter-select id="user-active-filter" name="active" label="Trạng thái:" :active="isset($filters['active']) && $filters['active'] !== ''">
+                    <option value="">Tất cả</option>
+                    <option value="1" @selected(($filters['active'] ?? '') === '1')>Hoạt động</option>
+                    <option value="0" @selected(($filters['active'] ?? '') === '0')>Đã khóa</option>
+                </x-admin.filter-select>
+            </x-slot:filters>
         </x-admin.search-form>
 
         <div id="admin-list-region" @click="handleRegionClick($event)" :class="{ 'opacity-60 pointer-events-none transition-opacity': listLoading }" class="space-y-4">
