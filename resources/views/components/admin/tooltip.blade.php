@@ -37,17 +37,20 @@
         </svg>
     </button>
 
-    <div
-        id="{{ $tooltipId }}"
-        x-ref="panel"
-        x-cloak
-        x-show="open"
-        x-transition.opacity.duration.150ms
-        role="tooltip"
-        :style="`transform: translateX(${shiftX}px)`"
-        :class="resolvedPlacement === 'bottom' ? 'top-full mt-2' : 'bottom-full mb-2'"
-        class="absolute left-1/2 -translate-x-1/2 z-40 w-max max-w-[min(18rem,calc(100vw-2rem))] rounded-xl border border-border bg-surface-card px-3 py-2 text-left text-xs font-normal leading-relaxed text-main shadow-lg pointer-events-auto"
-    >
-        {{ $text }}
-    </div>
+    <template x-teleport="body">
+        <div
+            id="{{ $tooltipId }}"
+            x-ref="panel"
+            x-cloak
+            x-show="open"
+            x-transition.opacity.duration.150ms
+            @mouseenter="openHover()"
+            @mouseleave="closeHover()"
+            role="tooltip"
+            :style="`top: ${posTop}px; left: ${posLeft}px;`"
+            class="fixed z-[60] w-max max-w-[min(18rem,calc(100vw-24px))] whitespace-normal break-words rounded-xl border border-border bg-surface-card px-3 py-2 text-left text-xs font-normal leading-relaxed text-main shadow-lg pointer-events-auto"
+        >
+            {{ $text }}
+        </div>
+    </template>
 </span>

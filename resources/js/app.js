@@ -79,9 +79,26 @@ const ADMIN_SIDEBAR_GROUPS_STORAGE_KEY = 'cena-admin-sidebar-groups';
 
 Alpine.data('adminTooltip', (preferredPlacement = 'top') => ({
     open: false,
-    shiftX: 0,
-    resolvedPlacement: preferredPlacement,
+    posTop: 0,
+    posLeft: 0,
     _hoverTimer: null,
+    _onViewportChange: null,
+    init() {
+        this._onViewportChange = () => {
+            if (this.open) {
+                this.reposition();
+            }
+        };
+        window.addEventListener('scroll', this._onViewportChange, { passive: true, capture: true });
+        window.addEventListener('resize', this._onViewportChange, { passive: true });
+    },
+    destroy() {
+        clearTimeout(this._hoverTimer);
+        if (this._onViewportChange) {
+            window.removeEventListener('scroll', this._onViewportChange, { capture: true });
+            window.removeEventListener('resize', this._onViewportChange);
+        }
+    },
     openHover() {
         clearTimeout(this._hoverTimer);
         this.open = true;
@@ -91,10 +108,11 @@ Alpine.data('adminTooltip', (preferredPlacement = 'top') => ({
         clearTimeout(this._hoverTimer);
         this._hoverTimer = setTimeout(() => {
             this.open = false;
-        }, 80);
+        }, 100);
     },
     closeFocus(event) {
-        if (event.relatedTarget && this.$el.contains(event.relatedTarget)) {
+        const next = event.relatedTarget;
+        if (next && (this.$el.contains(next) || this.$refs.panel?.contains(next))) {
             return;
         }
         this.open = false;
@@ -115,28 +133,28 @@ Alpine.data('adminTooltip', (preferredPlacement = 'top') => ({
         const trigger = this.$refs.trigger;
         if (!panel || !trigger || typeof window === 'undefined') return;
 
-        this.shiftX = 0;
-        this.resolvedPlacement = preferredPlacement;
+        const margin = 12;
+        const gap = 8;
+        const triggerRect = trigger.getBoundingClientRect();
+        const panelRect = panel.getBoundingClientRect();
 
-        this.$nextTick(() => {
-            const margin = 12;
-            const triggerRect = trigger.getBoundingClientRect();
-            const panelRect = panel.getBoundingClientRect();
+        let top = preferredPlacement === 'bottom'
+            ? triggerRect.bottom + gap
+            : triggerRect.top - panelRect.height - gap;
 
-            if (this.resolvedPlacement === 'top' && panelRect.top < margin && (window.innerHeight - triggerRect.bottom) > panelRect.height + margin) {
-                this.resolvedPlacement = 'bottom';
-            } else if (this.resolvedPlacement === 'bottom' && panelRect.bottom > window.innerHeight - margin && triggerRect.top > panelRect.height + margin) {
-                this.resolvedPlacement = 'top';
-            }
+        if (preferredPlacement === 'top' && top < margin && (window.innerHeight - triggerRect.bottom) >= panelRect.height + gap + margin) {
+            top = triggerRect.bottom + gap;
+        } else if (preferredPlacement === 'bottom' && (top + panelRect.height) > (window.innerHeight - margin) && triggerRect.top >= panelRect.height + gap + margin) {
+            top = triggerRect.top - panelRect.height - gap;
+        }
 
-            let nextShift = 0;
-            if (panelRect.left < margin) {
-                nextShift = margin - panelRect.left;
-            } else if (panelRect.right > window.innerWidth - margin) {
-                nextShift = (window.innerWidth - margin) - panelRect.right;
-            }
-            this.shiftX = Math.round(nextShift);
-        });
+        top = Math.max(margin, Math.min(top, window.innerHeight - panelRect.height - margin));
+
+        let left = triggerRect.left + (triggerRect.width / 2) - (panelRect.width / 2);
+        left = Math.max(margin, Math.min(left, window.innerWidth - panelRect.width - margin));
+
+        this.posTop = Math.round(top);
+        this.posLeft = Math.round(left);
     },
 }));
 

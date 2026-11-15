@@ -17,6 +17,8 @@ use App\Models\Review;
 use App\Models\SalesLedgerEntry;
 use App\Models\StockImport;
 use App\Models\User;
+use App\Support\BusinessClock;
+use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 
@@ -211,5 +213,72 @@ class AdminOverviewReportsSidebarRedesignTest extends TestCase
             ->assertSee('id="tab-operations"', false)
             ->assertSee('id="tab-inventory"', false)
             ->assertDontSee('id="tab-feedback"', false);
+    }
+
+    public function test_reports_calendar_periods_boundaries_navigation_and_admin_footer(): void
+    {
+        // Monday 2024-04-01 00:30 VN (2024-03-31 17:30 UTC) — boundary of week, month, Q2, and leap year 2024
+        $clock = app(BusinessClock::class);
+        $clock->freeze(CarbonImmutable::parse('2024-03-31 17:30:00', 'UTC'));
+
+        try {
+            // Default opens current calendar Month (2024-04-01 .. 2024-04-01) and renders updated admin footer
+            $this->actingAs($this->admin)
+                ->get(route('admin.reports.index'))
+                ->assertOk()
+                ->assertViewHas('period', 'month')
+                ->assertViewHas('from', '2024-04-01')
+                ->assertViewHas('to', '2024-04-01')
+                ->assertViewHas('nextPeriod', null)
+                ->assertSee('© 2024 CENA — Quản trị cửa hàng.')
+                ->assertDontSee('Nike');
+
+            // Past leap-year February (2024-02-01 .. 2024-02-29) & Prev/Next
+            $this->actingAs($this->admin)
+                ->get(route('admin.reports.index', ['period' => 'month', 'from' => '2024-02-01', 'to' => '2024-02-29']))
+                ->assertOk()
+                ->assertViewHas('period', 'month')
+                ->assertViewHas('from', '2024-02-01')
+                ->assertViewHas('to', '2024-02-29')
+                ->assertViewHas('prevPeriod', ['from' => '2024-01-01', 'to' => '2024-01-31'])
+                ->assertViewHas('nextPeriod', ['from' => '2024-03-01', 'to' => '2024-03-31']);
+
+            // Quarter Q1 2024 (2024-01-01 .. 2024-03-31)
+            $this->actingAs($this->admin)
+                ->get(route('admin.reports.index', ['period' => 'quarter', 'from' => '2024-01-01', 'to' => '2024-03-31']))
+                ->assertOk()
+                ->assertViewHas('period', 'quarter')
+                ->assertViewHas('nextPeriod', ['from' => '2024-04-01', 'to' => '2024-04-01']);
+
+            // Tuesday 2024-04-02 10:00 VN -> Week starts Monday 2024-04-01 .. 2024-04-02 (capped at today)
+            $clock->freeze(CarbonImmutable::parse('2024-04-02 03:00:00', 'UTC'));
+            $this->actingAs($this->admin)
+                ->get(route('admin.reports.index', ['period' => 'week']))
+                ->assertOk()
+                ->assertViewHas('from', '2024-04-01')
+                ->assertViewHas('to', '2024-04-02')
+                ->assertViewHas('prevPeriod', ['from' => '2024-03-25', 'to' => '2024-03-31'])
+                ->assertViewHas('nextPeriod', null);
+
+            // Leap year 2024 full past year check when frozen in 2025-01-15
+            $clock->freeze(CarbonImmutable::parse('2025-01-15 03:00:00', 'UTC'));
+            $this->actingAs($this->admin)
+                ->get(route('admin.reports.index', ['period' => 'year', 'from' => '2024-01-01', 'to' => '2024-12-31']))
+                ->assertOk()
+                ->assertViewHas('from', '2024-01-01')
+                ->assertViewHas('to', '2024-12-31')
+                ->assertViewHas('nextPeriod', ['from' => '2025-01-01', 'to' => '2025-01-15']);
+
+            // Custom range preserves 'custom' mode and disables nextPeriod
+            $this->actingAs($this->admin)
+                ->get(route('admin.reports.index', ['period' => 'custom', 'from' => '2025-01-05', 'to' => '2025-01-10', 'tab' => 'operations']))
+                ->assertOk()
+                ->assertViewHas('period', 'custom')
+                ->assertViewHas('activeTab', 'operations')
+                ->assertViewHas('nextPeriod', null)
+                ->assertSee('Khoảng tùy chọn');
+        } finally {
+            $clock->unfreeze();
+        }
     }
 }

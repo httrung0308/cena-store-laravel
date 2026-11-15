@@ -67,13 +67,82 @@
 
 @section('content')
     <div class="flex flex-col gap-6"
-         x-data="reportCharts(@js($isAdmin ? 'finance' : 'operations'), @js($isAdmin ? ['finance', 'operations', 'inventory', 'feedback'] : ['operations', 'inventory']))">
+         x-data="reportCharts(@js($activeTab), @js($allowedTabs))">
         <script type="application/json" x-ref="data">@json(['daily' => $daily, 'operations' => $operations, 'feedback' => $articleFeedback['articles'] ?? []])</script>
 
-        {{-- Thanh điều khiển kỳ báo cáo & chuyển tab --}}
+        {{-- Thanh điều khiển kỳ báo cáo --}}
         <div class="admin-card !p-4 sm:!p-5 flex flex-col gap-3.5">
-            <form method="GET" action="{{ route('admin.reports.index') }}" class="flex flex-col lg:flex-row lg:items-end justify-between gap-3.5" aria-label="Lọc theo ngày">
-                <div class="flex flex-wrap items-end gap-3">
+            <div class="flex flex-col xl:flex-row xl:items-end justify-between gap-4">
+                <div class="flex flex-wrap items-center gap-2">
+                    <nav class="inline-flex items-center rounded-xl border border-border bg-surface p-1 gap-0.5" aria-label="Chọn kỳ lịch">
+                        @foreach ($periodOptions as $option)
+                            @php
+                                $isActivePeriod = $period === $option['key'] && ! $errors->any();
+                                $optionUrl = route('admin.reports.index', [
+                                    'period' => $option['key'],
+                                    'from' => $option['from'],
+                                    'to' => $option['to'],
+                                ]);
+                            @endphp
+                            <a href="{{ $optionUrl }}"
+                               :href="@js($optionUrl) + '&tab=' + encodeURIComponent(activeTab)"
+                               @class([
+                                   'px-3 py-1.5 text-xs font-bold rounded-lg transition-colors whitespace-nowrap',
+                                   'bg-accent text-accent-text shadow-sm' => $isActivePeriod,
+                                   'text-muted hover:text-main hover:bg-surface-card/70' => ! $isActivePeriod,
+                               ])
+                               @if ($isActivePeriod) aria-current="true" @endif>{{ $option['label'] }}</a>
+                        @endforeach
+                    </nav>
+
+                    <div class="inline-flex items-center gap-1" role="group" aria-label="Điều hướng kỳ trước và sau">
+                        @if ($prevPeriod !== null)
+                            @php
+                                $prevUrl = route('admin.reports.index', [
+                                    'period' => $period,
+                                    'from' => $prevPeriod['from'],
+                                    'to' => $prevPeriod['to'],
+                                ]);
+                            @endphp
+                            <a href="{{ $prevUrl }}"
+                               :href="@js($prevUrl) + '&tab=' + encodeURIComponent(activeTab)"
+                               class="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold rounded-xl border border-border bg-surface-card text-main hover:bg-surface hover:border-accent transition-colors whitespace-nowrap"
+                               aria-label="Kỳ trước">‹ Trước</a>
+                        @else
+                            <button type="button"
+                                    disabled
+                                    aria-disabled="true"
+                                    class="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold rounded-xl border border-border/60 bg-surface/60 text-muted/50 cursor-not-allowed whitespace-nowrap">
+                                ‹ Trước
+                            </button>
+                        @endif
+
+                        @if ($nextPeriod !== null)
+                            @php
+                                $nextUrl = route('admin.reports.index', [
+                                    'period' => $period,
+                                    'from' => $nextPeriod['from'],
+                                    'to' => $nextPeriod['to'],
+                                ]);
+                            @endphp
+                            <a href="{{ $nextUrl }}"
+                               :href="@js($nextUrl) + '&tab=' + encodeURIComponent(activeTab)"
+                               class="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold rounded-xl border border-border bg-surface-card text-main hover:bg-surface hover:border-accent transition-colors whitespace-nowrap"
+                               aria-label="Kỳ sau">Sau ›</a>
+                        @else
+                            <button type="button"
+                                    disabled
+                                    aria-disabled="true"
+                                    class="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold rounded-xl border border-border/60 bg-surface/60 text-muted/50 cursor-not-allowed whitespace-nowrap">
+                                Sau ›
+                            </button>
+                        @endif
+                    </div>
+                </div>
+
+                <form method="GET" action="{{ route('admin.reports.index') }}" class="flex flex-wrap items-end gap-2.5" aria-label="Khoảng ngày tùy chọn">
+                    <input type="hidden" name="period" value="custom">
+                    <input type="hidden" name="tab" :value="activeTab">
                     <div>
                         <label for="report-from" class="admin-label text-muted !mb-1">Từ ngày</label>
                         <input id="report-from" type="date" name="from" value="{{ old('from', $from) }}"
@@ -84,104 +153,110 @@
                         <input id="report-to" type="date" name="to" value="{{ old('to', $to) }}"
                                @class(['input bg-surface text-main !py-1.5 text-xs sm:text-sm', 'border-error focus:border-error focus:ring-error/20' => $errors->has('to'), 'border-border' => ! $errors->has('to')])>
                     </div>
-                    <button type="submit" class="px-4 py-2 bg-accent hover:bg-accent-hover text-accent-text text-xs font-bold rounded-xl transition-colors shadow-sm">
+                    <button type="submit" class="px-4 py-2 bg-accent hover:bg-accent-hover text-accent-text text-xs font-bold rounded-xl transition-colors shadow-sm whitespace-nowrap">
                         Xem báo cáo
                     </button>
-                </div>
-
-                <nav class="flex flex-wrap items-center gap-1.5" aria-label="Khoảng ngày nhanh">
-                    @foreach ($presets as $preset)
-                        @php $isActivePreset = $preset['from'] === $from && $preset['to'] === $to && ! $errors->any(); @endphp
-                        <a href="{{ route('admin.reports.index', ['from' => $preset['from'], 'to' => $preset['to']]) }}"
-                           @class([
-                               'px-3 py-1.5 text-xs font-bold rounded-xl border transition-colors',
-                               '!border-accent !bg-accent !text-accent-text shadow-sm' => $isActivePreset,
-                               'border-border bg-surface-card text-muted hover:bg-surface hover:text-main' => ! $isActivePreset,
-                           ])
-                           @if ($isActivePreset) aria-current="true" @endif>{{ $preset['label'] }}</a>
-                    @endforeach
-                </nav>
-            </form>
+                </form>
+            </div>
 
             @if ($errors->has('from') || $errors->has('to'))
                 <div role="alert" class="rounded-xl border border-error/30 bg-error-bg px-3.5 py-2.5 text-xs font-semibold text-error-text flex flex-wrap items-center justify-between gap-2">
                     <span>Khoảng ngày không hợp lệ ({{ $errors->first('from') ?: $errors->first('to') }}). Đang hiển thị kỳ {{ $fromLabel }} – {{ $toLabel }}.</span>
-                    <a href="{{ route('admin.reports.index') }}" class="underline font-bold hover:opacity-80">Đặt lại 30 ngày gần nhất</a>
+                    <a href="{{ route('admin.reports.index') }}"
+                       :href="@js(route('admin.reports.index')) + '?tab=' + encodeURIComponent(activeTab)"
+                       class="underline font-bold hover:opacity-80">Đặt lại tháng hiện tại</a>
                 </div>
             @endif
 
-            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pt-3 border-t border-border/70 text-xs">
-                <div class="flex flex-wrap items-center gap-1.5 text-muted">
-                    <span class="font-semibold text-main">Kỳ: {{ $fromLabel }} – {{ $toLabel }} · {{ $rangeDays }} ngày</span>
+            <div class="flex flex-wrap items-center justify-between gap-2.5 pt-3 border-t border-border/70 text-xs">
+                <div class="flex flex-wrap items-center gap-2 text-muted">
+                    @if ($period === 'custom')
+                        <span class="inline-flex items-center rounded-lg border border-border bg-surface px-2 py-0.5 font-semibold text-main">
+                            Khoảng tùy chọn
+                        </span>
+                    @else
+                        <span class="inline-flex items-center rounded-lg border border-accent/25 bg-accent/10 px-2 py-0.5 font-semibold text-accent">
+                            Kỳ lịch · {{ $periodLabel }}
+                        </span>
+                    @endif
+                    <span class="font-semibold text-main">{{ $fromLabel }} – {{ $toLabel }} · {{ $rangeDays }} ngày</span>
                     <x-admin.tooltip
                         text="Số liệu tính theo giờ Việt Nam (GMT+7). Khoảng trên 31 ngày tự động gộp theo tuần (T2–CN)."
                         label="Quy ước kỳ báo cáo"
                     />
                 </div>
 
-                <div class="flex flex-wrap items-center gap-1.5" role="tablist" aria-label="Chuyển vùng phân tích báo cáo">
-                    @if ($isAdmin)
-                        <button type="button"
-                                role="tab"
-                                id="tab-finance"
-                                data-report-tab="finance"
-                                aria-controls="vung-tai-chinh"
-                                :aria-selected="activeTab === 'finance' ? 'true' : 'false'"
-                                :tabindex="activeTab === 'finance' ? 0 : -1"
-                                @click="setTab('finance')"
-                                @keydown="handleTabKeydown($event, 'finance')"
-                                :class="activeTab === 'finance' ? 'border-accent bg-accent text-accent-text shadow-sm' : 'border-border bg-surface text-main hover:border-accent hover:text-accent'"
-                                class="px-3 py-1.5 rounded-xl border font-bold transition-colors cursor-pointer">
-                            Tài chính
-                        </button>
-                    @endif
-                    <button type="button"
-                            role="tab"
-                            id="tab-operations"
-                            data-report-tab="operations"
-                            aria-controls="vung-van-hanh"
-                            :aria-selected="activeTab === 'operations' ? 'true' : 'false'"
-                            :tabindex="activeTab === 'operations' ? 0 : -1"
-                            @click="setTab('operations')"
-                            @keydown="handleTabKeydown($event, 'operations')"
-                            :class="activeTab === 'operations' ? 'border-accent bg-accent text-accent-text shadow-sm' : 'border-border bg-surface text-main hover:border-accent hover:text-accent'"
-                            class="px-3 py-1.5 rounded-xl border font-bold transition-colors cursor-pointer">
-                        Vận hành &amp; Đơn hàng
-                    </button>
-                    <button type="button"
-                            role="tab"
-                            id="tab-inventory"
-                            data-report-tab="inventory"
-                            aria-controls="vung-ton-kho"
-                            :aria-selected="activeTab === 'inventory' ? 'true' : 'false'"
-                            :tabindex="activeTab === 'inventory' ? 0 : -1"
-                            @click="setTab('inventory')"
-                            @keydown="handleTabKeydown($event, 'inventory')"
-                            :class="activeTab === 'inventory' ? 'border-accent bg-accent text-accent-text shadow-sm' : 'border-border bg-surface text-main hover:border-accent hover:text-accent'"
-                            class="px-3 py-1.5 rounded-xl border font-bold transition-colors inline-flex items-center gap-1.5 cursor-pointer">
-                        <span>Tồn kho hiện tại</span>
-                        @if ($inventory['low'] !== [])
-                            <span class="inline-flex items-center justify-center rounded-full bg-error-bg text-error-text px-1.5 py-0.2 text-[10px] font-bold">{{ count($inventory['low']) }}</span>
-                        @endif
-                    </button>
-                    @if ($isAdmin)
-                        <button type="button"
-                                role="tab"
-                                id="tab-feedback"
-                                data-report-tab="feedback"
-                                aria-controls="vung-bai-viet"
-                                :aria-selected="activeTab === 'feedback' ? 'true' : 'false'"
-                                :tabindex="activeTab === 'feedback' ? 0 : -1"
-                                @click="setTab('feedback')"
-                                @keydown="handleTabKeydown($event, 'feedback')"
-                                :class="activeTab === 'feedback' ? 'border-accent bg-accent text-accent-text shadow-sm' : 'border-border bg-surface text-main hover:border-accent hover:text-accent'"
-                                class="px-3 py-1.5 rounded-xl border font-bold transition-colors cursor-pointer">
-                            Đánh giá bài viết
-                        </button>
-                    @endif
-                </div>
+                @if ($isAdmin)
+                    <span class="text-muted">So với kỳ trước: <span class="font-medium text-main">{{ $prevFromLabel }} – {{ $prevToLabel }}</span></span>
+                @endif
             </div>
         </div>
+
+        {{-- Thanh Tab chuyển vùng nội dung & Các vùng báo cáo --}}
+        <div class="flex flex-col">
+            <div class="flex items-end gap-1 overflow-x-auto border-b border-border whitespace-nowrap" role="tablist" aria-label="Chuyển vùng phân tích báo cáo">
+                @if ($isAdmin)
+                    <button type="button"
+                            role="tab"
+                            id="tab-finance"
+                            data-report-tab="finance"
+                            aria-controls="vung-tai-chinh"
+                            :aria-selected="activeTab === 'finance' ? 'true' : 'false'"
+                            :tabindex="activeTab === 'finance' ? 0 : -1"
+                            @click="setTab('finance')"
+                            @keydown="handleTabKeydown($event, 'finance')"
+                            :class="activeTab === 'finance' ? 'bg-surface-card text-main border-t-accent border-x-border border-b border-b-surface-card -mb-px' : 'bg-transparent text-muted border-t-transparent border-x-transparent hover:text-main hover:bg-surface/60'"
+                            class="shrink-0 px-4 py-2.5 text-sm font-semibold rounded-t-xl border-t-2 border-x transition-colors cursor-pointer">
+                        Tài chính
+                    </button>
+                @endif
+                <button type="button"
+                        role="tab"
+                        id="tab-operations"
+                        data-report-tab="operations"
+                        aria-controls="vung-van-hanh"
+                        :aria-selected="activeTab === 'operations' ? 'true' : 'false'"
+                        :tabindex="activeTab === 'operations' ? 0 : -1"
+                        @click="setTab('operations')"
+                        @keydown="handleTabKeydown($event, 'operations')"
+                        :class="activeTab === 'operations' ? 'bg-surface-card text-main border-t-accent border-x-border border-b border-b-surface-card -mb-px' : 'bg-transparent text-muted border-t-transparent border-x-transparent hover:text-main hover:bg-surface/60'"
+                        class="shrink-0 px-4 py-2.5 text-sm font-semibold rounded-t-xl border-t-2 border-x transition-colors cursor-pointer">
+                    Vận hành &amp; Đơn hàng
+                </button>
+                <button type="button"
+                        role="tab"
+                        id="tab-inventory"
+                        data-report-tab="inventory"
+                        aria-controls="vung-ton-kho"
+                        :aria-selected="activeTab === 'inventory' ? 'true' : 'false'"
+                        :tabindex="activeTab === 'inventory' ? 0 : -1"
+                        @click="setTab('inventory')"
+                        @keydown="handleTabKeydown($event, 'inventory')"
+                        :class="activeTab === 'inventory' ? 'bg-surface-card text-main border-t-accent border-x-border border-b border-b-surface-card -mb-px' : 'bg-transparent text-muted border-t-transparent border-x-transparent hover:text-main hover:bg-surface/60'"
+                        class="shrink-0 px-4 py-2.5 text-sm font-semibold rounded-t-xl border-t-2 border-x transition-colors inline-flex items-center gap-1.5 cursor-pointer">
+                    <span>Tồn kho hiện tại</span>
+                    @if ($inventory['low'] !== [])
+                        <span class="inline-flex items-center justify-center rounded-full bg-error-bg text-error-text px-1.5 py-0.2 text-[10px] font-bold">{{ count($inventory['low']) }}</span>
+                    @endif
+                </button>
+                @if ($isAdmin)
+                    <button type="button"
+                            role="tab"
+                            id="tab-feedback"
+                            data-report-tab="feedback"
+                            aria-controls="vung-bai-viet"
+                            :aria-selected="activeTab === 'feedback' ? 'true' : 'false'"
+                            :tabindex="activeTab === 'feedback' ? 0 : -1"
+                            @click="setTab('feedback')"
+                            @keydown="handleTabKeydown($event, 'feedback')"
+                            :class="activeTab === 'feedback' ? 'bg-surface-card text-main border-t-accent border-x-border border-b border-b-surface-card -mb-px' : 'bg-transparent text-muted border-t-transparent border-x-transparent hover:text-main hover:bg-surface/60'"
+                            class="shrink-0 px-4 py-2.5 text-sm font-semibold rounded-t-xl border-t-2 border-x transition-colors cursor-pointer">
+                        Đánh giá bài viết
+                    </button>
+                @endif
+            </div>
+
+            <div class="pt-5">
 
         {{-- TAB 1: TÀI CHÍNH (ADMIN) --}}
         @if ($isAdmin)
@@ -888,5 +963,7 @@
                 @endif
             </section>
         @endif
+            </div>
+        </div>
     </div>
 @endsection

@@ -142,7 +142,7 @@ class ReportDashboardTest extends TestCase
         $this->actingAs($this->admin)->get(route('admin.reports.index', ['from' => '2026-11-01', 'to' => '2026-11-01']))->assertOk()
             ->assertViewHas('money', fn (array $money) => $money['merchandise'] === 1_600_000 && $money['cogs'] === 1_120_000)
             ->assertViewHas('previousMoney', fn (array $money) => $money['merchandise'] === 800_000 && $money['cogs'] === 560_000)
-            ->assertViewHas('presets', fn (array $presets) => $presets[0] === ['label' => '7 ngày', 'from' => '2026-10-26', 'to' => '2026-11-01'])
+            ->assertViewHas('periodOptions', fn (array $options) => $options[0] === ['key' => 'week', 'label' => 'Tuần', 'from' => '2026-10-26', 'to' => '2026-11-01'])
             ->assertSee('so với 1 ngày trước đó')->assertSee('Lãi 31,7% trên doanh thu')->assertSee('Mỗi 100 đồng doanh thu')->assertSee('Biên lợi nhuận');
     }
 

@@ -106,7 +106,12 @@ function createAxisY(theme, callback, extra = {}) {
     };
 }
 
-function financeChart(Chart, canvas, periods, theme) {
+function resetChartTooltip(chart) {
+    chart.setActiveElements?.([]);
+    chart.tooltip?.setActiveElements?.([], { x: 0, y: 0 });
+}
+
+function financeChart(Chart, canvas, periods, theme, animate = true) {
     const stack = (label, field, color, top) => ({
         label,
         data: periods.map((period) => period[field]),
@@ -130,18 +135,26 @@ function financeChart(Chart, canvas, periods, theme) {
             ],
         },
         options: {
+            ...(animate ? {} : { animation: false }),
             maintainAspectRatio: false,
             interaction: { mode: 'index', intersect: false },
             plugins: {
                 legend: { display: false },
                 tooltip: {
                     ...createTooltip(theme),
-                    filter: (item) => item.parsed.y !== 0,
                     callbacks: {
-                        title: (items) => periods[items[0].dataIndex].label,
-                        label: (context) => ` ${context.dataset.label}: ${vnd(context.parsed.y)}`,
+                        title: (items) => {
+                            if (!items?.length) return '';
+                            return periods[items[0].dataIndex]?.label ?? '';
+                        },
+                        label: (context) => {
+                            if (!context?.dataset) return '';
+                            return ` ${context.dataset.label}: ${vnd(context.parsed?.y ?? 0)}`;
+                        },
                         footer: (items) => {
+                            if (!items?.length) return '';
                             const period = periods[items[0].dataIndex];
+                            if (!period) return '';
                             return `Doanh thu: ${vnd(period.revenue)} · Lợi nhuận: ${vnd(period.profit)}`;
                         },
                     },
@@ -152,7 +165,7 @@ function financeChart(Chart, canvas, periods, theme) {
     });
 }
 
-function marginChart(Chart, canvas, periods, theme) {
+function marginChart(Chart, canvas, periods, theme, animate = true) {
     const margin = periods.map((period) => (period.revenue > 0 ? Math.round((period.profit / period.revenue) * 1000) / 10 : null));
     const revenue = periods.reduce((sum, period) => sum + period.revenue, 0);
     const average = revenue > 0 ? Math.round((periods.reduce((sum, period) => sum + period.profit, 0) / revenue) * 1000) / 10 : null;
@@ -188,6 +201,7 @@ function marginChart(Chart, canvas, periods, theme) {
             ],
         },
         options: {
+            ...(animate ? {} : { animation: false }),
             maintainAspectRatio: false,
             interaction: { mode: 'index', intersect: false },
             plugins: {
@@ -195,8 +209,18 @@ function marginChart(Chart, canvas, periods, theme) {
                 tooltip: {
                     ...createTooltip(theme),
                     callbacks: {
-                        title: (items) => periods[items[0].dataIndex].label,
-                        label: (context) => (context.parsed.y === null ? ' Chưa có doanh thu' : ` ${context.dataset.label}: ${percent(context.parsed.y)}`),
+                        title: (items) => {
+                            if (!items?.length) return '';
+                            return periods[items[0].dataIndex]?.label ?? '';
+                        },
+                        label: (context) => {
+                            if (!context?.dataset) return '';
+                            const value = context.parsed?.y;
+                            if (value === null || value === undefined || Number.isNaN(value)) {
+                                return ` ${context.dataset.label}: Chưa có doanh thu`;
+                            }
+                            return ` ${context.dataset.label}: ${percent(value)}`;
+                        },
                     },
                 },
             },
@@ -206,7 +230,7 @@ function marginChart(Chart, canvas, periods, theme) {
 }
 
 /** One horizontal stacked bar per article: helpful then not helpful, counted in answers. */
-function feedbackChart(Chart, canvas, articles, theme) {
+function feedbackChart(Chart, canvas, articles, theme, animate = true) {
     const stack = (label, field, color, last) => ({
         label,
         data: articles.map((article) => article[field]),
@@ -230,6 +254,7 @@ function feedbackChart(Chart, canvas, articles, theme) {
             datasets: [stack('Hữu ích', 'helpful', theme.colors.profit, false), stack('Không hữu ích', 'unhelpful', theme.colors.expense, true)],
         },
         options: {
+            ...(animate ? {} : { animation: false }),
             indexAxis: 'y',
             maintainAspectRatio: false,
             interaction: { mode: 'index', intersect: false, axis: 'y' },
@@ -238,10 +263,18 @@ function feedbackChart(Chart, canvas, articles, theme) {
                 tooltip: {
                     ...createTooltip(theme),
                     callbacks: {
-                        title: (items) => articles[items[0].dataIndex].title,
-                        label: (context) => ` ${context.dataset.label}: ${context.parsed.x} lượt`,
+                        title: (items) => {
+                            if (!items?.length) return '';
+                            return articles[items[0].dataIndex]?.title ?? '';
+                        },
+                        label: (context) => {
+                            if (!context?.dataset) return '';
+                            return ` ${context.dataset.label}: ${context.parsed?.x ?? 0} lượt`;
+                        },
                         footer: (items) => {
+                            if (!items?.length) return '';
                             const article = articles[items[0].dataIndex];
+                            if (!article) return '';
                             const total = article.helpful + article.unhelpful;
                             return total ? `${Math.round((article.helpful / total) * 100)}% thấy hữu ích` : '';
                         },
@@ -289,6 +322,9 @@ export function reportCharts(initialTab = 'finance', allowedTabs = ['finance', '
         '#vung-ton-kho': 'inventory',
         '#vung-bai-viet': 'feedback',
     };
+    const tabToHash = Object.fromEntries(
+        Object.entries(hashToTab).map(([hash, tab]) => [tab, hash]),
+    );
 
     const resolveInitialTab = () => {
         if (typeof window !== 'undefined') {
@@ -302,9 +338,15 @@ export function reportCharts(initialTab = 'finance', allowedTabs = ['finance', '
 
     return {
         activeTab: resolveInitialTab(),
-        setTab(tab) {
+        setTab(tab, { syncHash = true } = {}) {
             if (!allowedTabs.includes(tab)) return;
             this.activeTab = tab;
+            if (syncHash && typeof window !== 'undefined' && window.history?.replaceState) {
+                const nextHash = tabToHash[tab];
+                if (nextHash && window.location.hash !== nextHash) {
+                    window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}${nextHash}`);
+                }
+            }
             this.$nextTick(() => this.resizeCharts());
         },
         handleTabKeydown(event, currentTab) {
@@ -326,6 +368,7 @@ export function reportCharts(initialTab = 'finance', allowedTabs = ['finance', '
         resizeCharts() {
             charts.forEach((chart) => {
                 try {
+                    resetChartTooltip(chart);
                     chart.resize();
                     chart.update('none');
                 } catch {}
@@ -334,12 +377,13 @@ export function reportCharts(initialTab = 'finance', allowedTabs = ['finance', '
         destroyCharts() {
             charts.forEach((chart) => {
                 try {
+                    resetChartTooltip(chart);
                     chart.destroy();
                 } catch {}
             });
             charts = [];
         },
-        renderCharts() {
+        renderCharts(animate = true) {
             const Chart = window.Chart;
             if (!Chart || !this.$refs?.data) return;
             this.destroyCharts();
@@ -359,15 +403,15 @@ export function reportCharts(initialTab = 'finance', allowedTabs = ['finance', '
 
             if (this.$refs.money && hasFinanceActivity) {
                 Chart.getChart?.(this.$refs.money)?.destroy();
-                charts.push(financeChart(Chart, this.$refs.money, moneyRows, theme));
+                charts.push(financeChart(Chart, this.$refs.money, moneyRows, theme, animate));
             }
             if (this.$refs.margin && hasFinanceActivity) {
                 Chart.getChart?.(this.$refs.margin)?.destroy();
-                charts.push(marginChart(Chart, this.$refs.margin, moneyRows, theme));
+                charts.push(marginChart(Chart, this.$refs.margin, moneyRows, theme, animate));
             }
             if (this.$refs.feedback && data.feedback?.length) {
                 Chart.getChart?.(this.$refs.feedback)?.destroy();
-                charts.push(feedbackChart(Chart, this.$refs.feedback, data.feedback, theme));
+                charts.push(feedbackChart(Chart, this.$refs.feedback, data.feedback, theme, animate));
             }
             this.$el.querySelectorAll('canvas[data-sparkline]').forEach((canvas) => {
                 const field = canvas.dataset.sparkline;
@@ -388,18 +432,18 @@ export function reportCharts(initialTab = 'finance', allowedTabs = ['finance', '
                 onHashChange = () => {
                     const hashTab = hashToTab[window.location.hash];
                     if (hashTab && allowedTabs.includes(hashTab)) {
-                        this.setTab(hashTab);
+                        this.setTab(hashTab, { syncHash: false });
                     }
                 };
                 window.addEventListener('hashchange', onHashChange);
             }
             if (typeof MutationObserver !== 'undefined') {
-                observer = new MutationObserver(() => this.renderCharts());
+                observer = new MutationObserver(() => this.renderCharts(false));
                 observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'class'] });
             }
             if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
                 mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-                onSystemThemeChange = () => this.renderCharts();
+                onSystemThemeChange = () => this.renderCharts(false);
                 if (typeof mediaQuery.addEventListener === 'function') {
                     mediaQuery.addEventListener('change', onSystemThemeChange);
                 }

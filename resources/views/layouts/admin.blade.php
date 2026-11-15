@@ -337,7 +337,7 @@
 
             <!-- Admin Simple Footer -->
             <footer class="mt-12 bg-surface-card border border-border rounded-2xl p-4 text-center text-xs text-muted font-medium shadow-sm">
-                © 2026 CENA Store Admin — Cena là cửa hàng độc lập, không phải website chính thức của Nike.
+                © {{ app(\App\Support\BusinessClock::class)->now()->setTimezone((string) config('store.business_timezone', 'Asia/Ho_Chi_Minh'))->year }} CENA — Quản trị cửa hàng.
             </footer>
         </main>
     </div>
