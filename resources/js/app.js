@@ -77,6 +77,69 @@ function themeMixin() {
 
 const ADMIN_SIDEBAR_GROUPS_STORAGE_KEY = 'cena-admin-sidebar-groups';
 
+Alpine.data('adminTooltip', (preferredPlacement = 'top') => ({
+    open: false,
+    shiftX: 0,
+    resolvedPlacement: preferredPlacement,
+    _hoverTimer: null,
+    openHover() {
+        clearTimeout(this._hoverTimer);
+        this.open = true;
+        this.$nextTick(() => this.reposition());
+    },
+    closeHover() {
+        clearTimeout(this._hoverTimer);
+        this._hoverTimer = setTimeout(() => {
+            this.open = false;
+        }, 80);
+    },
+    closeFocus(event) {
+        if (event.relatedTarget && this.$el.contains(event.relatedTarget)) {
+            return;
+        }
+        this.open = false;
+    },
+    toggle() {
+        clearTimeout(this._hoverTimer);
+        this.open = !this.open;
+        if (this.open) {
+            this.$nextTick(() => this.reposition());
+        }
+    },
+    close() {
+        clearTimeout(this._hoverTimer);
+        this.open = false;
+    },
+    reposition() {
+        const panel = this.$refs.panel;
+        const trigger = this.$refs.trigger;
+        if (!panel || !trigger || typeof window === 'undefined') return;
+
+        this.shiftX = 0;
+        this.resolvedPlacement = preferredPlacement;
+
+        this.$nextTick(() => {
+            const margin = 12;
+            const triggerRect = trigger.getBoundingClientRect();
+            const panelRect = panel.getBoundingClientRect();
+
+            if (this.resolvedPlacement === 'top' && panelRect.top < margin && (window.innerHeight - triggerRect.bottom) > panelRect.height + margin) {
+                this.resolvedPlacement = 'bottom';
+            } else if (this.resolvedPlacement === 'bottom' && panelRect.bottom > window.innerHeight - margin && triggerRect.top > panelRect.height + margin) {
+                this.resolvedPlacement = 'top';
+            }
+
+            let nextShift = 0;
+            if (panelRect.left < margin) {
+                nextShift = margin - panelRect.left;
+            } else if (panelRect.right > window.innerWidth - margin) {
+                nextShift = (window.innerWidth - margin) - panelRect.right;
+            }
+            this.shiftX = Math.round(nextShift);
+        });
+    },
+}));
+
 Alpine.data('adminShell', (config = {}) => ({
     ...themeMixin(),
     sidebarOpen: false,

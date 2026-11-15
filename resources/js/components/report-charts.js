@@ -327,6 +327,7 @@ export function reportCharts(initialTab = 'finance', allowedTabs = ['finance', '
             charts.forEach((chart) => {
                 try {
                     chart.resize();
+                    chart.update('none');
                 } catch {}
             });
         },

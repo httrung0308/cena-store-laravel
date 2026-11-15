@@ -70,9 +70,9 @@
          x-data="reportCharts(@js($isAdmin ? 'finance' : 'operations'), @js($isAdmin ? ['finance', 'operations', 'inventory', 'feedback'] : ['operations', 'inventory']))">
         <script type="application/json" x-ref="data">@json(['daily' => $daily, 'operations' => $operations, 'feedback' => $articleFeedback['articles'] ?? []])</script>
 
-        {{-- Thanh điều khiển kỳ báo cáo & chuyển vùng phân tích nhanh --}}
-        <div class="admin-card !p-4 sm:!p-5 flex flex-col gap-4">
-            <form method="GET" action="{{ route('admin.reports.index') }}" class="flex flex-col lg:flex-row lg:items-end justify-between gap-4" aria-label="Lọc theo ngày">
+        {{-- Thanh điều khiển kỳ báo cáo & chuyển tab --}}
+        <div class="admin-card !p-4 sm:!p-5 flex flex-col gap-3.5">
+            <form method="GET" action="{{ route('admin.reports.index') }}" class="flex flex-col lg:flex-row lg:items-end justify-between gap-3.5" aria-label="Lọc theo ngày">
                 <div class="flex flex-wrap items-end gap-3">
                     <div>
                         <label for="report-from" class="admin-label text-muted !mb-1">Từ ngày</label>
@@ -90,7 +90,6 @@
                 </div>
 
                 <nav class="flex flex-wrap items-center gap-1.5" aria-label="Khoảng ngày nhanh">
-                    <span class="text-xs font-semibold text-muted mr-1 hidden sm:inline">Chọn nhanh:</span>
                     @foreach ($presets as $preset)
                         @php $isActivePreset = $preset['from'] === $from && $preset['to'] === $to && ! $errors->any(); @endphp
                         <a href="{{ route('admin.reports.index', ['from' => $preset['from'], 'to' => $preset['to']]) }}"
@@ -106,25 +105,21 @@
 
             @if ($errors->has('from') || $errors->has('to'))
                 <div role="alert" class="rounded-xl border border-error/30 bg-error-bg px-3.5 py-2.5 text-xs font-semibold text-error-text flex flex-wrap items-center justify-between gap-2">
-                    <span>Khoảng ngày bạn nhập chưa hợp lệ ({{ $errors->first('from') ?: $errors->first('to') }}). Hệ thống giữ nguyên giá trị bạn đã nhập để chỉnh lại, đang tạm hiển thị kỳ {{ $fromLabel }} – {{ $toLabel }}.</span>
+                    <span>Khoảng ngày không hợp lệ ({{ $errors->first('from') ?: $errors->first('to') }}). Đang hiển thị kỳ {{ $fromLabel }} – {{ $toLabel }}.</span>
                     <a href="{{ route('admin.reports.index') }}" class="underline font-bold hover:opacity-80">Đặt lại 30 ngày gần nhất</a>
                 </div>
             @endif
 
-            <div class="flex flex-col xl:flex-row xl:items-center justify-between gap-3 pt-3 border-t border-border/70 text-xs">
-                <div class="flex flex-wrap items-center gap-2 text-muted">
-                    <span class="inline-flex items-center gap-1.5 rounded-lg bg-accent/10 px-2.5 py-1 font-bold text-accent">
-                        Kỳ đang xem: {{ $fromLabel }} – {{ $toLabel }}
-                    </span>
-                    <span class="badge bg-surface border border-border text-main">{{ $rangeDays }} ngày</span>
-                    <span class="badge bg-surface border border-border text-muted">
-                        {{ $weekly ? 'Biểu đồ gộp theo tuần (T2–CN)' : 'Biểu đồ chi tiết từng ngày' }}
-                    </span>
-                    <span class="text-muted hidden sm:inline">· Giờ Việt Nam (GMT+7)</span>
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pt-3 border-t border-border/70 text-xs">
+                <div class="flex flex-wrap items-center gap-1.5 text-muted">
+                    <span class="font-semibold text-main">Kỳ: {{ $fromLabel }} – {{ $toLabel }} · {{ $rangeDays }} ngày</span>
+                    <x-admin.tooltip
+                        text="Số liệu tính theo giờ Việt Nam (GMT+7). Khoảng trên 31 ngày tự động gộp theo tuần (T2–CN)."
+                        label="Quy ước kỳ báo cáo"
+                    />
                 </div>
 
                 <div class="flex flex-wrap items-center gap-1.5" role="tablist" aria-label="Chuyển vùng phân tích báo cáo">
-                    <span class="text-muted font-semibold mr-1">Phân tích:</span>
                     @if ($isAdmin)
                         <button type="button"
                                 role="tab"
@@ -188,13 +183,7 @@
             </div>
         </div>
 
-        @if (! $isAdmin)
-            <p class="rounded-2xl border border-border bg-surface/60 px-4 py-3 text-xs sm:text-sm text-muted">
-                Nhân viên chỉ xem số liệu vận hành và tồn kho. Doanh thu, giá vốn và lợi nhuận chỉ Admin xem được.
-            </p>
-        @endif
-
-        {{-- MÀN HÌNH ĐẦU (FIRST VIEWPORT): Tóm tắt KPI theo kỳ & Tồn kho hiện tại --}}
+        {{-- TAB 1: TÀI CHÍNH (ADMIN) --}}
         @if ($isAdmin)
             @php
                 $margin = $money['revenue'] > 0 ? $money['profit'] / $money['revenue'] * 100 : null;
@@ -208,7 +197,8 @@
                         'value' => $money['revenue'],
                         'previous' => $previousMoney['revenue'],
                         'higherIsBetter' => true,
-                        'note' => $money['shipping'] > 0 ? 'Gồm '.$vnd($money['shipping']).' phí ship' : 'Tiền bán giày đã giao',
+                        'note' => $money['shipping'] > 0 ? 'Gồm '.$vnd($money['shipping']).' phí ship' : null,
+                        'tooltip' => 'Tổng tiền hàng và phí ship của các đơn giao thành công trong kỳ.',
                         'hasSpark' => $rangeDays > 1 && collect($daily)->contains(fn (array $r): bool => $r['revenue'] !== 0),
                     ],
                     [
@@ -217,7 +207,8 @@
                         'value' => $money['cogs'],
                         'previous' => $previousMoney['cogs'],
                         'higherIsBetter' => null,
-                        'note' => 'Tiền nhập của số giày đã bán',
+                        'note' => null,
+                        'tooltip' => 'Giá vốn nhập kho của số giày đã giao thành công trong kỳ.',
                         'hasSpark' => $rangeDays > 1 && collect($daily)->contains(fn (array $r): bool => $r['cogs'] !== 0),
                     ],
                     [
@@ -226,7 +217,8 @@
                         'value' => $money['expense'],
                         'previous' => $previousMoney['expense'],
                         'higherIsBetter' => false,
-                        'note' => 'Bảo hành, mất hàng',
+                        'note' => null,
+                        'tooltip' => 'Chi phí phát sinh từ bảo hành và mất hàng.',
                         'hasSpark' => $rangeDays > 1 && collect($daily)->contains(fn (array $r): bool => ($r['expense'] ?? 0) !== 0),
                     ],
                     [
@@ -235,23 +227,14 @@
                         'value' => $money['profit'],
                         'previous' => $previousMoney['profit'],
                         'higherIsBetter' => true,
-                        'note' => $margin === null ? 'Doanh thu trừ giá vốn và chi phí' : 'Lãi '.$percent($margin).' trên doanh thu',
+                        'note' => $margin === null ? null : 'Lãi '.$percent($margin).' trên doanh thu',
+                        'tooltip' => 'Doanh thu − Giá vốn − Chi phí khác = Lợi nhuận (theo sổ cái bán hàng).',
                         'hasSpark' => $rangeDays > 1 && collect($daily)->contains(fn (array $r): bool => $r['profit'] !== 0),
                     ],
                 ];
             @endphp
 
-            <section id="vung-tai-chinh" aria-label="Tài chính" class="flex flex-col gap-4 scroll-mt-6">
-                <div class="flex flex-wrap items-center justify-between gap-2">
-                    <div class="flex flex-wrap items-center gap-2">
-                        <h2 class="text-lg font-bold text-main">Tài chính từ sổ cái bán hàng</h2>
-                        <span class="badge bg-accent/10 text-accent border border-accent/20">Theo kỳ đã chọn · {{ $day($from) }} – {{ $day($to) }}</span>
-                    </div>
-                    <p class="text-xs text-muted">
-                        Công thức đối chiếu: <strong class="text-main">Doanh thu ({{ $vnd($money['revenue']) }})</strong> − <strong class="text-main">Giá vốn ({{ $vnd($money['cogs']) }})</strong> − <strong class="text-main">Chi phí khác ({{ $vnd($money['expense']) }})</strong> = <strong @class(['text-main' => $money['profit'] >= 0, 'text-error' => $money['profit'] < 0])>Lợi nhuận ({{ $vnd($money['profit']) }})</strong>
-                    </p>
-                </div>
-
+            <div id="vung-tai-chinh" role="tabpanel" aria-labelledby="tab-finance" x-show="activeTab === 'finance'" class="flex flex-col gap-6 scroll-mt-6">
                 <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                     @foreach ($cards as $card)
                         @php
@@ -260,17 +243,21 @@
                         @endphp
                         <article class="admin-card !p-5 flex flex-col justify-between" data-metric="{{ $card['label'] }}">
                             <div>
-                                <div class="flex items-center justify-between gap-2">
+                                <div class="flex items-center gap-1">
                                     <h3 class="text-sm font-semibold text-muted">{{ $card['label'] }}</h3>
-                                    <span class="text-[11px] font-medium text-muted/80">{{ $rangeDays }} ngày</span>
+                                    @if (! empty($card['tooltip']))
+                                        <x-admin.tooltip :text="$card['tooltip']" :label="'Giải thích '.$card['label']" />
+                                    @endif
                                 </div>
                                 <p @class(['mt-1.5 text-2xl font-bold tabular-nums text-main', 'text-error' => $card['value'] < 0])>{{ $vnd($card['value']) }}</p>
-                                <p class="mt-1 text-xs text-muted">{{ $card['note'] }}</p>
+                                @if (! empty($card['note']))
+                                    <p class="mt-1 text-xs text-muted">{{ $card['note'] }}</p>
+                                @endif
                             </div>
                             <div class="mt-3 pt-2.5 border-t border-border/50">
                                 <p class="flex items-center gap-1.5 text-xs">
                                     @if ($delta === null)
-                                        <span class="text-muted/70">Chưa có số để so sánh ({{ $prevFromLabel }} – {{ $prevToLabel }})</span>
+                                        <span class="text-muted/70">Chưa có số kỳ trước ({{ $prevFromLabel }} – {{ $prevToLabel }})</span>
                                     @else
                                         <span @class([
                                             'badge !px-2 !py-0.5 tabular-nums',
@@ -290,261 +277,215 @@
                         </article>
                     @endforeach
                 </div>
-            </section>
-        @endif
 
-        {{-- Dải tóm tắt Vận hành (theo kỳ) vs Tồn kho hiện tại (tại thời điểm tải trang) --}}
-        <section aria-label="Vận hành" class="grid gap-4 lg:grid-cols-2">
-            {{-- Nhóm 1: Số liệu vận hành theo kỳ đã chọn --}}
-            <div class="rounded-2xl border border-border bg-surface/50 p-4 flex flex-col gap-3">
-                <div class="flex flex-wrap items-center justify-between gap-2">
-                    <span class="text-xs font-bold uppercase tracking-wider text-main">Nhịp vận hành theo kỳ đã chọn</span>
-                    <span class="badge bg-accent/10 text-accent border border-accent/20">{{ $day($from) }} – {{ $day($to) }} ({{ $rangeDays }} ngày)</span>
-                </div>
-                <div class="grid gap-3 sm:grid-cols-2 flex-1">
-                    <article class="admin-card !p-4 flex flex-col justify-between">
+                <div class="grid gap-6 xl:grid-cols-3">
+                    <section class="admin-card xl:col-span-2 flex flex-col justify-between" aria-labelledby="chart-title">
                         <div>
-                            <h2 class="text-sm font-semibold text-muted">Đơn mới đặt</h2>
-                            <p class="mt-1.5 text-2xl font-bold tabular-nums text-main">{{ number_format($ordersPlaced, 0, ',', '.') }}</p>
-                            <p class="mt-1 text-xs text-muted">Tính theo thời điểm khách đặt đơn trong kỳ</p>
-                        </div>
-                        <div @class(['relative mt-3 h-9', 'hidden' => ! $hasOrdersSpark]) aria-hidden="true">
-                            <canvas data-sparkline="orders"></canvas>
-                        </div>
-                    </article>
-                    <article class="admin-card !p-4 flex flex-col justify-between">
-                        <div>
-                            <h2 class="text-sm font-semibold text-muted">Đôi đã giao</h2>
-                            <p class="mt-1.5 text-2xl font-bold tabular-nums text-main">{{ number_format($pairsSold, 0, ',', '.') }} đôi</p>
-                            <p class="mt-1 text-xs text-muted">Tính theo đơn giao thành công trong kỳ</p>
-                        </div>
-                        <div @class(['relative mt-3 h-9', 'hidden' => ! $hasPairsSpark]) aria-hidden="true">
-                            <canvas data-sparkline="pairs"></canvas>
-                        </div>
-                    </article>
-                </div>
-            </div>
-
-            {{-- Nhóm 2: Tồn kho hiện tại tại thời điểm tải trang --}}
-            <div class="rounded-2xl border border-border bg-surface/50 p-4 flex flex-col gap-3">
-                <div class="flex flex-wrap items-center justify-between gap-2">
-                    <span class="text-xs font-bold uppercase tracking-wider text-main">Tồn kho hiện tại</span>
-                    <span class="badge bg-surface-card text-muted border border-border">Tại thời điểm tải trang · Không theo bộ lọc ngày</span>
-                </div>
-                <div class="grid gap-3 sm:grid-cols-2 flex-1">
-                    <article class="admin-card !p-4 flex flex-col justify-between">
-                        <div>
-                            <h2 class="text-sm font-semibold text-muted">Tồn kho còn bán được</h2>
-                            <p class="mt-1.5 text-2xl font-bold tabular-nums text-main" data-sellable>{{ number_format($inventory['sellable'], 0, ',', '.') }} đôi</p>
-                        </div>
-                        <div class="mt-2 space-y-0.5 text-xs text-muted">
-                            @if ($inventory['reserved'] > 0)
-                                <p>Đã trừ {{ $inventory['reserved'] }} đôi khách đặt chưa giao</p>
-                            @else
-                                <p>Trên {{ number_format($inventory['variants'], 0, ',', '.') }} size đang mở bán</p>
-                            @endif
-                            @if ($inventory['quarantine'] > 0)
-                                <p>Cách ly kiểm tra: {{ $inventory['quarantine'] }} đôi</p>
-                            @endif
-                        </div>
-                    </article>
-                    <button type="button" x-on:click="$dispatch('open-low-stock', { trigger: $el })" aria-haspopup="dialog" aria-controls="low-stock-dialog" data-low-stock-card
-                            class="admin-card !p-4 text-left transition hover:border-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent flex flex-col justify-between">
-                        <div>
-                            <span class="flex items-center justify-between gap-2 text-sm font-semibold text-muted">
-                                <span>Sắp hết hàng</span>
-                                <span aria-hidden="true" class="text-accent font-bold">→</span>
-                            </span>
-                            <span @class(['mt-1.5 block text-2xl font-bold tabular-nums', 'text-error' => $inventory['low'] !== [], 'text-main' => $inventory['low'] === []])>
-                                {{ count($inventory['low']) }} size
-                            </span>
-                        </div>
-                        <span class="mt-2 block text-xs text-muted">Còn {{ $lowStockThreshold }} đôi trở xuống · bấm để xem</span>
-                    </button>
-                </div>
-            </div>
-        </section>
-
-        {{-- PHÂN TÍCH TÀI CHÍNH CHI TIẾT (ADMIN) --}}
-        @if ($isAdmin)
-            <div id="vung-tai-chinh-panel" role="tabpanel" aria-labelledby="tab-finance" x-show="activeTab === 'finance'" class="grid gap-6 xl:grid-cols-3">
-                <section class="admin-card xl:col-span-2 flex flex-col justify-between" aria-labelledby="chart-title">
-                    <div>
-                        <div class="flex flex-wrap items-start justify-between gap-3">
-                            <div>
-                                <h2 id="chart-title" class="text-xl font-semibold text-main">Doanh thu theo {{ $periodWord }}</h2>
-                                <p class="mt-1 text-xs text-muted">Mỗi cột là doanh thu một {{ $periodWord }}, chia thành giá vốn, chi phí khác và lợi nhuận · rê chuột hoặc chạm để xem số</p>
-                            </div>
-                            <p class="flex flex-wrap gap-4 text-xs text-muted">
-                                {!! $legend('var(--text-muted)', 'Giá vốn') !!}
-                                {!! $legend('var(--accent-sub)', 'Chi phí khác') !!}
-                                {!! $legend('var(--success)', 'Lợi nhuận') !!}
-                            </p>
-                        </div>
-
-                        <div class="relative mt-4 h-72" data-report-chart>
-                            @if ($hasFinanceActivity)
-                                <canvas x-ref="money" role="img" aria-label="Biểu đồ cột chồng doanh thu theo {{ $periodWord }} từ {{ $day($from) }} đến {{ $day($to) }}: giá vốn, chi phí khác và lợi nhuận"></canvas>
-                            @else
-                                <div class="flex h-full flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-surface/40 p-6 text-center">
-                                    <p class="text-sm font-semibold text-main">Chưa có phát sinh tài chính trong khoảng {{ $fromLabel }} – {{ $toLabel }}</p>
-                                    <p class="mt-1 text-xs text-muted max-w-md">Không có doanh thu đơn giao thành công, giá vốn hoặc chi phí bảo hành/mất hàng nào được ghi nhận vào sổ cái trong kỳ này.</p>
-                                </div>
-                            @endif
-                        </div>
-
-                        <div class="mt-6 border-t border-border pt-5">
-                            <div class="flex flex-wrap items-start justify-between gap-3">
-                                <div>
-                                    <h3 class="font-semibold text-main">Biên lợi nhuận theo {{ $periodWord }}</h3>
-                                    <p class="mt-1 text-xs text-muted">Lợi nhuận chia doanh thu; đường đứt là mức trung bình cả kỳ</p>
+                            <div class="flex flex-wrap items-center justify-between gap-3">
+                                <div class="flex items-center gap-1">
+                                    <h2 id="chart-title" class="text-lg font-semibold text-main">Doanh thu theo {{ $periodWord }}</h2>
+                                    <x-admin.tooltip
+                                        text="Mỗi cột gộp giá vốn, chi phí khác và lợi nhuận. Rê chuột hoặc chạm vào cột để xem chi tiết."
+                                        label="Cách đọc biểu đồ doanh thu"
+                                    />
                                 </div>
                                 <p class="flex flex-wrap gap-4 text-xs text-muted">
-                                    {!! $legend('var(--success)', 'Biên lợi nhuận') !!}
-                                    {!! $legend('var(--text-muted)', 'Trung bình cả kỳ') !!}
+                                    {!! $legend('var(--text-muted)', 'Giá vốn') !!}
+                                    {!! $legend('var(--accent-sub)', 'Chi phí khác') !!}
+                                    {!! $legend('var(--success)', 'Lợi nhuận') !!}
                                 </p>
                             </div>
-                            <div class="relative mt-3 h-36" data-margin-chart>
+
+                            <div class="relative mt-4 h-72" data-report-chart>
                                 @if ($hasFinanceActivity)
-                                    <canvas x-ref="margin" role="img" aria-label="Biểu đồ biên lợi nhuận theo {{ $periodWord }} so với trung bình cả kỳ"></canvas>
+                                    <canvas x-ref="money" role="img" aria-label="Biểu đồ cột chồng doanh thu theo {{ $periodWord }} từ {{ $day($from) }} đến {{ $day($to) }}: giá vốn, chi phí khác và lợi nhuận"></canvas>
                                 @else
-                                    <div class="flex h-full items-center justify-center rounded-2xl border border-dashed border-border bg-surface/40 p-4 text-center text-xs text-muted">
-                                        Biểu đồ biên lợi nhuận sẽ hiển thị ngay khi có phát sinh tài chính trong kỳ.
+                                    <div class="flex h-full flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-surface/40 p-6 text-center">
+                                        <p class="text-sm font-semibold text-main">Chưa có phát sinh tài chính trong khoảng {{ $fromLabel }} – {{ $toLabel }}</p>
                                     </div>
                                 @endif
                             </div>
-                        </div>
-                    </div>
 
-                    <details class="mt-5 border-t border-border pt-4 text-sm group">
-                        <summary class="cursor-pointer font-semibold text-muted hover:text-main flex items-center justify-between gap-2">
-                            <span>Xem bảng số liệu đối chiếu từng ngày ({{ count($daily) }} ngày)</span>
-                            <span class="text-xs font-normal text-muted">Doanh thu − Giá vốn − Chi phí khác = Lợi nhuận</span>
-                        </summary>
-                        <div class="admin-table-wrap mt-3 max-h-80 overflow-y-auto">
-                            <table class="admin-table">
-                                <thead class="sticky top-0 z-10 bg-surface">
-                                    <tr>
-                                        <th>Ngày</th>
-                                        <th class="text-right">Doanh thu</th>
-                                        <th class="text-right">Giá vốn</th>
-                                        <th class="text-right">Chi phí khác</th>
-                                        <th class="text-right">Lợi nhuận</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach ($daily as $row)
-                                        @php $rowExpense = $row['expense'] ?? 0; @endphp
-                                        <tr class="hover:bg-surface/60 transition-colors">
-                                            <td class="whitespace-nowrap font-medium text-main">{{ $day($row['day']) }}</td>
-                                            <td class="text-right tabular-nums text-main">{{ $vnd($row['revenue']) }}</td>
-                                            <td class="text-right tabular-nums text-muted">{{ $vnd($row['cogs']) }}</td>
-                                            <td @class(['text-right tabular-nums', 'text-error font-semibold' => $rowExpense > 0, 'text-muted' => $rowExpense <= 0])>{{ $vnd($rowExpense) }}</td>
-                                            <td @class(['text-right tabular-nums font-semibold', 'text-error' => $row['profit'] < 0, 'text-main' => $row['profit'] >= 0])>{{ $vnd($row['profit']) }}</td>
-                                        </tr>
-                                    @endforeach
-                                </tbody>
-                                <tfoot class="sticky bottom-0 z-10 bg-surface border-t-2 border-border font-bold text-main">
-                                    <tr>
-                                        <td class="p-4">Tổng cộng ({{ $rangeDays }} ngày)</td>
-                                        <td class="p-4 text-right tabular-nums text-main">{{ $vnd($money['revenue']) }}</td>
-                                        <td class="p-4 text-right tabular-nums text-main">{{ $vnd($money['cogs']) }}</td>
-                                        <td class="p-4 text-right tabular-nums text-main">{{ $vnd($money['expense']) }}</td>
-                                        <td @class(['p-4 text-right tabular-nums', 'text-error' => $money['profit'] < 0, 'text-main' => $money['profit'] >= 0])>{{ $vnd($money['profit']) }}</td>
-                                    </tr>
-                                </tfoot>
-                            </table>
-                        </div>
-                    </details>
-                </section>
-
-                <section class="admin-card flex flex-col justify-between" aria-labelledby="structure-title">
-                    <div>
-                        <h2 id="structure-title" class="text-xl font-semibold text-main">Mỗi 100 đồng doanh thu</h2>
-                        <p class="mt-1 text-xs text-muted">Doanh thu chia thành giá vốn, chi phí khác và phần lãi còn lại</p>
-
-                        @if ($money['revenue'] > 0)
-                            @php
-                                $parts = [
-                                    ['label' => 'Giá vốn', 'value' => $money['cogs'], 'color' => 'var(--text-muted)'],
-                                    ['label' => 'Chi phí khác', 'value' => $money['expense'], 'color' => 'var(--accent-sub)'],
-                                    ['label' => 'Lợi nhuận', 'value' => max($money['profit'], 0), 'color' => 'var(--success)'],
-                                ];
-                                $whole = max(1, array_sum(array_column($parts, 'value')));
-                            @endphp
-                            <div class="mt-6 flex h-4 gap-0.5 overflow-hidden rounded-full" aria-hidden="true">
-                                @foreach ($parts as $part)
-                                    @if ($part['value'] > 0)
-                                        <span class="h-full first:rounded-l-full last:rounded-r-full" style="width: {{ round($part['value'] / $whole * 100, 2) }}%; background: {{ $part['color'] }}"></span>
+                            <div class="mt-6 border-t border-border pt-5">
+                                <div class="flex flex-wrap items-center justify-between gap-3">
+                                    <div class="flex items-center gap-1">
+                                        <h3 class="font-semibold text-main">Biên lợi nhuận theo {{ $periodWord }}</h3>
+                                        <x-admin.tooltip
+                                            text="Tỉ lệ lợi nhuận trên doanh thu; đường đứt là mức trung bình cả kỳ."
+                                            label="Cách đọc biên lợi nhuận"
+                                        />
+                                    </div>
+                                    <p class="flex flex-wrap gap-4 text-xs text-muted">
+                                        {!! $legend('var(--success)', 'Biên lợi nhuận') !!}
+                                        {!! $legend('var(--text-muted)', 'Trung bình cả kỳ') !!}
+                                    </p>
+                                </div>
+                                <div class="relative mt-3 h-36" data-margin-chart>
+                                    @if ($hasFinanceActivity)
+                                        <canvas x-ref="margin" role="img" aria-label="Biểu đồ biên lợi nhuận theo {{ $periodWord }} so với trung bình cả kỳ"></canvas>
+                                    @else
+                                        <div class="flex h-full items-center justify-center rounded-2xl border border-dashed border-border bg-surface/40 p-4 text-center text-xs text-muted">
+                                            Chưa có phát sinh tài chính trong kỳ.
+                                        </div>
                                     @endif
-                                @endforeach
+                                </div>
                             </div>
-                            <dl class="mt-6 space-y-4">
-                                @foreach ($parts as $part)
-                                    <div class="flex items-center gap-3">
-                                        <span class="h-3 w-3 shrink-0 rounded-sm" style="background: {{ $part['color'] }}" aria-hidden="true"></span>
-                                        <dt class="flex-1 text-sm text-muted">{{ $part['label'] }}</dt>
-                                        <dd class="text-right text-sm">
-                                            <span class="font-semibold tabular-nums text-main">{{ $percent($part['value'] / $money['revenue'] * 100) }}</span>
-                                            <span class="block text-xs tabular-nums text-muted">{{ $vnd($part['value']) }}</span>
-                                        </dd>
-                                    </div>
-                                @endforeach
-                            </dl>
-                            @if ($money['profit'] < 0)
-                                <p class="mt-4 rounded-xl border border-error/30 bg-error-bg px-3 py-2 text-xs font-semibold text-error-text">
-                                    Kỳ này lỗ {{ $vnd(-$money['profit']) }}.
-                                </p>
-                            @endif
-                        @else
-                            <div class="py-8 text-center">
-                                <p class="text-sm text-muted">Chưa có doanh thu trong khoảng này.</p>
-                                @if ($hasFinanceActivity)
-                                    <div class="mt-4 rounded-2xl border border-border bg-surface p-4 text-left space-y-2 text-xs">
-                                        <p class="font-semibold text-main">Phát sinh chi phí khi chưa có doanh thu:</p>
-                                        <div class="flex justify-between text-muted">
-                                            <span>Giá vốn phát sinh:</span>
-                                            <span class="font-semibold tabular-nums text-main">{{ $vnd($money['cogs']) }}</span>
-                                        </div>
-                                        <div class="flex justify-between text-muted">
-                                            <span>Chi phí khác (bảo hành, mất hàng):</span>
-                                            <span class="font-semibold tabular-nums text-main">{{ $vnd($money['expense']) }}</span>
-                                        </div>
-                                        <div class="flex justify-between border-t border-border pt-2 font-bold">
-                                            <span class="text-main">Lợi nhuận kỳ này:</span>
-                                            <span @class(['tabular-nums', 'text-error' => $money['profit'] < 0, 'text-main' => $money['profit'] >= 0])>{{ $vnd($money['profit']) }}</span>
-                                        </div>
-                                    </div>
-                                @endif
-                            </div>
-                        @endif
-                    </div>
+                        </div>
 
-                    <div class="mt-6 rounded-xl bg-surface p-3.5 text-xs text-muted space-y-1.5 border border-border/60">
-                        <p class="font-semibold text-main">Cơ cấu doanh thu kỳ này</p>
-                        <div class="flex justify-between">
-                            <span>Tiền hàng (giày đã giao):</span>
-                            <span class="font-semibold tabular-nums text-main">{{ $vnd($money['merchandise']) }}</span>
+                        <details class="mt-5 border-t border-border pt-4 text-sm group">
+                            <summary class="cursor-pointer font-semibold text-muted hover:text-main flex items-center justify-between gap-2">
+                                <span>Bảng đối chiếu từng ngày ({{ count($daily) }} ngày)</span>
+                                <span class="text-xs font-normal text-muted">Doanh thu − Giá vốn − Chi phí khác = Lợi nhuận</span>
+                            </summary>
+                            <div class="admin-table-wrap mt-3 max-h-80 overflow-y-auto">
+                                <table class="admin-table">
+                                    <thead class="sticky top-0 z-10 bg-surface">
+                                        <tr>
+                                            <th>Ngày</th>
+                                            <th class="text-right">Doanh thu</th>
+                                            <th class="text-right">Giá vốn</th>
+                                            <th class="text-right">Chi phí khác</th>
+                                            <th class="text-right">Lợi nhuận</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach ($daily as $row)
+                                            @php $rowExpense = $row['expense'] ?? 0; @endphp
+                                            <tr class="hover:bg-surface/60 transition-colors">
+                                                <td class="whitespace-nowrap font-medium text-main">{{ $day($row['day']) }}</td>
+                                                <td class="text-right tabular-nums text-main">{{ $vnd($row['revenue']) }}</td>
+                                                <td class="text-right tabular-nums text-muted">{{ $vnd($row['cogs']) }}</td>
+                                                <td @class(['text-right tabular-nums', 'text-error font-semibold' => $rowExpense > 0, 'text-muted' => $rowExpense <= 0])>{{ $vnd($rowExpense) }}</td>
+                                                <td @class(['text-right tabular-nums font-semibold', 'text-error' => $row['profit'] < 0, 'text-main' => $row['profit'] >= 0])>{{ $vnd($row['profit']) }}</td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                    <tfoot class="sticky bottom-0 z-10 bg-surface border-t-2 border-border font-bold text-main">
+                                        <tr>
+                                            <td class="p-4">Tổng cộng ({{ $rangeDays }} ngày)</td>
+                                            <td class="p-4 text-right tabular-nums text-main">{{ $vnd($money['revenue']) }}</td>
+                                            <td class="p-4 text-right tabular-nums text-main">{{ $vnd($money['cogs']) }}</td>
+                                            <td class="p-4 text-right tabular-nums text-main">{{ $vnd($money['expense']) }}</td>
+                                            <td @class(['p-4 text-right tabular-nums', 'text-error' => $money['profit'] < 0, 'text-main' => $money['profit'] >= 0])>{{ $vnd($money['profit']) }}</td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </details>
+                    </section>
+
+                    <section class="admin-card flex flex-col justify-between" aria-labelledby="structure-title">
+                        <div>
+                            <h2 id="structure-title" class="text-lg font-semibold text-main">Mỗi 100 đồng doanh thu</h2>
+
+                            @if ($money['revenue'] > 0)
+                                @php
+                                    $parts = [
+                                        ['label' => 'Giá vốn', 'value' => $money['cogs'], 'color' => 'var(--text-muted)'],
+                                        ['label' => 'Chi phí khác', 'value' => $money['expense'], 'color' => 'var(--accent-sub)'],
+                                        ['label' => 'Lợi nhuận', 'value' => max($money['profit'], 0), 'color' => 'var(--success)'],
+                                    ];
+                                    $whole = max(1, array_sum(array_column($parts, 'value')));
+                                @endphp
+                                <div class="mt-5 flex h-4 gap-0.5 overflow-hidden rounded-full" aria-hidden="true">
+                                    @foreach ($parts as $part)
+                                        @if ($part['value'] > 0)
+                                            <span class="h-full first:rounded-l-full last:rounded-r-full" style="width: {{ round($part['value'] / $whole * 100, 2) }}%; background: {{ $part['color'] }}"></span>
+                                        @endif
+                                    @endforeach
+                                </div>
+                                <dl class="mt-6 space-y-4">
+                                    @foreach ($parts as $part)
+                                        <div class="flex items-center gap-3">
+                                            <span class="h-3 w-3 shrink-0 rounded-sm" style="background: {{ $part['color'] }}" aria-hidden="true"></span>
+                                            <dt class="flex-1 text-sm text-muted">{{ $part['label'] }}</dt>
+                                            <dd class="text-right text-sm">
+                                                <span class="font-semibold tabular-nums text-main">{{ $percent($part['value'] / $money['revenue'] * 100) }}</span>
+                                                <span class="block text-xs tabular-nums text-muted">{{ $vnd($part['value']) }}</span>
+                                            </dd>
+                                        </div>
+                                    @endforeach
+                                </dl>
+                                @if ($money['profit'] < 0)
+                                    <p class="mt-4 rounded-xl border border-error/30 bg-error-bg px-3 py-2 text-xs font-semibold text-error-text">
+                                        Kỳ này lỗ {{ $vnd(-$money['profit']) }}.
+                                    </p>
+                                @endif
+                            @else
+                                <div class="py-8 text-center">
+                                    <p class="text-sm text-muted">Chưa có doanh thu trong khoảng này.</p>
+                                    @if ($hasFinanceActivity)
+                                        <div class="mt-4 rounded-2xl border border-border bg-surface p-4 text-left space-y-2 text-xs">
+                                            <p class="font-semibold text-main">Chi phí phát sinh khi chưa có doanh thu</p>
+                                            <div class="flex justify-between text-muted">
+                                                <span>Giá vốn:</span>
+                                                <span class="font-semibold tabular-nums text-main">{{ $vnd($money['cogs']) }}</span>
+                                            </div>
+                                            <div class="flex justify-between text-muted">
+                                                <span>Chi phí khác:</span>
+                                                <span class="font-semibold tabular-nums text-main">{{ $vnd($money['expense']) }}</span>
+                                            </div>
+                                            <div class="flex justify-between border-t border-border pt-2 font-bold">
+                                                <span class="text-main">Lợi nhuận:</span>
+                                                <span @class(['tabular-nums', 'text-error' => $money['profit'] < 0, 'text-main' => $money['profit'] >= 0])>{{ $vnd($money['profit']) }}</span>
+                                            </div>
+                                        </div>
+                                    @endif
+                                </div>
+                            @endif
                         </div>
-                        <div class="flex justify-between">
-                            <span>Phí vận chuyển thu khách:</span>
-                            <span class="font-semibold tabular-nums text-main">{{ $vnd($money['shipping']) }}</span>
+
+                        <div class="mt-6 rounded-xl bg-surface p-3.5 text-xs text-muted space-y-1.5 border border-border/60">
+                            <p class="font-semibold text-main">Cơ cấu doanh thu</p>
+                            <div class="flex justify-between">
+                                <span>Tiền hàng đã giao:</span>
+                                <span class="font-semibold tabular-nums text-main">{{ $vnd($money['merchandise']) }}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Phí vận chuyển:</span>
+                                <span class="font-semibold tabular-nums text-main">{{ $vnd($money['shipping']) }}</span>
+                            </div>
                         </div>
-                    </div>
-                </section>
+                    </section>
+                </div>
             </div>
         @endif
 
         {{-- VÙNG 2: VẬN HÀNH & ĐƠN HÀNG THEO KỲ ĐÃ CHỌN --}}
+        {{-- TAB 2: VẬN HÀNH & ĐƠN HÀNG THEO KỲ ĐÃ CHỌN --}}
         <div id="vung-van-hanh" role="tabpanel" aria-labelledby="tab-operations" x-show="activeTab === 'operations'" @if($isAdmin) x-cloak @endif class="flex flex-col gap-6 scroll-mt-6">
-            <section class="admin-card" aria-labelledby="status-title">
-                <div class="flex flex-wrap items-start justify-between gap-3">
+            <div class="grid gap-4 sm:grid-cols-2">
+                <article class="admin-card !p-5 flex flex-col justify-between">
                     <div>
-                        <div class="flex flex-wrap items-center gap-2">
-                            <h2 id="status-title" class="text-xl font-semibold text-main">Đơn theo trạng thái</h2>
-                            <span class="badge bg-accent/10 text-accent border border-accent/20">Theo kỳ đã chọn · {{ $day($from) }} – {{ $day($to) }}</span>
+                        <div class="flex items-center gap-1">
+                            <h2 class="text-sm font-semibold text-muted">Đơn mới đặt</h2>
+                            <x-admin.tooltip text="Tính theo thời điểm khách đặt đơn trong kỳ." label="Giải thích Đơn mới đặt" />
                         </div>
-                        <p class="mt-1 text-xs text-muted">Đơn đặt trong khoảng ngày đã chọn, theo trạng thái hiện tại · bấm vào từng thẻ để lọc danh sách đơn hàng</p>
+                        <p class="mt-1.5 text-2xl font-bold tabular-nums text-main">{{ number_format($ordersPlaced, 0, ',', '.') }}</p>
+                    </div>
+                    <div @class(['relative mt-3 h-9', 'hidden' => ! $hasOrdersSpark]) aria-hidden="true">
+                        <canvas data-sparkline="orders"></canvas>
+                    </div>
+                </article>
+                <article class="admin-card !p-5 flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center gap-1">
+                            <h2 class="text-sm font-semibold text-muted">Đôi đã giao</h2>
+                            <x-admin.tooltip text="Tổng số đôi giày thuộc các đơn giao thành công trong kỳ." label="Giải thích Đôi đã giao" />
+                        </div>
+                        <p class="mt-1.5 text-2xl font-bold tabular-nums text-main">{{ number_format($pairsSold, 0, ',', '.') }} đôi</p>
+                    </div>
+                    <div @class(['relative mt-3 h-9', 'hidden' => ! $hasPairsSpark]) aria-hidden="true">
+                        <canvas data-sparkline="pairs"></canvas>
+                    </div>
+                </article>
+            </div>
+
+            <section class="admin-card" aria-labelledby="status-title">
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                    <div class="flex items-center gap-1">
+                        <h2 id="status-title" class="text-lg font-semibold text-main">Đơn theo trạng thái</h2>
+                        <x-admin.tooltip text="Đơn đặt trong kỳ theo trạng thái hiện tại. Bấm vào từng thẻ để lọc danh sách đơn hàng." label="Giải thích Đơn theo trạng thái" />
                     </div>
                     <a href="{{ route('admin.orders.index') }}" class="text-xs font-bold text-accent hover:underline">Mở toàn bộ đơn hàng →</a>
                 </div>
@@ -572,10 +513,10 @@
                 <section class="admin-card lg:col-span-7 flex flex-col justify-between" aria-labelledby="operations-title"
                          x-data="{ selectedCell: @js($defaultHeatSelection) }">
                     <div>
-                        <div class="flex flex-wrap items-start justify-between gap-3">
-                            <div>
-                                <h2 id="operations-title" class="text-xl font-semibold text-main">Lịch số đơn mỗi ngày</h2>
-                                <p class="mt-1 text-xs text-muted">Hàng là thứ trong tuần, cột là tuần. Ô càng đậm càng nhiều đơn · rê chuột hoặc chạm vào ô để xem số đơn và số đôi đã giao</p>
+                        <div class="flex flex-wrap items-center justify-between gap-3">
+                            <div class="flex items-center gap-1">
+                                <h2 id="operations-title" class="text-lg font-semibold text-main">Lịch số đơn mỗi ngày</h2>
+                                <x-admin.tooltip text="Hàng là thứ, cột là tuần. Ô càng đậm càng nhiều đơn; chọn ô để xem số đơn mới đặt và số đôi đã giao." label="Cách đọc lịch số đơn" />
                             </div>
                             <p class="flex items-center gap-1.5 text-xs text-muted" aria-hidden="true">
                                 Ít
@@ -586,7 +527,7 @@
                             </p>
                         </div>
 
-                        <div class="mt-5 overflow-x-auto pb-1" data-orders-heatmap>
+                        <div class="mt-4 overflow-x-auto pb-1" data-orders-heatmap>
                             <table class="border-separate text-xs text-muted" style="border-spacing: 4px" aria-label="Số đơn đặt theo ngày từ {{ $day($from) }} đến {{ $day($to) }}, tối đa {{ $heatPeak }} đơn một ngày">
                                 <thead>
                                     <tr>
@@ -676,11 +617,10 @@
                 </section>
 
                 <section class="admin-card lg:col-span-5" aria-labelledby="best-title">
-                    <div class="flex flex-wrap items-center justify-between gap-2">
-                        <h2 id="best-title" class="text-xl font-semibold text-main">Sản phẩm bán chạy</h2>
-                        <span class="badge bg-accent/10 text-accent border border-accent/20">Theo kỳ đã chọn</span>
+                    <div class="flex items-center gap-1">
+                        <h2 id="best-title" class="text-lg font-semibold text-main">Sản phẩm bán chạy</h2>
+                        <x-admin.tooltip text="Xếp hạng theo số đôi đã giao thành công trong kỳ." label="Giải thích Sản phẩm bán chạy" />
                     </div>
-                    <p class="mt-1 text-xs text-muted">Theo số đôi đã giao thành công trong khoảng ngày đã chọn ({{ $day($from) }} – {{ $day($to) }})</p>
                     <ol class="mt-5 space-y-4">
                         @forelse ($bestSellers as $index => $row)
                             <li class="flex items-center gap-3" data-best-seller>
@@ -707,69 +647,108 @@
             </div>
         </div>
 
-        {{-- VÙNG 3: TỒN KHO HIỆN TẠI (TẠI THỜI ĐIỂM TẢI TRANG) --}}
-        <section id="vung-ton-kho" role="tabpanel" aria-labelledby="tab-inventory" x-show="activeTab === 'inventory'" x-cloak class="admin-card scroll-mt-6">
-            <div class="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                    <div class="flex flex-wrap items-center gap-2">
-                        <h2 id="low-title" class="text-xl font-semibold text-main">Cảnh báo sắp hết hàng</h2>
-                        <span class="badge bg-surface text-muted border border-border">Tồn kho hiện tại (tại thời điểm tải trang)</span>
-                    </div>
-                    <p class="mt-1 text-xs text-muted">Còn {{ $lowStockThreshold }} đôi trở xuống (tính trên tồn kho còn bán được tại thời điểm mở trang, ít nhất xếp trước)</p>
+        {{-- TAB 3: TỒN KHO HIỆN TẠI (TẠI THỜI ĐIỂM TẢI TRANG) --}}
+        <div id="vung-ton-kho" role="tabpanel" aria-labelledby="tab-inventory" x-show="activeTab === 'inventory'" x-cloak class="flex flex-col gap-6 scroll-mt-6">
+            <div class="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-border bg-surface/60 px-4 py-2.5 text-xs">
+                <div class="flex items-center gap-1.5 text-muted">
+                    <span class="font-semibold text-main">Tại thời điểm tải trang · Không theo bộ lọc ngày</span>
+                    <x-admin.tooltip text="Số liệu tồn kho phản ánh trạng thái hiện tại khi mở trang, không thay đổi theo bộ lọc ngày." label="Lưu ý tồn kho hiện tại" />
                 </div>
-                <div class="flex flex-wrap items-center gap-2">
-                    @if (count($inventory['low']) > 5)
-                        <button type="button" x-on:click="$dispatch('open-low-stock', { trigger: $el })" class="btn-pill">
-                            Xem tất cả {{ count($inventory['low']) }} size
-                        </button>
-                    @endif
-                    <a href="{{ route('admin.stock-imports.create') }}" class="btn-pill-dark">+ Tạo phiếu nhập hàng</a>
-                </div>
+                <span class="text-muted">{{ number_format($inventory['variants'], 0, ',', '.') }} size đang mở bán</span>
             </div>
 
-            <div class="admin-table-wrap mt-4">
-                <table class="admin-table">
-                    <thead class="sticky top-0 z-10 bg-surface">
-                        <tr>
-                            <th>Sản phẩm</th>
-                            <th>Màu / size</th>
-                            <th class="text-right">Còn lại</th>
-                            <th class="text-right">Thao tác</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse (array_slice($inventory['low'], 0, 5) as $row)
-                            <tr data-low-stock class="hover:bg-surface/60 transition-colors">
-                                <td class="font-semibold text-main">
-                                    {{ $row['product'] }}
-                                    <span class="block text-xs font-normal text-muted">{{ $row['sku'] }}</span>
-                                </td>
-                                <td class="text-main">{{ $row['color'] }} · {{ $row['size'] }}</td>
-                                <td class="text-right">
-                                    <span @class([
-                                        'badge',
-                                        'bg-error-bg text-error-text border border-error/30' => $row['sellable'] <= 0,
-                                        'bg-warning-bg text-warning-text border border-warning/30' => $row['sellable'] > 0,
-                                    ])>{{ $row['sellable'] <= 0 ? 'Hết hàng' : $row['sellable'].' đôi' }}</span>
-                                </td>
-                                <td class="text-right whitespace-nowrap">
-                                    @if (! empty($row['variant_id']))
-                                        <a href="{{ route('admin.stock-imports.create', ['variant_id' => $row['variant_id']]) }}"
-                                           class="inline-flex items-center px-2.5 py-1 rounded-lg bg-accent/10 text-accent hover:bg-accent hover:text-accent-text font-bold text-xs transition-colors">
-                                            Nhập kho
-                                        </a>
-                                    @endif
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="4" class="py-10 text-center text-muted">Không có size nào sắp hết.</td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
+            <div class="grid gap-4 sm:grid-cols-2">
+                <article class="admin-card !p-5 flex flex-col justify-between">
+                    <div>
+                        <h2 class="text-sm font-semibold text-muted">Tồn kho còn bán được</h2>
+                        <p class="mt-1.5 text-2xl font-bold tabular-nums text-main" data-sellable>{{ number_format($inventory['sellable'], 0, ',', '.') }} đôi</p>
+                    </div>
+                    <div class="mt-2 space-y-0.5 text-xs text-muted">
+                        @if ($inventory['reserved'] > 0)
+                            <p>Đã trừ {{ $inventory['reserved'] }} đôi khách đặt chưa giao</p>
+                        @else
+                            <p>Trên {{ number_format($inventory['variants'], 0, ',', '.') }} size đang mở bán</p>
+                        @endif
+                        @if ($inventory['quarantine'] > 0)
+                            <p>Cách ly kiểm tra: {{ $inventory['quarantine'] }} đôi</p>
+                        @endif
+                    </div>
+                </article>
+                <button type="button" x-on:click="$dispatch('open-low-stock', { trigger: $el })" aria-haspopup="dialog" aria-controls="low-stock-dialog" data-low-stock-card
+                        class="admin-card !p-5 text-left transition hover:border-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent flex flex-col justify-between cursor-pointer">
+                    <div>
+                        <span class="flex items-center justify-between gap-2 text-sm font-semibold text-muted">
+                            <span>Sắp hết hàng</span>
+                            <span aria-hidden="true" class="text-accent font-bold">→</span>
+                        </span>
+                        <span @class(['mt-1.5 block text-2xl font-bold tabular-nums', 'text-error' => $inventory['low'] !== [], 'text-main' => $inventory['low'] === []])>
+                            {{ count($inventory['low']) }} size
+                        </span>
+                    </div>
+                    <span class="mt-2 block text-xs text-muted">Còn {{ $lowStockThreshold }} đôi trở xuống · bấm để xem</span>
+                </button>
             </div>
-        </section>
+
+            <section class="admin-card" aria-labelledby="low-title">
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                    <div class="flex items-center gap-1">
+                        <h2 id="low-title" class="text-lg font-semibold text-main">Cảnh báo sắp hết hàng</h2>
+                        <x-admin.tooltip :text="'Size còn '.$lowStockThreshold.' đôi bán được trở xuống, xếp từ ít nhất.'" label="Giải thích Cảnh báo sắp hết hàng" />
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2">
+                        @if (count($inventory['low']) > 5)
+                            <button type="button" x-on:click="$dispatch('open-low-stock', { trigger: $el })" class="btn-pill">
+                                Xem tất cả {{ count($inventory['low']) }} size
+                            </button>
+                        @endif
+                        <a href="{{ route('admin.stock-imports.create') }}" class="btn-pill-dark">+ Tạo phiếu nhập hàng</a>
+                    </div>
+                </div>
+
+                <div class="admin-table-wrap mt-4">
+                    <table class="admin-table">
+                        <thead class="sticky top-0 z-10 bg-surface">
+                            <tr>
+                                <th>Sản phẩm</th>
+                                <th>Màu / size</th>
+                                <th class="text-right">Còn lại</th>
+                                <th class="text-right">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse (array_slice($inventory['low'], 0, 5) as $row)
+                                <tr data-low-stock class="hover:bg-surface/60 transition-colors">
+                                    <td class="font-semibold text-main">
+                                        {{ $row['product'] }}
+                                        <span class="block text-xs font-normal text-muted">{{ $row['sku'] }}</span>
+                                    </td>
+                                    <td class="text-main">{{ $row['color'] }} · {{ $row['size'] }}</td>
+                                    <td class="text-right">
+                                        <span @class([
+                                            'badge',
+                                            'bg-error-bg text-error-text border border-error/30' => $row['sellable'] <= 0,
+                                            'bg-warning-bg text-warning-text border border-warning/30' => $row['sellable'] > 0,
+                                        ])>{{ $row['sellable'] <= 0 ? 'Hết hàng' : $row['sellable'].' đôi' }}</span>
+                                    </td>
+                                    <td class="text-right whitespace-nowrap">
+                                        @if (! empty($row['variant_id']))
+                                            <a href="{{ route('admin.stock-imports.create', ['variant_id' => $row['variant_id']]) }}"
+                                               class="inline-flex items-center px-2.5 py-1 rounded-lg bg-accent/10 text-accent hover:bg-accent hover:text-accent-text font-bold text-xs transition-colors">
+                                                + Nhập kho
+                                            </a>
+                                        @endif
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="4" class="py-10 text-center text-muted">Không có size nào sắp hết.</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
 
         {{-- Dialog xem toàn bộ size sắp hết hàng --}}
         <div x-data="dialogController()" x-init="attach({ panel: $refs.panel, body: document.body, document, scheduleFocus: (callback) => $nextTick(callback) })"
@@ -833,20 +812,17 @@
             </div>
         </div>
 
-        {{-- VÙNG 4: ĐÁNH GIÁ BÀI VIẾT THEO KỲ ĐÃ CHỌN (ADMIN) --}}
+        {{-- TAB 4: ĐÁNH GIÁ BÀI VIẾT THEO KỲ ĐÃ CHỌN (ADMIN) --}}
         @if ($isAdmin)
             @php
                 $answers = $articleFeedback['helpful'] + $articleFeedback['unhelpful'];
                 $helpfulShare = $answers > 0 ? $articleFeedback['helpful'] / $answers * 100 : 0;
             @endphp
             <section id="vung-bai-viet" role="tabpanel" aria-labelledby="tab-feedback" x-show="activeTab === 'feedback'" x-cloak class="admin-card scroll-mt-6" data-feedback-report>
-                <div class="flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                        <div class="flex flex-wrap items-center gap-2">
-                            <h2 id="feedback-title" class="text-xl font-semibold text-main">Đánh giá bài viết</h2>
-                            <span class="badge bg-accent/10 text-accent border border-accent/20">Theo kỳ đã chọn · {{ $day($from) }} – {{ $day($to) }}</span>
-                        </div>
-                        <p class="mt-1 text-xs text-muted">Câu trả lời "Bài viết có hữu ích không?" của người đọc trong khoảng ngày đã chọn</p>
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                    <div class="flex items-center gap-1">
+                        <h2 id="feedback-title" class="text-lg font-semibold text-main">Đánh giá bài viết</h2>
+                        <x-admin.tooltip text="Tổng hợp phản hồi hữu ích của người đọc trong kỳ đã chọn." label="Giải thích Đánh giá bài viết" />
                     </div>
                     <p class="flex flex-wrap gap-4 text-xs text-muted">
                         {!! $legend('var(--success)', 'Hữu ích') !!}
@@ -858,11 +834,11 @@
                 @else
                     <div class="mt-5 grid gap-4 sm:grid-cols-3">
                         <div class="rounded-2xl bg-surface/60 border border-border/50 p-4">
-                            <p class="text-xs text-muted">👍 Hữu ích</p>
+                            <p class="text-xs text-muted">Hữu ích</p>
                             <p class="mt-1 text-2xl font-bold tabular-nums text-main">{{ $articleFeedback['helpful'] }}</p>
                         </div>
                         <div class="rounded-2xl bg-surface/60 border border-border/50 p-4">
-                            <p class="text-xs text-muted">👎 Không hữu ích</p>
+                            <p class="text-xs text-muted">Không hữu ích</p>
                             <p class="mt-1 text-2xl font-bold tabular-nums text-main">{{ $articleFeedback['unhelpful'] }}</p>
                         </div>
                         <div class="rounded-2xl bg-surface/60 border border-border/50 p-4">

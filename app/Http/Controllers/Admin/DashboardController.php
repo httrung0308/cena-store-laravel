@@ -11,7 +11,6 @@ use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\Refund;
-use App\Models\Review;
 use App\Models\StockImport;
 use App\Services\ReportService;
 use App\Support\BusinessClock;
@@ -110,22 +109,7 @@ class DashboardController extends Controller
             ])
             ->all();
 
-        // 5. Unreplied visible customer reviews
-        $unrepliedReviewsBase = Review::query()
-            ->where('is_visible', true)
-            ->where(function ($query): void {
-                $query->whereNull('admin_reply')->orWhere('admin_reply', '');
-            });
-
-        $unrepliedReviewsCount = (clone $unrepliedReviewsBase)->count();
-        $unrepliedReviews = (clone $unrepliedReviewsBase)
-            ->with(['user', 'unit.item'])
-            ->orderByDesc('created_at')
-            ->orderByDesc('id')
-            ->limit(5)
-            ->get();
-
-        // 6. Priority orders queue (PENDING -> CONFIRMED -> PACKING, oldest waiting first)
+        // 5. Priority orders queue (PENDING -> CONFIRMED -> PACKING, oldest waiting first)
         $actionableOrders = Order::query()
             ->with('items')
             ->whereIn('order_status', [
@@ -139,7 +123,7 @@ class DashboardController extends Controller
             ->limit(8)
             ->get();
 
-        // 7. Draft stock imports list for quick posting/completion
+        // 6. Draft stock imports list for quick posting/completion
         $draftImports = StockImport::query()
             ->where('status', StockImportStatus::Draft->value)
             ->orderByDesc('updated_at')
@@ -147,7 +131,7 @@ class DashboardController extends Controller
             ->limit(5)
             ->get();
 
-        // 8. Admin-only: refund requests awaiting approval & orders with REFUND_PENDING payment status
+        // 7. Admin-only: refund requests awaiting approval & orders with REFUND_PENDING payment status
         $pendingRefundOrdersCount = 0;
         $requestedRefundsCount = 0;
         $pendingRefunds = collect();
@@ -175,7 +159,6 @@ class DashboardController extends Controller
             + $confirmedOrdersCount
             + $packingOrdersCount
             + $draftImportsCount
-            + $unrepliedReviewsCount
             + ($isAdmin ? $requestedRefundsCount : 0);
 
         return view('admin.dashboard', [
@@ -192,8 +175,6 @@ class DashboardController extends Controller
             'lowStockVariantsCount' => $lowStockVariantsCount,
             'depletedVariantsCount' => $depletedVariantsCount,
             'lowStockVariants' => $lowStockVariants,
-            'unrepliedReviewsCount' => $unrepliedReviewsCount,
-            'unrepliedReviews' => $unrepliedReviews,
             'actionableOrders' => $actionableOrders,
             'draftImports' => $draftImports,
             'pendingRefundOrdersCount' => $pendingRefundOrdersCount,

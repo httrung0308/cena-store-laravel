@@ -33,28 +33,25 @@
                 @if ($totalActionableCount > 0)
                     <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-warning-bg text-warning-text border border-warning/30 font-bold">
                         <span class="w-2 h-2 rounded-full bg-warning shrink-0" aria-hidden="true"></span>
-                        <span>{{ number_format($totalActionableCount) }} đầu việc đang chờ xử lý</span>
+                        <span>{{ number_format($totalActionableCount) }} đầu việc chờ xử lý</span>
                     </span>
                 @else
                     <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-success-bg text-success border border-success/30 font-bold">
                         <span class="w-2 h-2 rounded-full bg-success shrink-0" aria-hidden="true"></span>
-                        <span>Các hàng đợi vận hành chính đã được xử lý hết</span>
-                    </span>
-                @endif
-
-                @if (! $isAdmin)
-                    <span class="text-muted">
-                        Phạm vi Nhân viên: Xử lý đơn hàng, tồn kho &amp; đánh giá — duyệt hoàn tiền, tài chính và quản lý người dùng (chỉ Admin).
-                    </span>
-                @else
-                    <span class="text-muted">
-                        Chọn bộ đếm bên dưới để mở danh sách đã lọc sẵn hoặc thao tác trực tiếp trên từng hồ sơ ưu tiên.
+                        <span>Đã xử lý hết hàng đợi chính</span>
                     </span>
                 @endif
             </div>
 
             <div class="flex items-center gap-3 shrink-0 text-[11px] text-muted">
-                <span>Số liệu tại thời điểm tải trang: <strong class="font-mono font-bold text-main">{{ $loadedAt->format('H:i — d/m/Y') }}</strong></span>
+                <span class="inline-flex items-center">
+                    <span>Tại thời điểm tải trang: <strong class="font-mono font-bold text-main">{{ $loadedAt->format('H:i — d/m/Y') }}</strong></span>
+                    <x-admin.tooltip
+                        placement="bottom"
+                        label="Giải thích thời điểm số liệu"
+                        text="Số liệu tĩnh tại thời điểm tải trang; bấm Tải lại để cập nhật."
+                    />
+                </span>
                 <a href="{{ route('admin.dashboard') }}"
                    class="px-2.5 py-1 rounded-lg border border-border bg-surface hover:bg-border/40 text-main font-semibold transition-colors whitespace-nowrap shrink-0">
                     Tải lại
@@ -63,7 +60,11 @@
         </div>
 
         {{-- 1. Primary Actionable Counters Strip (100% matched with filtered list queries) --}}
-        <section aria-label="Bộ đếm công việc cần xử lý" class="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+        <section aria-label="Bộ đếm công việc cần xử lý" @class([
+            'grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3',
+            'xl:grid-cols-6' => $isAdmin,
+            'xl:grid-cols-5' => ! $isAdmin,
+        ])>
             {{-- Counter 1: Đơn chờ xác nhận (status = PENDING) --}}
             <a href="{{ route('admin.orders.index', ['status' => App\Enums\OrderStatus::Pending->value]) }}"
                @class([
@@ -81,11 +82,8 @@
                         'text-warning-text' => $pendingOrdersCount > 0,
                         'text-muted' => $pendingOrdersCount === 0,
                     ])>{{ number_format($pendingOrdersCount) }}</span>
-                    <span class="text-[11px] font-semibold text-muted">Đơn mới đặt</span>
+                    <span class="text-[11px] font-semibold text-muted">Đơn mới</span>
                 </div>
-                <p class="mt-1.5 text-[11px] text-muted">
-                    {{ $pendingOrdersCount > 0 ? 'Cần xác nhận & đóng gói ngay' : 'Không có đơn chờ xác nhận' }}
-                </p>
             </a>
 
             {{-- Counter 2: Đơn đã xác nhận chờ đóng gói (status = CONFIRMED) --}}
@@ -105,11 +103,8 @@
                         'text-accent' => $confirmedOrdersCount > 0,
                         'text-muted' => $confirmedOrdersCount === 0,
                     ])>{{ number_format($confirmedOrdersCount) }}</span>
-                    <span class="text-[11px] font-semibold text-muted"> Đã xác nhận</span>
+                    <span class="text-[11px] font-semibold text-muted">Đã xác nhận</span>
                 </div>
-                <p class="mt-1.5 text-[11px] text-muted">
-                    {{ $confirmedOrdersCount > 0 ? 'Đã xác nhận · cần lấy hàng đóng gói' : 'Không có đơn chờ đóng gói' }}
-                </p>
             </a>
 
             {{-- Counter 3: Đơn đang đóng gói / chờ giao (status = PACKING) --}}
@@ -131,9 +126,6 @@
                     ])>{{ number_format($packingOrdersCount) }}</span>
                     <span class="text-[11px] font-semibold text-muted">Chờ xuất kho</span>
                 </div>
-                <p class="mt-1.5 text-[11px] text-muted">
-                    {{ $packingOrdersCount > 0 ? 'Cần bàn giao cho đơn vị vận chuyển' : 'Không có đơn chờ bàn giao' }}
-                </p>
             </a>
 
             {{-- Counter 4: Phiếu nhập kho nháp (status = DRAFT) --}}
@@ -155,9 +147,6 @@
                     ])>{{ number_format($draftImportsCount) }}</span>
                     <span class="text-[11px] font-semibold text-muted">Chưa ghi sổ</span>
                 </div>
-                <p class="mt-1.5 text-[11px] text-muted">
-                    {{ $draftImportsCount > 0 ? 'Cần kiểm tra & ghi sổ cộng tồn' : 'Không có phiếu nháp tồn đọng' }}
-                </p>
             </a>
 
             {{-- Counter 5: Sản phẩm hết hàng (stock = out_of_stock) --}}
@@ -179,12 +168,9 @@
                     ])>{{ number_format($outOfStockProductsCount) }}</span>
                     <span class="text-[11px] font-semibold text-muted">{{ number_format($lowStockVariantsCount) }} size ≤ {{ $lowStockThreshold }} đôi</span>
                 </div>
-                <p class="mt-1.5 text-[11px] text-muted">
-                    {{ $outOfStockProductsCount > 0 ? 'Không còn size mở bán nào còn hàng' : 'Mọi sản phẩm đều còn size bán được' }}
-                </p>
             </a>
 
-            {{-- Counter 6: Admin -> Đơn chờ hoàn tiền (payment_status = REFUND_PENDING); Staff -> Đánh giá chờ phản hồi --}}
+            {{-- Counter 6: Admin-only -> Đơn chờ hoàn tiền (payment_status = REFUND_PENDING) --}}
             @if ($isAdmin)
                 <a href="{{ route('admin.orders.index', ['payment_status' => App\Enums\OrderPaymentStatus::RefundPending->value]) }}"
                    @class([
@@ -202,34 +188,8 @@
                             'text-error' => $pendingRefundOrdersCount > 0,
                             'text-muted' => $pendingRefundOrdersCount === 0,
                         ])>{{ number_format($pendingRefundOrdersCount) }}</span>
-                        <span class="text-[11px] font-semibold text-muted">Chỉ Admin</span>
+                        <span class="text-[11px] font-semibold text-muted">{{ $requestedRefundsCount }} yêu cầu</span>
                     </div>
-                    <p class="mt-1.5 text-[11px] text-muted">
-                        {{ $requestedRefundsCount > 0 ? $requestedRefundsCount.' yêu cầu chờ Admin phê duyệt' : 'Không có yêu cầu hoàn tiền chờ duyệt' }}
-                    </p>
-                </a>
-            @else
-                <a href="{{ route('admin.reviews.index', ['visible' => '1', 'replied' => '0']) }}"
-                   @class([
-                       'group rounded-2xl border p-4 transition-all flex flex-col justify-between shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent',
-                       'border-accent/45 bg-accent/5 hover:border-accent' => $unrepliedReviewsCount > 0,
-                       'border-border bg-surface-card hover:border-accent/60' => $unrepliedReviewsCount === 0,
-                   ])>
-                    <div class="flex items-start justify-between gap-2">
-                        <span class="text-xs font-bold text-main group-hover:text-accent transition-colors">Đánh giá chưa phản hồi</span>
-                        <span class="text-xs font-bold text-muted group-hover:text-accent transition-transform group-hover:translate-x-0.5" aria-hidden="true">→</span>
-                    </div>
-                    <div class="mt-3 flex items-baseline justify-between gap-2">
-                        <span @class([
-                            'text-2xl font-extrabold tabular-nums font-mono',
-                            'text-accent' => $unrepliedReviewsCount > 0,
-                            'text-muted' => $unrepliedReviewsCount === 0,
-                        ])>{{ number_format($unrepliedReviewsCount) }}</span>
-                        <span class="text-[11px] font-semibold text-muted">Đang hiển thị</span>
-                    </div>
-                    <p class="mt-1.5 text-[11px] text-muted">
-                        {{ $unrepliedReviewsCount > 0 ? 'Khách đánh giá chưa có câu trả lời' : 'Đã phản hồi toàn bộ đánh giá' }}
-                    </p>
                 </a>
             @endif
         </section>
@@ -239,16 +199,17 @@
             <div class="grid gap-4 lg:grid-cols-12">
                 <section aria-labelledby="admin-refund-heading" class="lg:col-span-7 rounded-2xl border border-border bg-surface-card p-5 shadow-sm flex flex-col justify-between gap-4">
                     <div class="flex flex-wrap items-start justify-between gap-2">
-                        <div>
-                            <div class="flex items-center gap-2">
-                                <h2 id="admin-refund-heading" class="text-sm font-extrabold text-main">Yêu cầu hoàn tiền chờ Admin duyệt</h2>
-                                <span @class([
-                                    'px-2 py-0.5 rounded-full text-[11px] font-bold font-mono',
-                                    'bg-error-bg text-error border border-error/30' => $requestedRefundsCount > 0,
-                                    'bg-surface text-muted border border-border' => $requestedRefundsCount === 0,
-                                ])>{{ $requestedRefundsCount }}</span>
-                            </div>
-                            <p class="text-xs text-muted mt-0.5">Phát sinh khi hủy đơn trả trước; chỉ Quản trị viên mới có quyền xác nhận duyệt hoàn tiền.</p>
+                        <div class="flex items-center gap-2">
+                            <h2 id="admin-refund-heading" class="text-sm font-extrabold text-main">Yêu cầu hoàn tiền chờ Admin duyệt</h2>
+                            <span @class([
+                                'px-2 py-0.5 rounded-full text-[11px] font-bold font-mono',
+                                'bg-error-bg text-error border border-error/30' => $requestedRefundsCount > 0,
+                                'bg-surface text-muted border border-border' => $requestedRefundsCount === 0,
+                            ])>{{ $requestedRefundsCount }}</span>
+                            <x-admin.tooltip
+                                label="Quy tắc duyệt hoàn tiền"
+                                text="Phát sinh khi hủy đơn trả trước; chỉ Admin mới có quyền phê duyệt hoàn tiền."
+                            />
                         </div>
                         <a href="{{ route('admin.orders.index', ['payment_status' => App\Enums\OrderPaymentStatus::RefundPending->value]) }}"
                            class="text-xs font-bold text-accent hover:underline whitespace-nowrap">
@@ -287,7 +248,7 @@
                         </div>
                     @else
                         <div class="rounded-xl border border-dashed border-border bg-surface/40 px-4 py-3 text-xs text-muted flex items-center justify-between gap-3">
-                            <span>Hiện không có yêu cầu hoàn tiền nào đang chờ phê duyệt.</span>
+                            <span>Không có yêu cầu hoàn tiền chờ duyệt.</span>
                             <span class="badge bg-success-bg text-success border border-success/30 shrink-0">Đã xử lý hết</span>
                         </div>
                     @endif
@@ -295,10 +256,9 @@
 
                 <section aria-labelledby="admin-reports-bridge-heading" class="lg:col-span-5 rounded-2xl border border-accent/30 bg-surface-card p-5 shadow-sm flex flex-col justify-between gap-4">
                     <div>
-                        <span class="text-[10px] font-bold uppercase tracking-wider font-mono text-accent">PHÂN TÍCH THEO KỲ</span>
-                        <h2 id="admin-reports-bridge-heading" class="text-sm font-extrabold text-main mt-1">Phân tích Doanh thu, Giá vốn &amp; Lợi nhuận</h2>
+                        <h2 id="admin-reports-bridge-heading" class="text-sm font-extrabold text-main">Doanh thu, Giá vốn &amp; Lợi nhuận</h2>
                         <p class="text-xs text-muted mt-1 leading-relaxed">
-                            Trang Tổng quan này chỉ hiển thị công việc cần giải quyết ngay. Để xem doanh thu ròng, giá vốn (COGS), chi phí, tỷ suất lợi nhuận và xu hướng theo khoảng ngày tùy chọn, vui lòng chuyển sang trang Báo cáo.
+                            Doanh thu ròng, giá vốn (COGS), chi phí và tỷ suất lợi nhuận theo kỳ.
                         </p>
                     </div>
                     <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-border/60">
@@ -319,17 +279,14 @@
             </div>
         @endif
 
-        {{-- 3. Direct Operational Queues (Responsive 12-col layout: Orders & Draft Imports on left, Low-Stock SKUs & Unreplied Reviews on right) --}}
+        {{-- 3. Direct Operational Queues (Responsive 12-col layout: Orders & Draft Imports on left, Low-Stock SKUs on right) --}}
         <div class="grid gap-6 lg:grid-cols-12 items-start">
             {{-- Left Column (7 cols on lg): Priority Orders Queue + Draft Stock Imports --}}
             <div class="lg:col-span-7 space-y-6 min-w-0">
                 {{-- Priority Orders Queue --}}
                 <section aria-labelledby="priority-orders-heading" class="rounded-2xl border border-border bg-surface-card shadow-sm overflow-hidden">
                     <div class="p-5 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                        <div>
-                            <h2 id="priority-orders-heading" class="text-base font-extrabold text-main">Đơn hàng cần xử lý ưu tiên</h2>
-                            <p class="text-xs text-muted mt-0.5">Xếp theo độ ưu tiên trạng thái (Chờ xác nhận → Đã xác nhận → Đang đóng gói) và đơn đặt lâu nhất lên trước.</p>
-                        </div>
+                        <h2 id="priority-orders-heading" class="text-base font-extrabold text-main">Đơn hàng cần xử lý ưu tiên</h2>
                         <a href="{{ route('admin.orders.index') }}" class="text-xs font-bold text-accent hover:underline shrink-0">
                             Tất cả đơn hàng →
                         </a>
@@ -337,7 +294,6 @@
 
                     {{-- Quick Filter Chips to Filtered Order Lists --}}
                     <div class="px-5 py-2.5 bg-surface/60 border-b border-border flex flex-wrap items-center gap-2 text-xs">
-                        <span class="text-[11px] font-semibold text-muted">Mở danh sách lọc sẵn:</span>
                         <a href="{{ route('admin.orders.index', ['status' => App\Enums\OrderStatus::Pending->value]) }}"
                            class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-border bg-surface-card hover:border-accent text-main font-semibold transition-colors">
                             <span>Chờ xác nhận</span>
@@ -475,12 +431,9 @@
                             </table>
                         </div>
                     @else
-                        <div class="p-8 text-center space-y-2">
-                            <span class="inline-flex items-center justify-center w-9 h-9 rounded-full bg-success-bg text-success border border-success/30 font-bold text-sm" aria-hidden="true">✓</span>
-                            <p class="text-sm font-bold text-main">Không có đơn hàng nào đang chờ xác nhận hoặc đóng gói</p>
-                            <p class="text-xs text-muted max-w-md mx-auto">
-                                Mọi đơn hàng ở trạng thái Chờ xác nhận, Đã xác nhận và Đang đóng gói đều đã được giải quyết.
-                            </p>
+                        <div class="p-6 text-center space-y-2">
+                            <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-success-bg text-success border border-success/30 font-bold text-sm" aria-hidden="true">✓</span>
+                            <p class="text-xs font-bold text-main">Không có đơn hàng chờ xác nhận hoặc đóng gói.</p>
                         </div>
                     @endif
                 </section>
@@ -488,14 +441,11 @@
                 {{-- Draft Stock Imports Queue --}}
                 <section aria-labelledby="draft-imports-heading" class="rounded-2xl border border-border bg-surface-card shadow-sm overflow-hidden">
                     <div class="p-5 border-b border-border flex flex-wrap items-center justify-between gap-2">
-                        <div>
-                            <div class="flex items-center gap-2">
-                                <h2 id="draft-imports-heading" class="text-base font-extrabold text-main">Phiếu nhập kho nháp cần hoàn tất</h2>
-                                <span class="px-2 py-0.5 rounded-full text-[11px] font-bold font-mono bg-surface border border-border text-main">
-                                    {{ $draftImportsCount }}
-                                </span>
-                            </div>
-                            <p class="text-xs text-muted mt-0.5">Phiếu nháp chưa làm thay đổi tồn kho cho tới khi được kiểm tra và bấm Ghi sổ.</p>
+                        <div class="flex items-center gap-2">
+                            <h2 id="draft-imports-heading" class="text-base font-extrabold text-main">Phiếu nhập kho nháp</h2>
+                            <span class="px-2 py-0.5 rounded-full text-[11px] font-bold font-mono bg-surface border border-border text-main">
+                                {{ $draftImportsCount }}
+                            </span>
                         </div>
                         <a href="{{ route('admin.stock-imports.index', ['status' => App\Enums\StockImportStatus::Draft->value]) }}"
                            class="text-xs font-bold text-accent hover:underline">
@@ -535,31 +485,30 @@
                         </div>
                     @else
                         <div class="px-5 py-4 flex flex-wrap items-center justify-between gap-3 text-xs text-muted bg-surface/30">
-                            <span>Không có phiếu nhập kho nháp nào đang bỏ dở.</span>
+                            <span>Không có phiếu nhập kho nháp.</span>
                             <a href="{{ route('admin.stock-imports.create') }}" class="font-bold text-accent hover:underline">+ Tạo phiếu nhập mới →</a>
                         </div>
                     @endif
                 </section>
             </div>
 
-            {{-- Right Column (5 cols on lg): Low/Out-of-Stock Variants + Unreplied Customer Reviews --}}
+            {{-- Right Column (5 cols on lg): Low/Out-of-Stock Variants --}}
             <div class="lg:col-span-5 space-y-6 min-w-0">
                 {{-- Low / Depleted Stock Variants Queue --}}
                 <section aria-labelledby="low-stock-heading" class="rounded-2xl border border-border bg-surface-card shadow-sm overflow-hidden">
                     <div class="p-5 border-b border-border flex flex-wrap items-start justify-between gap-2">
-                        <div>
-                            <div class="flex items-center gap-2">
-                                <h2 id="low-stock-heading" class="text-base font-extrabold text-main">Biến thể cần nhập kho</h2>
-                                <span @class([
-                                    'px-2 py-0.5 rounded-full text-[11px] font-bold font-mono',
-                                    'bg-error-bg text-error border border-error/30' => $depletedVariantsCount > 0,
-                                    'bg-warning-bg text-warning-text border border-warning/30' => $depletedVariantsCount === 0 && $lowStockVariantsCount > 0,
-                                    'bg-surface text-muted border border-border' => $lowStockVariantsCount === 0,
-                                ])>{{ $lowStockVariantsCount }} size</span>
-                            </div>
-                            <p class="text-xs text-muted mt-0.5">
-                                Các size đang mở bán có tồn khả dụng ≤ {{ $lowStockThreshold }} đôi (ưu tiên hết hàng lên trước).
-                            </p>
+                        <div class="flex items-center gap-2">
+                            <h2 id="low-stock-heading" class="text-base font-extrabold text-main">Biến thể cần nhập kho</h2>
+                            <span @class([
+                                'px-2 py-0.5 rounded-full text-[11px] font-bold font-mono',
+                                'bg-error-bg text-error border border-error/30' => $depletedVariantsCount > 0,
+                                'bg-warning-bg text-warning-text border border-warning/30' => $depletedVariantsCount === 0 && $lowStockVariantsCount > 0,
+                                'bg-surface text-muted border border-border' => $lowStockVariantsCount === 0,
+                            ])>{{ $lowStockVariantsCount }} size</span>
+                            <x-admin.tooltip
+                                label="Quy tắc biến thể sắp hết"
+                                :text="'Các size đang mở bán có tồn khả dụng ≤ ' . $lowStockThreshold . ' đôi (ưu tiên hết hàng lên trước).'"
+                            />
                         </div>
                         <a href="{{ route('admin.products.index', ['stock' => 'out_of_stock']) }}"
                            class="text-xs font-bold text-accent hover:underline whitespace-nowrap">
@@ -605,67 +554,8 @@
                             </div>
                         @endif
                     @else
-                        <div class="p-6 text-center space-y-1.5">
-                            <p class="text-xs font-bold text-main">Tồn kho các size đang mở bán đều ổn định</p>
-                            <p class="text-[11px] text-muted">Không có biến thể nào còn từ {{ $lowStockThreshold }} đôi trở xuống.</p>
-                        </div>
-                    @endif
-                </section>
-
-                {{-- Unreplied Customer Reviews Queue --}}
-                <section aria-labelledby="unreplied-reviews-heading" class="rounded-2xl border border-border bg-surface-card shadow-sm overflow-hidden">
-                    <div class="p-5 border-b border-border flex flex-wrap items-center justify-between gap-2">
-                        <div>
-                            <div class="flex items-center gap-2">
-                                <h2 id="unreplied-reviews-heading" class="text-base font-extrabold text-main">Đánh giá mới chưa phản hồi</h2>
-                                <span @class([
-                                    'px-2 py-0.5 rounded-full text-[11px] font-bold font-mono',
-                                    'bg-accent/15 text-accent border border-accent/30' => $unrepliedReviewsCount > 0,
-                                    'bg-surface text-muted border border-border' => $unrepliedReviewsCount === 0,
-                                ])>{{ $unrepliedReviewsCount }}</span>
-                            </div>
-                            <p class="text-xs text-muted mt-0.5">Các đánh giá đang hiển thị trên cửa hàng chưa có câu trả lời từ Cena.</p>
-                        </div>
-                        <a href="{{ route('admin.reviews.index', ['visible' => '1', 'replied' => '0']) }}" class="text-xs font-bold text-accent hover:underline">
-                            Quản lý đánh giá →
-                        </a>
-                    </div>
-
-                    @if ($unrepliedReviews->isNotEmpty())
-                        <div class="divide-y divide-border">
-                            @foreach ($unrepliedReviews as $review)
-                                @php
-                                    $itemSnapshot = $review->unit?->item;
-                                    $productTitle = $itemSnapshot?->product_name_snapshot ?? 'Sản phẩm';
-                                @endphp
-                                <article class="px-5 py-3.5 space-y-2 text-xs hover:bg-surface/40 transition-colors">
-                                    <div class="flex items-start justify-between gap-2">
-                                        <div class="min-w-0">
-                                            <p class="font-bold text-main truncate">{{ $productTitle }}</p>
-                                            <p class="text-[11px] text-muted">
-                                                {{ $review->user?->full_name ?? 'Khách hàng' }}
-                                                · {{ $review->created_at?->setTimezone($timezone)->format('d/m/Y H:i') }}
-                                            </p>
-                                        </div>
-                                        <x-reviews.stars :rating="$review->rating" />
-                                    </div>
-                                    <p class="text-xs text-muted line-clamp-2 bg-surface/50 px-3 py-2 rounded-xl border border-border/60">
-                                        {{ $review->comment }}
-                                    </p>
-                                    <div class="flex justify-end">
-                                        <a href="{{ route('admin.reviews.index', ['search' => $productTitle]) }}"
-                                           class="inline-flex items-center gap-1 text-xs font-bold text-accent hover:underline">
-                                            <span>Mở để phản hồi</span>
-                                            <span aria-hidden="true">→</span>
-                                        </a>
-                                    </div>
-                                </article>
-                            @endforeach
-                        </div>
-                    @else
-                        <div class="p-6 text-center space-y-1.5">
-                            <p class="text-xs font-bold text-main">Tất cả đánh giá hiển thị đã được phản hồi</p>
-                            <p class="text-[11px] text-muted">Không có đánh giá mới nào đang chờ câu trả lời.</p>
+                        <div class="p-6 text-center">
+                            <p class="text-xs font-bold text-main">Tồn kho các size đang mở bán ổn định (trên {{ $lowStockThreshold }} đôi).</p>
                         </div>
                     @endif
                 </section>
