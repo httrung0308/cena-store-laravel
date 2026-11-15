@@ -165,6 +165,51 @@ class AdminOverviewReportsSidebarRedesignTest extends TestCase
             ->assertOk()
             ->assertSee('aria-controls="admin-nav-group-content"', false)
             ->assertSee('data-sidebar-group="content" data-group-active="true"', false)
-            ->assertDontSee('không thay đổi phiên đăng nhập hiện tại');
+            ->assertDontSee('không thay đổi phiên đăng nhập hiện tại')
+            ->assertDontSee('72 byte');
+    }
+
+    public function test_staff_dashboard_keeps_reports_and_stock_imports_and_matches_unreplied_reviews_filter(): void
+    {
+        Review::factory()->create(['is_visible' => true, 'admin_reply' => null, 'comment' => 'Chờ shop phản hồi']);
+        Review::factory()->create(['is_visible' => true, 'admin_reply' => 'Shop đã phản hồi', 'comment' => 'Đã trả lời rồi']);
+        Review::factory()->create(['is_visible' => false, 'admin_reply' => null, 'comment' => 'Đánh giá đã ẩn']);
+
+        $expectedHref = route('admin.reviews.index', ['visible' => '1', 'replied' => '0']);
+
+        $this->actingAs($this->staff)
+            ->get(route('admin.dashboard'))
+            ->assertOk()
+            ->assertSee(route('admin.reports.index'), false)
+            ->assertSee(route('admin.stock-imports.create'), false)
+            ->assertSee(htmlspecialchars($expectedHref, ENT_QUOTES), false);
+
+        $this->actingAs($this->staff)
+            ->get($expectedHref)
+            ->assertOk()
+            ->assertSee('Chờ shop phản hồi')
+            ->assertDontSee('Đã trả lời rồi')
+            ->assertDontSee('Đánh giá đã ẩn');
+    }
+
+    public function test_reports_renders_segmented_tabs_by_role(): void
+    {
+        $this->actingAs($this->admin)
+            ->get(route('admin.reports.index'))
+            ->assertOk()
+            ->assertSee('role="tablist"', false)
+            ->assertSee('id="tab-finance"', false)
+            ->assertSee('id="tab-operations"', false)
+            ->assertSee('id="tab-inventory"', false)
+            ->assertSee('id="tab-feedback"', false);
+
+        $this->actingAs($this->staff)
+            ->get(route('admin.reports.index'))
+            ->assertOk()
+            ->assertSee('role="tablist"', false)
+            ->assertDontSee('id="tab-finance"', false)
+            ->assertSee('id="tab-operations"', false)
+            ->assertSee('id="tab-inventory"', false)
+            ->assertDontSee('id="tab-feedback"', false);
     }
 }

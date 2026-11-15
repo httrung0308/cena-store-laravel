@@ -209,7 +209,7 @@
                     </p>
                 </a>
             @else
-                <a href="{{ route('admin.reviews.index') }}"
+                <a href="{{ route('admin.reviews.index', ['visible' => '1', 'replied' => '0']) }}"
                    @class([
                        'group rounded-2xl border p-4 transition-all flex flex-col justify-between shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent',
                        'border-accent/45 bg-accent/5 hover:border-accent' => $unrepliedReviewsCount > 0,
@@ -626,7 +626,7 @@
                             </div>
                             <p class="text-xs text-muted mt-0.5">Các đánh giá đang hiển thị trên cửa hàng chưa có câu trả lời từ Cena.</p>
                         </div>
-                        <a href="{{ route('admin.reviews.index') }}" class="text-xs font-bold text-accent hover:underline">
+                        <a href="{{ route('admin.reviews.index', ['visible' => '1', 'replied' => '0']) }}" class="text-xs font-bold text-accent hover:underline">
                             Quản lý đánh giá →
                         </a>
                     </div>

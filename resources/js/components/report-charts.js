@@ -277,13 +277,59 @@ function sparkline(Chart, canvas, values, color) {
     });
 }
 
-export function reportCharts() {
+export function reportCharts(initialTab = 'finance', allowedTabs = ['finance', 'operations', 'inventory', 'feedback']) {
     let charts = [];
     let observer = null;
     let mediaQuery = null;
     let onSystemThemeChange = null;
+    let onHashChange = null;
+    const hashToTab = {
+        '#vung-tai-chinh': 'finance',
+        '#vung-van-hanh': 'operations',
+        '#vung-ton-kho': 'inventory',
+        '#vung-bai-viet': 'feedback',
+    };
+
+    const resolveInitialTab = () => {
+        if (typeof window !== 'undefined') {
+            const hashTab = hashToTab[window.location.hash];
+            if (hashTab && allowedTabs.includes(hashTab)) {
+                return hashTab;
+            }
+        }
+        return allowedTabs.includes(initialTab) ? initialTab : allowedTabs[0];
+    };
 
     return {
+        activeTab: resolveInitialTab(),
+        setTab(tab) {
+            if (!allowedTabs.includes(tab)) return;
+            this.activeTab = tab;
+            this.$nextTick(() => this.resizeCharts());
+        },
+        handleTabKeydown(event, currentTab) {
+            const idx = allowedTabs.indexOf(currentTab);
+            if (idx === -1) return;
+            let nextIdx = null;
+            if (event.key === 'ArrowRight') nextIdx = (idx + 1) % allowedTabs.length;
+            else if (event.key === 'ArrowLeft') nextIdx = (idx - 1 + allowedTabs.length) % allowedTabs.length;
+            else if (event.key === 'Home') nextIdx = 0;
+            else if (event.key === 'End') nextIdx = allowedTabs.length - 1;
+            if (nextIdx === null) return;
+            event.preventDefault();
+            const nextTab = allowedTabs[nextIdx];
+            this.setTab(nextTab);
+            this.$nextTick(() => {
+                this.$el.querySelector(`[data-report-tab="${nextTab}"]`)?.focus();
+            });
+        },
+        resizeCharts() {
+            charts.forEach((chart) => {
+                try {
+                    chart.resize();
+                } catch {}
+            });
+        },
         destroyCharts() {
             charts.forEach((chart) => {
                 try {
@@ -337,6 +383,15 @@ export function reportCharts() {
         },
         init() {
             this.renderCharts();
+            if (typeof window !== 'undefined') {
+                onHashChange = () => {
+                    const hashTab = hashToTab[window.location.hash];
+                    if (hashTab && allowedTabs.includes(hashTab)) {
+                        this.setTab(hashTab);
+                    }
+                };
+                window.addEventListener('hashchange', onHashChange);
+            }
             if (typeof MutationObserver !== 'undefined') {
                 observer = new MutationObserver(() => this.renderCharts());
                 observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'class'] });
@@ -358,8 +413,12 @@ export function reportCharts() {
             if (mediaQuery && onSystemThemeChange && typeof mediaQuery.removeEventListener === 'function') {
                 mediaQuery.removeEventListener('change', onSystemThemeChange);
             }
+            if (typeof window !== 'undefined' && onHashChange) {
+                window.removeEventListener('hashchange', onHashChange);
+            }
             mediaQuery = null;
             onSystemThemeChange = null;
+            onHashChange = null;
         },
     };
 }

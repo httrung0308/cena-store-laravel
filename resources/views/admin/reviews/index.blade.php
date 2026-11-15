@@ -22,6 +22,12 @@
             'url' => request()->fullUrlWithQuery(['visible' => null, 'page' => null]),
         ];
     }
+    if (isset($filters['replied']) && $filters['replied'] !== '') {
+        $activeChips[] = [
+            'label' => 'Phản hồi: '.($filters['replied'] === '0' ? 'Chưa phản hồi' : 'Đã phản hồi'),
+            'url' => request()->fullUrlWithQuery(['replied' => null, 'page' => null]),
+        ];
+    }
 @endphp
 @section('content')
     <div x-data="{ ...adminAjaxList(), ...adminStatusToggle() }" class="space-y-6">
@@ -46,6 +52,12 @@
                     <option value="">Tất cả</option>
                     <option value="1" @selected(($filters['visible'] ?? '') === '1')>Đang hiện</option>
                     <option value="0" @selected(($filters['visible'] ?? '') === '0')>Đã ẩn</option>
+                </x-admin.filter-select>
+
+                <x-admin.filter-select id="review-replied-filter" name="replied" label="Phản hồi:" :active="isset($filters['replied']) && $filters['replied'] !== ''">
+                    <option value="">Tất cả</option>
+                    <option value="0" @selected(($filters['replied'] ?? '') === '0')>Chưa phản hồi</option>
+                    <option value="1" @selected(($filters['replied'] ?? '') === '1')>Đã phản hồi</option>
                 </x-admin.filter-select>
             </x-slot:filters>
         </x-admin.search-form>

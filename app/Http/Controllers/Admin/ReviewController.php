@@ -23,6 +23,7 @@ class ReviewController extends Controller
             'search' => ['nullable', 'string', 'max:100'],
             'rating' => ['nullable', 'integer', 'between:1,5'],
             'visible' => ['nullable', 'in:0,1'],
+            'replied' => ['nullable', 'in:0,1'],
         ]);
         $reviews = Review::query()->with(['user', 'unit.item'])
             ->when($filters['search'] ?? null, function ($query, string $search): void {
@@ -34,6 +35,13 @@ class ReviewController extends Controller
             })
             ->when(isset($filters['rating']) && $filters['rating'] !== '', fn ($query) => $query->where('rating', (int) $filters['rating']))
             ->when(isset($filters['visible']) && $filters['visible'] !== '', fn ($query) => $query->where('is_visible', $filters['visible'] === '1'))
+            ->when(isset($filters['replied']) && $filters['replied'] !== '', function ($query) use ($filters): void {
+                if ($filters['replied'] === '0') {
+                    $query->where(fn ($inner) => $inner->whereNull('admin_reply')->orWhere('admin_reply', ''));
+                } else {
+                    $query->whereNotNull('admin_reply')->where('admin_reply', '!=', '');
+                }
+            })
             ->orderByDesc('created_at')->orderByDesc('id')
             ->paginate(15)->withQueryString();
 

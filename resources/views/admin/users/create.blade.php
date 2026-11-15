@@ -37,7 +37,7 @@
                 <x-admin.field name="email" label="Email" type="email" required />
                 <x-admin.field name="phone" label="Số điện thoại" type="tel" hint="Ví dụ: 0901234567" />
 
-                <x-admin.field name="password" label="Mật khẩu" type="password" autocomplete="new-password" required hint="Từ 8 ký tự trở lên; tránh chuỗi quá dài vượt giới hạn 72 byte khi mã hóa." />
+                <x-admin.field name="password" label="Mật khẩu" type="password" autocomplete="new-password" required hint="Từ 8 ký tự trở lên, nên kết hợp chữ và số, tránh quá dài." />
                 <x-admin.field name="password_confirmation" label="Nhập lại mật khẩu" type="password" autocomplete="new-password" required />
             </div>
 

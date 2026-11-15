@@ -66,7 +66,8 @@
 @endsection
 
 @section('content')
-    <div class="flex flex-col gap-6" x-data="reportCharts()">
+    <div class="flex flex-col gap-6"
+         x-data="reportCharts(@js($isAdmin ? 'finance' : 'operations'), @js($isAdmin ? ['finance', 'operations', 'inventory', 'feedback'] : ['operations', 'inventory']))">
         <script type="application/json" x-ref="data">@json(['daily' => $daily, 'operations' => $operations, 'feedback' => $articleFeedback['articles'] ?? []])</script>
 
         {{-- Thanh điều khiển kỳ báo cáo & chuyển vùng phân tích nhanh --}}
@@ -122,22 +123,68 @@
                     <span class="text-muted hidden sm:inline">· Giờ Việt Nam (GMT+7)</span>
                 </div>
 
-                <nav class="flex flex-wrap items-center gap-1.5" aria-label="Chuyển nhanh vùng báo cáo">
-                    <span class="text-muted font-semibold mr-1">Đi tới:</span>
+                <div class="flex flex-wrap items-center gap-1.5" role="tablist" aria-label="Chuyển vùng phân tích báo cáo">
+                    <span class="text-muted font-semibold mr-1">Phân tích:</span>
                     @if ($isAdmin)
-                        <a href="#vung-tai-chinh" class="px-2.5 py-1 rounded-lg border border-border bg-surface hover:border-accent hover:text-accent font-semibold text-main transition-colors">Tài chính</a>
+                        <button type="button"
+                                role="tab"
+                                id="tab-finance"
+                                data-report-tab="finance"
+                                aria-controls="vung-tai-chinh"
+                                :aria-selected="activeTab === 'finance' ? 'true' : 'false'"
+                                :tabindex="activeTab === 'finance' ? 0 : -1"
+                                @click="setTab('finance')"
+                                @keydown="handleTabKeydown($event, 'finance')"
+                                :class="activeTab === 'finance' ? 'border-accent bg-accent text-accent-text shadow-sm' : 'border-border bg-surface text-main hover:border-accent hover:text-accent'"
+                                class="px-3 py-1.5 rounded-xl border font-bold transition-colors cursor-pointer">
+                            Tài chính
+                        </button>
                     @endif
-                    <a href="#vung-van-hanh" class="px-2.5 py-1 rounded-lg border border-border bg-surface hover:border-accent hover:text-accent font-semibold text-main transition-colors">Vận hành & Đơn hàng</a>
-                    <a href="#vung-ton-kho" class="px-2.5 py-1 rounded-lg border border-border bg-surface hover:border-accent hover:text-accent font-semibold text-main transition-colors inline-flex items-center gap-1">
+                    <button type="button"
+                            role="tab"
+                            id="tab-operations"
+                            data-report-tab="operations"
+                            aria-controls="vung-van-hanh"
+                            :aria-selected="activeTab === 'operations' ? 'true' : 'false'"
+                            :tabindex="activeTab === 'operations' ? 0 : -1"
+                            @click="setTab('operations')"
+                            @keydown="handleTabKeydown($event, 'operations')"
+                            :class="activeTab === 'operations' ? 'border-accent bg-accent text-accent-text shadow-sm' : 'border-border bg-surface text-main hover:border-accent hover:text-accent'"
+                            class="px-3 py-1.5 rounded-xl border font-bold transition-colors cursor-pointer">
+                        Vận hành &amp; Đơn hàng
+                    </button>
+                    <button type="button"
+                            role="tab"
+                            id="tab-inventory"
+                            data-report-tab="inventory"
+                            aria-controls="vung-ton-kho"
+                            :aria-selected="activeTab === 'inventory' ? 'true' : 'false'"
+                            :tabindex="activeTab === 'inventory' ? 0 : -1"
+                            @click="setTab('inventory')"
+                            @keydown="handleTabKeydown($event, 'inventory')"
+                            :class="activeTab === 'inventory' ? 'border-accent bg-accent text-accent-text shadow-sm' : 'border-border bg-surface text-main hover:border-accent hover:text-accent'"
+                            class="px-3 py-1.5 rounded-xl border font-bold transition-colors inline-flex items-center gap-1.5 cursor-pointer">
                         <span>Tồn kho hiện tại</span>
                         @if ($inventory['low'] !== [])
                             <span class="inline-flex items-center justify-center rounded-full bg-error-bg text-error-text px-1.5 py-0.2 text-[10px] font-bold">{{ count($inventory['low']) }}</span>
                         @endif
-                    </a>
+                    </button>
                     @if ($isAdmin)
-                        <a href="#vung-bai-viet" class="px-2.5 py-1 rounded-lg border border-border bg-surface hover:border-accent hover:text-accent font-semibold text-main transition-colors">Đánh giá bài viết</a>
+                        <button type="button"
+                                role="tab"
+                                id="tab-feedback"
+                                data-report-tab="feedback"
+                                aria-controls="vung-bai-viet"
+                                :aria-selected="activeTab === 'feedback' ? 'true' : 'false'"
+                                :tabindex="activeTab === 'feedback' ? 0 : -1"
+                                @click="setTab('feedback')"
+                                @keydown="handleTabKeydown($event, 'feedback')"
+                                :class="activeTab === 'feedback' ? 'border-accent bg-accent text-accent-text shadow-sm' : 'border-border bg-surface text-main hover:border-accent hover:text-accent'"
+                                class="px-3 py-1.5 rounded-xl border font-bold transition-colors cursor-pointer">
+                            Đánh giá bài viết
+                        </button>
                     @endif
-                </nav>
+                </div>
             </div>
         </div>
 
@@ -320,7 +367,7 @@
 
         {{-- PHÂN TÍCH TÀI CHÍNH CHI TIẾT (ADMIN) --}}
         @if ($isAdmin)
-            <div class="grid gap-6 xl:grid-cols-3">
+            <div id="vung-tai-chinh-panel" role="tabpanel" aria-labelledby="tab-finance" x-show="activeTab === 'finance'" class="grid gap-6 xl:grid-cols-3">
                 <section class="admin-card xl:col-span-2 flex flex-col justify-between" aria-labelledby="chart-title">
                     <div>
                         <div class="flex flex-wrap items-start justify-between gap-3">
@@ -489,7 +536,7 @@
         @endif
 
         {{-- VÙNG 2: VẬN HÀNH & ĐƠN HÀNG THEO KỲ ĐÃ CHỌN --}}
-        <div id="vung-van-hanh" class="flex flex-col gap-6 scroll-mt-6">
+        <div id="vung-van-hanh" role="tabpanel" aria-labelledby="tab-operations" x-show="activeTab === 'operations'" @if($isAdmin) x-cloak @endif class="flex flex-col gap-6 scroll-mt-6">
             <section class="admin-card" aria-labelledby="status-title">
                 <div class="flex flex-wrap items-start justify-between gap-3">
                     <div>
@@ -661,7 +708,7 @@
         </div>
 
         {{-- VÙNG 3: TỒN KHO HIỆN TẠI (TẠI THỜI ĐIỂM TẢI TRANG) --}}
-        <section id="vung-ton-kho" class="admin-card scroll-mt-6" aria-labelledby="low-title">
+        <section id="vung-ton-kho" role="tabpanel" aria-labelledby="tab-inventory" x-show="activeTab === 'inventory'" x-cloak class="admin-card scroll-mt-6">
             <div class="flex flex-wrap items-start justify-between gap-3">
                 <div>
                     <div class="flex flex-wrap items-center gap-2">
@@ -792,7 +839,7 @@
                 $answers = $articleFeedback['helpful'] + $articleFeedback['unhelpful'];
                 $helpfulShare = $answers > 0 ? $articleFeedback['helpful'] / $answers * 100 : 0;
             @endphp
-            <section id="vung-bai-viet" class="admin-card scroll-mt-6" aria-labelledby="feedback-title" data-feedback-report>
+            <section id="vung-bai-viet" role="tabpanel" aria-labelledby="tab-feedback" x-show="activeTab === 'feedback'" x-cloak class="admin-card scroll-mt-6" data-feedback-report>
                 <div class="flex flex-wrap items-start justify-between gap-3">
                     <div>
                         <div class="flex flex-wrap items-center gap-2">
