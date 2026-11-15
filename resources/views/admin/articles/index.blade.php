@@ -3,6 +3,7 @@
 @section('eyebrow', 'QUẢN TRỊ NỘI DUNG')
 @php
     $tz = (string) config('store.business_timezone');
+    $search = (string) ($search ?? ($filters['search'] ?? ''));
     $statusFilter = (string) ($filters['status'] ?? '');
     $sortFilter = (string) ($filters['sort'] ?? 'latest');
     $statusLabels = collect(App\Enums\ArticleStatus::cases())->mapWithKeys(fn ($s) => [$s->value => $s->label()]);
@@ -11,8 +12,14 @@
         'helpful' => 'Hữu ích nhất',
         'unhelpful' => 'Không hữu ích nhất',
     ];
-    $hasActiveQuery = filled($statusFilter) || $sortFilter !== 'latest';
+    $hasActiveQuery = filled($search) || filled($statusFilter) || $sortFilter !== 'latest';
     $activeChips = [];
+    if (filled($search)) {
+        $activeChips[] = [
+            'label' => 'Từ khóa: "'.$search.'"',
+            'url' => request()->fullUrlWithQuery(['search' => null, 'page' => null]),
+        ];
+    }
     if (filled($statusFilter)) {
         $activeChips[] = [
             'label' => 'Trạng thái: '.($statusLabels[$statusFilter] ?? $statusFilter),
@@ -32,46 +39,30 @@
 @endsection
 @section('content')
     <div x-data="{ ...adminAjaxList(), ...adminStatusToggle() }" class="space-y-6">
-        <div class="bg-surface-card p-4 rounded-2xl border border-border mb-6 space-y-2.5 text-xs shadow-sm">
-            <form id="article-filter-form" method="GET" action="{{ route('admin.articles.index') }}" @submit.prevent="submitFilter($event.target)" class="flex flex-wrap items-center justify-between gap-3 px-3.5 py-2 rounded-xl bg-surface/80 border border-dashed border-border w-full">
-                <div class="flex flex-wrap items-center gap-x-5 gap-y-2">
-                    <x-admin.filter-select id="article-status-filter" name="status" label="Trạng thái:" :active="filled($statusFilter)">
-                        <option value="">Tất cả</option>
-                        @foreach (App\Enums\ArticleStatus::cases() as $status)
-                            <option value="{{ $status->value }}" @selected($statusFilter === $status->value)>{{ $status->label() }}</option>
-                        @endforeach
-                    </x-admin.filter-select>
-
-                    <x-admin.filter-select id="article-sort-filter" name="sort" label="Sắp xếp:" :active="$sortFilter !== 'latest'">
-                        <option value="latest" @selected($sortFilter === 'latest')>Mới cập nhật</option>
-                        <option value="helpful" @selected($sortFilter === 'helpful')>Hữu ích nhất</option>
-                        <option value="unhelpful" @selected($sortFilter === 'unhelpful')>Không hữu ích nhất</option>
-                    </x-admin.filter-select>
-                </div>
-
-                <button type="submit" class="px-4 py-1.5 bg-accent hover:bg-accent-hover text-accent-text text-xs font-bold rounded-lg transition-colors shadow-sm shrink-0">Lọc</button>
-            </form>
-
-            @if (! empty($activeChips))
-                <div id="admin-filter-chips" class="flex flex-wrap items-center gap-1.5 pt-2 border-t border-border/60">
-                    <span class="text-[11px] font-bold text-muted mr-0.5">Đang lọc:</span>
-                    @foreach ($activeChips as $chip)
-                        <a href="{{ $chip['url'] }}"
-                           @click.prevent="visitUrl('{{ $chip['url'] }}')"
-                           aria-label="Bỏ điều kiện {{ $chip['label'] }}"
-                           class="inline-flex items-center gap-1 pl-2.5 pr-1.5 py-0.5 rounded-full bg-accent/10 text-accent border border-accent/25 text-[11px] font-semibold hover:bg-accent/15 transition-colors">
-                            <span>{{ $chip['label'] }}</span>
-                            <span aria-hidden="true" class="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full hover:bg-accent/20 font-bold">×</span>
-                        </a>
+        <x-admin.search-form
+            :action="route('admin.articles.index')"
+            :ajax="true"
+            id="article-search-input"
+            label="Tìm bài viết"
+            placeholder="Tìm theo tiêu đề bài viết..."
+            :value="$search"
+            :active-chips="$activeChips"
+        >
+            <x-slot:filters>
+                <x-admin.filter-select id="article-status-filter" name="status" label="Trạng thái:" :active="filled($statusFilter)">
+                    <option value="">Tất cả</option>
+                    @foreach (App\Enums\ArticleStatus::cases() as $status)
+                        <option value="{{ $status->value }}" @selected($statusFilter === $status->value)>{{ $status->label() }}</option>
                     @endforeach
-                    <a href="{{ route('admin.articles.index') }}"
-                       @click.prevent="resetFilters('{{ route('admin.articles.index') }}', document.getElementById('article-filter-form'))"
-                       class="ml-auto text-[11px] font-bold text-muted hover:text-error underline transition-colors">
-                        Xóa tất cả
-                    </a>
-                </div>
-            @endif
-        </div>
+                </x-admin.filter-select>
+
+                <x-admin.filter-select id="article-sort-filter" name="sort" label="Sắp xếp:" :active="$sortFilter !== 'latest'">
+                    <option value="latest" @selected($sortFilter === 'latest')>Mới cập nhật</option>
+                    <option value="helpful" @selected($sortFilter === 'helpful')>Hữu ích nhất</option>
+                    <option value="unhelpful" @selected($sortFilter === 'unhelpful')>Không hữu ích nhất</option>
+                </x-admin.filter-select>
+            </x-slot:filters>
+        </x-admin.search-form>
 
         <x-admin.ajax-feedback />
 
@@ -180,7 +171,15 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="5" class="p-12 text-center text-xs text-muted">Chưa có bài viết.</td></tr>
+                        <tr>
+                            <td colspan="5" class="p-12 text-center text-xs text-muted">
+                                @if ($hasActiveQuery)
+                                    Không tìm thấy bài viết nào phù hợp với từ khóa hoặc bộ lọc hiện tại.
+                                @else
+                                    Chưa có bài viết.
+                                @endif
+                            </td>
+                        </tr>
                     @endforelse
                     </tbody>
                 </table>

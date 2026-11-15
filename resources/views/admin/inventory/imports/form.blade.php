@@ -124,9 +124,9 @@
 
     <section class="admin-card space-y-4">
         <h2 class="text-base font-bold text-main">Thông tin phiếu nhập</h2>
-        <div class="grid gap-4 sm:grid-cols-2">
-            <div>
-                <label for="import-supplier" class="admin-label text-muted">Nhà cung cấp <span class="text-error">*</span></label>
+        <div class="grid gap-4 md:grid-cols-12">
+            <div class="md:col-span-5">
+                <label for="import-supplier" class="admin-label">Nhà cung cấp <span class="text-error">*</span></label>
                 <select id="import-supplier" class="input w-full border-border bg-surface text-main text-xs" name="supplier_id" required>
                     <option value="">-- Chọn nhà cung cấp --</option>
                     @foreach ($suppliers as $supplier)
@@ -138,11 +138,11 @@
                 <x-forms.field-error name="supplier_id" />
             </div>
 
-            <div>
-                <label for="import-note" class="admin-label text-muted">Ghi chú / Lý do nhập tặng</label>
+            <div class="md:col-span-7">
+                <label for="import-note" class="admin-label">Ghi chú / Lý do nhập tặng</label>
                 <input id="import-note" type="text" class="input w-full border-border bg-surface text-main text-xs" name="note"
                        value="{{ old('note', $import->note) }}" placeholder="Ví dụ: Nhập bổ sung đợt 1, Lô hàng khuyến mãi...">
-                <p class="mt-1 text-[11px] text-muted">Với hàng nhập tặng giá 0₫, yêu cầu ghi rõ lý do tối thiểu 20 ký tự.</p>
+                <p class="mt-1 text-[11px] text-muted">Nếu có dòng nhập giá 0 ₫ (hàng tặng/khuyến mãi), cần ghi rõ lý do tối thiểu 20 ký tự.</p>
                 <x-forms.field-error name="note" />
             </div>
         </div>
@@ -175,8 +175,8 @@
                         </button>
                     </div>
 
-                    <div class="grid gap-3 lg:grid-cols-12 items-end">
-                        <div class="lg:col-span-6 relative"
+                    <div class="grid gap-3 sm:grid-cols-6 lg:grid-cols-12 items-end">
+                        <div class="sm:col-span-6 lg:col-span-6 relative"
                              x-data="{ open: false, query: '' }"
                              @click.outside="open = false"
                              @keydown.escape.stop="open = false">
@@ -240,7 +240,7 @@
                             </div>
                         </div>
 
-                        <div class="lg:col-span-2">
+                        <div class="sm:col-span-2 lg:col-span-2">
                             <label class="text-xs font-semibold text-muted block">Số lượng <span class="text-error">*</span>
                                 <input class="input mt-1 w-full border-border bg-surface text-xs font-mono font-normal text-main"
                                        type="number" min="1" max="2147483647" step="1"
@@ -248,7 +248,7 @@
                             </label>
                         </div>
 
-                        <div class="lg:col-span-2">
+                        <div class="sm:col-span-2 lg:col-span-2">
                             <label class="text-xs font-semibold text-muted block">Giá nhập/đôi (₫) <span class="text-error">*</span>
                                 <input type="hidden" x-bind:name="'items['+i+'][unit_cost_amount]'" :value="cleanDigits(row.unit_cost_amount)">
                                 <div class="relative mt-1">
@@ -264,7 +264,7 @@
                             </label>
                         </div>
 
-                        <div class="lg:col-span-2">
+                        <div class="sm:col-span-2 lg:col-span-2">
                             <span class="text-[11px] font-semibold text-muted block">Thành tiền dòng</span>
                             <div class="input mt-1 w-full border-border bg-surface-alt/70 text-xs font-mono font-bold text-accent flex items-center justify-end px-3">
                                 <span x-text="formatVnd((parseInt(row.quantity, 10) || 0) * (parseInt(cleanDigits(row.unit_cost_amount), 10) || 0))"></span>
@@ -300,7 +300,7 @@
             </div>
         </div>
 
-        <p class="text-xs text-muted">Lưu ý: Tổng thành tiền chính thức sẽ do server tính và ghi sổ kế toán. Lưu phiếu nháp chưa làm thay đổi số lượng tồn kho hay giá vốn bình quân.</p>
+        <p class="text-xs text-muted">Lưu phiếu nháp chưa làm thay đổi số lượng tồn kho hay giá vốn bình quân. Tồn kho và sổ quỹ chỉ được cập nhật khi bạn bấm <strong>Ghi sổ</strong> ở bước tiếp theo.</p>
     </section>
 
     <div class="flex items-center gap-3 pt-2">

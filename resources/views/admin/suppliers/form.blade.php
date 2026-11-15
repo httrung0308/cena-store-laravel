@@ -83,9 +83,9 @@
                                class="input w-full text-main font-mono uppercase text-xs"
                                placeholder="Để trống để tự động sinh (VD: SUP-0001)">
                         <p class="text-[11px] text-muted">
-                            <span x-show="isNew">Nếu để trống, hệ thống sẽ tự động sinh mã nội bộ duy nhất (ví dụ: SUP-0001). Chỉ dùng chữ, số, gạch ngang hoặc gạch dưới.</span>
+                            <span x-show="isNew">Để trống để tự động sinh mã (ví dụ: SUP-0001). Chỉ gồm chữ, số, dấu gạch ngang hoặc gạch dưới.</span>
                             <span x-show="!isNew && isCodeLocked">Đang khóa để giữ nguyên mã đã lưu khi sửa tên nhà cung cấp.</span>
-                            <span x-show="!isNew && !isCodeLocked" class="text-warning-text font-medium">Lưu ý: Đổi mã nhà cung cấp sẽ ảnh hưởng tra cứu phiếu nhập kho liên quan.</span>
+                            <span x-show="!isNew && !isCodeLocked" class="text-warning-text font-medium">Lưu ý: Đổi mã sẽ cập nhật mã hiển thị trên các phiếu nhập kho của nhà cung cấp này.</span>
                         </p>
                         <x-forms.field-error name="code" />
                     </div>

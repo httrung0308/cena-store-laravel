@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\BannerController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\ClassificationController;
 use App\Http\Controllers\Admin\CouponController;
+use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\ProfileController;
@@ -22,7 +23,7 @@ use Illuminate\Support\Facades\Route;
  * The admin sidebar shows a link only when its route exists: admin.categories.index,
  * admin.suppliers.index, admin.products.index, admin.stock-imports.index.
  */
-Route::view('/', 'admin.dashboard')->name('dashboard');
+Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
 Route::get('profile', [ProfileController::class, 'show'])->name('profile.show');
 Route::get('reports', [ReportController::class, 'index'])->name('reports.index');
 
@@ -58,6 +59,8 @@ Route::post('orders/{order}/{action}', [OrderController::class, 'transition'])->
 
 Route::middleware('role:admin')->prefix('users')->name('users.')->whereNumber('user')->group(function (): void {
     Route::get('/', [UserController::class, 'index'])->name('index');
+    Route::get('/create', [UserController::class, 'create'])->name('create');
+    Route::post('/', [UserController::class, 'store'])->name('store');
     Route::get('/{user}', [UserController::class, 'show'])->name('show');
     Route::patch('/{user}', [UserController::class, 'update'])->name('update');
     Route::patch('/{user}/active', [UserController::class, 'active'])->name('active');

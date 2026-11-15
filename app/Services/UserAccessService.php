@@ -10,6 +10,7 @@ use App\Models\Role;
 use App\Models\User;
 use App\Models\UserRole;
 use App\Support\BusinessClock;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
@@ -21,6 +22,56 @@ use Illuminate\Support\Facades\Hash;
 final class UserAccessService
 {
     public function __construct(private readonly BusinessClock $clock) {}
+
+    /**
+     * Creates an active Staff or Admin user and assigns the chosen role in one transaction.
+     *
+     * @param  array{full_name: string, email: string, phone: ?string, password: string, role: RoleSlug}  $data
+     */
+    public function createPrivilegedUser(User $actor, array $data): User
+    {
+        if (! in_array($data['role'], [RoleSlug::Staff, RoleSlug::Admin], true)) {
+            throw new DomainException(ErrorCode::ValidationFailed, ['role' => ['Vai trò chỉ được phép là Nhân viên hoặc Quản trị viên.']]);
+        }
+
+        $email = mb_strtolower(trim($data['email']));
+
+        try {
+            return DB::transaction(function () use ($actor, $data, $email): User {
+                $role = Role::query()->where('slug', $data['role']->value)->lockForUpdate()->first();
+                if ($role === null) {
+                    throw new DomainException(ErrorCode::NotFound, ['role' => ['Vai trò chưa được khởi tạo trong hệ thống.']]);
+                }
+                if (User::query()->where('email', $email)->exists()) {
+                    throw new DomainException(ErrorCode::ValidationFailed, ['email' => ['Email này đã được sử dụng trong hệ thống.']]);
+                }
+
+                $now = $this->clock->now();
+
+                $user = new User;
+                $user->full_name = $data['full_name'];
+                $user->email = $email;
+                $user->phone = $data['phone'];
+                $user->password = $data['password'];
+                $user->is_active = true;
+                $user->auth_version = 1;
+                $user->created_at = $now;
+                $user->updated_at = $now;
+                $user->save();
+
+                $assignment = new UserRole;
+                $assignment->user_id = $user->id;
+                $assignment->role_id = $role->id;
+                $assignment->assigned_by = $actor->id;
+                $assignment->assigned_at = $now;
+                $assignment->save();
+
+                return $user;
+            });
+        } catch (UniqueConstraintViolationException) {
+            throw new DomainException(ErrorCode::ValidationFailed, ['email' => ['Email này đã được sử dụng trong hệ thống.']]);
+        }
+    }
 
     /** @param array{full_name: string, phone: ?string} $profile */
     public function updateProfile(User $target, array $profile): User

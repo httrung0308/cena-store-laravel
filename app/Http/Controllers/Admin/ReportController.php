@@ -8,6 +8,8 @@ use App\Services\ReportService;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\ValidationException;
 
 /**
  * Read-only dashboard. Admin sees revenue, COGS and profit from the sales ledger; staff only sees
@@ -25,16 +27,53 @@ class ReportController extends Controller
     {
         $today = $this->reports->today();
         $defaultFrom = CarbonImmutable::parse($today)->subDays(29)->format('Y-m-d');
-        $filters = $request->validate([
-            'from' => ['nullable', 'date_format:Y-m-d'],
-            'to' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:from'],
-        ]);
+
+        $validator = Validator::make(
+            $request->all(),
+            [
+                'from' => ['nullable', 'date_format:Y-m-d'],
+                'to' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:from'],
+            ],
+            [
+                'from.date_format' => 'Ngày bắt đầu không đúng định dạng năm-tháng-ngày (YYYY-MM-DD).',
+                'to.date_format' => 'Ngày kết thúc không đúng định dạng năm-tháng-ngày (YYYY-MM-DD).',
+                'to.after_or_equal' => 'Ngày kết thúc phải sau hoặc bằng ngày bắt đầu.',
+            ]
+        );
+
+        $validator->after(function (\Illuminate\Validation\Validator $validator) use ($request, $defaultFrom, $today): void {
+            if ($validator->errors()->isNotEmpty()) {
+                return;
+            }
+
+            $from = $request->filled('from') ? (string) $request->input('from') : $defaultFrom;
+            $to = $request->filled('to') ? (string) $request->input('to') : $today;
+
+            $fromDate = CarbonImmutable::parse($from);
+            $toDate = CarbonImmutable::parse($to);
+
+            if ($fromDate->greaterThan($toDate)) {
+                $validator->errors()->add('to', 'Ngày kết thúc phải sau hoặc bằng ngày bắt đầu.');
+
+                return;
+            }
+
+            if ($fromDate->diffInDays($toDate) >= self::MAX_DAYS) {
+                $validator->errors()->add(
+                    'to',
+                    'Khoảng thời gian báo cáo tối đa là '.self::MAX_DAYS.' ngày. Vui lòng thu hẹp khoảng ngày cần xem.'
+                );
+            }
+        });
+
+        if ($validator->fails()) {
+            throw (new ValidationException($validator))
+                ->redirectTo(route('admin.reports.index'));
+        }
+
+        $filters = $validator->validated();
         $from = $filters['from'] ?? $defaultFrom;
         $to = $filters['to'] ?? $today;
-        if ($from > $to || CarbonImmutable::parse($from)->diffInDays(CarbonImmutable::parse($to)) >= self::MAX_DAYS) {
-            $from = $defaultFrom;
-            $to = $today;
-        }
         ['start' => $start, 'end' => $end] = $this->reports->range($from, $to);
         $isAdmin = $request->user()->hasRole(RoleSlug::Admin);
 

@@ -75,14 +75,81 @@ function themeMixin() {
     };
 }
 
-Alpine.data('adminShell', () => ({
+const ADMIN_SIDEBAR_GROUPS_STORAGE_KEY = 'cena-admin-sidebar-groups';
+
+Alpine.data('adminShell', (config = {}) => ({
     ...themeMixin(),
     sidebarOpen: false,
+    groupKeys: Array.isArray(config.groupKeys) ? config.groupKeys : [],
+    activeGroups: Array.isArray(config.activeGroups) ? config.activeGroups : [],
+    openGroups: {},
     init() {
         this.initTheme();
+        this.initSidebarGroups();
         this.$watch('sidebarOpen', (open) => {
             document.documentElement.classList.toggle('overflow-hidden', open);
         });
+    },
+    initSidebarGroups() {
+        const domGroups = [...document.querySelectorAll('#admin-sidebar [data-sidebar-group]')];
+        const discoveredKeys = domGroups
+            .map((el) => el.getAttribute('data-sidebar-group'))
+            .filter(Boolean);
+        const discoveredActiveKeys = domGroups
+            .filter((el) => el.getAttribute('data-group-active') === 'true' || el.querySelector('[aria-current="page"]'))
+            .map((el) => el.getAttribute('data-sidebar-group'))
+            .filter(Boolean);
+
+        const allKeys = [...new Set([...this.groupKeys, ...discoveredKeys])];
+        const activeKeys = new Set([...this.activeGroups, ...discoveredActiveKeys]);
+
+        this.groupKeys = allKeys;
+        this.activeGroups = [...activeKeys];
+
+        const nextState = {};
+        allKeys.forEach((key) => {
+            nextState[key] = true;
+        });
+
+        try {
+            const raw = localStorage.getItem(ADMIN_SIDEBAR_GROUPS_STORAGE_KEY);
+            if (raw) {
+                const parsed = JSON.parse(raw);
+                if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+                    Object.entries(parsed).forEach(([key, value]) => {
+                        if (typeof value === 'boolean') {
+                            nextState[key] = value;
+                        }
+                    });
+                }
+            }
+        } catch (e) {}
+
+        activeKeys.forEach((key) => {
+            nextState[key] = true;
+        });
+
+        this.openGroups = nextState;
+        this.persistSidebarGroups();
+    },
+    isGroupOpen(groupKey) {
+        if (Object.prototype.hasOwnProperty.call(this.openGroups, groupKey)) {
+            return Boolean(this.openGroups[groupKey]);
+        }
+
+        return true;
+    },
+    toggleGroup(groupKey) {
+        this.openGroups = {
+            ...this.openGroups,
+            [groupKey]: !this.isGroupOpen(groupKey),
+        };
+        this.persistSidebarGroups();
+    },
+    persistSidebarGroups() {
+        try {
+            localStorage.setItem(ADMIN_SIDEBAR_GROUPS_STORAGE_KEY, JSON.stringify(this.openGroups));
+        } catch (e) {}
     },
     closeSidebar() {
         this.sidebarOpen = false;

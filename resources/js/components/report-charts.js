@@ -140,7 +140,10 @@ function financeChart(Chart, canvas, periods, theme) {
                     callbacks: {
                         title: (items) => periods[items[0].dataIndex].label,
                         label: (context) => ` ${context.dataset.label}: ${vnd(context.parsed.y)}`,
-                        footer: (items) => `Doanh thu: ${vnd(periods[items[0].dataIndex].revenue)}`,
+                        footer: (items) => {
+                            const period = periods[items[0].dataIndex];
+                            return `Doanh thu: ${vnd(period.revenue)} · Lợi nhuận: ${vnd(period.profit)}`;
+                        },
                     },
                 },
             },
@@ -275,43 +278,88 @@ function sparkline(Chart, canvas, values, color) {
 }
 
 export function reportCharts() {
+    let charts = [];
+    let observer = null;
+    let mediaQuery = null;
+    let onSystemThemeChange = null;
+
     return {
-        charts: [],
-        observer: null,
+        destroyCharts() {
+            charts.forEach((chart) => {
+                try {
+                    chart.destroy();
+                } catch {}
+            });
+            charts = [];
+        },
         renderCharts() {
             const Chart = window.Chart;
-            if (!Chart) return;
-            this.destroy();
+            if (!Chart || !this.$refs?.data) return;
+            this.destroyCharts();
 
             const theme = getTheme();
             const data = JSON.parse(this.$refs.data.textContent);
-            const moneyRows = buckets((data.daily ?? []).map((row) => ({ ...row, expense: row.revenue - row.cogs - row.profit })), ['revenue', 'cogs', 'expense', 'profit']);
+            const moneyRows = buckets(
+                (data.daily ?? []).map((row) => ({ ...row, expense: row.expense ?? 0 })),
+                ['revenue', 'cogs', 'expense', 'profit'],
+            );
             const operations = buckets(data.operations ?? [], ['orders', 'pairs']);
             const series = { ...Object.fromEntries(['revenue', 'cogs', 'expense', 'profit'].map((field) => [field, moneyRows])), orders: operations, pairs: operations };
             const sparkColor = { revenue: theme.colors.count, cogs: theme.colors.cogs, expense: theme.colors.expense, profit: theme.colors.profit, orders: theme.colors.count, pairs: theme.colors.count };
+            const hasFinanceActivity = moneyRows.some(
+                (period) => period.revenue !== 0 || period.cogs !== 0 || period.expense !== 0 || period.profit !== 0,
+            );
 
-            if (this.$refs.money && moneyRows.length) this.charts.push(financeChart(Chart, this.$refs.money, moneyRows, theme));
-            if (this.$refs.margin && moneyRows.length) this.charts.push(marginChart(Chart, this.$refs.margin, moneyRows, theme));
-            if (this.$refs.feedback && data.feedback?.length) this.charts.push(feedbackChart(Chart, this.$refs.feedback, data.feedback, theme));
+            if (this.$refs.money && hasFinanceActivity) {
+                Chart.getChart?.(this.$refs.money)?.destroy();
+                charts.push(financeChart(Chart, this.$refs.money, moneyRows, theme));
+            }
+            if (this.$refs.margin && hasFinanceActivity) {
+                Chart.getChart?.(this.$refs.margin)?.destroy();
+                charts.push(marginChart(Chart, this.$refs.margin, moneyRows, theme));
+            }
+            if (this.$refs.feedback && data.feedback?.length) {
+                Chart.getChart?.(this.$refs.feedback)?.destroy();
+                charts.push(feedbackChart(Chart, this.$refs.feedback, data.feedback, theme));
+            }
             this.$el.querySelectorAll('canvas[data-sparkline]').forEach((canvas) => {
                 const field = canvas.dataset.sparkline;
-                if (series[field]?.length > 1 && series[field].some((period) => period[field] !== 0)) this.charts.push(sparkline(Chart, canvas, series[field].map((period) => period[field]), sparkColor[field]));
+                const wrapper = canvas.parentElement;
+                const hasSparkline = Boolean(series[field]?.length > 1 && series[field].some((period) => period[field] !== 0));
+                if (wrapper) {
+                    wrapper.classList.toggle('hidden', !hasSparkline);
+                }
+                if (hasSparkline) {
+                    Chart.getChart?.(canvas)?.destroy();
+                    charts.push(sparkline(Chart, canvas, series[field].map((period) => period[field]), sparkColor[field]));
+                }
             });
         },
         init() {
             this.renderCharts();
             if (typeof MutationObserver !== 'undefined') {
-                this.observer = new MutationObserver(() => this.renderCharts());
-                this.observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'class'] });
+                observer = new MutationObserver(() => this.renderCharts());
+                observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'class'] });
+            }
+            if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
+                mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+                onSystemThemeChange = () => this.renderCharts();
+                if (typeof mediaQuery.addEventListener === 'function') {
+                    mediaQuery.addEventListener('change', onSystemThemeChange);
+                }
             }
         },
         destroy() {
-            this.charts.forEach((chart) => chart.destroy());
-            this.charts = [];
-            if (this.observer) {
-                this.observer.disconnect();
-                this.observer = null;
+            this.destroyCharts();
+            if (observer) {
+                observer.disconnect();
+                observer = null;
             }
+            if (mediaQuery && onSystemThemeChange && typeof mediaQuery.removeEventListener === 'function') {
+                mediaQuery.removeEventListener('change', onSystemThemeChange);
+            }
+            mediaQuery = null;
+            onSystemThemeChange = null;
         },
     };
 }

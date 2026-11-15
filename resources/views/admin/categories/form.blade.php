@@ -40,8 +40,8 @@
 
             <h2 class="text-base font-bold text-main">Thông tin danh mục</h2>
 
-            <div class="grid gap-4 md:grid-cols-2">
-                <div class="md:col-span-2">
+            <div class="grid gap-4 md:grid-cols-12">
+                <div class="md:col-span-12">
                     <label for="category-name" class="admin-label">Tên danh mục <span class="text-error">*</span></label>
                     <input id="category-name" name="name" type="text" x-model="name" x-on:input="onNameInput"
                            class="input w-full border-border focus:border-accent text-main text-xs @error('name') border-error @enderror"
@@ -89,8 +89,8 @@
                     </div>
                 </div>
 
-                <div>
-                    <label for="category-gender" class="admin-label text-muted">Nhóm giới tính <span class="text-error">*</span></label>
+                <div class="md:col-span-4">
+                    <label for="category-gender" class="admin-label">Nhóm giới tính <span class="text-error">*</span></label>
                     <select id="category-gender" name="gender_group" x-model="selectedGender" x-on:change="onGenderChange"
                             class="input w-full border-border bg-surface text-main text-xs @error('gender_group') border-error @enderror" required>
                         <option value="">-- Chọn nhóm --</option>
@@ -101,8 +101,8 @@
                     <x-forms.field-error name="gender_group" />
                 </div>
 
-                <div>
-                    <label for="category-parent" class="admin-label text-muted">Danh mục cha (cùng nhóm giới tính)</label>
+                <div class="md:col-span-5">
+                    <label for="category-parent" class="admin-label">Danh mục cha</label>
                     <select id="category-parent" name="parent_id" x-model="selectedParent"
                             class="input w-full border-border bg-surface text-main text-xs @error('parent_id') border-error @enderror">
                         <option value="">Không có (Danh mục gốc)</option>
@@ -110,11 +110,13 @@
                             <option :value="parent.id" x-text="parent.name" :selected="String(parent.id) === String(selectedParent)"></option>
                         </template>
                     </select>
-                    <p class="mt-1 text-[11px] text-muted">Chỉ hiển thị các danh mục cấp 1 thuộc cùng nhóm giới tính đang chọn.</p>
+                    <p class="mt-1 text-[11px] text-muted">Chỉ hiển thị danh mục gốc thuộc nhóm giới tính đã chọn.</p>
                     <x-forms.field-error name="parent_id" />
                 </div>
 
-                <x-admin.field name="display_order" label="Thứ tự hiển thị" :value="$category['display_order'] ?? 1" type="number" min="0" max="65535" hint="Số nhỏ hơn sẽ xếp trước." />
+                <div class="md:col-span-3">
+                    <x-admin.field name="display_order" label="Thứ tự hiển thị" :value="$category['display_order'] ?? 1" type="number" min="0" max="65535" hint="Số nhỏ xếp trước." />
+                </div>
             </div>
 
             <label class="flex items-center gap-2 text-xs font-semibold text-main cursor-pointer select-none">

@@ -1,6 +1,9 @@
 @extends('layouts.admin')
 @section('title', $record->exists ? 'Chỉnh Sửa Banner' : 'Tạo Banner Mới')
 @section('eyebrow', 'QUẢN TRỊ TRANG CHỦ')
+@section('actions')
+    <a class="px-4 py-2 bg-surface hover:bg-border/40 text-muted hover:text-main text-xs font-bold rounded-xl border border-border transition-colors" href="{{ route('admin.banners.index') }}">← Quay lại danh sách</a>
+@endsection
 @section('content')
 <section class="max-w-4xl mx-auto space-y-6" aria-label="Form banner trang chủ"
          x-data="{
@@ -38,34 +41,12 @@
              }
          }">
 
-    <div class="flex items-center justify-between">
-        <div>
-            <a href="{{ route('admin.banners.index') }}" class="text-xs font-semibold text-accent hover:underline flex items-center gap-1 mb-1">
-                ← Quay lại danh sách banner
-            </a>
-            <h1 class="text-2xl font-extrabold text-main">
-                {{ $record->exists ? 'Chỉnh sửa banner' : 'Tạo banner mới' }}
-            </h1>
-        </div>
-    </div>
-
-    @if ($errors->any())
-        <div role="alert" class="p-4 rounded-xl bg-error-bg border border-error/30 text-error text-xs">
-            <strong class="font-bold block mb-1">Vui lòng kiểm tra lại các thông tin sau:</strong>
-            <ul class="list-disc list-inside space-y-0.5">
-                @foreach ($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                @endforeach
-            </ul>
-        </div>
-    @endif
-
     {{-- Live Preview Box --}}
     <div class="bg-surface-card rounded-2xl border border-border p-4 shadow-sm space-y-3">
         <div class="flex items-center justify-between border-b border-border pb-3">
             <div class="flex items-center gap-2">
                 <span class="w-2 h-2 rounded-full bg-accent"></span>
-                <span class="text-xs font-bold uppercase tracking-wider text-main font-mono">Xem trước thời gian thực (Live Preview)</span>
+                <span class="text-xs font-bold uppercase tracking-wider text-main font-mono">Xem trước hiển thị</span>
             </div>
             <div class="inline-flex rounded-lg border border-border bg-surface p-0.5 text-xs font-semibold">
                 <button type="button" @click="previewMode = 'desktop'" :class="previewMode === 'desktop' ? 'bg-accent text-accent-text shadow-sm' : 'text-muted hover:text-main'" class="px-3 py-1 rounded-md transition-colors">
@@ -85,7 +66,7 @@
             <template x-if="!desktopPreview">
                 <div class="text-center text-muted text-xs p-6">
                     <svg class="w-8 h-8 mx-auto text-muted/50 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                    <span>Chưa có ảnh desktop (Hãy chọn file ảnh bên dưới)</span>
+                    <span>Chưa có ảnh desktop (chọn ảnh ở khung bên dưới)</span>
                 </div>
             </template>
             <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent flex flex-col justify-end p-6 text-white" x-show="title || subtitle || cta_text">
@@ -127,33 +108,47 @@
             @method('PUT')
         @endif
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-5">
             {{-- Title --}}
-            <div class="space-y-1.5 md:col-span-2">
+            <div class="space-y-1.5 md:col-span-8">
                 <label for="title" class="block text-xs font-bold text-main">
                     Tiêu đề banner <span class="text-error">*</span>
                 </label>
                 <input type="text" id="title" name="title" x-model="title" required maxlength="150"
-                       class="input w-full text-xs bg-surface border-border text-main"
+                       class="input w-full text-xs bg-surface border-border text-main @error('title') border-error @enderror"
                        placeholder="Ví dụ: BỨT PHÁ MỌI GIỚI HẠN VỚI PEGASUS 41">
-                <p class="text-[11px] text-muted">Tiêu đề lớn hiển thị trên banner (tối đa 150 ký tự).</p>
+                <p class="text-[11px] text-muted">Tiêu đề chính hiển thị trên banner (tối đa 150 ký tự).</p>
+                <x-forms.field-error name="title" />
+            </div>
+
+            {{-- CTA Text --}}
+            <div class="space-y-1.5 md:col-span-4">
+                <label for="cta_text" class="block text-xs font-bold text-main">
+                    Chữ trên nút bấm
+                </label>
+                <input type="text" id="cta_text" name="cta_text" x-model="cta_text" maxlength="50"
+                       class="input w-full text-xs bg-surface border-border text-main @error('cta_text') border-error @enderror"
+                       placeholder="Ví dụ: Khám phá ngay, Mua ngay">
+                <p class="text-[11px] text-muted">Để trống nếu không hiện nút bấm.</p>
+                <x-forms.field-error name="cta_text" />
             </div>
 
             {{-- Subtitle --}}
-            <div class="space-y-1.5 md:col-span-2">
+            <div class="space-y-1.5 md:col-span-12">
                 <label for="subtitle" class="block text-xs font-bold text-main">
                     Phụ đề mô tả
                 </label>
                 <textarea id="subtitle" name="subtitle" x-model="subtitle" rows="2" maxlength="255"
-                          class="input w-full text-xs bg-surface border-border text-main py-2"
+                          class="input w-full text-xs bg-surface border-border text-main py-2 @error('subtitle') border-error @enderror"
                           placeholder="Ví dụ: Đệm phản hồi năng lượng êm ái, nâng niu từng sải chân chạy bộ."></textarea>
                 <p class="text-[11px] text-muted">Dòng thông điệp phụ bên dưới tiêu đề (tùy chọn, tối đa 255 ký tự).</p>
+                <x-forms.field-error name="subtitle" />
             </div>
 
             {{-- Desktop Image --}}
-            <div class="space-y-1.5">
+            <div class="space-y-1.5 md:col-span-6">
                 <label for="image" class="block text-xs font-bold text-main">
-                    Ảnh phiên bản Desktop {{ $record->exists ? '' : '*' }}
+                    Ảnh phiên bản Desktop @unless ($record->exists)<span class="text-error">*</span>@endunless
                 </label>
                 <input type="file" id="image" name="image" accept="image/jpeg,image/png,image/webp"
                        @change="handleFile($event, 'desktop')"
@@ -162,13 +157,13 @@
                        class="block w-full text-xs text-muted file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-accent file:text-accent-text hover:file:bg-accent-hover cursor-pointer border rounded-xl bg-surface p-1">
                 <p x-cloak x-show="desktopError" x-text="desktopError" class="text-xs font-medium text-error" role="alert"></p>
                 <x-forms.field-error name="image" />
-                <p class="text-[11px] text-muted">Khuyến nghị kích thước 1920x640px hoặc 1600x600px. Tối đa 5MB (JPG, PNG, WebP).</p>
+                <p class="text-[11px] text-muted">Khuyến nghị 1920×640px hoặc 1600×600px, tối đa 5 MB (JPG, PNG, WebP).</p>
             </div>
 
             {{-- Mobile Image --}}
-            <div class="space-y-1.5">
+            <div class="space-y-1.5 md:col-span-6">
                 <label for="mobile_image" class="block text-xs font-bold text-main">
-                    Ảnh phiên bản Mobile (Tùy chọn)
+                    Ảnh phiên bản Mobile (tùy chọn)
                 </label>
                 <input type="file" id="mobile_image" name="mobile_image" accept="image/jpeg,image/png,image/webp"
                        @change="handleFile($event, 'mobile')"
@@ -176,55 +171,47 @@
                        class="block w-full text-xs text-muted file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-surface file:border file:border-border file:text-main hover:file:bg-surface/80 cursor-pointer border rounded-xl bg-surface p-1">
                 <p x-cloak x-show="mobileError" x-text="mobileError" class="text-xs font-medium text-error" role="alert"></p>
                 <x-forms.field-error name="mobile_image" />
-                <p class="text-[11px] text-muted">Khuyến nghị 800x800px hoặc 800x600px, tối đa 5MB. Nếu không chọn, hệ thống tự crop tâm từ ảnh Desktop.</p>
+                <p class="text-[11px] text-muted">Khuyến nghị 800×800px hoặc 800×600px, tối đa 5 MB. Để trống sẽ dùng chung ảnh Desktop.</p>
             </div>
 
             {{-- Link URL --}}
-            <div class="space-y-1.5">
+            <div class="space-y-1.5 md:col-span-6">
                 <label for="link_url" class="block text-xs font-bold text-main">
-                    Đường dẫn liên kết (Link URL)
+                    Đường dẫn khi bấm banner
                 </label>
                 <input type="text" id="link_url" name="link_url" value="{{ old('link_url', $record->link_url) }}" maxlength="500"
-                       class="input w-full text-xs bg-surface border-border text-main font-mono"
+                       class="input w-full text-xs bg-surface border-border text-main font-mono @error('link_url') border-error @enderror"
                        placeholder="/shoes?gender=men hoặc https://...">
-                <p class="text-[11px] text-muted">Đường dẫn khi khách click banner hoặc nút CTA. Hỗ trợ relative link (/shoes) hoặc https://.</p>
-            </div>
-
-            {{-- CTA Text --}}
-            <div class="space-y-1.5">
-                <label for="cta_text" class="block text-xs font-bold text-main">
-                    Nhãn nút bấm (CTA Text)
-                </label>
-                <input type="text" id="cta_text" name="cta_text" x-model="cta_text" maxlength="50"
-                       class="input w-full text-xs bg-surface border-border text-main"
-                       placeholder="Ví dụ: Khám phá ngay, Mua ngay, Xem ưu đãi">
-                <p class="text-[11px] text-muted">Nếu để trống, banner sẽ chỉ hiển thị ảnh mà không có nút bấm CTA.</p>
+                <p class="text-[11px] text-muted">Nhập đường dẫn nội bộ (ví dụ: /shoes) hoặc liên kết đầy đủ (https://...).</p>
+                <x-forms.field-error name="link_url" />
             </div>
 
             {{-- Sort Order --}}
-            <div class="space-y-1.5">
+            <div class="space-y-1.5 md:col-span-3">
                 <label for="sort_order" class="block text-xs font-bold text-main">
                     Thứ tự hiển thị <span class="text-error">*</span>
                 </label>
                 <input type="number" id="sort_order" name="sort_order" value="{{ old('sort_order', $record->sort_order ?? 1) }}" min="0" max="65535" required
-                       class="input w-full text-xs bg-surface border-border text-main">
-                <p class="text-[11px] text-muted">Số nhỏ hơn sẽ xuất hiện trước trong chuỗi Carousel.</p>
+                       class="input w-full text-xs bg-surface border-border text-main font-mono @error('sort_order') border-error @enderror">
+                <p class="text-[11px] text-muted">Số nhỏ hiển thị trước.</p>
+                <x-forms.field-error name="sort_order" />
             </div>
 
             {{-- Status is_active --}}
-            <div class="space-y-1.5">
+            <div class="space-y-1.5 md:col-span-3">
                 <label for="is_active" class="block text-xs font-bold text-main">
-                    Trạng thái hiển thị <span class="text-error">*</span>
+                    Trạng thái <span class="text-error">*</span>
                 </label>
-                <select id="is_active" name="is_active" required class="select w-full text-xs bg-surface border-border text-main">
+                <select id="is_active" name="is_active" required class="select w-full text-xs bg-surface border-border text-main @error('is_active') border-error @enderror">
                     <option value="1" {{ old('is_active', (string) ($record->is_active ?? '1')) === '1' ? 'selected' : '' }}>
-                        Bật — Hiển thị trên trang chủ
+                        Bật — Hiển thị
                     </option>
                     <option value="0" {{ old('is_active', (string) ($record->is_active ?? '1')) === '0' ? 'selected' : '' }}>
                         Tắt — Đang ẩn
                     </option>
                 </select>
-                <p class="text-[11px] text-muted">Khi tắt, banner sẽ không xuất hiện trong Carousel của khách hàng.</p>
+                <p class="text-[11px] text-muted">Ẩn/hiện trên trang chủ.</p>
+                <x-forms.field-error name="is_active" />
             </div>
         </div>
 

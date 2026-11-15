@@ -64,12 +64,11 @@ class StorefrontRedesignTest extends TestCase
 
         $this->actingAs($staff)->get(route('admin.dashboard'))
             ->assertOk()
-            ->assertSee('Các mô-đun quản lý')
             ->assertSee('Nhân viên &lt;i&gt;Kho&lt;/i&gt;', false)
             ->assertSee('Nhân viên')
             ->assertSee('href="'.route('admin.categories.index').'"', false)
             ->assertSee('href="'.route('admin.stock-imports.index').'"', false)
-            ->assertSee('aria-label="Main navigation"', false);
+            ->assertSee('aria-label="Điều hướng quản trị"', false);
     }
 
     public function test_account_overview_requires_login_and_shows_the_default_address(): void

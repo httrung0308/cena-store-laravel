@@ -27,9 +27,9 @@
           {{ $attributes->class(['space-y-2.5 w-full']) }}>
         <div class="flex flex-col md:flex-row items-stretch md:items-center gap-2.5 w-full">
             <label class="sr-only" for="{{ $id }}">{{ $label }}</label>
-            <div class="relative flex-1 min-w-0 flex items-center gap-2 bg-surface border border-border px-3 py-2 rounded-xl focus-within:ring-2 focus-within:ring-accent focus-within:border-accent">
-                <svg class="w-4 h-4 text-muted shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                <input class="bg-transparent w-full focus:outline-none text-main font-medium placeholder:text-muted/70 text-xs pr-6"
+            <div class="relative flex-1 min-w-0">
+                <svg class="w-4 h-4 text-muted absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                <input class="w-full pl-10 pr-8 py-2 bg-surface border border-border rounded-xl text-xs font-medium text-main placeholder:text-muted/70 focus:outline-none focus:ring-2 focus:ring-accent focus:border-accent focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-0"
                        id="{{ $id }}"
                        type="search"
                        name="{{ $name }}"

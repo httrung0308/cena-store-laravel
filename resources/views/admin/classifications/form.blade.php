@@ -26,18 +26,18 @@
 
             <div>
                 <h2 class="text-base font-bold text-main">Thông tin nhãn phân loại</h2>
-                <p class="text-xs text-muted mt-1">Phân loại sản phẩm đa trị giúp khách hàng dễ dàng khám phá theo kiểu dáng và mục đích sử dụng.</p>
+                <p class="text-xs text-muted mt-1">Gắn nhãn theo kiểu dáng hoặc mục đích sử dụng để khách hàng lọc và tìm sản phẩm nhanh hơn.</p>
             </div>
 
             @if ($productsCount > 0)
                 <div class="rounded-xl border border-warning/30 bg-warning-bg p-4 text-xs text-warning-text">
-                    <strong class="font-bold">Lưu ý:</strong> Nhãn này đang được gán cho <strong>{{ $productsCount }}</strong> sản phẩm. Để đảm bảo tính toàn vẹn dữ liệu, không thể thay đổi nhóm phân loại.
+                    <strong class="font-bold">Lưu ý:</strong> Nhãn này đang gắn cho <strong>{{ $productsCount }}</strong> sản phẩm nên không thể đổi nhóm phân loại.
                 </div>
             @endif
 
             <div class="space-y-4">
                 <div>
-                    <label for="classification-name" class="admin-label text-muted">Tên nhãn <span class="text-error">*</span></label>
+                    <label for="classification-name" class="admin-label">Tên nhãn <span class="text-error">*</span></label>
                     <input type="text" id="classification-name" name="name" x-model="name" x-on:input="onNameInput"
                            class="input w-full border-border bg-surface text-main text-xs @error('name') border-error @enderror"
                            placeholder="Ví dụ: Sneaker, Chạy bộ..." required>
@@ -84,35 +84,37 @@
                     </div>
                 </div>
 
-                <div>
-                    <label for="classification-group" class="admin-label text-muted">Nhóm phân loại <span class="text-error">*</span></label>
-                    @if ($productsCount > 0)
-                        <input type="hidden" name="classification_group" value="{{ $record->classification_group->value }}">
-                        <div class="input w-full border-border bg-surface/50 text-muted text-xs cursor-not-allowed">
-                            {{ $record->classification_group->label() }} (Đã cố định do có sản phẩm đang dùng)
-                        </div>
-                    @else
-                        <select id="classification-group" name="classification_group" class="input w-full border-border bg-surface text-main text-xs" required>
-                            <option value="">-- Chọn nhóm phân loại --</option>
-                            @foreach ($groups as $group)
-                                <option value="{{ $group['value'] }}" @selected(old('classification_group', $record->classification_group?->value ?? '') === $group['value'])>
-                                    {{ $group['label'] }}
-                                </option>
-                            @endforeach
-                        </select>
-                    @endif
-                    <x-forms.field-error name="classification_group" />
+                <div class="grid gap-4 sm:grid-cols-3">
+                    <div class="sm:col-span-2">
+                        <label for="classification-group" class="admin-label">Nhóm phân loại <span class="text-error">*</span></label>
+                        @if ($productsCount > 0)
+                            <input type="hidden" name="classification_group" value="{{ $record->classification_group->value }}">
+                            <div class="input w-full border-border bg-surface/50 text-muted text-xs cursor-not-allowed">
+                                {{ $record->classification_group->label() }} (Đã cố định do có sản phẩm đang dùng)
+                            </div>
+                        @else
+                            <select id="classification-group" name="classification_group" class="input w-full border-border bg-surface text-main text-xs" required>
+                                <option value="">-- Chọn nhóm phân loại --</option>
+                                @foreach ($groups as $group)
+                                    <option value="{{ $group['value'] }}" @selected(old('classification_group', $record->classification_group?->value ?? '') === $group['value'])>
+                                        {{ $group['label'] }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        @endif
+                        <x-forms.field-error name="classification_group" />
+                    </div>
+
+                    <div>
+                        <label for="classification-sort-order" class="admin-label">Thứ tự hiển thị <span class="text-error">*</span></label>
+                        <input type="number" id="classification-sort-order" name="sort_order" value="{{ old('sort_order', $record->sort_order ?? 1) }}" min="0" max="65535" class="input w-full border-border bg-surface text-main text-xs font-mono" required>
+                        <p class="text-[11px] text-muted mt-1">Số nhỏ hơn sẽ xếp trước trên menu và bộ lọc.</p>
+                        <x-forms.field-error name="sort_order" />
+                    </div>
                 </div>
 
                 <div>
-                    <label for="classification-sort-order" class="admin-label text-muted">Thứ tự hiển thị <span class="text-error">*</span></label>
-                    <input type="number" id="classification-sort-order" name="sort_order" value="{{ old('sort_order', $record->sort_order ?? 1) }}" min="0" max="65535" class="input w-full border-border bg-surface text-main text-xs font-mono" required>
-                    <p class="text-[11px] text-muted/70 mt-1">Số nhỏ hơn sẽ ưu tiên xếp trước trong menu Header, sidebar trang chủ, trang toàn bộ và bộ lọc.</p>
-                    <x-forms.field-error name="sort_order" />
-                </div>
-
-                <div>
-                    <label for="classification-description" class="admin-label text-muted">Mô tả / Ghi chú</label>
+                    <label for="classification-description" class="admin-label">Mô tả / Ghi chú</label>
                     <textarea id="classification-description" name="description" rows="3" class="input w-full border-border bg-surface text-main text-xs" placeholder="Ghi chú ngắn về đặc trưng của nhãn này...">{{ old('description', $record->description ?? '') }}</textarea>
                     <x-forms.field-error name="description" />
                 </div>
@@ -122,7 +124,7 @@
                         <input type="hidden" name="is_active" value="0">
                         <label class="flex items-center gap-2.5 text-xs font-semibold text-main cursor-pointer select-none">
                             <input type="checkbox" name="is_active" value="1" class="native-checkbox text-accent focus:ring-accent rounded" @checked(old('is_active', $record->exists ? $record->is_active : true))>
-                            <span>Kích hoạt nhãn này (Hiển thị trong trang Danh mục &amp; Phân loại, bộ lọc Storefront và cho phép gán cho sản phẩm)</span>
+                            <span>Kích hoạt nhãn này (hiển thị ở bộ lọc cửa hàng và cho phép gán vào sản phẩm)</span>
                         </label>
                         <x-forms.field-error name="is_active" />
                     </div>

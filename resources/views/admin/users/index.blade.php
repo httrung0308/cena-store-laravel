@@ -1,6 +1,11 @@
 @extends('layouts.admin')
 @section('title', 'Quản Lý Người Dùng')
 @section('eyebrow', 'QUẢN TRỊ HỆ THỐNG')
+@section('actions')
+    @if (auth()->user()?->hasRole(App\Enums\RoleSlug::Admin))
+        <a href="{{ route('admin.users.create') }}" class="px-5 py-2.5 bg-accent hover:bg-accent-hover text-accent-text text-xs font-bold rounded-xl transition-colors shadow-md flex items-center gap-1.5">+ Tạo tài khoản Staff / Admin</a>
+    @endif
+@endsection
 @php
     $tz = (string) config('store.business_timezone');
     $activeChips = [];

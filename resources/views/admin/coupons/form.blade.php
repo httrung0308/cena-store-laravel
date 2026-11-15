@@ -96,18 +96,18 @@
                 <p class="text-xs text-muted mt-1">Cấu hình mã giảm giá, hình thức áp dụng và điều kiện ràng buộc.</p>
             </div>
 
-            <div class="grid gap-4 sm:grid-cols-2">
-                <div>
+            <div class="grid gap-4 sm:grid-cols-12">
+                <div class="sm:col-span-5">
                     <label for="coupon-code" class="admin-label">Mã coupon <span class="text-error">*</span></label>
                     <input id="coupon-code" name="code" type="text" x-model="code"
                            @input="code = $event.target.value.toUpperCase()"
                            class="input w-full border-border focus:border-accent text-main font-mono uppercase text-xs @error('code') border-error @enderror"
                            placeholder="Ví dụ: SALE50, FREESHIP" required maxlength="50">
-                    <p class="mt-1 text-[11px] text-muted">Mã do Admin tự đặt, tự động chuẩn hóa chữ in hoa (chữ, số, gạch ngang/dưới).</p>
+                    <p class="mt-1 text-[11px] text-muted">Tự chuyển thành chữ in hoa (chữ, số, dấu gạch ngang/dưới).</p>
                     <x-forms.field-error name="code" />
                 </div>
 
-                <div>
+                <div class="sm:col-span-7">
                     <label for="coupon-name" class="admin-label">Tên chương trình <span class="text-error">*</span></label>
                     <input id="coupon-name" name="name" type="text" value="{{ old('name', $coupon->name) }}"
                            class="input w-full border-border focus:border-accent text-main text-xs @error('name') border-error @enderror"
@@ -116,90 +116,94 @@
                 </div>
             </div>
 
-            <div>
-                <label class="admin-label" for="coupon-type">Loại giảm giá <span class="text-error">*</span></label>
-                <select id="coupon-type" name="type" x-model="type" x-on:change="onTypeChange"
-                        class="input w-full border-border bg-surface text-main text-xs" required>
-                    @foreach ($types as $typeOption)
-                        <option value="{{ $typeOption->value }}" @selected(old('type', $coupon->type?->value) === $typeOption->value)>
-                            {{ $typeOption->label() }}
-                        </option>
-                    @endforeach
-                </select>
-                <x-forms.field-error name="type" />
-            </div>
-
-            {{-- Conditional Discount Value --}}
+            {{-- Hình thức, mức giảm & điều kiện đơn tối thiểu --}}
             <div class="rounded-xl border border-border/70 p-4 bg-surface-alt/40 space-y-4">
-                <template x-if="type === 'FREE_SHIPPING'">
+                <div class="grid gap-4 sm:grid-cols-2">
                     <div>
-                        <label class="admin-label">Giá trị giảm</label>
-                        <div class="input w-full border-border bg-surface/70 text-muted text-xs flex items-center justify-between">
-                            <span>Miễn phí vận chuyển toàn phần (100% phí ship)</span>
-                            <span class="font-mono font-bold text-accent">0 ₫</span>
-                        </div>
-                        <input type="hidden" name="value" value="0">
-                        <p class="mt-1 text-[11px] text-muted">Hệ thống tự động trừ toàn bộ phí vận chuyển khi thỏa điều kiện đơn tối thiểu.</p>
+                        <label class="admin-label" for="coupon-type">Loại giảm giá <span class="text-error">*</span></label>
+                        <select id="coupon-type" name="type" x-model="type" x-on:change="onTypeChange"
+                                class="input w-full border-border bg-surface text-main text-xs" required>
+                            @foreach ($types as $typeOption)
+                                <option value="{{ $typeOption->value }}" @selected(old('type', $coupon->type?->value) === $typeOption->value)>
+                                    {{ $typeOption->label() }}
+                                </option>
+                            @endforeach
+                        </select>
+                        <x-forms.field-error name="type" />
                     </div>
-                </template>
 
-                <template x-if="type === 'PERCENTAGE'">
-                    <div>
-                        <label for="coupon-val-percent" class="admin-label">Phần trăm giảm (%) <span class="text-error">*</span></label>
-                        <div class="relative mt-1">
-                            <input id="coupon-val-percent" type="number" min="1" max="100" x-model="displayValue" x-on:input="onValueInput"
-                                   class="input w-full border-border focus:border-accent text-main font-mono text-xs pr-8 @error('value') border-error @enderror"
-                                   placeholder="Ví dụ: 10, 20, 50" required>
-                            <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-muted pointer-events-none">%</span>
+                    <template x-if="type === 'FREE_SHIPPING'">
+                        <div>
+                            <label class="admin-label">Giá trị giảm</label>
+                            <div class="input w-full border-border bg-surface/70 text-muted text-xs flex items-center justify-between">
+                                <span>Miễn 100% phí vận chuyển</span>
+                                <span class="font-mono font-bold text-accent">0 ₫</span>
+                            </div>
+                            <input type="hidden" name="value" value="0">
+                            <p class="mt-1 text-[11px] text-muted">Miễn toàn bộ phí vận chuyển khi đạt đơn tối thiểu.</p>
                         </div>
-                        <input type="hidden" name="value" x-bind:value="rawValue">
-                        <p class="mt-1 text-[11px] text-muted">Nhập từ 1 đến 100.</p>
-                        <x-forms.field-error name="value" />
-                    </div>
-                </template>
+                    </template>
 
-                <template x-if="type === 'FIXED_DISCOUNT'">
-                    <div>
-                        <label for="coupon-val-fixed" class="admin-label">Số tiền giảm cố định (₫) <span class="text-error">*</span></label>
-                        <div class="relative mt-1">
-                            <input id="coupon-val-fixed" type="text" inputmode="numeric" x-model="displayValue" x-on:input="onValueInput"
-                                   class="input w-full border-border focus:border-accent text-main font-mono text-xs pr-8 @error('value') border-error @enderror"
-                                   placeholder="Ví dụ: 50.000, 100.000" required>
+                    <template x-if="type === 'PERCENTAGE'">
+                        <div>
+                            <label for="coupon-val-percent" class="admin-label">Phần trăm giảm (%) <span class="text-error">*</span></label>
+                            <div class="relative">
+                                <input id="coupon-val-percent" type="number" min="1" max="100" x-model="displayValue" x-on:input="onValueInput"
+                                       class="input w-full border-border focus:border-accent text-main font-mono text-xs pr-8 @error('value') border-error @enderror"
+                                       placeholder="Ví dụ: 10, 20, 50" required>
+                                <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-muted pointer-events-none">%</span>
+                            </div>
+                            <input type="hidden" name="value" x-bind:value="rawValue">
+                            <p class="mt-1 text-[11px] text-muted">Nhập từ 1 đến 100.</p>
+                            <x-forms.field-error name="value" />
+                        </div>
+                    </template>
+
+                    <template x-if="type === 'FIXED_DISCOUNT'">
+                        <div>
+                            <label for="coupon-val-fixed" class="admin-label">Số tiền giảm cố định (₫) <span class="text-error">*</span></label>
+                            <div class="relative">
+                                <input id="coupon-val-fixed" type="text" inputmode="numeric" x-model="displayValue" x-on:input="onValueInput"
+                                       class="input w-full border-border focus:border-accent text-main font-mono text-xs pr-8 @error('value') border-error @enderror"
+                                       placeholder="Ví dụ: 50.000, 100.000" required>
+                                <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-muted pointer-events-none">₫</span>
+                            </div>
+                            <input type="hidden" name="value" x-bind:value="rawValue">
+                            <p class="mt-1 text-[11px] text-muted">Trừ trực tiếp vào tổng tiền hàng.</p>
+                            <x-forms.field-error name="value" />
+                        </div>
+                    </template>
+                </div>
+
+                <div class="grid gap-4 sm:grid-cols-2">
+                    {{-- Max Discount Amount (Only for PERCENTAGE) --}}
+                    <div x-show="type === 'PERCENTAGE'" x-transition>
+                        <label for="coupon-max-discount" class="admin-label">Mức giảm tối đa (₫, tùy chọn)</label>
+                        <div class="relative">
+                            <input id="coupon-max-discount" type="text" inputmode="numeric" x-model="maxDiscountDisplay" x-on:input="onMaxDiscountInput"
+                                   class="input w-full border-border focus:border-accent text-main font-mono text-xs pr-8 @error('max_discount_amount') border-error @enderror"
+                                   placeholder="Ví dụ: 200.000">
                             <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-muted pointer-events-none">₫</span>
                         </div>
-                        <input type="hidden" name="value" x-bind:value="rawValue">
-                        <p class="mt-1 text-[11px] text-muted">Số tiền sẽ được trừ trực tiếp vào tổng tiền hàng.</p>
-                        <x-forms.field-error name="value" />
+                        <input type="hidden" name="max_discount_amount" x-bind:value="maxDiscountRaw">
+                        <p class="mt-1 text-[11px] text-muted">Để trống nếu không giới hạn mức giảm tối đa.</p>
+                        <x-forms.field-error name="max_discount_amount" />
                     </div>
-                </template>
 
-                {{-- Max Discount Amount (Only for PERCENTAGE) --}}
-                <div x-show="type === 'PERCENTAGE'" x-transition>
-                    <label for="coupon-max-discount" class="admin-label">Mức giảm tối đa (₫, tùy chọn)</label>
-                    <div class="relative mt-1">
-                        <input id="coupon-max-discount" type="text" inputmode="numeric" x-model="maxDiscountDisplay" x-on:input="onMaxDiscountInput"
-                               class="input w-full border-border focus:border-accent text-main font-mono text-xs pr-8 @error('max_discount_amount') border-error @enderror"
-                               placeholder="Ví dụ: 200.000">
-                        <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-muted pointer-events-none">₫</span>
+                    {{-- Minimum Order Amount --}}
+                    <div :class="type !== 'PERCENTAGE' ? 'sm:col-span-2' : ''">
+                        <label for="coupon-min-order" class="admin-label">Giá trị đơn hàng tối thiểu (₫) <span class="text-error">*</span></label>
+                        <div class="relative">
+                            <input id="coupon-min-order" type="text" inputmode="numeric" x-model="minOrderDisplay" x-on:input="onMinOrderInput"
+                                   class="input w-full border-border focus:border-accent text-main font-mono text-xs pr-8 @error('min_order_amount') border-error @enderror"
+                                   placeholder="Ví dụ: 500.000" required>
+                            <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-muted pointer-events-none">₫</span>
+                        </div>
+                        <input type="hidden" name="min_order_amount" x-bind:value="minOrderRaw">
+                        <p class="mt-1 text-[11px] text-muted">Nhập 0 nếu áp dụng cho mọi đơn hàng.</p>
+                        <x-forms.field-error name="min_order_amount" />
                     </div>
-                    <input type="hidden" name="max_discount_amount" x-bind:value="maxDiscountRaw">
-                    <p class="mt-1 text-[11px] text-muted">Giới hạn số tiền giảm tối đa để tránh thâm hụt với đơn hàng giá trị cao. Để trống = không giới hạn.</p>
-                    <x-forms.field-error name="max_discount_amount" />
                 </div>
-            </div>
-
-            {{-- Minimum Order Amount --}}
-            <div>
-                <label for="coupon-min-order" class="admin-label">Giá trị đơn hàng tối thiểu (₫) <span class="text-error">*</span></label>
-                <div class="relative mt-1">
-                    <input id="coupon-min-order" type="text" inputmode="numeric" x-model="minOrderDisplay" x-on:input="onMinOrderInput"
-                           class="input w-full border-border focus:border-accent text-main font-mono text-xs pr-8 @error('min_order_amount') border-error @enderror"
-                           placeholder="Ví dụ: 500.000" required>
-                    <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-muted pointer-events-none">₫</span>
-                </div>
-                <input type="hidden" name="min_order_amount" x-bind:value="minOrderRaw">
-                <p class="mt-1 text-[11px] text-muted">Đơn hàng phải đạt giá trị này mới áp dụng được mã. Nhập 0 nếu không yêu cầu.</p>
-                <x-forms.field-error name="min_order_amount" />
             </div>
 
             <div class="grid gap-4 sm:grid-cols-2">
@@ -241,16 +245,6 @@
                 <input type="checkbox" name="is_active" value="1" x-model="isActive" class="native-checkbox text-accent focus:ring-accent rounded">
                 <span>Kích hoạt mã coupon ngay</span>
             </label>
-
-            @if ($errors->any())
-                <div role="alert" class="rounded-xl border border-error/30 bg-error-bg p-4 text-xs text-error font-medium">
-                    <ul class="list-inside list-disc space-y-1">
-                        @foreach ($errors->all() as $error)
-                            <li>{{ $error }}</li>
-                        @endforeach
-                    </ul>
-                </div>
-            @endif
 
             <div class="flex items-center gap-3 pt-2">
                 <button class="px-6 py-2.5 bg-accent hover:bg-accent-hover text-accent-text text-xs font-bold rounded-xl transition-colors shadow-md" type="submit">

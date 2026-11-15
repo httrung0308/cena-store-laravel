@@ -25,6 +25,7 @@ use App\Services\ReportService;
 use App\Services\SalesLedgerService;
 use App\Support\BusinessClock;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Http\Testing\File;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -85,7 +86,7 @@ class ReportDashboardTest extends TestCase
         $this->actingAs($this->admin)->get(route('admin.reports.index', ['from' => '2026-11-01', 'to' => '2026-11-01']))->assertOk()
             ->assertViewHas('money', ['revenue' => $merchandise + $shipping, 'merchandise' => $merchandise, 'shipping' => $shipping, 'cogs' => $cogs, 'expense' => 0, 'profit' => $merchandise + $shipping - $cogs])
             ->assertViewHas('bestSellers', fn (array $rows) => array_column($rows, 'pairs') === [3, 1] && $rows[0]['name'] === 'Runner <Một>')
-            ->assertViewHas('daily', fn (array $days) => $days === [['day' => '2026-11-01', 'revenue' => $merchandise + $shipping, 'cogs' => $cogs, 'profit' => $merchandise + $shipping - $cogs]])
+            ->assertViewHas('daily', fn (array $days) => $days === [['day' => '2026-11-01', 'revenue' => $merchandise + $shipping, 'cogs' => $cogs, 'expense' => 0, 'profit' => $merchandise + $shipping - $cogs]])
             ->assertViewHas('operations', [['day' => '2026-11-01', 'orders' => 5, 'pairs' => 4]])
             ->assertSee('Runner &lt;Một&gt;', false)->assertDontSee('Runner <Một>', false)
             ->assertSee('Giá vốn')->assertSee('Lợi nhuận')->assertSee('data-report-chart', false)->assertSee('data-margin-chart', false);
@@ -231,7 +232,7 @@ class ReportDashboardTest extends TestCase
         imagedestroy($image);
         fwrite($temp, ob_get_clean());
 
-        return new \Illuminate\Http\Testing\File($name, $temp);
+        return new File($name, $temp);
     }
 
     private function placeOrder(ProductVariant $variant, int $quantity): Order

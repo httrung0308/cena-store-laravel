@@ -16,7 +16,7 @@ enum OrderStatus: string
     {
         return match ($this) {
             self::Pending => 'Chờ xác nhận',
-            self::Confirmed => 'Đang đóng gói',
+            self::Confirmed => 'Đã xác nhận',
             self::Packing => 'Đang đóng gói',
             self::OnDelivery => 'Đang vận chuyển',
             self::Delivered => 'Giao thành công',

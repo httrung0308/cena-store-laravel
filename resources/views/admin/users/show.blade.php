@@ -53,7 +53,7 @@
 
         <section class="admin-card space-y-3">
             <h2 class="text-xl font-semibold text-main">Khóa tài khoản</h2>
-            <p class="text-sm text-muted">Khóa sẽ đăng xuất người dùng khỏi mọi phiên hiện tại ở lần tải trang tiếp theo.</p>
+            <p class="text-sm text-muted">Tài khoản bị khóa sẽ tự động đăng xuất và không thể đăng nhập lại cho đến khi được mở khóa.</p>
             @if ($user->is_active)
                 @if ($isSelf)
                     <button type="button" class="btn-pill w-full text-error opacity-50 cursor-not-allowed" disabled>Khóa tài khoản</button>
