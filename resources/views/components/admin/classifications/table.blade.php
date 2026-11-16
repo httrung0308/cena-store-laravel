@@ -105,9 +105,9 @@
                             <th class="p-4">Tên nhãn &amp; Slug</th>
                             <th class="p-4 whitespace-nowrap">Nhóm phân loại</th>
                             <th class="p-4 text-center whitespace-nowrap">Thứ tự</th>
-                            <th class="p-4 text-center whitespace-nowrap">Menu &amp; Trang chủ</th>
+                            <th class="p-4 text-left whitespace-nowrap">Menu &amp; Trang chủ</th>
                             <th class="p-4 text-center whitespace-nowrap">Số sản phẩm</th>
-                            <th class="p-4 text-center whitespace-nowrap">Trạng thái</th>
+                            <th class="p-4 text-left whitespace-nowrap">Trạng thái</th>
                             <th class="p-4 text-right whitespace-nowrap">Thao tác</th>
                         </tr>
                     </thead>
@@ -115,7 +115,10 @@
                     @forelse ($classifications as $item)
                         @php
                             $groupCount = (int) ($homeNavCounts[$item->classification_group->value] ?? 0);
-                            $canEnableHomeNav = $item->show_in_home_nav || ! $item->is_active || $groupCount < $homeNavLimit;
+                            $canEnableHomeNav = $item->show_in_home_nav || ($item->is_active && $groupCount < $homeNavLimit);
+                            $homeNavDisabledTitle = ! $item->is_active && ! $item->show_in_home_nav
+                                ? 'Nhãn đang tạm ngưng, cần kích hoạt trước khi bật hiển thị ở menu & trang chủ'
+                                : (! $canEnableHomeNav ? 'Nhóm đã đạt tối đa '.$homeNavLimit.' mục đang hoạt động hiển thị ở menu & trang chủ' : '');
                         @endphp
                         <tr class="hover:bg-surface/50 transition-colors">
                             <td class="p-4 max-w-[18rem]">
@@ -137,59 +140,45 @@
                                 @endif
                             </td>
                             <td class="p-4 text-center whitespace-nowrap">
-                                <span class="bg-surface text-main border border-border px-2 py-0.5 rounded font-mono font-bold text-[11px]">{{ $item->sort_order }}</span>
+                                <x-admin.inline-order-input
+                                    :action="route('admin.classifications.update-order', $item)"
+                                    :value="$item->sort_order"
+                                    :toggle-key="'cls-order-'.$item->id"
+                                    :label="'Thứ tự nhãn '.$item->name"
+                                />
                             </td>
-                            <td class="p-4 text-center whitespace-nowrap">
-                                @if ($item->show_in_home_nav && $item->is_active)
-                                    <span class="inline-flex items-center whitespace-nowrap px-2.5 py-0.5 rounded-full bg-accent/15 text-accent border border-accent/30 font-bold text-[11px]">Đang hiển thị</span>
-                                @elseif ($item->show_in_home_nav && ! $item->is_active)
-                                    <span class="inline-flex items-center whitespace-nowrap px-2.5 py-0.5 rounded-full bg-warning-bg text-warning-text border border-warning/30 font-bold text-[11px]" title="Đã chọn nhưng nhãn đang tạm ngưng nên không hiển thị ra storefront">Chờ kích hoạt</span>
-                                @else
-                                    <span class="inline-flex items-center whitespace-nowrap px-2.5 py-0.5 rounded-full bg-surface text-muted border border-border font-semibold text-[11px]">Không hiển thị</span>
-                                @endif
+                            <td class="p-4 text-left whitespace-nowrap">
+                                <x-admin.status-switch
+                                    :active="$item->show_in_home_nav"
+                                    :action="route('admin.classifications.toggle-home-nav', $item)"
+                                    :toggle-key="'cls-nav-'.$item->id"
+                                    :active-label="$item->is_active ? 'Đang hiển thị' : 'Chờ kích hoạt'"
+                                    inactive-label="Không hiển thị"
+                                    :action-label="($item->show_in_home_nav ? 'Ẩn khỏi menu ' : 'Hiện ở menu ').$item->name"
+                                    :tone="$item->is_active ? 'accent' : 'warning'"
+                                    :compact="true"
+                                    :disabled="! $canEnableHomeNav"
+                                    :disabled-title="$homeNavDisabledTitle"
+                                >
+                                    <input type="hidden" name="show_in_home_nav" value="{{ $item->show_in_home_nav ? 0 : 1 }}">
+                                </x-admin.status-switch>
                             </td>
                             <td class="p-4 text-center whitespace-nowrap">
                                 <span class="inline-flex items-center whitespace-nowrap px-2.5 py-1 rounded-full font-bold text-[11px] {{ $item->products_count > 0 ? 'bg-surface text-main border border-border' : 'text-muted/60' }}">
                                     {{ $item->products_count }} sản phẩm
                                 </span>
                             </td>
-                            <td class="p-4 text-center whitespace-nowrap">
-                                <div class="inline-flex flex-col items-center gap-1.5">
-                                    @if ($item->is_active)
-                                        <span class="inline-flex items-center gap-1 whitespace-nowrap bg-success-bg text-success-text border border-success/30 px-2.5 py-0.5 rounded-full font-bold text-[11px]">
-                                            <span class="w-1.5 h-1.5 rounded-full bg-success" aria-hidden="true"></span>
-                                            Hoạt động
-                                        </span>
-                                    @else
-                                        <span class="inline-flex items-center gap-1 whitespace-nowrap bg-surface text-muted border border-border px-2.5 py-0.5 rounded-full font-bold text-[11px]">
-                                            <span class="w-1.5 h-1.5 rounded-full bg-muted" aria-hidden="true"></span>
-                                            Tạm ngưng
-                                        </span>
-                                    @endif
-
-                                    <form method="POST" action="{{ route('admin.classifications.toggle-active', $item) }}" @submit.prevent="submitToggle($event, 'cls-active-{{ $item->id }}')" class="inline-block">
-                                        @csrf
-                                        @method('PATCH')
-                                        <input type="hidden" name="active" value="{{ $item->is_active ? 0 : 1 }}">
-                                        @if ($item->is_active)
-                                            <button :disabled="isBusy()" type="submit"
-                                                    class="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold rounded-lg border border-border bg-surface text-main hover:border-warning/50 hover:bg-warning-bg hover:text-warning-text transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
-                                                <svg class="w-3 h-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                </svg>
-                                                <span>Tạm ngưng</span>
-                                            </button>
-                                        @else
-                                            <button :disabled="isBusy()" type="submit"
-                                                    class="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold rounded-lg border border-success/40 bg-success-bg/70 text-success hover:bg-success hover:text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
-                                                <svg class="w-3 h-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                </svg>
-                                                <span>Kích hoạt</span>
-                                            </button>
-                                        @endif
-                                    </form>
-                                </div>
+                            <td class="p-4 text-left whitespace-nowrap">
+                                <x-admin.status-switch
+                                    :active="$item->is_active"
+                                    :action="route('admin.classifications.toggle-active', $item)"
+                                    :toggle-key="'cls-active-'.$item->id"
+                                    active-label="Hoạt động"
+                                    inactive-label="Tạm ngưng"
+                                    :action-label="($item->is_active ? 'Tạm ngưng ' : 'Kích hoạt ').$item->name"
+                                >
+                                    <input type="hidden" name="active" value="{{ $item->is_active ? 0 : 1 }}">
+                                </x-admin.status-switch>
                             </td>
                             <td class="p-4 text-right whitespace-nowrap">
                                 <div class="inline-flex items-center gap-1.5">
@@ -199,19 +188,6 @@
                                         </svg>
                                         <span>Sửa</span>
                                     </a>
-
-                                    <form method="POST" action="{{ route('admin.classifications.toggle-home-nav', $item) }}" @submit.prevent="submitToggle($event, 'cls-nav-{{ $item->id }}')" class="inline-block">
-                                        @csrf
-                                        @method('PATCH')
-                                        <input type="hidden" name="show_in_home_nav" value="{{ $item->show_in_home_nav ? 0 : 1 }}">
-                                        <button type="submit"
-                                                @disabled(! $canEnableHomeNav)
-                                                :disabled="isBusy() || {{ ! $canEnableHomeNav ? 'true' : 'false' }}"
-                                                title="{{ ! $canEnableHomeNav ? 'Nhóm đã đạt tối đa '.$homeNavLimit.' mục đang hoạt động hiển thị ở menu & trang chủ' : '' }}"
-                                                class="px-2.5 py-1.5 rounded-lg font-bold transition-colors disabled:opacity-40 disabled:cursor-not-allowed {{ $item->show_in_home_nav ? 'text-muted hover:bg-surface hover:text-main' : 'text-accent hover:bg-accent/10' }}">
-                                            {{ $item->show_in_home_nav ? 'Ẩn khỏi menu' : 'Hiện ở menu' }}
-                                        </button>
-                                    </form>
 
                                     @if ($item->products_count === 0)
                                         <x-ui.dialog id="delete-classification-{{ $item->id }}" title="Xác nhận xóa nhãn phân loại" trigger-class="px-2.5 py-1.5 text-error hover:bg-error-bg rounded-lg font-bold transition-colors">

@@ -149,16 +149,18 @@
                                     <span x-cloak x-show="saving" class="inline-flex items-center gap-1.5"><x-ui.spinner :compact="true" /> Đang lưu...</span>
                                 </button>
                             </form>
-                            <form method="POST" action="{{ route('admin.reviews.visibility', $review) }}" @submit.prevent="submitToggle($event, 'review-{{ $review->id }}')" class="self-end">
-                                @csrf
-                                @method('PATCH')
-                                <input type="hidden" name="visible" value="{{ $review->is_visible ? 0 : 1 }}">
-                                <button type="submit" :disabled="isBusy()" @class([
-                                    'px-4 py-2 text-xs font-bold rounded-xl border transition-colors disabled:opacity-40 disabled:cursor-not-allowed',
-                                    'border-error/30 text-error hover:bg-error-bg' => $review->is_visible,
-                                    'border-border bg-surface text-main hover:bg-border/40' => ! $review->is_visible,
-                                ])>{{ $review->is_visible ? 'Ẩn đánh giá' : 'Hiện lại' }}</button>
-                            </form>
+                            <div class="self-end">
+                                <x-admin.status-switch
+                                    :active="$review->is_visible"
+                                    :action="route('admin.reviews.visibility', $review)"
+                                    :toggle-key="'review-'.$review->id"
+                                    active-label="Đang hiện"
+                                    inactive-label="Đang ẩn"
+                                    :action-label="$review->is_visible ? 'Ẩn đánh giá' : 'Hiện lại đánh giá'"
+                                >
+                                    <input type="hidden" name="visible" value="{{ $review->is_visible ? 0 : 1 }}">
+                                </x-admin.status-switch>
+                            </div>
                         </div>
                     </article>
                 @empty

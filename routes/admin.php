@@ -30,6 +30,7 @@ Route::get('reports', [ReportController::class, 'index'])->name('reports.index')
 Route::resource('categories', CategoryController::class)->except(['show', 'destroy']);
 Route::patch('categories/{category}/activate', [CategoryController::class, 'activate'])->name('categories.activate');
 Route::patch('categories/{category}/deactivate', [CategoryController::class, 'deactivate'])->name('categories.deactivate');
+Route::patch('categories/{category}/order', [CategoryController::class, 'updateOrder'])->name('categories.update-order');
 
 Route::resource('suppliers', SupplierController::class)->except(['show', 'destroy']);
 Route::patch('suppliers/{supplier}/activate', [SupplierController::class, 'activate'])->name('suppliers.activate');
@@ -84,8 +85,10 @@ Route::middleware('role:admin')->group(function (): void {
 
     Route::resource('banners', BannerController::class)->except('show');
     Route::patch('banners/{banner}/toggle-active', [BannerController::class, 'toggleActive'])->name('banners.toggle-active');
+    Route::patch('banners/{banner}/order', [BannerController::class, 'updateOrder'])->name('banners.update-order');
 
     Route::resource('classifications', ClassificationController::class)->except('show');
     Route::patch('classifications/{classification}/toggle-active', [ClassificationController::class, 'toggleActive'])->name('classifications.toggle-active');
     Route::patch('classifications/{classification}/toggle-home-nav', [ClassificationController::class, 'toggleHomeNav'])->name('classifications.toggle-home-nav');
+    Route::patch('classifications/{classification}/order', [ClassificationController::class, 'updateOrder'])->name('classifications.update-order');
 });

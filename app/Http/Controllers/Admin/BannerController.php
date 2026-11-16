@@ -88,6 +88,27 @@ class BannerController extends Controller
         return back()->with('success', $message);
     }
 
+    public function updateOrder(Request $request, Banner $banner): RedirectResponse|JsonResponse
+    {
+        $validated = $request->validate([
+            'order' => ['required', 'integer', 'between:0,65535'],
+        ], [
+            'order.required' => 'Vui lòng nhập thứ tự hiển thị.',
+            'order.integer' => 'Thứ tự hiển thị phải là số nguyên.',
+            'order.between' => 'Thứ tự hiển thị phải từ 0 đến 65535.',
+        ]);
+
+        $order = (int) $validated['order'];
+        $banner->forceFill(['sort_order' => $order])->save();
+        $message = "Đã cập nhật thứ tự banner '{$banner->title}' thành {$order}.";
+
+        if ($request->expectsJson()) {
+            return response()->json(['message' => $message, 'order' => $order]);
+        }
+
+        return back()->with('success', $message);
+    }
+
     public function destroy(Banner $banner, BannerManagementService $service): RedirectResponse
     {
         $title = $banner->title;

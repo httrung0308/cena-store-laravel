@@ -122,6 +122,27 @@ class ClassificationController extends Controller
         return back(fallback: route('admin.classifications.index'))->with('status', $statusText);
     }
 
+    public function updateOrder(Request $request, Classification $classification): RedirectResponse|JsonResponse
+    {
+        $validated = $request->validate([
+            'order' => ['required', 'integer', 'between:0,65535'],
+        ], [
+            'order.required' => 'Vui lòng nhập thứ tự hiển thị.',
+            'order.integer' => 'Thứ tự hiển thị phải là số nguyên.',
+            'order.between' => 'Thứ tự hiển thị phải từ 0 đến 65535.',
+        ]);
+
+        $order = (int) $validated['order'];
+        $classification->forceFill(['sort_order' => $order])->save();
+        $message = "Đã cập nhật thứ tự nhãn '{$classification->name}' thành {$order}.";
+
+        if ($request->expectsJson()) {
+            return response()->json(['message' => $message, 'order' => $order]);
+        }
+
+        return back(fallback: route('admin.classifications.index'))->with('status', $message);
+    }
+
     public function destroy(Request $request, Classification $classification, ClassificationManagementService $service): RedirectResponse
     {
         $service->delete($request->user(), $classification);

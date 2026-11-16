@@ -431,32 +431,14 @@
                     </div>
 
                     <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-border/60">
-                        @if ($product->is_active)
-                            <form method="POST" action="{{ route('admin.products.deactivate', $product) }}" @submit.prevent="submitToggle($event, 'product-{{ $product->id }}')" class="inline-block">
-                                @csrf
-                                @method('PATCH')
-                                <button type="submit" :disabled="isBusy()" aria-label="Ngừng bán {{ $product->name }}"
-                                        class="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-bold rounded-lg border border-border bg-surface text-main hover:border-error/50 hover:bg-error-bg hover:text-error transition-colors disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
-                                    <svg class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                    <span>Ngừng bán</span>
-                                </button>
-                            </form>
-                        @else
-                            <form method="POST" action="{{ route('admin.products.activate', $product) }}" @submit.prevent="submitToggle($event, 'product-{{ $product->id }}')" class="inline-block">
-                                @csrf
-                                @method('PATCH')
-                                <button type="submit" :disabled="isBusy()" aria-label="Mở bán {{ $product->name }}"
-                                        class="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-bold rounded-lg border border-success/40 bg-success-bg/70 text-success hover:bg-success hover:text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
-                                    <svg class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                    <span>Mở bán</span>
-                                </button>
-                            </form>
-                        @endif
+                        <x-admin.status-switch
+                            :active="$product->is_active"
+                            :action="$product->is_active ? route('admin.products.deactivate', $product) : route('admin.products.activate', $product)"
+                            :toggle-key="'product-'.$product->id"
+                            active-label="Đang bán"
+                            inactive-label="Ngừng bán"
+                            :action-label="($product->is_active ? 'Ngừng bán ' : 'Mở bán ').$product->name"
+                        />
 
                         <div class="flex items-center gap-1.5">
                             <a class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-muted hover:text-main hover:bg-surface font-semibold text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
@@ -498,7 +480,7 @@
                         <th class="px-3 py-3.5 whitespace-nowrap">Đối tượng</th>
                         <th class="px-3 py-3.5 whitespace-nowrap">Giá bán</th>
                         <th class="px-3 py-3.5 text-center whitespace-nowrap">Tồn kho</th>
-                        <th class="px-3 py-3.5 text-center whitespace-nowrap">Trạng thái</th>
+                        <th class="px-3 py-3.5 text-left whitespace-nowrap">Trạng thái</th>
                         <th class="px-3 py-3.5 text-center whitespace-nowrap">Biến thể</th>
                         <th class="px-3 py-3.5 whitespace-nowrap hidden 2xl:table-cell">Ngày tạo</th>
                         <th class="px-3 py-3.5 text-right whitespace-nowrap">Thao tác</th>
@@ -545,43 +527,15 @@
                                 'bg-error-bg text-error border-error/30' => $stock <= 0,
                             ])>{{ $stock }} đôi</span>
                         </td>
-                        <td class="px-3 py-3.5 text-center whitespace-nowrap">
-                            <div class="inline-flex flex-col items-center gap-1.5">
-                                @if ($product->is_active)
-                                    <span class="inline-flex items-center gap-1 whitespace-nowrap bg-success-bg text-success border border-success/30 px-2.5 py-0.5 rounded-full font-bold text-[11px]">
-                                        <span class="w-1.5 h-1.5 rounded-full bg-success" aria-hidden="true"></span>
-                                        Đang bán
-                                    </span>
-                                    <form method="POST" action="{{ route('admin.products.deactivate', $product) }}" @submit.prevent="submitToggle($event, 'product-{{ $product->id }}')" class="inline-block">
-                                        @csrf
-                                        @method('PATCH')
-                                        <button type="submit" :disabled="isBusy()" aria-label="Ngừng bán {{ $product->name }}"
-                                                class="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold rounded-lg border border-border bg-surface text-main hover:border-error/50 hover:bg-error-bg hover:text-error transition-colors disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
-                                            <svg class="w-3 h-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                                                <path stroke-linecap="round" stroke-linejoin="round" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                            </svg>
-                                            <span>Ngừng bán</span>
-                                        </button>
-                                    </form>
-                                @else
-                                    <span class="inline-flex items-center gap-1 whitespace-nowrap bg-muted/15 text-muted border border-border px-2.5 py-0.5 rounded-full font-bold text-[11px]">
-                                        <span class="w-1.5 h-1.5 rounded-full bg-muted" aria-hidden="true"></span>
-                                        Đã ẩn
-                                    </span>
-                                    <form method="POST" action="{{ route('admin.products.activate', $product) }}" @submit.prevent="submitToggle($event, 'product-{{ $product->id }}')" class="inline-block">
-                                        @csrf
-                                        @method('PATCH')
-                                        <button type="submit" :disabled="isBusy()" aria-label="Mở bán {{ $product->name }}"
-                                                class="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold rounded-lg border border-success/40 bg-success-bg/70 text-success hover:bg-success hover:text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
-                                            <svg class="w-3 h-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                                                <path stroke-linecap="round" stroke-linejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                                                <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                            </svg>
-                                            <span>Mở bán</span>
-                                        </button>
-                                    </form>
-                                @endif
-                            </div>
+                        <td class="px-3 py-3.5 text-left whitespace-nowrap">
+                            <x-admin.status-switch
+                                :active="$product->is_active"
+                                :action="$product->is_active ? route('admin.products.deactivate', $product) : route('admin.products.activate', $product)"
+                                :toggle-key="'product-'.$product->id"
+                                active-label="Đang bán"
+                                inactive-label="Ngừng bán"
+                                :action-label="($product->is_active ? 'Ngừng bán ' : 'Mở bán ').$product->name"
+                            />
                         </td>
                         <td class="px-3 py-3.5 text-center whitespace-nowrap">
                             <span class="inline-flex items-center whitespace-nowrap bg-surface text-muted border border-border px-2.5 py-0.5 rounded text-[11px] font-mono tabular-nums">{{ $product->variants_count }}</span>

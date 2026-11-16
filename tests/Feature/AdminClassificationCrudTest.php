@@ -285,5 +285,21 @@ class AdminClassificationCrudTest extends TestCase
             ->patch(route('admin.classifications.toggle-active', $inactiveSelected))
             ->assertSessionHasNoErrors();
         $this->assertTrue($inactiveSelected->fresh()->is_active);
+
+        // 6. Mục đang tạm ngưng và chưa bật menu thì không thể bật "Hiện ở menu"
+        $inactiveHidden = Classification::forceCreate([
+            'name' => 'Inactive Hidden Sil',
+            'slug' => 'inactive-hidden-'.uniqid(),
+            'classification_group' => ClassificationGroup::Silhouette,
+            'sort_order' => 10,
+            'is_active' => false,
+            'show_in_home_nav' => false,
+        ]);
+
+        $this->actingAs($this->admin)
+            ->patchJson(route('admin.classifications.toggle-home-nav', $inactiveHidden), ['show_in_home_nav' => 1])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('classification');
+        $this->assertFalse($inactiveHidden->fresh()->show_in_home_nav);
     }
 }

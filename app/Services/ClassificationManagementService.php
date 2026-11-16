@@ -126,6 +126,12 @@ final class ClassificationManagementService
             $current = Classification::whereKey($classification->id)->lockForUpdate()->firstOrFail();
             $nextShow = $targetShow ?? ! $current->show_in_home_nav;
 
+            if ($nextShow && ! $current->is_active) {
+                throw ValidationException::withMessages([
+                    'classification' => 'Nhãn phân loại đang tạm ngưng. Vui lòng kích hoạt lại trước khi bật hiển thị ở menu & trang chủ.',
+                ]);
+            }
+
             if ($nextShow && $current->is_active) {
                 $this->assertWithinHomeNavLimit(
                     $current->classification_group,

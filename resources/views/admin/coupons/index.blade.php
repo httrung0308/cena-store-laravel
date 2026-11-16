@@ -89,31 +89,14 @@
 
                         <div class="flex items-center justify-between gap-2 pt-2 border-t border-border/60">
                             <div>
-                                @if ($coupon->is_active)
-                                    <form method="POST" action="{{ route('admin.coupons.deactivate', $coupon) }}" @submit.prevent="submitToggle($event, 'coupon-{{ $coupon->id }}')" class="inline-block">
-                                        @csrf
-                                        @method('PATCH')
-                                        <button type="submit" :disabled="isBusy()"
-                                                class="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold rounded-lg border border-border bg-surface text-main hover:border-error/50 hover:bg-error-bg hover:text-error transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
-                                            <svg class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                                                <path stroke-linecap="round" stroke-linejoin="round" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                            </svg>
-                                            <span>Tắt</span>
-                                        </button>
-                                    </form>
-                                @else
-                                    <form method="POST" action="{{ route('admin.coupons.activate', $coupon) }}" @submit.prevent="submitToggle($event, 'coupon-{{ $coupon->id }}')" class="inline-block">
-                                        @csrf
-                                        @method('PATCH')
-                                        <button type="submit" :disabled="isBusy()"
-                                                class="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold rounded-lg border border-success/40 bg-success-bg/70 text-success hover:bg-success hover:text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
-                                            <svg class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                            </svg>
-                                            <span>Bật</span>
-                                        </button>
-                                    </form>
-                                @endif
+                                <x-admin.status-switch
+                                    :active="$coupon->is_active"
+                                    :action="$coupon->is_active ? route('admin.coupons.deactivate', $coupon) : route('admin.coupons.activate', $coupon)"
+                                    :toggle-key="'coupon-'.$coupon->id"
+                                    active-label="Đang bật"
+                                    inactive-label="Đã tắt"
+                                    :action-label="($coupon->is_active ? 'Tắt mã ' : 'Bật mã ').$coupon->code"
+                                />
                             </div>
 
                             <a class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-accent/10 text-accent hover:bg-accent hover:text-accent-text font-bold text-xs transition-colors" href="{{ route('admin.coupons.edit', $coupon) }}">
@@ -139,7 +122,7 @@
                             <th>Loại</th>
                             <th>Giá trị</th>
                             <th class="text-center">Lượt đã giữ/dùng</th>
-                            <th class="text-center">Trạng thái</th>
+                            <th class="text-left">Trạng thái</th>
                             <th class="text-right">Thao tác</th>
                         </tr>
                     </thead>
@@ -151,42 +134,15 @@
                                 <td class="whitespace-nowrap">{{ $coupon->type->label() }}</td>
                                 <td class="font-semibold text-accent whitespace-nowrap">{{ $coupon->type === App\Enums\CouponType::Percentage ? $coupon->value.'%' : ($coupon->type === App\Enums\CouponType::FreeShipping ? 'Miễn phí ship' : number_format($coupon->value, 0, ',', '.').' ₫') }}</td>
                                 <td class="text-center font-mono whitespace-nowrap">{{ $coupon->active_redemptions_count }} / {{ $coupon->usage_limit ?? '∞' }}</td>
-                                <td class="text-center whitespace-nowrap">
-                                    <div class="inline-flex flex-col items-center gap-1.5">
-                                        @if ($coupon->is_active)
-                                            <span class="inline-flex items-center gap-1 whitespace-nowrap bg-success-bg text-success-text border border-success/30 px-2.5 py-0.5 rounded-full font-bold text-[11px]">
-                                                <span class="w-1.5 h-1.5 rounded-full bg-success" aria-hidden="true"></span>
-                                                Đang bật
-                                            </span>
-                                            <form method="POST" action="{{ route('admin.coupons.deactivate', $coupon) }}" @submit.prevent="submitToggle($event, 'coupon-{{ $coupon->id }}')" class="inline-block">
-                                                @csrf
-                                                @method('PATCH')
-                                                <button type="submit" :disabled="isBusy()"
-                                                        class="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold rounded-lg border border-border bg-surface text-main hover:border-error/50 hover:bg-error-bg hover:text-error transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
-                                                    <svg class="w-3 h-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                    </svg>
-                                                    <span>Tắt</span>
-                                                </button>
-                                            </form>
-                                        @else
-                                            <span class="inline-flex items-center gap-1 whitespace-nowrap bg-surface text-muted border border-border px-2.5 py-0.5 rounded-full font-bold text-[11px]">
-                                                <span class="w-1.5 h-1.5 rounded-full bg-muted" aria-hidden="true"></span>
-                                                Đã tắt
-                                            </span>
-                                            <form method="POST" action="{{ route('admin.coupons.activate', $coupon) }}" @submit.prevent="submitToggle($event, 'coupon-{{ $coupon->id }}')" class="inline-block">
-                                                @csrf
-                                                @method('PATCH')
-                                                <button type="submit" :disabled="isBusy()"
-                                                        class="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold rounded-lg border border-success/40 bg-success-bg/70 text-success hover:bg-success hover:text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
-                                                    <svg class="w-3 h-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                    </svg>
-                                                    <span>Bật</span>
-                                                </button>
-                                            </form>
-                                        @endif
-                                    </div>
+                                <td class="text-left whitespace-nowrap">
+                                    <x-admin.status-switch
+                                        :active="$coupon->is_active"
+                                        :action="$coupon->is_active ? route('admin.coupons.deactivate', $coupon) : route('admin.coupons.activate', $coupon)"
+                                        :toggle-key="'coupon-'.$coupon->id"
+                                        active-label="Đang bật"
+                                        inactive-label="Đã tắt"
+                                        :action-label="($coupon->is_active ? 'Tắt mã ' : 'Bật mã ').$coupon->code"
+                                    />
                                 </td>
                                 <td class="text-right whitespace-nowrap">
                                     <a class="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-accent/10 text-accent hover:bg-accent hover:text-accent-text font-bold text-xs transition-colors" href="{{ route('admin.coupons.edit', $coupon) }}">

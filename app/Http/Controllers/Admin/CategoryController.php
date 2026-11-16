@@ -101,4 +101,25 @@ class CategoryController extends Controller
 
         return back(fallback: route('admin.categories.index'))->with('status', $message);
     }
+
+    public function updateOrder(Request $request, Category $category): RedirectResponse|JsonResponse
+    {
+        $validated = $request->validate([
+            'order' => ['required', 'integer', 'between:0,65535'],
+        ], [
+            'order.required' => 'Vui lòng nhập thứ tự hiển thị.',
+            'order.integer' => 'Thứ tự hiển thị phải là số nguyên.',
+            'order.between' => 'Thứ tự hiển thị phải từ 0 đến 65535.',
+        ]);
+
+        $order = (int) $validated['order'];
+        $category->forceFill(['display_order' => $order])->save();
+        $message = "Đã cập nhật thứ tự danh mục '{$category->name}' thành {$order}.";
+
+        if ($request->expectsJson()) {
+            return response()->json(['message' => $message, 'order' => $order]);
+        }
+
+        return back(fallback: route('admin.categories.index'))->with('status', $message);
+    }
 }

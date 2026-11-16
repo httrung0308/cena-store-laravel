@@ -68,30 +68,17 @@
 
                     <div class="flex items-center justify-between gap-2 pt-2 border-t border-border/60">
                         <div>
-                            @if ($supplier['deactivateUrl'] ?? null)
-                                <form action="{{ $supplier['deactivateUrl'] }}" method="POST" @submit.prevent="submitToggle($event, 'supplier-{{ $supplier['id'] ?? $loop->index }}')" class="inline-block">
-                                    @csrf
-                                    @method('PATCH')
-                                    <button type="submit" :disabled="isBusy()"
-                                            class="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold rounded-lg border border-border bg-surface text-main hover:border-error/50 hover:bg-error-bg hover:text-error transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
-                                        <svg class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                        </svg>
-                                        <span>Ngừng hoạt động</span>
-                                    </button>
-                                </form>
-                            @elseif ($supplier['activateUrl'] ?? null)
-                                <form action="{{ $supplier['activateUrl'] }}" method="POST" @submit.prevent="submitToggle($event, 'supplier-{{ $supplier['id'] ?? $loop->index }}')" class="inline-block">
-                                    @csrf
-                                    @method('PATCH')
-                                    <button type="submit" :disabled="isBusy()"
-                                            class="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold rounded-lg border border-success/40 bg-success-bg/70 text-success hover:bg-success hover:text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
-                                        <svg class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                        </svg>
-                                        <span>Kích hoạt</span>
-                                    </button>
-                                </form>
+                            @php($supActive = (bool) ($supplier['is_active'] ?? false))
+                            @php($supAction = $supActive ? ($supplier['deactivateUrl'] ?? null) : ($supplier['activateUrl'] ?? null))
+                            @if ($supAction)
+                                <x-admin.status-switch
+                                    :active="$supActive"
+                                    :action="$supAction"
+                                    :toggle-key="'supplier-'.($supplier['id'] ?? $loop->index)"
+                                    active-label="Hoạt động"
+                                    inactive-label="Đã ngừng"
+                                    :action-label="($supActive ? 'Ngừng hoạt động ' : 'Kích hoạt ').($supplier['name'] ?? '')"
+                                />
                             @endif
                         </div>
 
@@ -118,7 +105,7 @@
                         <th class="p-4 w-32 whitespace-nowrap">Mã</th>
                         <th class="p-4">Tên</th>
                         <th class="p-4">Liên hệ</th>
-                        <th class="p-4 text-center whitespace-nowrap">Trạng thái</th>
+                        <th class="p-4 text-left whitespace-nowrap">Trạng thái</th>
                         <th class="p-4 text-right whitespace-nowrap">Thao tác</th>
                     </tr>
                 </thead>
@@ -134,46 +121,25 @@
                             <span class="font-semibold text-main text-xs block whitespace-nowrap">{{ $supplier['phone'] ?? '' }}</span>
                             @if ($supplier['email'] ?? null)<span class="block text-[11px] text-muted break-all">{{ $supplier['email'] }}</span>@endif
                         </td>
-                        <td class="p-4 text-center whitespace-nowrap">
-                            <div class="inline-flex flex-col items-center gap-1.5">
-                                @if ($supplier['is_active'] ?? false)
-                                    <span class="inline-flex items-center gap-1 whitespace-nowrap bg-success-bg text-success border border-success/30 px-2.5 py-0.5 rounded-full font-bold text-[11px]">
-                                        <span class="w-1.5 h-1.5 rounded-full bg-success" aria-hidden="true"></span>
-                                        Hoạt động
-                                    </span>
-                                    @if ($supplier['deactivateUrl'] ?? null)
-                                        <form action="{{ $supplier['deactivateUrl'] }}" method="POST" @submit.prevent="submitToggle($event, 'supplier-{{ $supplier['id'] ?? $loop->index }}')" class="inline-block">
-                                            @csrf
-                                            @method('PATCH')
-                                            <button type="submit" :disabled="isBusy()"
-                                                    class="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold rounded-lg border border-border bg-surface text-main hover:border-error/50 hover:bg-error-bg hover:text-error transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
-                                                <svg class="w-3 h-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                </svg>
-                                                <span>Ngừng hoạt động</span>
-                                            </button>
-                                        </form>
-                                    @endif
-                                @else
-                                    <span class="inline-flex items-center gap-1 whitespace-nowrap bg-muted/15 text-muted border border-border px-2.5 py-0.5 rounded-full font-bold text-[11px]">
-                                        <span class="w-1.5 h-1.5 rounded-full bg-muted" aria-hidden="true"></span>
-                                        Đã ngừng
-                                    </span>
-                                    @if ($supplier['activateUrl'] ?? null)
-                                        <form action="{{ $supplier['activateUrl'] }}" method="POST" @submit.prevent="submitToggle($event, 'supplier-{{ $supplier['id'] ?? $loop->index }}')" class="inline-block">
-                                            @csrf
-                                            @method('PATCH')
-                                            <button type="submit" :disabled="isBusy()"
-                                                    class="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold rounded-lg border border-success/40 bg-success-bg/70 text-success hover:bg-success hover:text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
-                                                <svg class="w-3 h-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                </svg>
-                                                <span>Kích hoạt</span>
-                                            </button>
-                                        </form>
-                                    @endif
-                                @endif
-                            </div>
+                        <td class="p-4 text-left whitespace-nowrap">
+                            @php($supActive = (bool) ($supplier['is_active'] ?? false))
+                            @php($supAction = $supActive ? ($supplier['deactivateUrl'] ?? null) : ($supplier['activateUrl'] ?? null))
+                            @if ($supAction)
+                                <x-admin.status-switch
+                                    :active="$supActive"
+                                    :action="$supAction"
+                                    :toggle-key="'supplier-'.($supplier['id'] ?? $loop->index)"
+                                    active-label="Hoạt động"
+                                    inactive-label="Đã ngừng"
+                                    :action-label="($supActive ? 'Ngừng hoạt động ' : 'Kích hoạt ').($supplier['name'] ?? '')"
+                                />
+                            @else
+                                <span @class([
+                                    'text-xs font-semibold whitespace-nowrap',
+                                    'text-success' => $supActive,
+                                    'text-muted' => ! $supActive,
+                                ])>{{ $supActive ? 'Hoạt động' : 'Đã ngừng' }}</span>
+                            @endif
                         </td>
                         <td class="p-4 text-right whitespace-nowrap">
                             @if ($supplier['editUrl'] ?? null)

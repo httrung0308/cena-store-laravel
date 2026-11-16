@@ -141,4 +141,40 @@ class AdminStatusToggleTest extends TestCase
             ->assertJson(['is_visible' => true]);
         $this->assertTrue($review->fresh()->is_visible);
     }
+
+    public function test_inline_order_update_works_for_banner_category_and_classification(): void
+    {
+        $admin = User::factory()->administrator()->create();
+        $staff = User::factory()->staff()->create();
+
+        $category = Category::factory()->create(['display_order' => 1]);
+        $banner = Banner::factory()->create(['sort_order' => 2]);
+        $classification = Classification::factory()->create(['sort_order' => 3]);
+
+        // Staff can update category order, but not admin-only banner/classification
+        $this->actingAs($staff)
+            ->patchJson(route('admin.categories.update-order', $category), ['order' => 12])
+            ->assertOk()
+            ->assertJson(['order' => 12]);
+        $this->assertSame(12, $category->fresh()->display_order);
+
+        $this->patchJson(route('admin.banners.update-order', $banner), ['order' => 5])->assertForbidden();
+        $this->patchJson(route('admin.classifications.update-order', $classification), ['order' => 5])->assertForbidden();
+
+        // Admin can update banner and classification orders; out-of-range values fail validation
+        $this->actingAs($admin)
+            ->patchJson(route('admin.banners.update-order', $banner), ['order' => 25])
+            ->assertOk()
+            ->assertJson(['order' => 25]);
+        $this->assertSame(25, $banner->fresh()->sort_order);
+
+        $this->patchJson(route('admin.classifications.update-order', $classification), ['order' => 9])
+            ->assertOk()
+            ->assertJson(['order' => 9]);
+        $this->assertSame(9, $classification->fresh()->sort_order);
+
+        $this->patchJson(route('admin.banners.update-order', $banner), ['order' => -1])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('order');
+    }
 }

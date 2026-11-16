@@ -73,38 +73,36 @@
                         <span class="px-2.5 py-0.5 rounded-lg bg-surface border border-border font-bold text-main">
                             {{ $groups[$category['gender_group'] ?? ''] ?? ($category['gender_group'] ?? '—') }}
                         </span>
-                        <span class="px-2.5 py-0.5 rounded-lg bg-surface border border-border font-mono font-bold text-muted">
-                            Thứ tự: {{ $category['display_order'] ?? '—' }}
-                        </span>
+                        @if (($category['id'] ?? null) && \Illuminate\Support\Facades\Route::has('admin.categories.update-order'))
+                            <span class="inline-flex items-center gap-1.5 text-muted">
+                                <span>Thứ tự:</span>
+                                <x-admin.inline-order-input
+                                    :action="route('admin.categories.update-order', $category['id'])"
+                                    :value="$category['display_order'] ?? 0"
+                                    :toggle-key="'category-order-'.$category['id']"
+                                    :label="'Thứ tự danh mục '.($category['name'] ?? '')"
+                                />
+                            </span>
+                        @else
+                            <span class="px-2.5 py-0.5 rounded-lg bg-surface border border-border font-mono font-bold text-muted">
+                                Thứ tự: {{ $category['display_order'] ?? '—' }}
+                            </span>
+                        @endif
                     </div>
 
                     <div class="flex items-center justify-between gap-2 pt-2 border-t border-border/60">
                         <div>
-                            @if ($category['deactivateUrl'] ?? null)
-                                <form method="POST" action="{{ $category['deactivateUrl'] }}" @submit.prevent="submitToggle($event, 'category-{{ $category['id'] ?? $loop->index }}')" class="inline-block">
-                                    @csrf
-                                    @method('PATCH')
-                                    <button type="submit" :disabled="isBusy()"
-                                            class="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold rounded-lg border border-border bg-surface text-main hover:border-error/50 hover:bg-error-bg hover:text-error transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
-                                        <svg class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
-                                        </svg>
-                                        <span>Ẩn</span>
-                                    </button>
-                                </form>
-                            @elseif ($category['activateUrl'] ?? null)
-                                <form method="POST" action="{{ $category['activateUrl'] }}" @submit.prevent="submitToggle($event, 'category-{{ $category['id'] ?? $loop->index }}')" class="inline-block">
-                                    @csrf
-                                    @method('PATCH')
-                                    <button type="submit" :disabled="isBusy()"
-                                            class="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold rounded-lg border border-success/40 bg-success-bg/70 text-success hover:bg-success hover:text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
-                                        <svg class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                        </svg>
-                                        <span>Hiện</span>
-                                    </button>
-                                </form>
+                            @php($catActive = (bool) ($category['is_active'] ?? false))
+                            @php($catAction = $catActive ? ($category['deactivateUrl'] ?? null) : ($category['activateUrl'] ?? null))
+                            @if ($catAction)
+                                <x-admin.status-switch
+                                    :active="$catActive"
+                                    :action="$catAction"
+                                    :toggle-key="'category-'.($category['id'] ?? $loop->index)"
+                                    active-label="Đang hiển thị"
+                                    inactive-label="Đang ẩn"
+                                    :action-label="($catActive ? 'Ẩn danh mục ' : 'Hiện danh mục ').($category['name'] ?? '')"
+                                />
                             @endif
                         </div>
 
@@ -131,7 +129,7 @@
                         <th class="p-4">Tên</th>
                         <th class="p-4 whitespace-nowrap">Nhóm</th>
                         <th class="p-4 text-center whitespace-nowrap">Thứ tự</th>
-                        <th class="p-4 text-center whitespace-nowrap">Trạng thái</th>
+                        <th class="p-4 text-left whitespace-nowrap">Trạng thái</th>
                         <th class="p-4 text-right whitespace-nowrap">Thao tác</th>
                     </tr>
                 </thead>
@@ -144,49 +142,36 @@
                         </td>
                         <td class="p-4 font-bold text-main whitespace-nowrap">{{ $groups[$category['gender_group'] ?? ''] ?? ($category['gender_group'] ?? '') }}</td>
                         <td class="p-4 text-center whitespace-nowrap">
-                            <span class="bg-surface text-main border border-border px-2.5 py-1 rounded-lg font-mono font-bold text-[11px]">{{ $category['display_order'] ?? '' }}</span>
+                            @if (($category['id'] ?? null) && \Illuminate\Support\Facades\Route::has('admin.categories.update-order'))
+                                <x-admin.inline-order-input
+                                    :action="route('admin.categories.update-order', $category['id'])"
+                                    :value="$category['display_order'] ?? 0"
+                                    :toggle-key="'category-order-'.$category['id']"
+                                    :label="'Thứ tự danh mục '.($category['name'] ?? '')"
+                                />
+                            @else
+                                <span class="bg-surface text-main border border-border px-2.5 py-1 rounded-lg font-mono font-bold text-[11px]">{{ $category['display_order'] ?? '' }}</span>
+                            @endif
                         </td>
-                        <td class="p-4 text-center whitespace-nowrap">
-                            <div class="inline-flex flex-col items-center gap-1.5">
-                                @if ($category['is_active'] ?? false)
-                                    <span class="inline-flex items-center gap-1 whitespace-nowrap bg-success-bg text-success border border-success/30 px-2.5 py-0.5 rounded-full font-bold text-[11px]">
-                                        <span class="w-1.5 h-1.5 rounded-full bg-success" aria-hidden="true"></span>
-                                        Đang hiển thị
-                                    </span>
-                                    @if ($category['deactivateUrl'] ?? null)
-                                        <form method="POST" action="{{ $category['deactivateUrl'] }}" @submit.prevent="submitToggle($event, 'category-{{ $category['id'] ?? $loop->index }}')" class="inline-block">
-                                            @csrf
-                                            @method('PATCH')
-                                            <button type="submit" :disabled="isBusy()"
-                                                    class="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold rounded-lg border border-border bg-surface text-main hover:border-error/50 hover:bg-error-bg hover:text-error transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
-                                                <svg class="w-3 h-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
-                                                </svg>
-                                                <span>Ẩn</span>
-                                            </button>
-                                        </form>
-                                    @endif
-                                @else
-                                    <span class="inline-flex items-center gap-1 whitespace-nowrap bg-muted/15 text-muted border border-border px-2.5 py-0.5 rounded-full font-bold text-[11px]">
-                                        <span class="w-1.5 h-1.5 rounded-full bg-muted" aria-hidden="true"></span>
-                                        Đang ẩn
-                                    </span>
-                                    @if ($category['activateUrl'] ?? null)
-                                        <form method="POST" action="{{ $category['activateUrl'] }}" @submit.prevent="submitToggle($event, 'category-{{ $category['id'] ?? $loop->index }}')" class="inline-block">
-                                            @csrf
-                                            @method('PATCH')
-                                            <button type="submit" :disabled="isBusy()"
-                                                    class="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold rounded-lg border border-success/40 bg-success-bg/70 text-success hover:bg-success hover:text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
-                                                <svg class="w-3 h-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
-                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                                </svg>
-                                                <span>Hiện</span>
-                                            </button>
-                                        </form>
-                                    @endif
-                                @endif
-                            </div>
+                        <td class="p-4 text-left whitespace-nowrap">
+                            @php($catActive = (bool) ($category['is_active'] ?? false))
+                            @php($catAction = $catActive ? ($category['deactivateUrl'] ?? null) : ($category['activateUrl'] ?? null))
+                            @if ($catAction)
+                                <x-admin.status-switch
+                                    :active="$catActive"
+                                    :action="$catAction"
+                                    :toggle-key="'category-'.($category['id'] ?? $loop->index)"
+                                    active-label="Đang hiển thị"
+                                    inactive-label="Đang ẩn"
+                                    :action-label="($catActive ? 'Ẩn danh mục ' : 'Hiện danh mục ').($category['name'] ?? '')"
+                                />
+                            @else
+                                <span @class([
+                                    'text-xs font-semibold whitespace-nowrap',
+                                    'text-success' => $catActive,
+                                    'text-muted' => ! $catActive,
+                                ])>{{ $catActive ? 'Đang hiển thị' : 'Đang ẩn' }}</span>
+                            @endif
                         </td>
                         <td class="p-4 text-right whitespace-nowrap">
                             @if ($category['editUrl'] ?? null)
