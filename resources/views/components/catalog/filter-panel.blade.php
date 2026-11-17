@@ -6,7 +6,6 @@
     'categoryOptions' => [],
     'silhouetteOptions' => [],
     'activityOptions' => [],
-    'colorOptions' => [],
     'totalCount' => null,
 ])
 @php
@@ -25,7 +24,6 @@
     $selectedCategory = (string) ($filters['category'] ?? '');
     $selectedSilhouettes = array_values(array_filter((array) ($filters['silhouette'] ?? []), 'is_string'));
     $selectedActivities = array_values(array_filter((array) ($filters['activity'] ?? []), 'is_string'));
-    $selectedColors = array_values(array_filter((array) ($filters['colors'] ?? []), 'is_string'));
 
     $rawSize = (string) ($filters['size'] ?? '');
     $sizeValue = ($rawSize !== '' && str_contains($rawSize, '.')) ? rtrim(rtrim($rawSize, '0'), '.') : $rawSize;
@@ -39,8 +37,6 @@
     $nonRootCategories = collect($categoryOptions)->filter(fn ($opt) => ! ($opt['is_root_gender'] ?? false))->values()->all();
     $showCategoryFilter = ! empty($nonRootCategories) || $selectedCategory !== '';
     $displayedCategoryOptions = ! empty($nonRootCategories) ? $nonRootCategories : $categoryOptions;
-
-    $palette = config('store.palette', []);
 
     $sortOptions = [
         'newest' => 'Mới nhất',
@@ -268,46 +264,7 @@
                     </section>
                 @endif
 
-                {{-- 4. Màu sắc --}}
-                @if (! empty($colorOptions))
-                    <section class="py-4 lg:relative lg:py-0" @click.outside="if (openFacet === 'colors') openFacet = null">
-                        <p class="mb-2.5 text-xs font-bold uppercase tracking-wider text-muted lg:hidden">Màu sắc</p>
-                        <button type="button"
-                            @click="toggleFacet('colors')"
-                            :aria-expanded="(openFacet === 'colors').toString()"
-                            aria-controls="facet-panel-colors"
-                            class="hidden items-center gap-1.5 rounded-xl border border-border bg-surface-card px-3 py-2 text-xs font-semibold text-main transition hover:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent lg:inline-flex"
-                            :class="openFacet === 'colors' || counts.colors > 0 ? 'border-accent' : ''">
-                            <span>Màu sắc</span>
-                            <span x-cloak
-                                x-show="counts.colors > 0"
-                                x-text="counts.colors"
-                                class="inline-flex min-w-4 items-center justify-center rounded-full bg-accent px-1.5 py-0.5 text-[10px] font-bold leading-none text-accent-text"></span>
-                            <svg class="h-3.5 w-3.5 text-muted transition-transform" :class="openFacet === 'colors' ? 'rotate-180' : ''" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="m19 9-7 7-7-7" />
-                            </svg>
-                        </button>
-
-                        <div id="facet-panel-colors"
-                            :class="openFacet === 'colors' ? 'lg:block' : 'lg:hidden'"
-                            class="lg:absolute lg:left-0 lg:top-full lg:z-30 lg:mt-2 lg:w-80 lg:rounded-2xl lg:border lg:border-border lg:bg-surface-card lg:p-3.5 lg:shadow-xl">
-                            <div class="grid grid-cols-2 gap-1.5">
-                                @foreach ($colorOptions as $color)
-                                    @php
-                                        $colorHex = $color['hex'] ?? ($palette[$color['value']]['hex'] ?? '#64748b');
-                                    @endphp
-                                    <label class="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-xs text-main transition hover:bg-surface">
-                                        <input type="checkbox" name="colors[]" value="{{ $color['value'] }}" @checked(in_array($color['value'], $selectedColors, true)) @change="onControlAutoChange(180)" class="native-checkbox h-4 w-4 shrink-0 rounded border-border accent-accent">
-                                        <span class="h-3 w-3 shrink-0 rounded-full border border-border" style="background-color: {{ $colorHex }}"></span>
-                                        <span class="whitespace-normal leading-snug">{{ $color['label'] }}</span>
-                                    </label>
-                                @endforeach
-                            </div>
-                        </div>
-                    </section>
-                @endif
-
-                {{-- 5. Size & Khoảng giá --}}
+                {{-- 4. Size & Khoảng giá --}}
                 <section class="py-4 lg:relative lg:py-0" @click.outside="if (openFacet === 'size_price') openFacet = null">
                     <p class="mb-2.5 text-xs font-bold uppercase tracking-wider text-muted lg:hidden">Size &amp; Khoảng giá</p>
                     <button type="button"

@@ -1,6 +1,6 @@
 @extends('layouts.admin')
-@section('title', $record->exists ? 'Sửa Danh Mục' : 'Thêm Danh Mục')
-@section('eyebrow', 'QUẢN TRỊ DANH MỤC')
+@section('title', $record->exists ? 'Sửa Đối Tượng' : 'Thêm Đối Tượng')
+@section('eyebrow', 'QUẢN TRỊ ĐỐI TƯỢNG')
 @section('actions')
     <a class="px-4 py-2 bg-surface hover:bg-border/40 text-muted hover:text-main text-xs font-bold rounded-xl border border-border transition-colors" href="{{ route('admin.categories.index') }}">← Quay lại danh sách</a>
 @endsection
@@ -12,7 +12,6 @@
     $initialName = old('name', $category['name'] ?? '');
     $initialSlug = old('slug', $category['slug'] ?? '');
     $initialGender = old('gender_group', $category['gender_group'] ?? '');
-    $initialParent = (string) old('parent_id', $category['parent_id'] ?? '');
     $hasSlugError = $errors->has('slug');
 @endphp
 @section('content')
@@ -21,28 +20,19 @@
               x-data="{
                   ...liveSlug({ isNew: {{ $isNew ? 'true' : 'false' }}, initialName: @js($initialName), initialSlug: @js($initialSlug) }),
                   showSlugEditor: {{ $hasSlugError ? 'true' : 'false' }},
-                  allParents: @js($parents),
-                  selectedGender: @js($initialGender),
-                  selectedParent: @js($initialParent),
-                  get filteredParents() {
-                      if (!this.selectedGender) return [];
-                      return this.allParents.filter(p => p.gender_group === this.selectedGender);
-                  },
-                  onGenderChange() {
-                      const valid = this.filteredParents.some(p => String(p.id) === String(this.selectedParent));
-                      if (!valid) {
-                          this.selectedParent = '';
-                      }
-                  }
+                  selectedGender: @js($initialGender)
               }">
             @csrf
             @if ($method === 'PUT') @method('PUT') @endif
+            @if (filled(old('parent_id', $record->parent_id)))
+                <input type="hidden" name="parent_id" value="{{ old('parent_id', $record->parent_id) }}">
+            @endif
 
-            <h2 class="text-base font-bold text-main">Thông tin danh mục</h2>
+            <h2 class="text-base font-bold text-main">Thông tin đối tượng</h2>
 
             <div class="grid gap-4 md:grid-cols-12">
                 <div class="md:col-span-12">
-                    <label for="category-name" class="admin-label">Tên danh mục <span class="text-error">*</span></label>
+                    <label for="category-name" class="admin-label">Tên đối tượng <span class="text-error">*</span></label>
                     <input id="category-name" name="name" type="text" x-model="name" x-on:input="onNameInput"
                            class="input w-full border-border focus:border-accent text-main text-xs @error('name') border-error @enderror"
                            placeholder="Ví dụ: Giày Chạy Bộ" required>
@@ -80,18 +70,18 @@
                                class="input w-full border-border focus:border-accent text-main font-mono text-xs @error('slug') border-error @enderror"
                                placeholder="giay-chay-bo" required>
                         <p class="text-[11px] text-muted">
-                            <span x-show="isNew && !manuallyModified">Tự tạo từ tên danh mục. Nếu sửa tay, hệ thống sẽ giữ nguyên không ghi đè.</span>
+                            <span x-show="isNew && !manuallyModified">Tự tạo từ tên đối tượng. Nếu sửa tay, hệ thống sẽ giữ nguyên không ghi đè.</span>
                             <span x-show="isNew && manuallyModified">Đã sửa tay (không tự ghi đè khi đổi tên).</span>
-                            <span x-show="!isNew && isLocked">Đang khóa để giữ nguyên liên kết cũ khi đổi tên danh mục.</span>
-                            <span x-show="!isNew && !isLocked" class="text-warning-text font-medium">Lưu ý: Đổi slug danh mục có thể làm thay đổi đường dẫn đã chia sẻ.</span>
+                            <span x-show="!isNew && isLocked">Đang khóa để giữ nguyên liên kết cũ khi đổi tên đối tượng.</span>
+                            <span x-show="!isNew && !isLocked" class="text-warning-text font-medium">Lưu ý: Đổi slug đối tượng có thể làm thay đổi đường dẫn đã chia sẻ.</span>
                         </p>
                         <x-forms.field-error name="slug" />
                     </div>
                 </div>
 
-                <div class="md:col-span-4">
-                    <label for="category-gender" class="admin-label">Nhóm giới tính <span class="text-error">*</span></label>
-                    <select id="category-gender" name="gender_group" x-model="selectedGender" x-on:change="onGenderChange"
+                <div class="md:col-span-6">
+                    <label for="category-gender" class="admin-label">Nhóm đối tượng <span class="text-error">*</span></label>
+                    <select id="category-gender" name="gender_group" x-model="selectedGender"
                             class="input w-full border-border bg-surface text-main text-xs @error('gender_group') border-error @enderror" required>
                         <option value="">-- Chọn nhóm --</option>
                         @foreach ($genderOptions as $item)
@@ -101,31 +91,18 @@
                     <x-forms.field-error name="gender_group" />
                 </div>
 
-                <div class="md:col-span-5">
-                    <label for="category-parent" class="admin-label">Danh mục cha</label>
-                    <select id="category-parent" name="parent_id" x-model="selectedParent"
-                            class="input w-full border-border bg-surface text-main text-xs @error('parent_id') border-error @enderror">
-                        <option value="">Không có (Danh mục gốc)</option>
-                        <template x-for="parent in filteredParents" :key="parent.id">
-                            <option :value="parent.id" x-text="parent.name" :selected="String(parent.id) === String(selectedParent)"></option>
-                        </template>
-                    </select>
-                    <p class="mt-1 text-[11px] text-muted">Chỉ hiển thị danh mục gốc thuộc nhóm giới tính đã chọn.</p>
-                    <x-forms.field-error name="parent_id" />
-                </div>
-
-                <div class="md:col-span-3">
+                <div class="md:col-span-6">
                     <x-admin.field name="display_order" label="Thứ tự hiển thị" :value="$category['display_order'] ?? 1" type="number" min="0" max="65535" hint="Số nhỏ xếp trước." />
                 </div>
             </div>
 
             <label class="flex items-center gap-2 text-xs font-semibold text-main cursor-pointer select-none">
                 <input type="checkbox" name="is_active" value="1" class="native-checkbox accent-accent rounded" @checked(old('is_active', $category['is_active'] ?? true))>
-                <span>Hiển thị danh mục này</span>
+                <span>Hiển thị đối tượng này</span>
             </label>
 
             <div class="flex items-center gap-3 pt-2">
-                <button type="submit" class="px-6 py-2.5 bg-accent hover:bg-accent-hover text-accent-text text-xs font-bold rounded-xl transition-colors shadow-md">Lưu danh mục</button>
+                <button type="submit" class="px-6 py-2.5 bg-accent hover:bg-accent-hover text-accent-text text-xs font-bold rounded-xl transition-colors shadow-md">Lưu đối tượng</button>
                 <a href="{{ route('admin.categories.index') }}" class="px-6 py-2.5 bg-surface hover:bg-border/40 text-muted hover:text-main text-xs font-bold rounded-xl border border-border transition-colors">Hủy</a>
             </div>
         </form>

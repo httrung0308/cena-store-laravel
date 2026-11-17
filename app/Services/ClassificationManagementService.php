@@ -79,6 +79,7 @@ final class ClassificationManagementService
                 ]);
             }
 
+            $wasShownInHomeNav = $current->exists && (bool) $current->show_in_home_nav;
             $showInHomeNav = array_key_exists('show_in_home_nav', $data)
                 ? (bool) $data['show_in_home_nav']
                 : ($current->exists ? (bool) $current->show_in_home_nav : false);
@@ -89,6 +90,20 @@ final class ClassificationManagementService
                     $current->exists ? $current->id : null,
                     'show_in_home_nav'
                 );
+            }
+
+            if (! $wasShownInHomeNav && $showInHomeNav) {
+                $submittedOrder = (int) $data['sort_order'];
+                $isDefaultOrder = $current->exists
+                    ? ($submittedOrder === (int) $current->sort_order || $submittedOrder === 1)
+                    : $submittedOrder === 1;
+
+                if ($isDefaultOrder) {
+                    $data['sort_order'] = $this->nextHomeNavSortOrder(
+                        $data['classification_group'],
+                        $current->exists ? $current->id : null
+                    );
+                }
             }
 
             $data['show_in_home_nav'] = $showInHomeNav;
@@ -140,7 +155,15 @@ final class ClassificationManagementService
                 );
             }
 
-            $current->forceFill(['show_in_home_nav' => $nextShow])->save();
+            $updates = ['show_in_home_nav' => $nextShow];
+            if ($nextShow && ! $current->show_in_home_nav) {
+                $updates['sort_order'] = $this->nextHomeNavSortOrder(
+                    $current->classification_group->value,
+                    $current->id
+                );
+            }
+
+            $current->forceFill($updates)->save();
 
             return $current->refresh();
         });
@@ -168,6 +191,18 @@ final class ClassificationManagementService
             ->orderBy('id')
             ->lockForUpdate()
             ->get(['id']);
+    }
+
+    private function nextHomeNavSortOrder(string $groupValue, ?int $ignoreId = null): int
+    {
+        $max = Classification::query()
+            ->where('classification_group', $groupValue)
+            ->where('is_active', true)
+            ->where('show_in_home_nav', true)
+            ->when($ignoreId !== null, fn ($q) => $q->whereKeyNot($ignoreId))
+            ->max('sort_order');
+
+        return $max !== null ? min(65535, (int) $max + 1) : 1;
     }
 
     private function assertWithinHomeNavLimit(ClassificationGroup|string $group, ?int $ignoreId, string $errorField): void

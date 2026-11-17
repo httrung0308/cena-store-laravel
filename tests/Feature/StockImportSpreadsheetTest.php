@@ -74,7 +74,11 @@ class StockImportSpreadsheetTest extends TestCase
         ], $errors);
 
         $this->followingRedirects()->post(route('admin.stock-imports.spreadsheet'), ['file' => UploadedFile::fake()->createWithContent('nhap.csv', $csv)])->assertOk()
-            ->assertSee('Nhập nhanh từ file Excel')->assertSee('data-spreadsheet-errors', false)->assertSee('Dòng 3: không có SKU &quot;NOPE-1&quot;.', false);
+            ->assertSee('data-spreadsheet-errors', false)->assertSee('Dòng 3: không có SKU &quot;NOPE-1&quot;.', false);
+
+        $this->get(route('admin.stock-imports.index'))
+            ->assertOk()
+            ->assertSee('Nhập nhanh từ file Excel / CSV');
     }
 
     public function test_unreadable_or_unsupported_files_are_refused_with_a_clear_message(): void

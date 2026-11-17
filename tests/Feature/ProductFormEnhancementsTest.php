@@ -13,6 +13,8 @@ use App\Models\ProductImage;
 use App\Models\ProductVariant;
 use App\Models\User;
 use App\Services\ProductManagementService;
+use App\Services\ProductSpreadsheetService;
+use App\Support\SpreadsheetReader;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -114,8 +116,6 @@ class ProductFormEnhancementsTest extends TestCase
                 [
                     'color_name' => 'Đen',
                     'style_color_code' => 'BLK',
-                    'color_key' => 'black',
-                    'primary_hex' => '#000000',
                     'variants' => [
                         [
                             'size_value' => '42',
@@ -165,11 +165,11 @@ class ProductFormEnhancementsTest extends TestCase
 
     public function test_product_spreadsheet_preview_and_import_creates_inactive_products_without_images(): void
     {
-        $category = Category::factory()->create(['name' => 'Giày Nam']);
+        $category = Category::factory()->create(['name' => 'Nam']);
 
         $csvContent = "\xEF\xBB\xBF".
-            "Tên sản phẩm,Danh mục,Dòng thương hiệu,Giá gốc,Giá khuyến mãi,Bảo hành (tháng),Đổi size (ngày),Mô tả,Tên màu,Mã màu,Mã hex,Nhóm màu,Dải size,Giá riêng\n".
-            "Giày Test Import,Giày Nam,Runner,1500000,,6,7,Giày chạy tốt,Đen Trắng,BLK,#000000,black,40-42,\n";
+            "Tên sản phẩm,Đối tượng,Dòng thương hiệu,Giá gốc,Giá khuyến mãi,Bảo hành (tháng),Đổi size (ngày),Mô tả,Tên màu,Mã phối màu,Dải size,Giá riêng\n".
+            "Giày Test Import,Nam,Runner,1500000,,6,7,Giày chạy tốt,Đen Trắng,,40-42,\n";
 
         $tempFile = UploadedFile::fake()->createWithContent('import.csv', $csvContent);
 
@@ -182,6 +182,9 @@ class ProductFormEnhancementsTest extends TestCase
         $this->assertCount(1, $data['products']);
         $this->assertEmpty($data['errors']);
         $this->assertSame('Giày Test Import', $data['products'][0]['name']);
+        $this->assertArrayNotHasKey('color_key', $data['products'][0]['colors'][0]);
+        $this->assertArrayNotHasKey('primary_hex', $data['products'][0]['colors'][0]);
+        $this->assertMatchesRegularExpression('/^[A-Za-z0-9_-]+$/', $data['products'][0]['colors'][0]['style_color_code']);
 
         // Test store import
         $storeRes = $this->actingAs($this->admin)->post(route('admin.products.import.store'), [
@@ -194,6 +197,110 @@ class ProductFormEnhancementsTest extends TestCase
         $this->assertNotNull($created);
         $this->assertFalse((bool) $created->is_active); // Must be inactive because no images yet
         $this->assertSame(5, $created->variants()->count()); // sizes 40, 40.5, 41, 41.5, 42 (5 sizes)
+    }
+
+    public function test_product_spreadsheet_templates_use_twelve_columns_with_doi_tuong(): void
+    {
+        $csv = ProductSpreadsheetService::templateCsv();
+        $this->assertStringContainsString('Đối tượng', $csv);
+        $this->assertStringContainsString('Mã phối màu', $csv);
+        $this->assertStringContainsString(',Nam,', $csv);
+        $this->assertStringNotContainsString('Danh mục', $csv);
+        $this->assertStringNotContainsString('Mã hex', $csv);
+        $this->assertStringNotContainsString('Nhóm màu', $csv);
+
+        $xlsxPath = ProductSpreadsheetService::templateXlsx();
+        try {
+            $rows = SpreadsheetReader::rows($xlsxPath, 'xlsx');
+            $this->assertCount(12, $rows[0]);
+            $this->assertSame('Đối tượng', $rows[0][1]);
+            $this->assertSame('Mã phối màu', $rows[0][9]);
+            $this->assertSame('Nam', $rows[1][1]);
+        } finally {
+            if (is_file($xlsxPath)) {
+                unlink($xlsxPath);
+            }
+        }
+    }
+
+    public function test_product_spreadsheet_groups_blank_style_color_code_consistently_and_keeps_uniqueness(): void
+    {
+        Category::factory()->create(['name' => 'Nam']);
+
+        $csvContent = "\xEF\xBB\xBF".
+            "Tên sản phẩm,Đối tượng,Dòng thương hiệu,Giá gốc,Giá khuyến mãi,Bảo hành (tháng),Đổi size (ngày),Mô tả,Tên màu,Mã phối màu,Dải size,Giá riêng\n".
+            "Giày Alpha,Nam,Runner,1500000,,6,7,Mô tả A,Đen Trắng,,39-40,\n".
+            "Giày Alpha,Nam,Runner,1500000,,6,7,Mô tả A,Đen Trắng,,41-42,\n".
+            "Giày Beta,Nam,Runner,1600000,,6,7,Mô tả B,Đen Trắng,,40-41,\n";
+
+        $tempFile = UploadedFile::fake()->createWithContent('blank-codes.csv', $csvContent);
+        $res = $this->actingAs($this->admin)->post(route('admin.products.import.preview'), [
+            'file' => $tempFile,
+        ], ['Accept' => 'application/json']);
+
+        $res->assertOk();
+        $data = $res->json();
+        $this->assertEmpty($data['errors']);
+        $this->assertCount(2, $data['products']);
+        $this->assertCount(1, $data['products'][0]['colors']);
+        $this->assertCount(6, $data['products'][0]['colors'][0]['variants']); // 39, 39.5, 40 + 41, 41.5, 42
+        $alphaCode = $data['products'][0]['colors'][0]['style_color_code'];
+        $betaCode = $data['products'][1]['colors'][0]['style_color_code'];
+        $this->assertMatchesRegularExpression('/^[A-Za-z0-9_-]+$/', $alphaCode);
+        $this->assertMatchesRegularExpression('/^[A-Za-z0-9_-]+$/', $betaCode);
+        $this->assertNotSame($alphaCode, $betaCode);
+    }
+
+    public function test_product_spreadsheet_parses_legacy_csv_with_danh_muc_ma_hex_and_nhom_mau(): void
+    {
+        Category::factory()->create(['name' => 'Giày Nam']);
+
+        $csvContent = "\xEF\xBB\xBF".
+            "Tên sản phẩm,Danh mục,Dòng thương hiệu,Giá gốc,Giá khuyến mãi,Bảo hành (tháng),Đổi size (ngày),Mô tả,Tên màu,Mã màu,Mã hex,Nhóm màu,Dải size,Giá riêng\n".
+            "Giày Legacy,Giày Nam,Classic,1400000,,6,7,Mô tả cũ,Đen,BLK,#000000,black,40-41,\n";
+
+        $tempFile = UploadedFile::fake()->createWithContent('legacy.csv', $csvContent);
+        $res = $this->actingAs($this->admin)->post(route('admin.products.import.preview'), [
+            'file' => $tempFile,
+        ], ['Accept' => 'application/json']);
+
+        $res->assertOk();
+        $data = $res->json();
+        $this->assertEmpty($data['errors']);
+        $this->assertCount(1, $data['products']);
+        $this->assertSame('BLK', $data['products'][0]['colors'][0]['style_color_code']);
+        $this->assertArrayNotHasKey('color_key', $data['products'][0]['colors'][0]);
+        $this->assertArrayNotHasKey('primary_hex', $data['products'][0]['colors'][0]);
+    }
+
+    public function test_product_spreadsheet_rejects_conflicting_product_and_color_rows(): void
+    {
+        Category::factory()->create(['name' => 'Nam']);
+        Category::factory()->create(['name' => 'Nữ']);
+
+        $csvContent = "\xEF\xBB\xBF".
+            "Tên sản phẩm,Đối tượng,Dòng thương hiệu,Giá gốc,Giá khuyến mãi,Bảo hành (tháng),Đổi size (ngày),Mô tả,Tên màu,Mã phối màu,Dải size,Giá riêng\n".
+            "Giày Xung Đột SP,Nam,Runner,1500000,1200000,6,7,Mô tả 1,Đen,BLK,40,\n".
+            "Giày Xung Đột SP,Nữ,Pro,1800000,1300000,12,14,Mô tả 2,Trắng,WHT,41,\n".
+            "Giày Xung Đột Màu,Nam,Runner,1500000,,6,7,Mô tả,Đen,BLK,40,\n".
+            "Giày Xung Đột Màu,Nam,Runner,1500000,,6,7,Mô tả,Đen,BLACK,41,\n".
+            "Giày Trùng Mã Màu,Nam,Runner,1500000,,6,7,Mô tả,Đen,BLK2,40,\n".
+            "Giày Trùng Mã Màu,Nam,Runner,1500000,,6,7,Mô tả,Trắng,BLK2,41,\n";
+
+        $tempFile = UploadedFile::fake()->createWithContent('conflicts.csv', $csvContent);
+        $res = $this->actingAs($this->admin)->post(route('admin.products.import.preview'), [
+            'file' => $tempFile,
+        ], ['Accept' => 'application/json']);
+
+        $res->assertOk();
+        $data = $res->json();
+        $this->assertEmpty($data['products']);
+        $this->assertNotEmpty($data['errors']);
+        $joined = implode("\n", $data['errors']);
+        $this->assertStringContainsString('Đối tượng', $joined);
+        $this->assertStringContainsString('Giá gốc', $joined);
+        $this->assertStringContainsString('xung đột mã phối màu', $joined);
+        $this->assertStringContainsString('bị trùng cho nhiều tên màu khác nhau', $joined);
     }
 
     public function test_coupon_validation_rules_for_different_types(): void
@@ -307,8 +414,6 @@ class ProductFormEnhancementsTest extends TestCase
                 [
                     'color_name' => 'Đen Trắng',
                     'style_color_code' => 'BLK',
-                    'color_key' => 'black',
-                    'primary_hex' => '#111111',
                     'is_active' => true,
                     'variants' => [
                         ['size_value' => '41', 'sku' => '', 'is_active' => true],
@@ -342,8 +447,6 @@ class ProductFormEnhancementsTest extends TestCase
                     'id' => $color->id,
                     'color_name' => 'Đen Trắng',
                     'style_color_code' => 'BLK',
-                    'color_key' => 'black',
-                    'primary_hex' => '#111111',
                     'is_active' => true,
                     'variants' => [
                         ['id' => $color->variants->firstOrFail()->id, 'size_value' => '41', 'sku' => $originalSku, 'is_active' => true],
@@ -378,8 +481,6 @@ class ProductFormEnhancementsTest extends TestCase
                 [
                     'color_name' => 'Đỏ',
                     'style_color_code' => 'RED',
-                    'color_key' => 'red',
-                    'primary_hex' => '#FF0000',
                     'variants' => [
                         ['size_value' => '40', 'price_override' => 0, 'is_active' => true],
                     ],

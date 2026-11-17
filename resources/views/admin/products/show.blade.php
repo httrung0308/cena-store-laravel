@@ -77,7 +77,7 @@
 
             <dl class="grid gap-4 sm:grid-cols-2 text-xs">
                 <div>
-                    <dt class="text-muted font-semibold">Danh mục</dt>
+                    <dt class="text-muted font-semibold">Đối tượng</dt>
                     <dd class="text-main font-bold mt-1">
                         @if ($product->category?->parent)
                             {{ $product->category->parent->name }} / {{ $product->category->name }}
@@ -170,7 +170,13 @@
             <article class="admin-card space-y-5">
                 <div class="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-border/70">
                     <div class="flex items-center gap-3 min-w-0">
-                        <span class="w-5 h-5 rounded-full border border-border shrink-0" style="background-color: {{ $color->primary_hex }}"></span>
+                        @php $colorThumb = $color->images->firstWhere('is_thumbnail', true) ?? $color->images->first(); @endphp
+                        @if ($colorThumb)
+                            <img src="{{ $colorThumb->thumb_400_url ?? $colorThumb->thumbnail_url ?? $images->imageUrl($colorThumb) }}"
+                                 alt="{{ $color->color_name }}"
+                                 class="w-7 h-7 rounded-lg object-cover border border-border shrink-0"
+                                 loading="lazy" decoding="async">
+                        @endif
                         <div class="min-w-0">
                             <h3 class="text-sm font-bold text-main truncate">
                                 {{ $color->color_name }}

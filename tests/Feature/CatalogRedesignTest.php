@@ -29,7 +29,8 @@ class CatalogRedesignTest extends TestCase
         $response->assertSee('Nữ');
         $response->assertSee('Trẻ em');
         $response->assertSee('Unisex');
-        $response->assertSee('Xanh dương');
+        $response->assertDontSee('Màu sắc');
+        $response->assertDontSee('name="colors[]"', false);
         $response->assertDontSee('catalog-category-select');
     }
 
@@ -111,7 +112,6 @@ class CatalogRedesignTest extends TestCase
             'gender' => 'men',
             'silhouette' => [$silhouette->slug],
             'activity' => [$activity->slug],
-            'colors' => ['red', 'black'],
             'size' => '40.5',
             'min_price' => 500000,
             'max_price' => 2000000,
@@ -125,8 +125,6 @@ class CatalogRedesignTest extends TestCase
         $response->assertSee('Đối tượng: Nam');
         $response->assertSee('Kiểu dáng: '.$silhouette->name);
         $response->assertSee('Mục đích: '.$activity->name);
-        $response->assertSee('Màu: Đỏ');
-        $response->assertSee('Màu: Đen');
         $response->assertSee('Size: 40.5');
         $response->assertSee('Giá từ: 500.000 ₫');
         $response->assertSee('Giá đến: 2.000.000 ₫');

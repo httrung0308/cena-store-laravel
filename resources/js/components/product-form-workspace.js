@@ -68,27 +68,33 @@ export function productFormWorkspace(config = {}) {
         }));
 
     const mapColors = (rawColors = []) => {
-        const list = (Array.isArray(rawColors) ? rawColors : []).map((c) => ({
-            uid: nextUid('col'),
-            id: c.id ?? null,
-            color_name: c.color_name ?? c.name ?? '',
-            style_color_code: c.style_color_code ?? '',
-            color_key: c.color_key ?? 'black',
-            primary_hex: c.primary_hex ?? c.hex ?? '#000000',
-            is_active: c.is_active === undefined ? true : Boolean(Number(c.is_active)),
-            variants: mapVariants(c.variants),
-            images: mapImages(c.images),
-            rangeStart: '',
-            rangeEnd: '',
-            rangeStep: '0.5',
-            rangePreview: [],
-            rangePreviewError: '',
-            skuPrefix: '',
-            showSkuColumn: false,
-            showUrlAdder: false,
-            newExternalUrl: '',
-            dragOver: false,
-        }));
+        const list = (Array.isArray(rawColors) ? rawColors : []).map((c) => {
+            const variants = mapVariants(c.variants);
+            const hasDocuments = Boolean(c.has_documents || variants.some((v) => v.documented));
+
+            return {
+                uid: nextUid('col'),
+                id: c.id ?? null,
+                color_name: c.color_name ?? c.name ?? '',
+                style_color_code: c.style_color_code ?? '',
+                styleColorCodeManuallyEdited: Boolean(c.id || c.style_color_code),
+                has_documents: hasDocuments,
+                is_active: c.is_active === undefined ? true : Boolean(Number(c.is_active)),
+                variants,
+                images: mapImages(c.images),
+                rangeStart: '',
+                rangeEnd: '',
+                rangeStep: '0.5',
+                rangePreview: [],
+                rangePreviewError: '',
+                skuPrefix: '',
+                showSkuColumn: false,
+                showAdvanced: false,
+                showUrlAdder: false,
+                newExternalUrl: '',
+                dragOver: false,
+            };
+        });
 
         return list;
     };
@@ -273,8 +279,8 @@ export function productFormWorkspace(config = {}) {
                 id: null,
                 color_name: '',
                 style_color_code: '',
-                color_key: 'black',
-                primary_hex: '#000000',
+                styleColorCodeManuallyEdited: false,
+                has_documents: false,
                 is_active: true,
                 variants: [],
                 images: [],
@@ -285,11 +291,51 @@ export function productFormWorkspace(config = {}) {
                 rangePreviewError: '',
                 skuPrefix: '',
                 showSkuColumn: false,
+                showAdvanced: false,
                 showUrlAdder: false,
                 newExternalUrl: '',
                 dragOver: false,
             });
             this.activeColorIndex = this.colors.length - 1;
+        },
+        generateStyleColorCode(color) {
+            const raw = normalizeVi(color.color_name)
+                .replace(/[^a-z0-9_-]+/g, '-')
+                .replace(/-+/g, '-')
+                .replace(/^-+|-+$/g, '')
+                .toUpperCase();
+
+            if (!raw) return '';
+
+            const used = new Set(
+                this.colors
+                    .filter((c) => c.uid !== color.uid && c.style_color_code)
+                    .map((c) => String(c.style_color_code).toUpperCase())
+            );
+
+            if (!used.has(raw)) return raw;
+
+            let suffix = 2;
+            while (used.has(`${raw}-${suffix}`)) {
+                suffix += 1;
+            }
+            return `${raw}-${suffix}`;
+        },
+        colorTabThumb(col) {
+            if (!col || !Array.isArray(col.images) || col.images.length === 0) return null;
+            const target = col.images.find((i) => i.thumbnail && !i.broken) || col.images.find((i) => !i.broken);
+            if (!target) return null;
+            return target.previewUrl || target.existingUrl || target.external_url || null;
+        },
+        onColorNameInput(color, colorIndex) {
+            this.clearError(`colors.${colorIndex}.color_name`);
+            if (!color.id && !color.styleColorCodeManuallyEdited && !color.has_documents) {
+                color.style_color_code = this.generateStyleColorCode(color);
+                this.clearError(`colors.${colorIndex}.style_color_code`);
+            }
+        },
+        colorHasAdvancedError(ci) {
+            return Boolean(this.getError(`colors.${ci}.style_color_code`));
         },
         removeColor(index) {
             if (this.colors.length <= 1) return;
@@ -485,6 +531,9 @@ export function productFormWorkspace(config = {}) {
                     if (sub.includes('.sku') && this.colors[ci]) {
                         this.colors[ci].showSkuColumn = true;
                     }
+                    if (sub === 'style_color_code' && this.colors[ci]) {
+                        this.colors[ci].showAdvanced = true;
+                    }
                     const imgMatch = sub.match(/^images\.(\d+)\.alt_text$/);
                     if (imgMatch && this.colors[ci]?.images?.[Number(imgMatch[1])]) {
                         this.colors[ci].images[Number(imgMatch[1])].showAltEditor = true;
@@ -539,9 +588,7 @@ export function productFormWorkspace(config = {}) {
             this.colors.forEach((color, ci) => {
                 if (color.id) fd.append(`colors[${ci}][id]`, String(color.id));
                 fd.append(`colors[${ci}][color_name]`, color.color_name);
-                fd.append(`colors[${ci}][style_color_code]`, color.style_color_code);
-                fd.append(`colors[${ci}][color_key]`, color.color_key || 'black');
-                fd.append(`colors[${ci}][primary_hex]`, color.primary_hex || '#000000');
+                if (color.style_color_code) fd.append(`colors[${ci}][style_color_code]`, color.style_color_code);
                 fd.append(`colors[${ci}][is_active]`, color.is_active ? '1' : '0');
 
                 color.variants.forEach((v, vi) => {

@@ -57,8 +57,6 @@ class CatalogRequest extends FormRequest
                     ->where('classification_group', ClassificationGroup::Activity->value)
                     ->where('is_active', true),
             ],
-            'colors' => ['nullable', 'array', 'max:12'],
-            'colors.*' => ['string', 'distinct', Rule::in(array_keys(config('store.palette')))],
             'size' => ['nullable', 'string', static function (string $attribute, mixed $value, Closure $fail): void {
                 try {
                     ShoeSize::normalize($value);
@@ -77,7 +75,7 @@ class CatalogRequest extends FormRequest
     }
 
     /**
-     * @return array{search?: string, category?: string, gender?: string, silhouette?: list<string>, activity?: list<string>, colors?: list<string>, size?: string, min_price?: int, max_price?: int, promotion: bool, in_stock: bool, sort: string, page?: int, style_color?: string}
+     * @return array{search?: string, category?: string, gender?: string, silhouette?: list<string>, activity?: list<string>, size?: string, min_price?: int, max_price?: int, promotion: bool, in_stock: bool, sort: string, page?: int, style_color?: string}
      */
     public function filters(): array
     {

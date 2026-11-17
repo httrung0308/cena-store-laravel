@@ -22,9 +22,9 @@
         ];
     }
 @endphp
-<section x-data="{ ...adminAjaxList(), ...adminStatusToggle() }" class="space-y-6" aria-label="Danh mục">
+<section x-data="{ ...adminAjaxList(), ...adminStatusToggle() }" class="space-y-6" aria-label="Đối tượng">
     @if ($searchUrl)
-        <x-admin.search-form :action="$searchUrl" id="category-search" label="Tìm danh mục" placeholder="Tìm kiếm theo tên danh mục, slug..." :value="$search" :ajax="true" :active-chips="$activeChips">
+        <x-admin.search-form :action="$searchUrl" id="category-search" label="Tìm đối tượng" placeholder="Tìm kiếm theo tên đối tượng, slug..." :value="$search" :ajax="true" :active-chips="$activeChips">
             <x-slot:filters>
                 <x-admin.filter-select id="category-gender-filter" name="gender_group" label="Đối tượng:" :active="filled($genderGroup)">
                     <option value="">Tất cả</option>
@@ -80,7 +80,7 @@
                                     :action="route('admin.categories.update-order', $category['id'])"
                                     :value="$category['display_order'] ?? 0"
                                     :toggle-key="'category-order-'.$category['id']"
-                                    :label="'Thứ tự danh mục '.($category['name'] ?? '')"
+                                    :label="'Thứ tự đối tượng '.($category['name'] ?? '')"
                                 />
                             </span>
                         @else
@@ -101,7 +101,7 @@
                                     :toggle-key="'category-'.($category['id'] ?? $loop->index)"
                                     active-label="Đang hiển thị"
                                     inactive-label="Đang ẩn"
-                                    :action-label="($catActive ? 'Ẩn danh mục ' : 'Hiện danh mục ').($category['name'] ?? '')"
+                                    :action-label="($catActive ? 'Ẩn đối tượng ' : 'Hiện đối tượng ').($category['name'] ?? '')"
                                 />
                             @endif
                         </div>
@@ -117,7 +117,7 @@
                     </div>
                 </article>
             @empty
-                <div class="p-10 text-center text-xs text-muted">Chưa có danh mục.</div>
+                <div class="p-10 text-center text-xs text-muted">Chưa có đối tượng.</div>
             @endforelse
         </div>
 
@@ -127,7 +127,7 @@
                 <thead class="bg-surface text-main font-bold border-b border-border">
                     <tr>
                         <th class="p-4">Tên</th>
-                        <th class="p-4 whitespace-nowrap">Nhóm</th>
+                        <th class="p-4 whitespace-nowrap">Nhóm đối tượng</th>
                         <th class="p-4 text-center whitespace-nowrap">Thứ tự</th>
                         <th class="p-4 text-left whitespace-nowrap">Trạng thái</th>
                         <th class="p-4 text-right whitespace-nowrap">Thao tác</th>
@@ -147,7 +147,7 @@
                                     :action="route('admin.categories.update-order', $category['id'])"
                                     :value="$category['display_order'] ?? 0"
                                     :toggle-key="'category-order-'.$category['id']"
-                                    :label="'Thứ tự danh mục '.($category['name'] ?? '')"
+                                    :label="'Thứ tự đối tượng '.($category['name'] ?? '')"
                                 />
                             @else
                                 <span class="bg-surface text-main border border-border px-2.5 py-1 rounded-lg font-mono font-bold text-[11px]">{{ $category['display_order'] ?? '' }}</span>
@@ -163,7 +163,7 @@
                                     :toggle-key="'category-'.($category['id'] ?? $loop->index)"
                                     active-label="Đang hiển thị"
                                     inactive-label="Đang ẩn"
-                                    :action-label="($catActive ? 'Ẩn danh mục ' : 'Hiện danh mục ').($category['name'] ?? '')"
+                                    :action-label="($catActive ? 'Ẩn đối tượng ' : 'Hiện đối tượng ').($category['name'] ?? '')"
                                 />
                             @else
                                 <span @class([
@@ -185,7 +185,7 @@
                         </td>
                     </tr>
                 @empty
-                    <tr><td class="p-12 text-center text-xs text-muted" colspan="5">Chưa có danh mục.</td></tr>
+                    <tr><td class="p-12 text-center text-xs text-muted" colspan="5">Chưa có đối tượng.</td></tr>
                 @endforelse
                 </tbody>
             </table>

@@ -32,7 +32,7 @@ final class CatalogQueryService
     private const PRICE = 'COALESCE(v.price_override, products.promotion_price, products.base_price)';
 
     /**
-     * @param  array{search?: string, category?: string, gender?: string, colors?: list<string>, size?: string, min_price?: int, max_price?: int, promotion?: bool, in_stock?: bool, sort?: string, page?: int}  $filters
+     * @param  array{search?: string, category?: string, gender?: string, size?: string, min_price?: int, max_price?: int, promotion?: bool, in_stock?: bool, sort?: string, page?: int}  $filters
      * @return LengthAwarePaginator<int, array{product: array<string, mixed>, detailUrl: string, imageUrl: string}>
      */
     public function listing(array $filters): LengthAwarePaginator
@@ -221,7 +221,7 @@ final class CatalogQueryService
     }
 
     /**
-     * @return array{genderOptions: list<array{value: string, label: string}>, colorOptions: list<array{value: string, label: string}>, categoryOptions: list<array{slug: string, name: string}>, silhouetteOptions: list<array{value: string, label: string}>, activityOptions: list<array{value: string, label: string}>}
+     * @return array{genderOptions: list<array{value: string, label: string}>, categoryOptions: list<array{slug: string, name: string}>, silhouetteOptions: list<array{value: string, label: string}>, activityOptions: list<array{value: string, label: string}>}
      */
     public function filterOptions(): array
     {
@@ -239,13 +239,6 @@ final class CatalogQueryService
                 ['value' => 'kids', 'label' => 'Trẻ em'],
                 ['value' => 'unisex', 'label' => 'Unisex'],
             ],
-            'colorOptions' => collect(config('store.palette'))
-                ->map(fn (array $palette, string $key): array => [
-                    'value' => $key,
-                    'label' => $this->colorLabel($key, $palette['label']),
-                    'hex' => $palette['hex'],
-                ])
-                ->values()->all(),
             'categoryOptions' => $categories
                 ->map(fn (Category $category): array => [
                     'slug' => $category->slug,
@@ -361,9 +354,6 @@ final class CatalogQueryService
                 ->whereRaw("products.name LIKE ? ESCAPE '!'", [$pattern])
                 ->orWhereRaw("c.style_color_code LIKE ? ESCAPE '!'", [$pattern]));
         }
-        if (! empty($filters['colors'])) {
-            $query->whereIn('c.color_key', $filters['colors']);
-        }
         if (! empty($filters['size'])) {
             $query->where('v.size_value', $filters['size']);
         }
@@ -435,25 +425,5 @@ final class CatalogQueryService
         }
 
         return asset(self::FALLBACK_IMAGE);
-    }
-
-    /** Vietnamese display label for canonical color palette keys. */
-    private function colorLabel(string $key, string $fallback): string
-    {
-        return match ($key) {
-            'red' => 'Đỏ',
-            'blue' => 'Xanh dương',
-            'green' => 'Xanh lá',
-            'yellow' => 'Vàng',
-            'black' => 'Đen',
-            'white' => 'Trắng',
-            'gray' => 'Xám',
-            'pink' => 'Hồng',
-            'purple' => 'Tím',
-            'orange' => 'Cam',
-            'brown' => 'Nâu',
-            'lime' => 'Xanh chanh',
-            default => $fallback,
-        };
     }
 }

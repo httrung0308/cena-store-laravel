@@ -17,6 +17,7 @@ use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Throwable;
@@ -85,6 +86,58 @@ final class ProductManagementService
         return $data;
     }
 
+    /**
+     * Generate a globally unique, URL-safe style_color_code matching ^[A-Za-z0-9_-]+$.
+     *
+     * @param  array<string, true>  $usedCodesUpper
+     */
+    public static function generateUniqueStyleColorCode(string $colorName, string $productSlug = '', array $usedCodesUpper = []): string
+    {
+        $base = strtoupper(Str::slug($colorName, '-'));
+        $base = preg_replace('/[^A-Z0-9_-]+/', '', $base) ?? '';
+        $base = trim($base, '-_');
+        if ($base === '') {
+            $base = 'COLOR';
+        }
+        $base = substr($base, 0, 50);
+
+        $isTaken = static function (string $candidate) use ($usedCodesUpper): bool {
+            if (isset($usedCodesUpper[strtoupper($candidate)])) {
+                return true;
+            }
+
+            return ProductColor::withTrashed()
+                ->where('style_color_code', $candidate)
+                ->exists();
+        };
+
+        if (! $isTaken($base)) {
+            return $base;
+        }
+
+        $slugPart = strtoupper(Str::slug($productSlug, '-'));
+        $slugPart = preg_replace('/[^A-Z0-9_-]+/', '', $slugPart) ?? '';
+        $slugPart = trim(substr($slugPart, 0, 20), '-_');
+
+        if ($slugPart !== '') {
+            $withSlug = substr($slugPart.'-'.substr($base, 0, max(1, 49 - strlen($slugPart))), 0, 50);
+            if (! $isTaken($withSlug)) {
+                return $withSlug;
+            }
+            $base = $withSlug;
+        }
+
+        $suffix = 2;
+        while (true) {
+            $suffixStr = '-'.$suffix;
+            $candidate = substr($base, 0, 50 - strlen($suffixStr)).$suffixStr;
+            if (! $isTaken($candidate)) {
+                return $candidate;
+            }
+            $suffix++;
+        }
+    }
+
     /** @return array<string, mixed> */
     public function rules(?Product $product = null, bool $allowWithoutImages = false): array
     {
@@ -96,9 +149,11 @@ final class ProductManagementService
             'is_active' => ['required', 'boolean'], 'is_featured' => ['sometimes', 'boolean'],
             'classification_ids' => ['nullable', 'array'], 'classification_ids.*' => ['integer', Rule::exists('classifications', 'id')],
             'colors' => ['required', 'array', 'list', 'min:1', 'max:20'], 'colors.*.id' => ['nullable', 'integer', 'min:1'],
-            'colors.*.style_color_code' => ['required', 'string', 'max:50', 'regex:/^[A-Za-z0-9_-]+$/D'],
-            'colors.*.color_name' => ['required', 'string', 'max:100'], 'colors.*.color_key' => ['required', Rule::in(array_keys(config('store.palette')))],
-            'colors.*.primary_hex' => ['required', 'regex:/^#[A-Fa-f0-9]{6}$/D'], 'colors.*.is_active' => ['sometimes', 'boolean'],
+            'colors.*.style_color_code' => ['sometimes', 'nullable', 'string', 'max:50', 'regex:/^[A-Za-z0-9_-]+$/D'],
+            'colors.*.color_name' => ['required', 'string', 'max:100'],
+            'colors.*.color_key' => ['sometimes', 'nullable', 'string', 'max:20', Rule::in(array_merge(['neutral'], array_keys(config('store.palette'))))],
+            'colors.*.primary_hex' => ['sometimes', 'nullable', 'regex:/^#[A-Fa-f0-9]{6}$/D'],
+            'colors.*.is_active' => ['sometimes', 'boolean'],
             'colors.*.variants' => ['nullable', 'array', 'list', 'max:100'], 'colors.*.range_start' => ['nullable', 'string'], 'colors.*.range_end' => ['nullable', 'string'],
             'colors.*.sku_prefix' => ['nullable', 'string', 'max:85', 'regex:/^[A-Za-z0-9_-]+$/D'],
             'colors.*.variants.*.id' => ['nullable', 'integer', 'min:1'], 'colors.*.variants.*.size_value' => ['required'],
@@ -147,9 +202,7 @@ final class ProductManagementService
             'colors.required' => 'Sản phẩm phải có ít nhất một phối màu.',
             'colors.min' => 'Sản phẩm phải có ít nhất một phối màu.',
             'colors.*.color_name.required' => 'Vui lòng nhập tên màu.',
-            'colors.*.style_color_code.required' => 'Vui lòng nhập mã phối màu.',
             'colors.*.style_color_code.regex' => 'Mã phối màu chỉ được gồm chữ cái, số, dấu gạch dưới hoặc gạch nối.',
-            'colors.*.primary_hex.required' => 'Vui lòng chọn mã màu HEX.',
             'colors.*.primary_hex.regex' => 'Mã màu HEX phải có định dạng #RRGGBB (ví dụ: #111111).',
             'colors.*.variants.*.size_value.required' => 'Vui lòng nhập size.',
             'colors.*.variants.*.sku.regex' => 'Mã SKU chỉ được gồm chữ cái, số, dấu gạch dưới hoặc gạch nối.',
@@ -208,6 +261,33 @@ final class ProductManagementService
         }
         $paths = [];
         try {
+            $existingColors = $product?->exists
+                ? ProductColor::where('product_id', $product->id)->get()->keyBy('id')
+                : collect();
+
+            $usedStyleCodesUpper = [];
+            foreach ($data['colors'] as &$color) {
+                $existingColor = ! empty($color['id']) ? $existingColors->get((int) $color['id']) : null;
+                $rawCode = isset($color['style_color_code']) ? trim((string) $color['style_color_code']) : '';
+                if ($existingColor && $rawCode === '') {
+                    $color['style_color_code'] = $existingColor->style_color_code;
+                    $usedStyleCodesUpper[strtoupper($existingColor->style_color_code)] = true;
+                } elseif ($rawCode !== '') {
+                    $color['style_color_code'] = $rawCode;
+                    $usedStyleCodesUpper[strtoupper($rawCode)] = true;
+                }
+            }
+            unset($color);
+
+            foreach ($data['colors'] as &$color) {
+                if (trim((string) ($color['style_color_code'] ?? '')) === '') {
+                    $generated = self::generateUniqueStyleColorCode($color['color_name'], $data['slug'], $usedStyleCodesUpper);
+                    $color['style_color_code'] = $generated;
+                    $usedStyleCodesUpper[strtoupper($generated)] = true;
+                }
+            }
+            unset($color);
+
             $seenFormSkus = [];
             foreach ($data['colors'] as $ci => &$color) {
                 $variants = $color['variants'] ?? [];
@@ -331,7 +411,14 @@ final class ProductManagementService
                             }
                         }
                     }
-                    $color->forceFill(array_intersect_key($inputColor, array_flip(['style_color_code', 'color_name', 'color_key', 'primary_hex'])));
+                    $color->style_color_code = $inputColor['style_color_code'];
+                    $color->color_name = $inputColor['color_name'];
+                    $color->color_key = ! empty($inputColor['color_key'])
+                        ? $inputColor['color_key']
+                        : ($color->exists ? $color->color_key : 'neutral');
+                    $color->primary_hex = ! empty($inputColor['primary_hex'])
+                        ? $inputColor['primary_hex']
+                        : ($color->exists ? $color->primary_hex : '#000000');
                     $color->product_id = $current->id;
                     $color->display_order = $ci + 1;
                     $color->is_active = $inputColor['is_active'] ?? true;

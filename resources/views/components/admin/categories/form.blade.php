@@ -4,31 +4,21 @@
     $initialName = old('name', $category['name'] ?? '');
     $initialSlug = old('slug', $category['slug'] ?? '');
     $initialGender = old('gender_group', $category['gender_group'] ?? '');
-    $initialParent = (string) old('parent_id', $category['parent_id'] ?? '');
 @endphp
 <form @if ($action) action="{{ $action }}" @endif method="POST" class="admin-card space-y-5"
       x-data="{
           ...liveSlug({ isNew: {{ $isNew ? 'true' : 'false' }}, initialName: @js($initialName), initialSlug: @js($initialSlug) }),
-          allParents: @js($parents),
-          selectedGender: @js($initialGender),
-          selectedParent: @js($initialParent),
-          get filteredParents() {
-              if (!this.selectedGender) return [];
-              return this.allParents.filter(p => p.gender_group === this.selectedGender);
-          },
-          onGenderChange() {
-              const valid = this.filteredParents.some(p => String(p.id) === String(this.selectedParent));
-              if (!valid) {
-                  this.selectedParent = '';
-              }
-          }
+          selectedGender: @js($initialGender)
       }">
     @csrf
     @if (in_array(strtoupper($method), ['PATCH', 'PUT'], true)) @method(strtoupper($method)) @endif
-    <h2 class="text-base font-bold text-main">Thông tin danh mục</h2>
+    @if (filled(old('parent_id', $category['parent_id'] ?? null)))
+        <input type="hidden" name="parent_id" value="{{ old('parent_id', $category['parent_id'] ?? '') }}">
+    @endif
+    <h2 class="text-base font-bold text-main">Thông tin đối tượng</h2>
     <div class="grid gap-4 md:grid-cols-2">
         <div>
-            <label for="category-name" class="admin-label">Tên danh mục <span class="text-error">*</span></label>
+            <label for="category-name" class="admin-label">Tên đối tượng <span class="text-error">*</span></label>
             <input id="category-name" name="name" type="text" x-model="name" x-on:input="onNameInput"
                    class="input w-full border-border focus:border-accent text-main text-xs @error('name') border-error @enderror"
                    placeholder="Ví dụ: Giày Chạy Bộ" required>
@@ -66,8 +56,8 @@
         </div>
 
         <div>
-            <label for="category-gender" class="admin-label text-muted">Nhóm giới tính <span class="text-error">*</span></label>
-            <select id="category-gender" name="gender_group" x-model="selectedGender" x-on:change="onGenderChange"
+            <label for="category-gender" class="admin-label text-muted">Nhóm đối tượng <span class="text-error">*</span></label>
+            <select id="category-gender" name="gender_group" x-model="selectedGender"
                     class="input w-full border-border bg-surface text-main text-xs @error('gender_group') border-error @enderror" required>
                 <option value="">-- Chọn nhóm --</option>
                 @foreach ($genderOptions as $item)
@@ -77,30 +67,17 @@
             <x-forms.field-error name="gender_group" />
         </div>
 
-        <div>
-            <label for="category-parent" class="admin-label text-muted">Danh mục cha (cùng nhóm giới tính)</label>
-            <select id="category-parent" name="parent_id" x-model="selectedParent"
-                    class="input w-full border-border bg-surface text-main text-xs @error('parent_id') border-error @enderror">
-                <option value="">Không có (Danh mục gốc)</option>
-                <template x-for="parent in filteredParents" :key="parent.id">
-                    <option :value="parent.id" x-text="parent.name" :selected="String(parent.id) === String(selectedParent)"></option>
-                </template>
-            </select>
-            <p class="mt-1 text-[11px] text-muted">Chỉ hiển thị các danh mục cấp 1 thuộc cùng nhóm giới tính đang chọn.</p>
-            <x-forms.field-error name="parent_id" />
-        </div>
-
         <x-admin.field name="display_order" label="Thứ tự hiển thị" :value="$category['display_order'] ?? 1" type="number" min="0" max="65535" hint="Số nhỏ hơn sẽ xếp trước." />
     </div>
 
     <label class="flex items-center gap-2 text-xs font-semibold text-main cursor-pointer select-none">
         <input type="checkbox" name="is_active" value="1" class="native-checkbox accent-accent rounded" @checked(old('is_active', $category['is_active'] ?? true))>
-        <span>Hiển thị danh mục này</span>
+        <span>Hiển thị đối tượng này</span>
     </label>
 
     <div class="flex items-center gap-3 pt-2">
-        <button type="submit" class="px-6 py-2.5 bg-accent hover:bg-accent-hover text-accent-text text-xs font-bold rounded-xl transition-colors shadow-md" @disabled(! $action)>Lưu danh mục</button>
+        <button type="submit" class="px-6 py-2.5 bg-accent hover:bg-accent-hover text-accent-text text-xs font-bold rounded-xl transition-colors shadow-md" @disabled(! $action)>Lưu đối tượng</button>
         <a href="{{ route('admin.categories.index') }}" class="px-6 py-2.5 bg-surface hover:bg-border/40 text-muted hover:text-main text-xs font-bold rounded-xl border border-border transition-colors">Hủy</a>
     </div>
-    @unless ($action)<p role="status" class="text-xs text-error">Chưa có quyền lưu danh mục.</p>@endunless
+    @unless ($action)<p role="status" class="text-xs text-error">Chưa có quyền lưu đối tượng.</p>@endunless
 </form>

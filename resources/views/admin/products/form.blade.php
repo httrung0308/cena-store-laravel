@@ -144,14 +144,14 @@
 
                     {{-- Danh mục có tìm kiếm tiếng Việt không dấu --}}
                     <div class="relative" @click.outside="categoryOpen = false">
-                        <label for="category-search-btn" class="admin-label">Danh mục <span class="text-error">*</span></label>
+                        <label for="category-search-btn" class="admin-label">Đối tượng <span class="text-error">*</span></label>
                         <button id="category-search-btn" type="button"
                                 @click="categoryOpen = !categoryOpen; if (categoryOpen) $nextTick(() => $refs.categorySearchInput?.focus())"
                                 :data-has-error="Boolean(getError('category_id'))"
                                 :class="getError('category_id') ? 'border-error ring-1 ring-error' : 'border-border'"
                                 class="input mt-1 w-full bg-surface text-left text-xs flex items-center justify-between gap-2">
                             <span class="truncate" :class="selectedCategoryLabel ? 'text-main font-medium' : 'text-muted'"
-                                  x-text="selectedCategoryLabel || 'Chọn danh mục sản phẩm...'"></span>
+                                  x-text="selectedCategoryLabel || 'Chọn đối tượng...'"></span>
                             <svg class="w-4 h-4 text-muted shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
                         </button>
 
@@ -287,9 +287,11 @@
                                     colorHasError(ci) ? 'border-error text-error' : ''
                                 ]"
                                 class="inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-xs font-semibold transition-colors">
-                            <span class="w-3.5 h-3.5 rounded-full border border-border shrink-0" :style="'background-color:' + (col.primary_hex || '#000000')"></span>
+                            <template x-if="colorTabThumb(col)">
+                                <img :src="colorTabThumb(col)" alt="" class="w-4 h-4 rounded object-cover border border-border shrink-0">
+                            </template>
                             <span class="max-w-[9rem] truncate" x-text="col.color_name || ('Phối màu ' + (ci + 1))"></span>
-                            <span class="text-[10px] font-mono opacity-80" x-text="'(' + col.variants.length + 's · ' + col.images.length + 'ả)'"></span>
+                            <span class="text-[10px] font-mono opacity-80" x-text="col.variants.length + ' size · ' + col.images.length + ' ảnh'"></span>
                             <span x-show="colorHasError(ci)" class="w-2 h-2 rounded-full bg-error shrink-0" title="Có lỗi cần kiểm tra"></span>
                             <span x-show="!colorHasError(ci) && col.images.length === 0" class="w-2 h-2 rounded-full bg-warning shrink-0" title="Chưa có ảnh"></span>
                         </button>
@@ -319,56 +321,47 @@
                                 </div>
                             </div>
 
-                            <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                                <div>
-                                    <label class="text-xs font-semibold text-muted">Tên màu <span class="text-error">*</span></label>
-                                    <input class="input mt-1 w-full bg-surface text-xs text-main"
-                                           x-model="activeColor.color_name"
-                                           @input="clearError('colors.' + activeColorIndex + '.color_name')"
-                                           :data-has-error="Boolean(getError('colors.' + activeColorIndex + '.color_name'))"
-                                           :class="getError('colors.' + activeColorIndex + '.color_name') ? 'border-error ring-1 ring-error' : 'border-border'"
-                                           placeholder="Ví dụ: Đen Trắng">
-                                    <p x-show="getError('colors.' + activeColorIndex + '.color_name')"
-                                       x-text="getError('colors.' + activeColorIndex + '.color_name')"
-                                       class="mt-1 text-[11px] font-medium text-error" role="alert"></p>
-                                </div>
+                            <div>
+                                <label class="text-xs font-semibold text-muted">Tên màu <span class="text-error">*</span></label>
+                                <input class="input mt-1 w-full bg-surface text-xs text-main"
+                                       x-model="activeColor.color_name"
+                                       @input="onColorNameInput(activeColor, activeColorIndex)"
+                                       :data-has-error="Boolean(getError('colors.' + activeColorIndex + '.color_name'))"
+                                       :class="getError('colors.' + activeColorIndex + '.color_name') ? 'border-error ring-1 ring-error' : 'border-border'"
+                                       placeholder="Ví dụ: Đen Trắng">
+                                <p x-show="getError('colors.' + activeColorIndex + '.color_name')"
+                                   x-text="getError('colors.' + activeColorIndex + '.color_name')"
+                                   class="mt-1 text-[11px] font-medium text-error" role="alert"></p>
+                            </div>
 
-                                <div>
-                                    <label class="text-xs font-semibold text-muted">Mã phối màu <span class="text-error">*</span></label>
-                                    <input class="input mt-1 w-full bg-surface text-xs text-main font-mono uppercase"
-                                           x-model="activeColor.style_color_code"
-                                           :readonly="activeColor.variants.some(v => v.documented)"
-                                           @input="clearError('colors.' + activeColorIndex + '.style_color_code')"
-                                           :data-has-error="Boolean(getError('colors.' + activeColorIndex + '.style_color_code'))"
-                                           :class="getError('colors.' + activeColorIndex + '.style_color_code') ? 'border-error ring-1 ring-error' : 'border-border'"
-                                           placeholder="Ví dụ: BLK, CW2288">
-                                    <p x-show="getError('colors.' + activeColorIndex + '.style_color_code')"
-                                       x-text="getError('colors.' + activeColorIndex + '.style_color_code')"
-                                       class="mt-1 text-[11px] font-medium text-error" role="alert"></p>
-                                </div>
+                            <div class="pt-1 border-t border-border/60">
+                                <button type="button"
+                                        @click="activeColor.showAdvanced = !activeColor.showAdvanced"
+                                        :aria-expanded="(activeColor.showAdvanced || colorHasAdvancedError(activeColorIndex)).toString()"
+                                        class="inline-flex items-center gap-1.5 text-xs font-semibold text-muted hover:text-main transition-colors">
+                                    <svg class="w-3.5 h-3.5 transition-transform duration-150"
+                                         :class="(activeColor.showAdvanced || colorHasAdvancedError(activeColorIndex)) ? 'rotate-90' : ''"
+                                         viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                        <path d="m9 18 6-6-6-6"/>
+                                    </svg>
+                                    <span>Tùy chỉnh mã phối màu</span>
+                                </button>
 
-                                <div>
-                                    <label class="text-xs font-semibold text-muted">Nhóm màu</label>
-                                    <select class="input mt-1 w-full border-border bg-surface text-xs text-main"
-                                            x-model="activeColor.color_key">
-                                        @foreach(config('store.palette') as $key => $option)
-                                            <option value="{{ $key }}">{{ $option['label'] }}</option>
-                                        @endforeach
-                                    </select>
-                                </div>
-
-                                <div>
-                                    <label class="text-xs font-semibold text-muted">Mã HEX <span class="text-error">*</span></label>
-                                    <div class="flex items-center gap-2 mt-1">
-                                        <input type="color" class="h-9 w-9 rounded-lg border border-border cursor-pointer bg-surface p-0.5 shrink-0"
-                                               x-model="activeColor.primary_hex" aria-label="Chọn màu HEX">
-                                        <input class="input w-full bg-surface text-xs text-main font-mono uppercase"
-                                               x-model="activeColor.primary_hex"
-                                               :class="getError('colors.' + activeColorIndex + '.primary_hex') ? 'border-error ring-1 ring-error' : 'border-border'">
+                                <div x-show="activeColor.showAdvanced || colorHasAdvancedError(activeColorIndex)" x-cloak
+                                     class="mt-3 max-w-sm">
+                                    <div>
+                                        <label class="text-xs font-semibold text-muted">Mã phối màu <span class="font-normal">(tự sinh nếu trống)</span></label>
+                                        <input class="input mt-1 w-full bg-surface text-xs text-main font-mono uppercase"
+                                               x-model="activeColor.style_color_code"
+                                               :readonly="activeColor.has_documents || activeColor.variants.some(v => v.documented)"
+                                               @input="activeColor.styleColorCodeManuallyEdited = true; clearError('colors.' + activeColorIndex + '.style_color_code')"
+                                               :data-has-error="Boolean(getError('colors.' + activeColorIndex + '.style_color_code'))"
+                                               :class="getError('colors.' + activeColorIndex + '.style_color_code') ? 'border-error ring-1 ring-error' : 'border-border'"
+                                               placeholder="Ví dụ: DEN-TRANG, CW2288">
+                                        <p x-show="getError('colors.' + activeColorIndex + '.style_color_code')"
+                                           x-text="getError('colors.' + activeColorIndex + '.style_color_code')"
+                                           class="mt-1 text-[11px] font-medium text-error" role="alert"></p>
                                     </div>
-                                    <p x-show="getError('colors.' + activeColorIndex + '.primary_hex')"
-                                       x-text="getError('colors.' + activeColorIndex + '.primary_hex')"
-                                       class="mt-1 text-[11px] font-medium text-error" role="alert"></p>
                                 </div>
                             </div>
                         </div>
@@ -632,8 +625,59 @@
             </section>
         </div>
 
-        {{-- CỘT PHẢI: Trạng thái xuất bản, Lưu & Phân loại --}}
+        {{-- CỘT PHẢI: Phân loại, Trạng thái xuất bản & Lưu --}}
         <aside class="space-y-5 lg:sticky lg:top-6">
+            {{-- Card Phân loại / Nhãn (Tìm kiếm tiếng Việt không dấu) --}}
+            <section class="admin-card space-y-3" aria-label="Phân loại sản phẩm">
+                <div class="flex items-center justify-between gap-2">
+                    <h2 class="text-sm font-bold text-main">Phân loại / Nhãn</h2>
+                    <span class="text-[11px] text-muted font-mono" x-text="selectedClassificationIds.length + ' đã chọn'"></span>
+                </div>
+
+                {{-- Chip đã chọn (luôn giữ khi gõ tìm kiếm mới) --}}
+                <div x-show="selectedClassificationObjects.length > 0" class="flex flex-wrap gap-1.5">
+                    <template x-for="sel in selectedClassificationObjects" :key="sel.id">
+                        <span class="inline-flex items-center gap-1 rounded-full bg-accent/10 border border-accent/30 px-2.5 py-0.5 text-[11px] font-semibold text-accent">
+                            <span x-text="sel.name"></span>
+                            <button type="button" @click="removeClassification(sel.id)"
+                                    class="hover:text-error font-bold leading-none" :aria-label="'Bỏ chọn ' + sel.name">×</button>
+                        </span>
+                    </template>
+                </div>
+
+                <div class="relative">
+                    <input type="search" x-model="classificationQuery"
+                           class="input w-full border-border bg-surface text-xs text-main pl-8"
+                           placeholder="Tìm phân loại (không dấu)...">
+                    <svg class="w-3.5 h-3.5 text-muted absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                </div>
+
+                <div class="max-h-64 overflow-y-auto space-y-3 pr-1">
+                    <template x-for="group in filteredClassifications" :key="group.label">
+                        <div class="space-y-1.5">
+                            <h3 class="sticky top-0 z-10 bg-surface-card/95 backdrop-blur-sm py-1.5 border-b border-border/50 text-[10px] font-bold uppercase tracking-wider text-muted" x-text="group.label"></h3>
+                            <div class="space-y-1">
+                                <template x-for="item in group.items" :key="item.id">
+                                    <label class="flex items-center gap-2 rounded-lg px-2 py-1.5 text-xs transition-colors"
+                                           :class="!item.is_active && !isClassificationSelected(item.id) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-surface'">
+                                        <input type="checkbox" name="classification_ids[]" :value="item.id" class="native-checkbox text-accent rounded"
+                                               :checked="isClassificationSelected(item.id)"
+                                               :disabled="!item.is_active && !isClassificationSelected(item.id)"
+                                               @change="toggleClassification(item.id)">
+                                        <span class="text-main truncate" x-text="item.name"></span>
+                                        <span x-show="!item.is_active" class="ml-auto text-[10px] text-muted">Ngưng</span>
+                                    </label>
+                                </template>
+                            </div>
+                        </div>
+                    </template>
+                    <p x-show="filteredClassifications.length === 0" class="py-4 text-center text-xs text-muted">
+                        Không tìm thấy phân loại phù hợp.
+                    </p>
+                </div>
+                <p x-show="getError('classification_ids')" x-text="getError('classification_ids')" class="text-xs font-medium text-error" role="alert"></p>
+            </section>
+
             {{-- Card Lưu & Trạng thái --}}
             <section class="admin-card space-y-4">
                 <h2 class="text-sm font-bold text-main">Trạng thái &amp; Lưu</h2>
@@ -674,57 +718,6 @@
                         Hủy / Quay lại
                     </a>
                 </div>
-            </section>
-
-            {{-- Card Phân loại / Nhãn (Tìm kiếm tiếng Việt không dấu) --}}
-            <section class="admin-card space-y-3" aria-label="Phân loại sản phẩm">
-                <div class="flex items-center justify-between gap-2">
-                    <h2 class="text-sm font-bold text-main">Phân loại / Nhãn</h2>
-                    <span class="text-[11px] text-muted font-mono" x-text="selectedClassificationIds.length + ' đã chọn'"></span>
-                </div>
-
-                {{-- Chip đã chọn (luôn giữ khi gõ tìm kiếm mới) --}}
-                <div x-show="selectedClassificationObjects.length > 0" class="flex flex-wrap gap-1.5">
-                    <template x-for="sel in selectedClassificationObjects" :key="sel.id">
-                        <span class="inline-flex items-center gap-1 rounded-full bg-accent/10 border border-accent/30 px-2.5 py-0.5 text-[11px] font-semibold text-accent">
-                            <span x-text="sel.name"></span>
-                            <button type="button" @click="removeClassification(sel.id)"
-                                    class="hover:text-error font-bold leading-none" :aria-label="'Bỏ chọn ' + sel.name">×</button>
-                        </span>
-                    </template>
-                </div>
-
-                <div class="relative">
-                    <input type="search" x-model="classificationQuery"
-                           class="input w-full border-border bg-surface text-xs text-main pl-8"
-                           placeholder="Tìm phân loại (không dấu)...">
-                    <svg class="w-3.5 h-3.5 text-muted absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-                </div>
-
-                <div class="max-h-64 overflow-y-auto space-y-3 pr-1">
-                    <template x-for="group in filteredClassifications" :key="group.label">
-                        <div class="space-y-1.5">
-                            <h3 class="text-[10px] font-bold uppercase tracking-wider text-muted" x-text="group.label"></h3>
-                            <div class="space-y-1">
-                                <template x-for="item in group.items" :key="item.id">
-                                    <label class="flex items-center gap-2 rounded-lg px-2 py-1.5 text-xs transition-colors"
-                                           :class="!item.is_active && !isClassificationSelected(item.id) ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-surface'">
-                                        <input type="checkbox" name="classification_ids[]" :value="item.id" class="native-checkbox text-accent rounded"
-                                               :checked="isClassificationSelected(item.id)"
-                                               :disabled="!item.is_active && !isClassificationSelected(item.id)"
-                                               @change="toggleClassification(item.id)">
-                                        <span class="text-main truncate" x-text="item.name"></span>
-                                        <span x-show="!item.is_active" class="ml-auto text-[10px] text-muted">Ngưng</span>
-                                    </label>
-                                </template>
-                            </div>
-                        </div>
-                    </template>
-                    <p x-show="filteredClassifications.length === 0" class="py-4 text-center text-xs text-muted">
-                        Không tìm thấy phân loại phù hợp.
-                    </p>
-                </div>
-                <p x-show="getError('classification_ids')" x-text="getError('classification_ids')" class="text-xs font-medium text-error" role="alert"></p>
             </section>
         </aside>
     </form>

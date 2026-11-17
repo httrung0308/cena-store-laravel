@@ -1,6 +1,7 @@
 @extends('layouts.admin')
 @section('title', 'Chi Tiết Đơn Hàng')
 @section('eyebrow', 'QUẢN TRỊ BÁN HÀNG')
+@section('toast_status', '1')
 @section('actions')
     <a class="px-4 py-2 bg-surface hover:bg-border/40 text-muted hover:text-main text-xs font-bold rounded-xl border border-border transition-colors" href="{{ route('admin.orders.index') }}">← Danh sách đơn</a>
 @endsection
@@ -19,7 +20,6 @@
 @endphp
 @section('content')
 <div class="grid min-w-0 gap-6 lg:grid-cols-3">
-    @if ($errors->any())<div role="alert" class="admin-card text-sm text-error lg:col-span-3">@foreach ($errors->all() as $error)<p>{{ $error }}</p>@endforeach</div>@endif
     <div class="min-w-0 space-y-6 lg:col-span-2">
         <section class="admin-card space-y-3">
             <div class="flex flex-wrap items-center justify-between gap-3">
@@ -91,10 +91,13 @@
                     <input type="hidden" name="expected_status" value="{{ $status->value }}">
                     <x-admin.field name="carrier_name" label="Đơn vị vận chuyển" required placeholder="Ví dụ: GHN" />
                     <x-admin.field name="tracking_code" label="Mã vận đơn" placeholder="Không bắt buộc" />
-                    <button :disabled="busy" class="btn-pill-dark w-full py-3 disabled:opacity-50">
-                        <span x-show="!busy">Giao cho vận chuyển (xuất kho)</span>
-                        <span x-cloak x-show="busy" class="inline-flex items-center gap-1.5"><x-ui.spinner :compact="true" /> Đang xuất kho...</span>
-                    </button>
+                    <div class="flex items-center gap-2">
+                        <button :disabled="busy" class="btn-pill-dark flex-1 py-3 disabled:opacity-50">
+                            <span x-show="!busy">Giao vận chuyển</span>
+                            <span x-cloak x-show="busy" class="inline-flex items-center gap-1.5"><x-ui.spinner :compact="true" /> Đang xuất kho...</span>
+                        </button>
+                        <x-admin.tooltip :inline="true" text="Xác nhận giao cho đơn vị vận chuyển và xuất kho thực tế." label="Giải thích giao vận chuyển" />
+                    </div>
                 </form>
             @endif
             @if ($status === OrderStatus::OnDelivery)
@@ -131,13 +134,13 @@
                 </div>
             @endif
             @if ($cancellable)
-                <div class="border-t border-border pt-4 [&>div]:w-full">
+                <div class="border-t border-border pt-4 flex items-center gap-2 [&>div]:flex-1">
                     <x-ui.dialog id="confirm-cancel-order-dialog" title="Xác nhận hủy đơn hàng" trigger-class="btn-pill w-full text-error hover:bg-error-bg">
-                        <x-slot:trigger>Hủy đơn (nhả hàng đang giữ)</x-slot:trigger>
+                        <x-slot:trigger>Hủy đơn</x-slot:trigger>
                         <form method="POST" action="{{ route('admin.orders.transition', [$order, 'cancel']) }}" class="space-y-4" x-on:submit="if (busy) { $event.preventDefault(); return false; } busy = true">
                             @csrf
                             <input type="hidden" name="expected_status" value="{{ $status->value }}">
-                            <p class="text-xs leading-relaxed text-muted">Hủy đơn hàng <strong class="text-main">{{ $order->order_code }}</strong> sẽ nhả toàn bộ số lượng đang giữ và cập nhật chứng từ hủy đơn. Thao tác này không thể hoàn tác.</p>
+                            <p class="text-xs leading-relaxed text-muted">Hủy đơn hàng <strong class="text-main">{{ $order->order_code }}</strong> sẽ giải phóng toàn bộ số lượng hàng đang giữ về tồn kho bán và cập nhật chứng từ hủy đơn. Thao tác này không thể hoàn tác.</p>
                             <div class="space-y-1.5">
                                 <label for="cancel-reason" class="admin-label text-muted">Lý do hủy</label>
                                 <input id="cancel-reason" name="reason" class="input w-full border-border bg-surface text-main" required minlength="5" maxlength="500" placeholder="Nhập lý do hủy đơn (tối thiểu 5 ký tự)...">
@@ -151,6 +154,7 @@
                             </div>
                         </form>
                     </x-ui.dialog>
+                    <x-admin.tooltip :inline="true" text="Hủy đơn hàng và giải phóng số lượng hàng đang giữ về tồn kho bán." label="Giải thích hủy đơn" />
                 </div>
             @endif
             @if ($next === [] && ! $cancellable && ! in_array($status, [OrderStatus::Packing, OrderStatus::OnDelivery], true))

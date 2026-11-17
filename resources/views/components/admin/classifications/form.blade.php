@@ -13,9 +13,13 @@
     $isNew = empty($record?->id);
     $initialName = old('name', $record->name ?? '');
     $initialSlug = old('slug', $record->slug ?? '');
+    $initialShowInHomeNav = (bool) old('show_in_home_nav', $record->exists ? $record->show_in_home_nav : false);
 @endphp
 <form @if ($action) action="{{ $action }}" @endif method="POST" class="admin-card space-y-6"
-      x-data="liveSlug({ isNew: {{ $isNew ? 'true' : 'false' }}, initialName: @js($initialName), initialSlug: @js($initialSlug) })">
+      x-data="{
+          ...liveSlug({ isNew: {{ $isNew ? 'true' : 'false' }}, initialName: @js($initialName), initialSlug: @js($initialSlug) }),
+          showInHomeNav: {{ $initialShowInHomeNav ? 'true' : 'false' }}
+      }">
     @csrf
     @if (in_array(strtoupper($method), ['PATCH', 'PUT'], true)) @method(strtoupper($method)) @endif
 
@@ -87,13 +91,6 @@
         </div>
 
         <div>
-            <label for="classification-sort-order" class="admin-label text-muted">Thứ tự hiển thị <span class="text-error">*</span></label>
-            <input type="number" id="classification-sort-order" name="sort_order" value="{{ old('sort_order', $record->sort_order ?? 1) }}" min="0" max="65535" class="input w-full border-border bg-surface text-main text-xs font-mono" required>
-            <p class="text-[11px] text-muted/70 mt-1">Số nhỏ hơn sẽ ưu tiên xếp trước trong menu Header, sidebar trang chủ, trang toàn bộ và bộ lọc.</p>
-            <x-forms.field-error name="sort_order" />
-        </div>
-
-        <div>
             <label for="classification-description" class="admin-label text-muted">Mô tả / Ghi chú</label>
             <textarea id="classification-description" name="description" rows="3" class="input w-full border-border bg-surface text-main text-xs" placeholder="Ghi chú ngắn về đặc trưng của nhãn này...">{{ old('description', $record->description ?? '') }}</textarea>
             <x-forms.field-error name="description" />
@@ -109,16 +106,26 @@
                 <x-forms.field-error name="is_active" />
             </div>
 
-            <div class="rounded-xl border border-border bg-surface/60 p-3.5 space-y-1.5">
+            <div class="rounded-xl border border-border bg-surface/60 p-3.5 space-y-2.5">
                 <input type="hidden" name="show_in_home_nav" value="0">
                 <label class="flex items-start gap-2.5 text-xs font-semibold text-main cursor-pointer select-none">
-                    <input type="checkbox" name="show_in_home_nav" value="1" class="native-checkbox mt-0.5 text-accent focus:ring-accent rounded" @checked(old('show_in_home_nav', $record->exists ? $record->show_in_home_nav : false))>
+                    <input type="checkbox" name="show_in_home_nav" value="1" x-model="showInHomeNav" class="native-checkbox mt-0.5 text-accent focus:ring-accent rounded">
                     <span>Hiển thị ở menu &amp; trang chủ</span>
                 </label>
                 <p class="text-[11px] text-muted leading-relaxed pl-6">
                     Giới hạn tối đa <strong>{{ $homeNavLimit }} mục đang hoạt động</strong> mỗi nhóm (hiện có: Kiểu dáng <strong>{{ $silCount }}/{{ $homeNavLimit }}</strong> · Mục đích <strong>{{ $actCount }}/{{ $homeNavLimit }}</strong>). Nhãn đang tạm ngưng sẽ không hiển thị ra Storefront.
                 </p>
                 <x-forms.field-error name="show_in_home_nav" />
+
+                <input type="hidden" name="sort_order" value="{{ old('sort_order', $record->sort_order ?? 1) }}" :disabled="showInHomeNav">
+                <div x-show="showInHomeNav" x-cloak class="pt-2.5 border-t border-border/60 pl-6 space-y-1.5">
+                    <label for="classification-sort-order" class="admin-label text-muted">Thứ tự trong menu &amp; trang chủ <span class="text-error">*</span></label>
+                    <input type="number" id="classification-sort-order" name="sort_order" value="{{ old('sort_order', $record->sort_order ?? 1) }}" min="0" max="65535" :disabled="!showInHomeNav" class="input w-full border-border bg-surface text-main text-xs font-mono" required>
+                    <p class="text-[11px] text-muted/70">
+                        Khi mới bật hiển thị ở menu &amp; trang chủ, hệ thống tự xếp vào cuối danh sách hiện có (nếu giữ giá trị mặc định); số nhỏ xếp trước và cũng được dùng làm thứ tự ưu tiên trong bộ lọc.
+                    </p>
+                    <x-forms.field-error name="sort_order" />
+                </div>
             </div>
         </div>
     </div>

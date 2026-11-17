@@ -6,7 +6,6 @@
     'categoryOptions' => [],
     'silhouetteOptions' => [],
     'activityOptions' => [],
-    'colorOptions' => [],
 ])
 @php
     $actionUrl = $action ?? route('shoes.index');
@@ -16,8 +15,6 @@
     $categoryMap = collect($categoryOptions)->mapWithKeys(fn ($c) => [$c['slug'] => ltrim((string) ($c['name'] ?? $c['slug']), '— ')])->all();
     $silhouetteMap = collect($silhouetteOptions)->pluck('label', 'value')->all();
     $activityMap = collect($activityOptions)->pluck('label', 'value')->all();
-    $colorMap = collect($colorOptions)->keyBy('value')->all();
-    $paletteFallback = config('store.palette', []);
 
     $baseQuery = [
         'search' => ($filters['search'] ?? '') !== '' ? (string) $filters['search'] : null,
@@ -25,7 +22,6 @@
         'category' => ($filters['category'] ?? '') !== '' ? (string) $filters['category'] : null,
         'silhouette' => array_values(array_filter((array) ($filters['silhouette'] ?? []), fn ($v) => is_string($v) && $v !== '')),
         'activity' => array_values(array_filter((array) ($filters['activity'] ?? []), fn ($v) => is_string($v) && $v !== '')),
-        'colors' => array_values(array_filter((array) ($filters['colors'] ?? []), fn ($v) => is_string($v) && $v !== '')),
         'size' => ($filters['size'] ?? '') !== '' ? (string) $filters['size'] : null,
         'min_price' => $filters['min_price'] ?? null,
         'max_price' => $filters['max_price'] ?? null,
@@ -88,17 +84,6 @@
             'label' => 'Mục đích: '.($activityMap[$slug] ?? $slug),
             'url' => $buildWithout('activity', $slug),
             'hex' => null,
-        ];
-    }
-
-    foreach ($baseQuery['colors'] as $colorKey) {
-        $option = $colorMap[$colorKey] ?? null;
-        $label = is_array($option) ? ($option['label'] ?? $colorKey) : $colorKey;
-        $hex = is_array($option) ? ($option['hex'] ?? ($paletteFallback[$colorKey]['hex'] ?? null)) : ($paletteFallback[$colorKey]['hex'] ?? null);
-        $chips[] = [
-            'label' => 'Màu: '.$label,
-            'url' => $buildWithout('colors', $colorKey),
-            'hex' => $hex,
         ];
     }
 

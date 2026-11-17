@@ -302,4 +302,84 @@ class AdminClassificationCrudTest extends TestCase
             ->assertJsonValidationErrors('classification');
         $this->assertFalse($inactiveHidden->fresh()->show_in_home_nav);
     }
+
+    public function test_enabling_show_in_home_nav_places_item_at_end_and_editing_enabled_item_preserves_sort_order(): void
+    {
+        Classification::forceCreate([
+            'name' => 'Existing Nav 1',
+            'slug' => 'existing-nav-1-'.uniqid(),
+            'classification_group' => ClassificationGroup::Activity,
+            'sort_order' => 4,
+            'is_active' => true,
+            'show_in_home_nav' => true,
+        ]);
+        Classification::forceCreate([
+            'name' => 'Existing Nav 2',
+            'slug' => 'existing-nav-2-'.uniqid(),
+            'classification_group' => ClassificationGroup::Activity,
+            'sort_order' => 9,
+            'is_active' => true,
+            'show_in_home_nav' => true,
+        ]);
+
+        // 1. Tạo mới với show_in_home_nav = 1 và sort_order mặc định (1) -> tự xếp cuối (9 + 1 = 10)
+        $createdSlug = 'auto-end-create-'.uniqid();
+        $this->actingAs($this->admin)->post(route('admin.classifications.store'), [
+            'name' => 'Auto End Create',
+            'slug' => $createdSlug,
+            'classification_group' => 'ACTIVITY',
+            'sort_order' => 1,
+            'is_active' => '1',
+            'show_in_home_nav' => '1',
+        ])->assertRedirect(route('admin.classifications.index'));
+
+        $created = Classification::where('slug', $createdSlug)->firstOrFail();
+        $this->assertSame(10, $created->sort_order);
+
+        // 2. Bật show_in_home_nav qua toggleHomeNav -> tự xếp cuối (10 + 1 = 11)
+        $hiddenItem = Classification::forceCreate([
+            'name' => 'Hidden Item',
+            'slug' => 'hidden-item-'.uniqid(),
+            'classification_group' => ClassificationGroup::Activity,
+            'sort_order' => 2,
+            'is_active' => true,
+            'show_in_home_nav' => false,
+        ]);
+
+        $this->actingAs($this->admin)
+            ->patch(route('admin.classifications.toggle-home-nav', $hiddenItem))
+            ->assertSessionHasNoErrors();
+        $this->assertSame(11, $hiddenItem->fresh()->sort_order);
+
+        // 3. Bật show_in_home_nav qua update khi trước đó tắt và giữ nguyên sort_order cũ -> tự xếp cuối (11 + 1 = 12)
+        $hiddenForEdit = Classification::forceCreate([
+            'name' => 'Hidden For Edit',
+            'slug' => 'hidden-edit-'.uniqid(),
+            'classification_group' => ClassificationGroup::Activity,
+            'sort_order' => 3,
+            'is_active' => true,
+            'show_in_home_nav' => false,
+        ]);
+
+        $this->actingAs($this->admin)->put(route('admin.classifications.update', $hiddenForEdit), [
+            'name' => $hiddenForEdit->name,
+            'slug' => $hiddenForEdit->slug,
+            'classification_group' => 'ACTIVITY',
+            'sort_order' => 3,
+            'is_active' => '1',
+            'show_in_home_nav' => '1',
+        ])->assertRedirect(route('admin.classifications.index'));
+        $this->assertSame(12, $hiddenForEdit->fresh()->sort_order);
+
+        // 4. Chỉnh sửa mục ĐÃ bật show_in_home_nav -> giữ nguyên sort_order hiện tại (không đẩy xuống cuối)
+        $this->actingAs($this->admin)->put(route('admin.classifications.update', $created), [
+            'name' => 'Auto End Create Updated',
+            'slug' => $created->slug,
+            'classification_group' => 'ACTIVITY',
+            'sort_order' => 10,
+            'is_active' => '1',
+            'show_in_home_nav' => '1',
+        ])->assertRedirect(route('admin.classifications.index'));
+        $this->assertSame(10, $created->fresh()->sort_order);
+    }
 }

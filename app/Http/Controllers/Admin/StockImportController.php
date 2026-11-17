@@ -86,7 +86,18 @@ class StockImportController extends Controller
         $file = $data['file'];
         $result = $spreadsheet->parse((string) $file->getRealPath(), $file->getClientOriginalExtension());
 
-        $redirect = to_route('admin.stock-imports.create')->withInput($result['items'] === [] ? [] : ['items' => $result['items']]);
+        $preserved = array_filter([
+            'supplier_id' => $request->input('supplier_id'),
+            'note' => $request->input('note'),
+        ], static fn (mixed $value): bool => $value !== null && $value !== '');
+
+        $input = $result['items'] === []
+            ? $preserved
+            : array_merge($preserved, ['items' => $result['items']]);
+
+        $redirect = $result['items'] === []
+            ? to_route('admin.stock-imports.index')
+            : to_route('admin.stock-imports.create')->withInput($input);
         if ($result['errors'] !== []) {
             $redirect->withErrors($result['errors'], 'spreadsheet');
         }

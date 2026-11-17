@@ -5,52 +5,16 @@
     <a class="px-4 py-2 bg-surface hover:bg-border/40 text-muted hover:text-main text-xs font-bold rounded-xl border border-border transition-colors" href="{{ route('admin.stock-imports.index') }}">← Quay lại danh sách</a>
 @endsection
 @section('content')
-<div class="max-w-5xl mx-auto space-y-8">
-@unless ($import->exists)
-    <section class="admin-card space-y-4" aria-labelledby="spreadsheet-title" data-spreadsheet-import>
-        <div class="flex flex-wrap items-center justify-between gap-3">
-            <div>
-                <h2 id="spreadsheet-title" class="text-base font-bold text-main">Nhập nhanh từ file Excel / CSV</h2>
-                <p class="mt-1 text-xs text-muted">File cần có dòng tiêu đề với 3 cột <strong class="text-main">SKU</strong>, <strong class="text-main">Số lượng</strong> và <strong class="text-main">Giá nhập</strong> (thứ tự cột tùy ý). Các dòng hợp lệ sẽ được điền vào phiếu bên dưới để bạn rà soát trước khi lưu.</p>
-            </div>
-            <div class="flex items-center gap-2">
-                <a href="{{ route('admin.stock-imports.template', ['format' => 'xlsx']) }}"
-                   class="px-3 py-1.5 bg-surface hover:bg-border/40 text-accent font-bold text-xs rounded-lg border border-border transition-colors shadow-sm">
-                    Tải file mẫu (.xlsx)
-                </a>
-                <a href="{{ route('admin.stock-imports.template', ['format' => 'csv']) }}"
-                   class="px-3 py-1.5 bg-surface hover:bg-border/40 text-muted hover:text-main font-bold text-xs rounded-lg border border-border transition-colors shadow-sm">
-                    Tải file mẫu (.csv)
-                </a>
-            </div>
-        </div>
-
-        <form method="POST" action="{{ route('admin.stock-imports.spreadsheet') }}" enctype="multipart/form-data" class="flex flex-wrap items-center gap-3 pt-1">
-            @csrf
-            <label for="spreadsheet-file" class="sr-only">File Excel hoặc CSV</label>
-            <input id="spreadsheet-file" type="file" name="file" accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv" required
-                   class="block w-full max-w-md text-xs text-main file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-surface file:text-main file:border file:border-border hover:file:bg-border/40 cursor-pointer">
-            <button type="submit" class="px-5 py-2 bg-accent hover:bg-accent-hover text-accent-text text-xs font-bold rounded-xl transition-colors shadow-md">
-                Đọc file vào phiếu
-            </button>
-        </form>
-        <p class="text-[11px] text-muted">Nhận .xlsx hoặc .csv, tối đa 2 MB và {{ App\Services\StockImportSpreadsheet::MAX_LINES }} dòng. Các cột phụ khác (tên giày, màu, size...) sẽ được tự động bỏ qua.</p>
-
-        @if ($errors->spreadsheet->any())
-            <div role="alert" class="rounded-xl border border-error/30 bg-error-bg p-4 text-xs font-semibold text-error space-y-2" data-spreadsheet-errors>
-                <p class="font-bold">Chưa đọc được một số dòng. Bạn có thể sửa trực tiếp trong file rồi tải lại, hoặc chỉnh sửa ở bảng bên dưới:</p>
-                <ul class="list-inside list-disc space-y-1">
-                    @foreach ($errors->spreadsheet->all() as $error)
-                        <li>{{ $error }}</li>
-                    @endforeach
-                </ul>
-            </div>
-        @endif
-    </section>
-@endunless
-
 @php
     $initialRows = is_array(old('items', $items)) ? array_values(old('items', $items)) : [];
+    $initialSupplierId = (string) old('supplier_id', $import->supplier_id ?? '');
+    $initialNote = (string) old('note', $import->note ?? '');
+    $supplierOptions = $suppliers->map(fn ($s) => [
+        'id' => (string) $s->id,
+        'code' => (string) $s->code,
+        'name' => (string) $s->name,
+        'is_active' => (bool) $s->is_active,
+    ])->values();
     $variantOptions = $variants->map(fn ($v) => [
         'id' => (string) $v->id,
         'sku' => (string) $v->sku,
@@ -61,6 +25,37 @@
         'is_active' => (bool) $v->is_active,
     ])->values();
 @endphp
+<div class="max-w-5xl mx-auto space-y-8"
+     x-data="{
+         selectedSupplierId: @js($initialSupplierId),
+         note: @js($initialNote),
+         suppliers: @js($supplierOptions),
+         normalizeVi(str) {
+             return String(str ?? '')
+                 .normalize('NFD')
+                 .replace(/[\u0300-\u036f]/g, '')
+                 .replace(/đ/g, 'd')
+                 .replace(/Đ/g, 'D')
+                 .toLowerCase()
+                 .trim();
+         },
+         findSupplier(id) {
+             const target = String(id ?? '').trim();
+             if (!target) return null;
+             return this.suppliers.find((s) => s.id === target) ?? null;
+         }
+     }">
+@if ($errors->spreadsheet->any())
+    <div role="alert" class="rounded-xl border border-error/30 bg-error-bg p-4 text-xs font-semibold text-error space-y-2" data-spreadsheet-errors>
+        <p class="font-bold">Chưa đọc được một số dòng từ file Excel / CSV. Các dòng hợp lệ đã được điền sẵn bên dưới:</p>
+        <ul class="list-inside list-disc space-y-1">
+            @foreach ($errors->spreadsheet->all() as $error)
+                <li>{{ $error }}</li>
+            @endforeach
+        </ul>
+    </div>
+@endif
+
 <form method="POST" action="{{ $import->exists ? route('admin.stock-imports.update', $import) : route('admin.stock-imports.store') }}"
       class="space-y-8"
       x-data="{
@@ -125,23 +120,142 @@
     <section class="admin-card space-y-4">
         <h2 class="text-base font-bold text-main">Thông tin phiếu nhập</h2>
         <div class="grid gap-4 md:grid-cols-12">
-            <div class="md:col-span-5">
+            <div class="md:col-span-5 relative"
+                 x-data="{
+                     open: false,
+                     query: '',
+                     activeIndex: -1,
+                     get filtered() {
+                         const q = normalizeVi(this.query);
+                         if (!q) return suppliers;
+                         const tokens = q.split(/\s+/).filter(Boolean);
+                         return suppliers.filter((s) => {
+                             const hay = normalizeVi(s.code + ' ' + s.name);
+                             return tokens.every((t) => hay.includes(t));
+                         });
+                     },
+                     openDropdown() {
+                         this.open = true;
+                         const idx = this.filtered.findIndex((s) => s.id === String(selectedSupplierId));
+                         this.activeIndex = idx >= 0 ? idx : (this.filtered.length > 0 ? 0 : -1);
+                         this.$nextTick(() => this.$refs.supplierSearch?.focus());
+                     },
+                     closeDropdown() {
+                         this.open = false;
+                         this.query = '';
+                         this.activeIndex = -1;
+                     },
+                     toggleDropdown() {
+                         if (this.open) {
+                             this.closeDropdown();
+                         } else {
+                             this.openDropdown();
+                         }
+                     },
+                     moveActive(delta) {
+                         const list = this.filtered;
+                         if (!list.length) {
+                             this.activeIndex = -1;
+                             return;
+                         }
+                         if (this.activeIndex < 0) {
+                             this.activeIndex = delta > 0 ? 0 : list.length - 1;
+                         } else {
+                             this.activeIndex = (this.activeIndex + delta + list.length) % list.length;
+                         }
+                         this.$nextTick(() => {
+                             const el = this.$refs.supplierListbox?.children[this.activeIndex];
+                             el?.scrollIntoView({ block: 'nearest' });
+                         });
+                     },
+                     selectSupplier(supplier) {
+                         selectedSupplierId = supplier.id;
+                         this.closeDropdown();
+                         this.$nextTick(() => this.$refs.supplierTrigger?.focus());
+                     },
+                     selectActive() {
+                         const list = this.filtered;
+                         if (this.activeIndex >= 0 && this.activeIndex < list.length) {
+                             this.selectSupplier(list[this.activeIndex]);
+                         }
+                     }
+                 }"
+                 @click.outside="closeDropdown()"
+                 @keydown.escape.stop="closeDropdown(); $refs.supplierTrigger?.focus()">
                 <label for="import-supplier" class="admin-label">Nhà cung cấp <span class="text-error">*</span></label>
-                <select id="import-supplier" class="input w-full border-border bg-surface text-main text-xs" name="supplier_id" required>
-                    <option value="">-- Chọn nhà cung cấp --</option>
-                    @foreach ($suppliers as $supplier)
-                        <option value="{{ $supplier->id }}" @selected((string) old('supplier_id', $import->supplier_id) === (string) $supplier->id)>
-                            {{ $supplier->code }} — {{ $supplier->name }}{{ $supplier->is_active ? '' : ' (đã ngừng hợp tác)' }}
-                        </option>
-                    @endforeach
-                </select>
+                <input type="hidden" name="supplier_id" :value="selectedSupplierId">
+
+                <button type="button"
+                        id="import-supplier"
+                        x-ref="supplierTrigger"
+                        @click="toggleDropdown()"
+                        @keydown.arrow-down.prevent="openDropdown()"
+                        @keydown.arrow-up.prevent="openDropdown()"
+                        :aria-expanded="open.toString()"
+                        aria-haspopup="listbox"
+                        class="input w-full border-border bg-surface text-main text-xs text-left flex items-center justify-between gap-2 min-h-[38px]">
+                    <span class="min-w-0 flex-1 truncate flex items-center gap-1.5" x-show="findSupplier(selectedSupplierId)" x-cloak>
+                        <span class="font-mono font-bold text-accent" x-text="findSupplier(selectedSupplierId)?.code"></span>
+                        <span class="text-main truncate" x-text="'— ' + (findSupplier(selectedSupplierId)?.name ?? '')"></span>
+                        <span x-show="findSupplier(selectedSupplierId) && !findSupplier(selectedSupplierId)?.is_active"
+                              class="shrink-0 px-1.5 py-0.5 rounded text-[10px] font-bold border bg-error-bg text-error border-error/30">
+                            Ngừng hợp tác
+                        </span>
+                    </span>
+                    <span class="text-muted truncate" x-show="!findSupplier(selectedSupplierId)">-- Chọn nhà cung cấp --</span>
+                    <svg class="w-4 h-4 text-muted shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                </button>
+
+                <div x-show="open" x-cloak
+                     class="absolute left-0 right-0 z-30 mt-1 rounded-xl border border-border bg-surface-card shadow-elevated overflow-hidden">
+                    <div class="p-2 border-b border-border bg-surface">
+                        <label for="supplier-search" class="sr-only">Tìm nhà cung cấp theo mã hoặc tên</label>
+                        <input id="supplier-search"
+                               x-ref="supplierSearch"
+                               type="search"
+                               x-model="query"
+                               @input="activeIndex = filtered.length > 0 ? 0 : -1"
+                               @keydown.arrow-down.prevent="moveActive(1)"
+                               @keydown.arrow-up.prevent="moveActive(-1)"
+                               @keydown.enter.prevent="selectActive()"
+                               @keydown.escape.prevent.stop="closeDropdown(); $refs.supplierTrigger?.focus()"
+                               placeholder="Tìm theo mã hoặc tên nhà cung cấp..."
+                               class="input w-full border-border bg-bg text-xs text-main py-1.5 px-2.5">
+                    </div>
+                    <ul x-ref="supplierListbox" role="listbox" class="max-h-60 overflow-y-auto divide-y divide-border/50">
+                        <template x-for="(s, idx) in filtered" :key="s.id">
+                            <li role="option" :aria-selected="String(selectedSupplierId) === s.id ? 'true' : 'false'">
+                                <button type="button"
+                                        @click="selectSupplier(s)"
+                                        @mouseenter="activeIndex = idx"
+                                        class="w-full px-3 py-2 text-left text-xs hover:bg-surface transition-colors flex items-center justify-between gap-2"
+                                        :class="[
+                                            String(selectedSupplierId) === s.id ? 'bg-accent/10' : '',
+                                            activeIndex === idx ? 'bg-surface ring-1 ring-inset ring-accent/40' : ''
+                                        ]">
+                                    <span class="min-w-0 flex-1 truncate">
+                                        <span class="font-mono font-bold text-accent" x-text="s.code"></span>
+                                        <span class="text-main" x-text="' — ' + s.name"></span>
+                                    </span>
+                                    <span x-show="!s.is_active"
+                                          class="shrink-0 px-1.5 py-0.5 rounded text-[10px] font-bold border bg-error-bg text-error border-error/30">
+                                        Ngừng hợp tác
+                                    </span>
+                                </button>
+                            </li>
+                        </template>
+                        <li x-show="filtered.length === 0" class="px-3 py-4 text-center text-xs text-muted">
+                            Không tìm thấy nhà cung cấp phù hợp
+                        </li>
+                    </ul>
+                </div>
                 <x-forms.field-error name="supplier_id" />
             </div>
 
             <div class="md:col-span-7">
                 <label for="import-note" class="admin-label">Ghi chú / Lý do nhập tặng</label>
                 <input id="import-note" type="text" class="input w-full border-border bg-surface text-main text-xs" name="note"
-                       value="{{ old('note', $import->note) }}" placeholder="Ví dụ: Nhập bổ sung đợt 1, Lô hàng khuyến mãi...">
+                       x-model="note" placeholder="Ví dụ: Nhập bổ sung đợt 1, Lô hàng khuyến mãi...">
                 <p class="mt-1 text-[11px] text-muted">Nếu có dòng nhập giá 0 ₫ (hàng tặng/khuyến mãi), cần ghi rõ lý do tối thiểu 20 ký tự.</p>
                 <x-forms.field-error name="note" />
             </div>

@@ -37,7 +37,7 @@
             <div class="flex flex-wrap items-center justify-between gap-3">
                 <div>
                     <h2 class="text-base font-bold text-main">Nhập sản phẩm hàng loạt (Excel / CSV)</h2>
-                    <p class="text-xs text-muted mt-0.5">Nhập thông tin sản phẩm, danh mục, màu sắc và dải size. Ảnh sản phẩm sẽ được bổ sung sau trên giao diện chỉnh sửa.</p>
+                    <p class="text-xs text-muted mt-0.5">Nhập thông tin sản phẩm, đối tượng, màu sắc và dải size. Cột <strong class="text-main">Mã phối màu</strong> là tùy chọn (để trống hệ thống sẽ tự tạo) và không cần Nhóm màu hay Mã HEX; ảnh sản phẩm sẽ được bổ sung sau trên giao diện chỉnh sửa.</p>
                 </div>
                 <div class="flex flex-wrap items-center gap-2">
                     <a href="{{ route('admin.products.template', ['format' => 'xlsx']) }}"
@@ -99,7 +99,7 @@
                             <thead class="bg-surface text-main font-bold border-b border-border sticky top-0">
                                 <tr>
                                     <th class="p-3">Tên sản phẩm</th>
-                                    <th class="p-3">Danh mục</th>
+                                    <th class="p-3">Đối tượng</th>
                                     <th class="p-3">Giá gốc</th>
                                     <th class="p-3">Các màu</th>
                                     <th class="p-3 text-center">Tổng biến thể</th>
@@ -115,7 +115,6 @@
                                             <div class="flex flex-wrap gap-1.5">
                                                 @foreach ($p['colors'] as $col)
                                                     <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-surface border border-border text-[11px]">
-                                                        <span class="w-2.5 h-2.5 rounded-full inline-block border border-border/50" style="background-color: {{ $col['primary_hex'] }}"></span>
                                                         <span>{{ $col['color_name'] }} ({{ count($col['variants']) }} size)</span>
                                                     </span>
                                                 @endforeach

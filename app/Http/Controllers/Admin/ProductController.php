@@ -262,18 +262,20 @@ class ProductController extends Controller
         $clone->is_active = false;
         $clone->is_featured = false;
 
-        $colors = $product->colors()->with(['variants', 'images'])->orderBy('display_order')->get()->map(function ($c) use ($clone) {
+        $usedStyleCodesUpper = [];
+        $colors = $product->colors()->with(['variants', 'images'])->orderBy('display_order')->get()->map(function ($c) use ($clone, &$usedStyleCodesUpper) {
+            $styleColorCode = ProductManagementService::generateUniqueStyleColorCode($c->color_name, $clone->slug, $usedStyleCodesUpper);
+            $usedStyleCodesUpper[strtoupper($styleColorCode)] = true;
+
             return [
                 'id' => null,
                 'color_name' => $c->color_name,
-                'primary_hex' => $c->primary_hex,
-                'style_color_code' => $c->style_color_code,
-                'color_key' => $c->color_key,
+                'style_color_code' => $styleColorCode,
                 'is_active' => $c->is_active,
-                'variants' => $c->variants->map(function ($v) use ($clone, $c) {
+                'variants' => $c->variants->map(function ($v) use ($clone, $styleColorCode) {
                     return [
                         'id' => null,
-                        'sku' => ProductManagementService::generateSku($clone->slug, $c->style_color_code, $v->size_value),
+                        'sku' => ProductManagementService::generateSku($clone->slug, $styleColorCode, $v->size_value),
                         'size_value' => $v->size_value,
                         'price_override' => $v->price_override,
                         'is_active' => $v->is_active,
@@ -420,7 +422,7 @@ class ProductController extends Controller
     {
         $documentedIds = app(ProductManagementService::class)->documentedVariantIds($product);
         $colors = $product->exists ? $product->colors()->with(['variants', 'images'])->orderBy('display_order')->get()->map(fn ($c) => [
-            'id' => $c->id, 'color_name' => $c->color_name, 'primary_hex' => $c->primary_hex, 'style_color_code' => $c->style_color_code, 'color_key' => $c->color_key, 'is_active' => $c->is_active,
+            'id' => $c->id, 'color_name' => $c->color_name, 'style_color_code' => $c->style_color_code, 'is_active' => $c->is_active,
             'variants' => $c->variants->map(fn ($v) => [
                 'id' => $v->id,
                 'sku' => $v->sku,

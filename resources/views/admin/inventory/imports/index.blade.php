@@ -2,9 +2,15 @@
 @section('title', 'Phiếu Nhập Kho')
 @section('eyebrow', 'QUẢN TRỊ KHO HÀNG')
 @section('actions')
-    <a class="px-5 py-2.5 bg-accent hover:bg-accent-hover text-accent-text text-xs font-bold rounded-xl transition-colors shadow-md flex items-center gap-1.5" href="{{ route('admin.stock-imports.create') }}">
-        <span>+ Tạo phiếu nháp</span>
-    </a>
+    <div class="flex flex-wrap items-center gap-2">
+        <button type="button" x-data x-on:click="$dispatch('toggle-import-panel')"
+                class="px-4 py-2.5 bg-surface hover:bg-border/40 text-muted hover:text-main text-xs font-bold rounded-xl border border-border transition-colors shadow-sm">
+            Nhập từ Excel / CSV
+        </button>
+        <a class="px-5 py-2.5 bg-accent hover:bg-accent-hover text-accent-text text-xs font-bold rounded-xl transition-colors shadow-md flex items-center gap-1.5" href="{{ route('admin.stock-imports.create') }}">
+            <span>+ Tạo phiếu nháp</span>
+        </a>
+    </div>
 @endsection
 @php
     $badges = [
@@ -41,7 +47,60 @@
     }
 @endphp
 @section('content')
-    <div x-data="adminAjaxList()" class="space-y-6">
+    <div x-data="{
+            ...adminAjaxList(),
+            showImport: @js($errors->spreadsheet->any() || $errors->has('file')),
+            toggleImport() { this.showImport = !this.showImport; }
+         }"
+         x-on:toggle-import-panel.window="toggleImport()"
+         class="space-y-6">
+        <section x-show="showImport"
+                 x-cloak
+                 x-transition
+                 class="admin-card space-y-4 border-accent/40 bg-surface/80"
+                 aria-labelledby="spreadsheet-title"
+                 data-spreadsheet-import>
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                    <h2 id="spreadsheet-title" class="text-base font-bold text-main">Nhập nhanh từ file Excel / CSV</h2>
+                    <p class="mt-1 text-xs text-muted">File cần có dòng tiêu đề với 3 cột <strong class="text-main">SKU</strong>, <strong class="text-main">Số lượng</strong> và <strong class="text-main">Giá nhập</strong> (thứ tự cột tùy ý). Các dòng hợp lệ sẽ được mở sang trang tạo phiếu nháp để bạn chọn nhà cung cấp và rà soát trước khi lưu.</p>
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                    <a href="{{ route('admin.stock-imports.template', ['format' => 'xlsx']) }}"
+                       class="px-3 py-1.5 bg-surface hover:bg-border/40 text-accent font-bold text-xs rounded-lg border border-border transition-colors shadow-sm">
+                        Tải file mẫu (.xlsx)
+                    </a>
+                    <a href="{{ route('admin.stock-imports.template', ['format' => 'csv']) }}"
+                       class="px-3 py-1.5 bg-surface hover:bg-border/40 text-muted hover:text-main font-bold text-xs rounded-lg border border-border transition-colors shadow-sm">
+                        Tải file mẫu (.csv)
+                    </a>
+                    <button type="button" x-on:click="showImport = false" class="text-muted hover:text-main text-xs font-semibold px-2 py-1 ml-1" aria-label="Đóng khung nhập file">Đóng</button>
+                </div>
+            </div>
+
+            <form method="POST" action="{{ route('admin.stock-imports.spreadsheet') }}" enctype="multipart/form-data" class="flex flex-wrap items-center gap-3 pt-1">
+                @csrf
+                <label for="spreadsheet-file" class="sr-only">File Excel hoặc CSV</label>
+                <input id="spreadsheet-file" type="file" name="file" accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv" required
+                       class="block w-full max-w-md text-xs text-main file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-surface file:text-main file:border file:border-border hover:file:bg-border/40 cursor-pointer">
+                <button type="submit" class="px-5 py-2 bg-accent hover:bg-accent-hover text-accent-text text-xs font-bold rounded-xl transition-colors shadow-md">
+                    Đọc file vào phiếu
+                </button>
+            </form>
+            <p class="text-[11px] text-muted">Nhận .xlsx hoặc .csv, tối đa 2 MB và {{ App\Services\StockImportSpreadsheet::MAX_LINES }} dòng. Các cột phụ khác (tên giày, màu, size...) sẽ được tự động bỏ qua.</p>
+
+            @if ($errors->spreadsheet->any())
+                <div role="alert" class="rounded-xl border border-error/30 bg-error-bg p-4 text-xs font-semibold text-error space-y-2" data-spreadsheet-errors>
+                    <p class="font-bold">Chưa đọc được file hoặc có dòng lỗi. Vui lòng kiểm tra lại:</p>
+                    <ul class="list-inside list-disc space-y-1">
+                        @foreach ($errors->spreadsheet->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+        </section>
+
         <x-admin.search-form :action="route('admin.stock-imports.index')"
                              id="import-search"
                              label="Tìm mã phiếu"

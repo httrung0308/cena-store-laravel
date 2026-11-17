@@ -29,7 +29,7 @@
             'label' => 'Kho & Sản phẩm',
             'items' => [
                 ['route' => 'admin.products.index', 'active' => 'admin.products.*', 'label' => 'Sản phẩm', 'icon' => 'box'],
-                ['route' => 'admin.categories.index', 'active' => 'admin.categories.*', 'label' => 'Danh mục', 'icon' => 'tag'],
+                ['route' => 'admin.categories.index', 'active' => 'admin.categories.*', 'label' => 'Đối tượng', 'icon' => 'tag'],
                 ['route' => 'admin.classifications.index', 'active' => 'admin.classifications.*', 'label' => 'Phân loại', 'icon' => 'layers', 'admin_only' => true],
                 ['route' => 'admin.suppliers.index', 'active' => 'admin.suppliers.*', 'label' => 'Nhà cung cấp', 'icon' => 'truck'],
                 ['route' => 'admin.stock-imports.index', 'active' => 'admin.stock-imports.*', 'label' => 'Nhập kho', 'icon' => 'archive'],
@@ -319,7 +319,7 @@
                 </div>
 
                 <!-- Status / Error Flash Messages -->
-                @if (session('status'))
+                @if (session('status') && ! View::hasSection('toast_status'))
                     <div role="status" class="mb-6 rounded-2xl border border-success/30 bg-success-bg p-4 text-xs font-semibold text-success shadow-sm">{{ session('status') }}</div>
                 @endif
                 @if ($errors->any())
@@ -342,7 +342,7 @@
         </main>
     </div>
 
-    <x-ui.toasts />
+    <x-ui.toasts :initial="(View::hasSection('toast_status') && session('status')) ? [['type' => 'success', 'message' => session('status')]] : []" />
     @stack('scripts')
 </body>
 </html>
