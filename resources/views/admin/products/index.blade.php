@@ -308,6 +308,7 @@
                             <option value="">Tất cả</option>
                             <option value="active">Đang bán</option>
                             <option value="inactive">Ngừng bán</option>
+                            <option value="deleted">Đã xóa mềm</option>
                         </select>
                     </div>
 

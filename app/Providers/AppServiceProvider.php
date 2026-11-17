@@ -2,8 +2,10 @@
 
 namespace App\Providers;
 
+use App\Models\OrderStatusHistory;
 use App\Services\HomeQueryService;
 use App\Services\OutboxDeliveryRegistry;
+use App\Services\StoreNotificationService;
 use App\Support\BusinessClock;
 use Illuminate\Foundation\Console\ServeCommand;
 use Illuminate\Support\Facades\View;
@@ -33,6 +35,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        OrderStatusHistory::created(static function (OrderStatusHistory $history): void {
+            app(StoreNotificationService::class)->recordForStatusHistory($history);
+        });
+
         if ($this->app->runningInConsole()) {
             ServeCommand::$passthroughVariables = array_values(array_unique([...ServeCommand::$passthroughVariables, 'TEMP', 'TMP', 'TMPDIR']));
         }

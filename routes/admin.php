@@ -6,11 +6,13 @@ use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\ClassificationController;
 use App\Http\Controllers\Admin\CouponController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\OperationsWorkItemController;
 use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\ProfileController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\ReviewController;
+use App\Http\Controllers\Admin\ShipmentReturnController;
 use App\Http\Controllers\Admin\StockImportController;
 use App\Http\Controllers\Admin\SupplierController;
 use App\Http\Controllers\Admin\UserController;
@@ -40,7 +42,8 @@ Route::get('products/import/template', [ProductController::class, 'template'])->
 Route::post('products/import/preview', [ProductController::class, 'previewImport'])->name('products.import.preview');
 Route::post('products/import/store', [ProductController::class, 'storeImport'])->name('products.import.store');
 Route::get('products/{product}/duplicate', [ProductController::class, 'duplicate'])->name('products.duplicate');
-Route::resource('products', ProductController::class)->except(['destroy']);
+Route::resource('products', ProductController::class)->except(['show', 'destroy']);
+Route::get('products/{product}', [ProductController::class, 'show'])->whereNumber('product')->withTrashed()->name('products.show');
 Route::patch('products/{product}/activate', [ProductController::class, 'activate'])->name('products.activate');
 Route::patch('products/{product}/deactivate', [ProductController::class, 'deactivate'])->name('products.deactivate');
 Route::get('api/variants/search', [ProductController::class, 'searchVariants'])->name('variants.search');
@@ -57,6 +60,19 @@ Route::get('orders/{order}/delivery-proof', [OrderController::class, 'deliveryPr
 Route::post('orders/{order}/refunds/{refund}/approve', [OrderController::class, 'approveRefund'])->whereNumber('order')->whereNumber('refund')->middleware('role:admin')->name('orders.refunds.approve');
 Route::post('orders/{order}/{action}', [OrderController::class, 'transition'])->whereNumber('order')
     ->whereIn('action', ['confirm', 'pack', 'ship', 'deliver', 'cancel', 'fail'])->middleware('throttle:30,1')->name('orders.transition');
+
+Route::get('operations-work-items', [OperationsWorkItemController::class, 'index'])->name('operations-work-items.index');
+Route::get('operations-work-items/{workItem}', [OperationsWorkItemController::class, 'show'])->whereNumber('workItem')->name('operations-work-items.show');
+Route::patch('operations-work-items/{workItem}', [OperationsWorkItemController::class, 'update'])->whereNumber('workItem')
+    ->middleware('throttle:30,1')->name('operations-work-items.update');
+
+Route::get('shipment-returns', [ShipmentReturnController::class, 'index'])->name('shipment-returns.index');
+Route::get('shipments/{shipment}/returns', [ShipmentReturnController::class, 'show'])->whereNumber('shipment')->name('shipment-returns.show');
+Route::post('shipments/{shipment}/returns/receive', [ShipmentReturnController::class, 'receive'])->whereNumber('shipment')->middleware('throttle:30,1')->name('shipment-returns.receive');
+Route::post('shipments/{shipment}/returns/incidents', [ShipmentReturnController::class, 'incident'])->whereNumber('shipment')->middleware('throttle:30,1')->name('shipment-returns.incidents');
+Route::post('shipment-return-items/{returnItem}/restock', [ShipmentReturnController::class, 'restock'])->whereNumber('returnItem')->middleware('throttle:30,1')->name('shipment-return-items.restock');
+Route::post('shipment-return-items/{returnItem}/write-off-proposal', [ShipmentReturnController::class, 'proposeWriteOff'])->whereNumber('returnItem')->middleware('throttle:30,1')->name('shipment-return-items.write-off-proposal');
+Route::post('shipment-return-items/{returnItem}/write-off-approval', [ShipmentReturnController::class, 'approveWriteOff'])->whereNumber('returnItem')->middleware(['role:admin', 'throttle:30,1'])->name('shipment-return-items.write-off-approval');
 
 Route::middleware('role:admin')->prefix('users')->name('users.')->whereNumber('user')->group(function (): void {
     Route::get('/', [UserController::class, 'index'])->name('index');

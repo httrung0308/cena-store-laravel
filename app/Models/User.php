@@ -99,6 +99,11 @@ class User extends Authenticatable
         return $this->hasMany(OrderStatusHistory::class, 'actor_id');
     }
 
+    public function storeNotifications(): HasMany
+    {
+        return $this->hasMany(StoreNotification::class, 'user_id');
+    }
+
     public function payments(): HasMany
     {
         return $this->hasMany(Payment::class, 'confirmed_by');
