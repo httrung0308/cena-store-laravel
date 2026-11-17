@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Enums\ClassificationGroup;
 use App\Enums\GenderGroup;
+use App\Enums\InventoryAction;
+use App\Enums\InventoryReferenceType;
 use App\Enums\RoleSlug;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\ProductRequest;
@@ -11,6 +13,7 @@ use App\Models\Category;
 use App\Models\Classification;
 use App\Models\Product;
 use App\Models\ProductVariant;
+use App\Services\InventoryHistoryQueryService;
 use App\Services\ProductManagementService;
 use App\Services\ProductSpreadsheetService;
 use Illuminate\Contracts\View\View;
@@ -37,7 +40,7 @@ class ProductController extends Controller
             'silhouettes.*' => ['integer', 'min:1'],
             'activities' => ['nullable', 'array'],
             'activities.*' => ['integer', 'min:1'],
-            'status' => ['nullable', Rule::in(['active', 'inactive'])],
+            'status' => ['nullable', Rule::in(['active', 'inactive', 'deleted'])],
             'stock' => ['nullable', Rule::in(['in_stock', 'out_of_stock'])],
             'featured' => ['nullable', Rule::in(['featured', 'not_featured'])],
         ]);
@@ -88,7 +91,8 @@ class ProductController extends Controller
             $pattern = '%'.str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $filters['search']).'%';
             $query->where(function ($q) use ($pattern): void {
                 $q->whereRaw("products.name LIKE ? ESCAPE '!'", [$pattern])
-                    ->orWhereRaw("products.slug LIKE ? ESCAPE '!'", [$pattern]);
+                    ->orWhereRaw("products.slug LIKE ? ESCAPE '!'", [$pattern])
+                    ->orWhereHas('variants', fn ($vq) => $vq->withTrashed()->whereRaw("product_variants.sku LIKE ? ESCAPE '!'", [$pattern]));
             });
         }
 
@@ -112,6 +116,8 @@ class ProductController extends Controller
             $query->where('products.is_active', true);
         } elseif ($filters['status'] === 'inactive') {
             $query->where('products.is_active', false);
+        } elseif ($filters['status'] === 'deleted') {
+            $query->onlyTrashed();
         }
 
         if ($filters['stock'] === 'in_stock') {
@@ -179,13 +185,17 @@ class ProductController extends Controller
         ));
     }
 
-    public function create(): View
+    public function show(Request $request, Product $product, InventoryHistoryQueryService $historyQueryService): View
     {
-        return $this->form(new Product);
-    }
+        $filters = $request->validate([
+            'variant_id' => ['nullable', 'integer', 'min:1'],
+            'from' => ['nullable', 'date_format:Y-m-d'],
+            'to' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:from'],
+            'action' => ['nullable', Rule::enum(InventoryAction::class)],
+            'reference_type' => ['nullable', Rule::enum(InventoryReferenceType::class)],
+            'reference_id' => ['nullable', 'integer', 'min:1'],
+        ]);
 
-    public function show(Request $request, Product $product): View
-    {
         $product->load([
             'category.parent',
             'classifications' => fn ($q) => $q->orderBy('classification_group')->orderBy('sort_order')->orderBy('name'),
@@ -195,6 +205,9 @@ class ProductController extends Controller
         ]);
 
         $canViewCost = $request->user()?->hasRole(RoleSlug::Admin) ?? false;
+        if (! $canViewCost) {
+            $product->colors->each(fn ($color) => $color->variants->each->makeHidden('average_cost'));
+        }
 
         $blockingReasons = [];
         if (! $product->is_active) {
@@ -226,13 +239,36 @@ class ProductController extends Controller
             'quarantine' => (int) $allVariants->sum('quarantine_qty'),
         ];
 
+        $historyColors = $historyQueryService->productColorsWithVariants($product, $canViewCost);
+        $historyVariants = $historyColors->flatMap(fn ($color) => $color->variants);
+        $selectedVariant = null;
+
+        if (isset($filters['variant_id'])) {
+            $selectedVariant = $historyVariants->firstWhere('id', (int) $filters['variant_id']);
+            abort_if($selectedVariant === null, 404);
+        }
+
+        $movements = $selectedVariant === null ? null : $historyQueryService->movements($selectedVariant, $filters, $canViewCost);
+        $reconciliation = $selectedVariant === null ? null : $historyQueryService->reconciliation($selectedVariant);
+
         return view('admin.products.show', [
             'product' => $product,
             'canViewCost' => $canViewCost,
             'isPubliclyVisible' => $isPubliclyVisible,
             'blockingReasons' => $blockingReasons,
             'totals' => $totals,
+            'historyColors' => $historyColors,
+            'selectedVariant' => $selectedVariant,
+            'movements' => $movements,
+            'reconciliation' => $reconciliation,
+            'actions' => InventoryAction::cases(),
+            'referenceTypes' => InventoryReferenceType::cases(),
         ]);
+    }
+
+    public function create(): View
+    {
+        return $this->form(new Product);
     }
 
     public function edit(Product $product): View

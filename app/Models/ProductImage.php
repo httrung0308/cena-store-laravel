@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\ProductImageSourceType;
+use App\Services\ProductImageThumbnailService;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -40,7 +41,7 @@ class ProductImage extends DomainModel
 
     public function thumbnailUrl(int $size = 400): string
     {
-        return app(\App\Services\ProductImageThumbnailService::class)->getThumbnailUrl(
+        return app(ProductImageThumbnailService::class)->getThumbnailUrl(
             $this->storage_path,
             $this->external_url,
             $size

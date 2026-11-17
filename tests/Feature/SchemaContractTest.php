@@ -23,7 +23,7 @@ class SchemaContractTest extends TestCase
         sort($expected);
         sort($actual);
         $this->assertSame($expected, $actual);
-        $this->assertCount(47, $actual);
+        $this->assertCount(51, $actual);
         $this->assertFalse(Schema::hasTable('password_reset_tokens'));
     }
 
@@ -32,7 +32,7 @@ class SchemaContractTest extends TestCase
     {
         $expected = self::contract()['tables'][$table];
         $database = DB::connection()->getDatabaseName();
-        $actual = collect(DB::select('SELECT COLUMN_NAME, COLUMN_TYPE, IS_NULLABLE, COLUMN_DEFAULT, EXTRA, GENERATION_EXPRESSION FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? ORDER BY ORDINAL_POSITION', [$database, $table]))->keyBy('COLUMN_NAME');
+        $actual = collect(DB::select('SELECT COLUMN_NAME, COLUMN_TYPE, IS_NULLABLE, COLUMN_DEFAULT, EXTRA, GENERATION_EXPRESSION, COLLATION_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? ORDER BY ORDINAL_POSITION', [$database, $table]))->keyBy('COLUMN_NAME');
         $this->assertSame(array_keys($expected['columns']), $actual->keys()->all(), $table.' columns');
         foreach ($expected['columns'] as $name => $column) {
             $found = $actual[$name];
@@ -40,6 +40,9 @@ class SchemaContractTest extends TestCase
             $this->assertSame($column['nullable'], $found->IS_NULLABLE === 'YES', $table.'.'.$name.' nullable');
             $this->assertSame($column['default'], $found->COLUMN_DEFAULT, $table.'.'.$name.' default');
             $this->assertSame($column['auto_increment'], str_contains($found->EXTRA, 'auto_increment'));
+            if (isset($column['collation'])) {
+                $this->assertSame($column['collation'], $found->COLLATION_NAME, $table.'.'.$name.' collation');
+            }
             if (isset($column['generated'])) {
                 $this->assertSame('STORED GENERATED', $found->EXTRA);
                 $this->assertNotSame('', $found->GENERATION_EXPRESSION);
@@ -287,6 +290,7 @@ class SchemaContractTest extends TestCase
             'file mime' => ['after_sales_attachments', ['mime_type' => 'image/svg+xml'], 3819],
             'ledger origin' => ['sales_ledger_entries', ['order_id' => null, 'inventory_movement_id' => null], 3819],
             'outbox status' => ['outbox_events', ['status' => 'UNKNOWN'], 3819],
+            'notification status' => ['notifications', ['order_status' => 'UNKNOWN'], 3819],
         ];
     }
 
@@ -354,6 +358,9 @@ class SchemaContractTest extends TestCase
             'after_sales_attachments' => ['mime_type' => 'image/jpeg', 'size_bytes' => 1024],
             'shipment_delivery_proofs' => ['mime_type' => 'image/jpeg', 'size_bytes' => 1024, 'sha256' => str_repeat('a', 64)],
             'sales_ledger_entries' => ['type' => 'SALE_RECOGNIZED'], 'outbox_events' => ['aggregate_type' => 'ORDER', 'aggregate_id' => 1],
+            'notifications' => ['order_status' => 'PACKING'],
+            'operations_work_items' => ['source_type' => 'ORDER', 'source_event_key' => 'schema-work-item', 'source_reference' => 'ORD-SCHEMA', 'source_label' => 'Đơn hàng', 'title' => 'Schema fixture', 'content' => 'Fixture kiểm tra cấu trúc.', 'status' => 'PENDING'],
+            'operations_work_item_histories' => ['actor_name_snapshot' => 'Schema fixture', 'from_status' => null, 'to_status' => 'PENDING', 'outcome_code' => null, 'note' => null, 'snapshot' => '{"title":"Schema fixture"}'],
         ];
         if ($table === 'carts' || $table === 'sales_ledger_entries') {
             $data[$table === 'carts' ? 'user_id' : 'order_id'] = $this->row($table === 'carts' ? 'users' : 'orders');

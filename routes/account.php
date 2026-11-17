@@ -3,11 +3,13 @@
 use App\Http\Controllers\Account\AccountController;
 use App\Http\Controllers\Account\AddressController;
 use App\Http\Controllers\Account\AdministrativeUnitController;
+use App\Http\Controllers\Account\NotificationController;
 use App\Http\Controllers\Account\SettingsController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\LogoutController;
 use App\Http\Controllers\Auth\PasswordResetController;
 use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Middleware\EnsureNonAdminShopping;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -31,6 +33,14 @@ Route::middleware('guest')->group(function (): void {
 
 Route::post('/logout', LogoutController::class)->middleware('auth')->name('logout');
 Route::get('/account', AccountController::class)->middleware('auth')->name('account.index');
+Route::middleware(['auth', EnsureNonAdminShopping::class, 'role:customer'])->prefix('account/notifications')->name('notifications.')->group(function (): void {
+    Route::get('/', [NotificationController::class, 'index'])->name('index');
+    Route::post('/{notification}/read', [NotificationController::class, 'markRead'])->whereNumber('notification')->name('read');
+});
+Route::middleware(['auth', EnsureNonAdminShopping::class, 'role:customer', 'throttle:120,1'])->prefix('api/notifications')->name('notifications.api.')->group(function (): void {
+    Route::get('/unread-count', [NotificationController::class, 'unreadCount'])->name('unread-count');
+    Route::post('/{notification}/read', [NotificationController::class, 'markReadApi'])->whereNumber('notification')->name('read');
+});
 Route::middleware('auth')->prefix('account/settings')->group(function (): void {
     Route::get('/', [SettingsController::class, 'edit'])->name('account.settings');
     Route::patch('/profile', [SettingsController::class, 'updateProfile'])->name('account.profile.update');

@@ -9,10 +9,11 @@
     $navSilhouettes = $navSilhouettes ?? collect();
     $navActivities = $navActivities ?? collect();
     $isAdminAccount = auth()->user()?->hasRole(App\Enums\RoleSlug::Admin) ?? false;
-
     $isProductsActive = request()->routeIs('shoes.*');
     $isCategoriesActive = request()->routeIs('categories.index');
     $isNewsActive = request()->routeIs('news.*');
+    $isCustomerAccount = auth()->user()?->hasRole(App\Enums\RoleSlug::Customer) && ! $isAdminAccount;
+    $unreadNotificationCount = $isCustomerAccount ? auth()->user()->storeNotifications()->whereNull('read_at')->count() : 0;
 @endphp
 <header x-data="{ searchOpen: false }"
         @keydown.escape.window="searchOpen = false"
@@ -262,7 +263,14 @@
             @else
                 <a href="{{ route('login') }}" class="btn-icon" aria-label="Đăng nhập"><x-storefront.icon name="user"/></a>
             @endauth
-
+            @if ($isCustomerAccount)
+                <a href="{{ route('notifications.index') }}" class="btn-icon relative" aria-label="Thông báo{{ $unreadNotificationCount > 0 ? ', '.$unreadNotificationCount.' chưa đọc' : '' }}">
+                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg>
+                    @if ($unreadNotificationCount > 0)
+                        <span class="absolute -right-1 -top-1 min-w-[1.25rem] rounded-full bg-accent-sub px-1 text-center text-xs font-bold leading-5 text-accent-sub-text">{{ $unreadNotificationCount > 99 ? '99+' : $unreadNotificationCount }}</span>
+                    @endif
+                </a>
+            @endif
             @unless ($isAdminAccount)
                 <button type="button" class="btn-icon relative" aria-label="Giỏ hàng" @click="openPanel('cart')" :aria-expanded="(panel === 'cart').toString()" aria-controls="cart-panel"><x-storefront.icon name="cart"/><span x-cloak x-show="$store.cart.count > 0" x-text="$store.cart.count" class="absolute -right-1 -top-1 min-w-[1.25rem] rounded-full bg-accent-sub px-1 text-center text-xs font-bold leading-5 text-accent-sub-text" aria-label="Số đôi trong giỏ"></span></button>
             @endunless

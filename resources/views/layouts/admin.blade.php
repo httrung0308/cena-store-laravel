@@ -12,6 +12,7 @@
             'label' => 'Tổng quan',
             'items' => [
                 ['route' => 'admin.dashboard', 'active' => 'admin.dashboard', 'label' => 'Tổng quan', 'icon' => 'home'],
+                ['route' => 'admin.operations-work-items.index', 'active' => 'admin.operations-work-items.*', 'label' => 'Công việc xử lý', 'icon' => 'archive'],
                 ['route' => 'admin.reports.index', 'active' => 'admin.reports.*', 'label' => 'Báo cáo', 'icon' => 'chart'],
             ],
         ],
@@ -33,6 +34,7 @@
                 ['route' => 'admin.classifications.index', 'active' => 'admin.classifications.*', 'label' => 'Phân loại', 'icon' => 'layers', 'admin_only' => true],
                 ['route' => 'admin.suppliers.index', 'active' => 'admin.suppliers.*', 'label' => 'Nhà cung cấp', 'icon' => 'truck'],
                 ['route' => 'admin.stock-imports.index', 'active' => 'admin.stock-imports.*', 'label' => 'Nhập kho', 'icon' => 'archive'],
+                ['route' => 'admin.shipment-returns.index', 'active' => 'admin.shipment-returns.*', 'label' => 'Hàng hoàn cách ly', 'icon' => 'archive'],
             ],
         ],
         [
