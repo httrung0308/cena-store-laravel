@@ -52,7 +52,7 @@ class LoginController extends Controller
         $carts->mergeGuestCart($user, $request->session());
 
         return $auth->isBackOffice($user)
-            ? redirect()->intended(route('admin.dashboard'))
+            ? redirect()->intended(route('admin.operations-work-items.index'))
             : redirect()->intended(route('home'));
     }
 }

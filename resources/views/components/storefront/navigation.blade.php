@@ -264,12 +264,120 @@
                 <a href="{{ route('login') }}" class="btn-icon" aria-label="Đăng nhập"><x-storefront.icon name="user"/></a>
             @endauth
             @if ($isCustomerAccount)
-                <a href="{{ route('notifications.index') }}" class="btn-icon relative" aria-label="Thông báo{{ $unreadNotificationCount > 0 ? ', '.$unreadNotificationCount.' chưa đọc' : '' }}">
-                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg>
-                    @if ($unreadNotificationCount > 0)
-                        <span class="absolute -right-1 -top-1 min-w-[1.25rem] rounded-full bg-accent-sub px-1 text-center text-xs font-bold leading-5 text-accent-sub-text">{{ $unreadNotificationCount > 99 ? '99+' : $unreadNotificationCount }}</span>
-                    @endif
-                </a>
+                <div x-data="notificationBell({
+                        initialUnreadCount: {{ $unreadNotificationCount }},
+                        recentUrl: @js(route('notifications.api.recent')),
+                        readAllUrl: @js(route('notifications.api.read-all')),
+                        readUrlTemplate: @js(route('notifications.api.read', ['notification' => '__ID__'])),
+                        timezone: @js((string) config('store.business_timezone')),
+                     })"
+                     @click.outside="close()"
+                     @keydown.escape.window="if (open) { close(); $refs.bellButton?.focus(); }"
+                     class="relative">
+                    <button type="button"
+                            x-ref="bellButton"
+                            @click="toggle()"
+                            class="btn-icon relative"
+                            aria-label="Thông báo{{ $unreadNotificationCount > 0 ? ', '.$unreadNotificationCount.' chưa đọc' : '' }}"
+                            :aria-label="ariaLabel"
+                            :aria-expanded="open.toString()"
+                            aria-haspopup="true"
+                            aria-controls="header-notifications-popover">
+                        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg>
+                        <span x-cloak
+                              x-show="unreadCount > 0"
+                              x-text="badgeText"
+                              class="absolute -right-1 -top-1 min-w-[1.25rem] rounded-full bg-accent-sub px-1 text-center text-xs font-bold leading-5 text-accent-sub-text">{{ $unreadNotificationCount > 99 ? '99+' : $unreadNotificationCount }}</span>
+                    </button>
+
+                    <div id="header-notifications-popover"
+                         x-cloak
+                         x-show="open"
+                         x-transition:enter="transition duration-150 ease-out"
+                         x-transition:enter-start="opacity-0 translate-y-1"
+                         x-transition:enter-end="opacity-100 translate-y-0"
+                         x-transition:leave="transition duration-100 ease-in"
+                         x-transition:leave-start="opacity-100 translate-y-0"
+                         x-transition:leave-end="opacity-0 translate-y-1"
+                         role="region"
+                         aria-label="Thông báo gần đây"
+                         class="fixed inset-x-3 top-16 z-50 overflow-hidden rounded-2xl border border-border bg-surface-card shadow-elevated sm:inset-x-auto sm:absolute sm:right-0 sm:top-full sm:mt-2 sm:w-96">
+                        <div class="flex items-center justify-between gap-2 border-b border-border px-4 py-3">
+                            <div class="flex items-center gap-2 min-w-0">
+                                <h2 class="text-sm font-bold text-main">Thông báo</h2>
+                                <span x-show="unreadCount > 0"
+                                      x-text="unreadCount > 99 ? '99+' : unreadCount"
+                                      class="inline-flex min-w-[1.25rem] items-center justify-center rounded-full bg-accent-sub px-1.5 py-0.5 text-[11px] font-bold leading-none text-accent-sub-text"></span>
+                            </div>
+                            <button type="button"
+                                    @click="markAllRead()"
+                                    :disabled="markingAll || unreadCount === 0"
+                                    class="shrink-0 rounded-lg px-2 py-1 text-xs font-semibold text-accent transition-colors hover:bg-surface disabled:cursor-not-allowed disabled:opacity-45">
+                                <span x-text="markingAll ? 'Đang xử lý...' : 'Đọc tất cả'">Đọc tất cả</span>
+                            </button>
+                        </div>
+
+                        <div x-show="error !== ''"
+                             role="alert"
+                             class="flex items-center justify-between gap-2 border-b border-error/25 bg-error-bg px-4 py-2 text-xs text-error-text">
+                            <span class="min-w-0 truncate" x-text="error"></span>
+                            <button type="button"
+                                    @click="retry()"
+                                    class="shrink-0 font-bold underline underline-offset-2 hover:opacity-80">
+                                Thử lại
+                            </button>
+                        </div>
+
+                        <div class="max-h-80 overflow-y-auto divide-y divide-border">
+                            <template x-if="loading && items.length === 0">
+                                <div class="space-y-2.5 p-4" aria-busy="true" aria-label="Đang tải thông báo">
+                                    <div class="h-10 animate-pulse rounded-lg bg-surface"></div>
+                                    <div class="h-10 animate-pulse rounded-lg bg-surface"></div>
+                                    <div class="h-10 animate-pulse rounded-lg bg-surface"></div>
+                                </div>
+                            </template>
+
+                            <template x-if="!loading && items.length === 0 && error === ''">
+                                <div class="px-4 py-8 text-center text-xs text-muted">
+                                    Bạn chưa có thông báo nào.
+                                </div>
+                            </template>
+
+                            <template x-for="item in items" :key="item.id">
+                                <button type="button"
+                                        @click="openItem(item)"
+                                        :disabled="openingId === item.id"
+                                        :class="item.read_at ? 'bg-surface-card hover:bg-surface text-muted' : 'bg-accent/5 hover:bg-accent/10 text-main'"
+                                        class="flex w-full items-start gap-2.5 px-4 py-2.5 text-left transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent">
+                                    <span class="mt-1.5 h-2 w-2 shrink-0 rounded-full"
+                                          :class="item.read_at ? 'border border-border bg-transparent' : 'bg-accent'"
+                                          aria-hidden="true"></span>
+                                    <span class="min-w-0 flex-1">
+                                        <span class="flex items-baseline justify-between gap-2">
+                                            <span class="min-w-0 truncate text-xs"
+                                                  :class="item.read_at ? 'font-medium text-muted' : 'font-bold text-main'"
+                                                  x-text="item.order_status_label"></span>
+                                            <span x-show="!item.read_at" class="sr-only">Chưa đọc</span>
+                                            <span class="shrink-0 text-[11px] text-muted" x-text="formatTime(item.created_at)"></span>
+                                        </span>
+                                        <span class="mt-0.5 block truncate break-all font-mono text-[11px]"
+                                              :class="item.read_at ? 'text-muted' : 'font-semibold text-main'"
+                                              x-text="item.order_code ? 'Đơn ' + item.order_code : ''"></span>
+                                    </span>
+                                </button>
+                            </template>
+                        </div>
+
+                        <div class="border-t border-border bg-surface/50 px-4 py-2.5 text-center">
+                            <a href="{{ route('notifications.index') }}"
+                               @click="close()"
+                               class="inline-flex items-center gap-1 text-xs font-semibold text-accent transition-colors hover:text-accent-hover">
+                                <span>Xem tất cả thông báo</span>
+                                <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+                            </a>
+                        </div>
+                    </div>
+                </div>
             @endif
             @unless ($isAdminAccount)
                 <button type="button" class="btn-icon relative" aria-label="Giỏ hàng" @click="openPanel('cart')" :aria-expanded="(panel === 'cart').toString()" aria-controls="cart-panel"><x-storefront.icon name="cart"/><span x-cloak x-show="$store.cart.count > 0" x-text="$store.cart.count" class="absolute -right-1 -top-1 min-w-[1.25rem] rounded-full bg-accent-sub px-1 text-center text-xs font-bold leading-5 text-accent-sub-text" aria-label="Số đôi trong giỏ"></span></button>

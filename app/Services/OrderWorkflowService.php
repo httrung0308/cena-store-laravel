@@ -3,9 +3,11 @@
 namespace App\Services;
 
 use App\Data\InventoryChange;
+use App\Data\OperationsWorkItemDefinition;
 use App\Enums\ErrorCode;
 use App\Enums\InventoryAction;
 use App\Enums\InventoryReferenceType;
+use App\Enums\OperationsSourceType;
 use App\Enums\OrderPaymentStatus;
 use App\Enums\OrderStatus;
 use App\Enums\OrderUnitState;
@@ -30,9 +32,9 @@ use Carbon\CarbonImmutable;
 use Closure;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\UniqueConstraintViolationException;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Http\UploadedFile;
 
 /**
  * Order state machine for COD and prepaid demo orders. Every transition locks the order, checks the status the caller
@@ -47,6 +49,7 @@ final class OrderWorkflowService
         private readonly SalesLedgerService $ledger,
         private readonly CheckoutService $checkout,
         private readonly RefundService $refunds,
+        private readonly OperationsWorkItemService $workItems,
     ) {}
 
     public function confirm(Order $order, User $actor, string $expected): Order
@@ -133,60 +136,60 @@ final class OrderWorkflowService
 
         try {
             $delivered = $this->transition($order, $actor, $expected, [OrderStatus::OnDelivery], OrderStatus::Delivered, 'STAFF_DELIVER', null,
-            function (Order $order, $now) use ($actor, $proofPath, $proof): void {
-                if ($order->payment_method === PaymentMethod::PrepaidDemo && $order->payment_status !== OrderPaymentStatus::Paid) {
-                    throw new DomainException(ErrorCode::StateConflict, ['order' => ['Đơn trả trước chưa được thanh toán.']]);
-                }
-                $payment = Payment::query()->where('order_id', $order->id)->where('status', PaymentAttemptStatus::Pending)->lockForUpdate()->first();
-                if ($order->payment_method === PaymentMethod::Cod && ($payment === null || $payment->method !== PaymentMethod::Cod)) {
-                    throw new DomainException(ErrorCode::StateConflict);
-                }
-                if ($order->payment_method === PaymentMethod::Cod) {
-                    $payment->status = PaymentAttemptStatus::Succeeded;
-                    $payment->disposition = PaymentDisposition::Applied;
-                    $payment->received_amount = $order->total_amount;
-                    $payment->applied_amount = $order->total_amount;
-                    $payment->confirmed_by = $actor->id;
-                    $payment->succeeded_at = $now;
-                    $payment->save();
-                    $order->paid_amount = $order->total_amount;
-                    $order->payment_status = OrderPaymentStatus::Paid;
-                }
-                $order->delivered_at = $now;
-                $this->checkout->consumeCoupon($order, $now);
-
-                $shipment = Shipment::query()->where('order_id', $order->id)->lockForUpdate()->firstOrFail();
-                if ($proofPath !== null) {
-                    $deliveryProof = new ShipmentDeliveryProof;
-                    $deliveryProof->shipment_id = $shipment->id;
-                    $deliveryProof->uploaded_by = $actor->id;
-                    $deliveryProof->path = $proofPath;
-                    $deliveryProof->sha256 = hash_file('sha256', $proof->getRealPath());
-                    $deliveryProof->mime_type = $proof->getMimeType();
-                    $deliveryProof->size_bytes = $proof->getSize();
-                    $deliveryProof->created_at = $now;
-                    $deliveryProof->save();
-                }
-                $shipment->status = ShipmentStatus::Delivered;
-                $shipment->delivered_at = $now;
-                $shipment->updated_at = $now;
-                $shipment->save();
-
-                foreach ($this->items($order) as $item) {
-                    foreach ($item->units as $unit) {
-                        $unit->state = OrderUnitState::OwnedByCustomer;
-                        $unit->exchange_deadline_at = $this->clock->exchangeDeadline($now, $item->exchange_days_snapshot);
-                        $unit->warranty_deadline_at = $this->clock->warrantyDeadline($now, $item->warranty_months_snapshot);
-                        $unit->updated_at = $now;
-                        $unit->save();
-                        $this->ledger->postUnique("sale:unit:{$unit->id}", SalesLedgerType::SaleRecognized,
-                            ['merchandise_revenue_delta' => $unit->net_amount, 'cogs_delta' => (int) $unit->current_cogs_amount],
-                            ['order_id' => $order->id, 'order_item_unit_id' => $unit->id], $now);
+                function (Order $order, $now) use ($actor, $proofPath, $proof): void {
+                    if ($order->payment_method === PaymentMethod::PrepaidDemo && $order->payment_status !== OrderPaymentStatus::Paid) {
+                        throw new DomainException(ErrorCode::StateConflict, ['order' => ['Đơn trả trước chưa được thanh toán.']]);
                     }
-                }
-                $this->ledger->postUnique("shipping:order:{$order->id}", SalesLedgerType::ShippingRecognized,
-                    ['shipping_revenue_delta' => $order->shipping_fee], ['order_id' => $order->id], $now);
-            });
+                    $payment = Payment::query()->where('order_id', $order->id)->where('status', PaymentAttemptStatus::Pending)->lockForUpdate()->first();
+                    if ($order->payment_method === PaymentMethod::Cod && ($payment === null || $payment->method !== PaymentMethod::Cod)) {
+                        throw new DomainException(ErrorCode::StateConflict);
+                    }
+                    if ($order->payment_method === PaymentMethod::Cod) {
+                        $payment->status = PaymentAttemptStatus::Succeeded;
+                        $payment->disposition = PaymentDisposition::Applied;
+                        $payment->received_amount = $order->total_amount;
+                        $payment->applied_amount = $order->total_amount;
+                        $payment->confirmed_by = $actor->id;
+                        $payment->succeeded_at = $now;
+                        $payment->save();
+                        $order->paid_amount = $order->total_amount;
+                        $order->payment_status = OrderPaymentStatus::Paid;
+                    }
+                    $order->delivered_at = $now;
+                    $this->checkout->consumeCoupon($order, $now);
+
+                    $shipment = Shipment::query()->where('order_id', $order->id)->lockForUpdate()->firstOrFail();
+                    if ($proofPath !== null) {
+                        $deliveryProof = new ShipmentDeliveryProof;
+                        $deliveryProof->shipment_id = $shipment->id;
+                        $deliveryProof->uploaded_by = $actor->id;
+                        $deliveryProof->path = $proofPath;
+                        $deliveryProof->sha256 = hash_file('sha256', $proof->getRealPath());
+                        $deliveryProof->mime_type = $proof->getMimeType();
+                        $deliveryProof->size_bytes = $proof->getSize();
+                        $deliveryProof->created_at = $now;
+                        $deliveryProof->save();
+                    }
+                    $shipment->status = ShipmentStatus::Delivered;
+                    $shipment->delivered_at = $now;
+                    $shipment->updated_at = $now;
+                    $shipment->save();
+
+                    foreach ($this->items($order) as $item) {
+                        foreach ($item->units as $unit) {
+                            $unit->state = OrderUnitState::OwnedByCustomer;
+                            $unit->exchange_deadline_at = $this->clock->exchangeDeadline($now, $item->exchange_days_snapshot);
+                            $unit->warranty_deadline_at = $this->clock->warrantyDeadline($now, $item->warranty_months_snapshot);
+                            $unit->updated_at = $now;
+                            $unit->save();
+                            $this->ledger->postUnique("sale:unit:{$unit->id}", SalesLedgerType::SaleRecognized,
+                                ['merchandise_revenue_delta' => $unit->net_amount, 'cogs_delta' => (int) $unit->current_cogs_amount],
+                                ['order_id' => $order->id, 'order_item_unit_id' => $unit->id], $now);
+                        }
+                    }
+                    $this->ledger->postUnique("shipping:order:{$order->id}", SalesLedgerType::ShippingRecognized,
+                        ['shipping_revenue_delta' => $order->shipping_fee], ['order_id' => $order->id], $now);
+                });
             if ($proofPath !== null && ! ShipmentDeliveryProof::query()->where('path', $proofPath)->exists()) {
                 Storage::disk('private')->delete($proofPath);
             }
@@ -235,7 +238,7 @@ final class OrderWorkflowService
     public function fail(Order $order, User $actor, string $expected, string $reason): Order
     {
         return $this->transition($order, $actor, $expected, [OrderStatus::OnDelivery], OrderStatus::Failed, 'DELIVERY_FAILED', $reason,
-            function (Order $order, $now) use ($reason): void {
+            function (Order $order, $now) use ($actor, $reason): void {
                 $this->checkout->releaseCoupon($order, $now);
                 $shipment = Shipment::query()->where('order_id', $order->id)->lockForUpdate()->firstOrFail();
                 $shipment->status = ShipmentStatus::Returning;
@@ -246,6 +249,15 @@ final class OrderWorkflowService
                 $this->voidPendingPayment($order, $now);
                 $order->cancel_reason = $reason;
                 $order->failed_at = $now;
+                $this->workItems->create(new OperationsWorkItemDefinition(
+                    sourceType: OperationsSourceType::Shipment,
+                    sourceEventKey: "shipment:{$shipment->id}:failed-return",
+                    sourceReference: $order->order_code,
+                    sourceLabel: 'Hàng hoàn giao thất bại',
+                    title: "Tiếp nhận hàng hoàn đơn {$order->order_code}",
+                    content: "Đơn hàng {$order->order_code} giao thất bại ({$reason}). Cần tiếp nhận từng đôi vào cách ly và kiểm tra tình trạng.",
+                    occurredAt: $now,
+                ), $actor);
             });
     }
 

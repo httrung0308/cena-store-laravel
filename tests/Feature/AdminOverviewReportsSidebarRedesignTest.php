@@ -17,6 +17,7 @@ use App\Models\Review;
 use App\Models\SalesLedgerEntry;
 use App\Models\StockImport;
 use App\Models\User;
+use App\Services\OperationsQueueService;
 use App\Support\BusinessClock;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
@@ -55,7 +56,7 @@ class AdminOverviewReportsSidebarRedesignTest extends TestCase
             'order_status' => OrderStatus::Cancelled,
             'payment_status' => OrderPaymentStatus::RefundPending,
         ]);
-        Refund::factory()->create([
+        $refund = Refund::factory()->create([
             'order_id' => $refundOrder->id,
             'status' => RefundStatus::Requested,
         ]);
@@ -77,28 +78,39 @@ class AdminOverviewReportsSidebarRedesignTest extends TestCase
             'admin_reply' => null,
         ]);
 
+        $expectedQueueCounts = app(OperationsQueueService::class)->counts(true);
+
         $adminDashboard = $this->actingAs($this->admin)->get(route('admin.dashboard'));
         $adminDashboard->assertOk()
+            ->assertViewHas('queueCounts', $expectedQueueCounts)
             ->assertDontSee('Trạng thái hệ thống')
             ->assertDontSee('Realtime')
             ->assertDontSee('Thời gian thực')
-            ->assertSee(route('admin.orders.index', ['status' => 'PENDING']), false)
-            ->assertSee(route('admin.orders.index', ['status' => 'CONFIRMED']), false)
-            ->assertSee(route('admin.orders.index', ['status' => 'PACKING']), false)
+            ->assertDontSee('Trung tâm công việc vận hành')
+            ->assertDontSee('Doanh thu, Giá vốn &amp; Lợi nhuận', false)
+            ->assertSee('Doanh thu kỳ hiện tại')
+            ->assertSee('Đơn mới')
+            ->assertSee('Việc tồn đọng')
+            ->assertSee('Tồn kho cần chú ý')
+            ->assertSee('Snapshot hiện tại')
+            ->assertSee('Chờ bạn duyệt')
+            ->assertSee('Việc tồn đọng cần chú ý')
+            ->assertSee('Hàng cần nhập')
+            ->assertSee('Hết hàng (0 đôi)')
+            ->assertSee(route('admin.reports.index'), false)
+            ->assertSee(route('admin.operations-work-items.index', ['type' => OperationsQueueService::TYPE_ORDER_PENDING]), false)
+            ->assertSee(route('admin.operations-work-items.index'), false)
             ->assertSee(route('admin.stock-imports.index', ['status' => 'DRAFT']), false)
             ->assertSee(route('admin.products.index', ['stock' => 'out_of_stock']), false)
-            ->assertSee(route('admin.stock-imports.create', ['variant_id' => $lowVariant->id]), false)
-            ->assertSee(route('admin.orders.index', ['payment_status' => 'REFUND_PENDING']), false);
+            ->assertSee(route('admin.stock-imports.create', ['variant_id' => $lowVariant->id]), false);
+
+        // When no refund or write-off approvals remain, "Chờ bạn duyệt" is not rendered
+        $refund->forceFill(['status' => RefundStatus::Approved])->save();
+        $this->actingAs($this->admin)->get(route('admin.dashboard'))
+            ->assertOk()
+            ->assertDontSee('Chờ bạn duyệt');
 
         // Verify the filtered list routes accept the exact query params linked from Overview
-        $this->actingAs($this->admin)->get(route('admin.orders.index', ['status' => 'PENDING']))
-            ->assertOk()
-            ->assertViewHas('orders', fn ($orders) => $orders->total() === (int) $adminDashboard->viewData('pendingOrdersCount'));
-
-        $this->actingAs($this->admin)->get(route('admin.orders.index', ['status' => 'CONFIRMED']))
-            ->assertOk()
-            ->assertViewHas('orders', fn ($orders) => $orders->total() === (int) $adminDashboard->viewData('confirmedOrdersCount'));
-
         $this->actingAs($this->admin)->get(route('admin.stock-imports.index', ['status' => 'DRAFT']))
             ->assertOk()
             ->assertViewHas('imports', fn ($imports) => $imports->total() === (int) $adminDashboard->viewData('draftImportsCount'));
@@ -107,12 +119,17 @@ class AdminOverviewReportsSidebarRedesignTest extends TestCase
             ->assertOk()
             ->assertViewHas('products', fn ($products) => $products->total() === (int) $adminDashboard->viewData('outOfStockProductsCount'));
 
-        // Staff sees operational queues and Staff mobile badge, but not Admin refund approval queue
+        // Staff gets 403 on admin.dashboard, keeps access to reports (operational/inventory) and work center, and does not see stock-imports
         $this->actingAs($this->staff)->get(route('admin.dashboard'))
+            ->assertForbidden();
+
+        $this->actingAs($this->staff)->get(route('admin.operations-work-items.index'))
             ->assertOk()
-            ->assertViewHas('isAdmin', false)
-            ->assertViewHas('pendingRefunds', fn ($refunds) => $refunds->isEmpty())
-            ->assertDontSee(route('admin.orders.index', ['payment_status' => 'REFUND_PENDING']), false);
+            ->assertDontSee('stock-imports');
+
+        $this->actingAs($this->staff)->get(route('admin.reports.index'))
+            ->assertOk()
+            ->assertDontSee('stock-imports');
     }
 
     public function test_reports_daily_includes_expense_and_validates_exceeding_date_range_without_silent_reset(): void
@@ -171,7 +188,7 @@ class AdminOverviewReportsSidebarRedesignTest extends TestCase
             ->assertDontSee('72 byte');
     }
 
-    public function test_staff_dashboard_keeps_reports_and_stock_imports_and_treats_review_replies_as_optional(): void
+    public function test_staff_is_forbidden_from_dashboard_and_stock_imports_but_keeps_work_center_reports_and_reviews(): void
     {
         Review::factory()->create(['is_visible' => true, 'admin_reply' => null, 'comment' => 'Chờ shop phản hồi']);
         Review::factory()->create(['is_visible' => true, 'admin_reply' => 'Shop đã phản hồi', 'comment' => 'Đã trả lời rồi']);
@@ -179,12 +196,25 @@ class AdminOverviewReportsSidebarRedesignTest extends TestCase
 
         $this->actingAs($this->staff)
             ->get(route('admin.dashboard'))
+            ->assertForbidden();
+
+        $this->actingAs($this->staff)
+            ->get(route('admin.stock-imports.index'))
+            ->assertForbidden();
+
+        $this->actingAs($this->staff)
+            ->get(route('admin.stock-imports.create'))
+            ->assertForbidden();
+
+        $this->actingAs($this->staff)
+            ->get(route('admin.operations-work-items.index'))
             ->assertOk()
-            ->assertSee(route('admin.reports.index'), false)
-            ->assertSee(route('admin.stock-imports.create'), false)
-            ->assertSee('role="tooltip"', false)
-            ->assertDontSee('Đánh giá chưa phản hồi')
-            ->assertDontSee('Đánh giá mới chưa phản hồi');
+            ->assertDontSee('stock-imports');
+
+        $this->actingAs($this->staff)
+            ->get(route('admin.reports.index'))
+            ->assertOk()
+            ->assertDontSee('stock-imports');
 
         $this->actingAs($this->staff)
             ->get(route('admin.reviews.index', ['visible' => '1', 'replied' => '0']))

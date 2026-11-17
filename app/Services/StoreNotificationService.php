@@ -10,6 +10,7 @@ use App\Models\OrderStatusHistory;
 use App\Models\StoreNotification;
 use App\Models\User;
 use App\Support\BusinessClock;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use LogicException;
 
@@ -67,6 +68,20 @@ final class StoreNotificationService
         return StoreNotification::query()->where('user_id', $user->id)->whereNull('read_at')->count();
     }
 
+    /**
+     * @return Collection<int, StoreNotification>
+     */
+    public function recentForUser(User $user, int $limit = 6): Collection
+    {
+        return StoreNotification::query()
+            ->where('user_id', $user->id)
+            ->with('order:id,order_code')
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
+            ->limit($limit)
+            ->get();
+    }
+
     public function markRead(User $user, int $notificationId): StoreNotification
     {
         return DB::transaction(function () use ($user, $notificationId): StoreNotification {
@@ -84,6 +99,16 @@ final class StoreNotificationService
             }
 
             return $notification->refresh();
+        }, 3);
+    }
+
+    public function markAllRead(User $user): int
+    {
+        return DB::transaction(function () use ($user): int {
+            return StoreNotification::query()
+                ->where('user_id', $user->id)
+                ->whereNull('read_at')
+                ->update(['read_at' => $this->clock->now()]);
         }, 3);
     }
 }

@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Data\OperationsWorkItemDefinition;
 use App\Data\VerifiedOperationsSourceOutcome;
 use App\Enums\ErrorCode;
+use App\Enums\OperationsSourceType;
 use App\Enums\OperationsWorkItemStatus;
 use App\Enums\RoleSlug;
 use App\Exceptions\DomainException;
@@ -87,6 +88,25 @@ final class OperationsWorkItemService
 
             return $locked->refresh();
         }, 3);
+    }
+
+    /** Complete an open work item inside an active source transaction without failing if already closed or absent. */
+    public function completeIfOpen(OperationsSourceType $sourceType, string $sourceEventKey, User $actor, string $outcomeCode, ?string $note = null): ?OperationsWorkItem
+    {
+        $this->requireTransaction();
+        $locked = OperationsWorkItem::query()
+            ->where('source_type', $sourceType->value)
+            ->where('source_event_key', $sourceEventKey)
+            ->lockForUpdate()
+            ->first();
+
+        if ($locked === null || $locked->status === OperationsWorkItemStatus::Completed) {
+            return $locked;
+        }
+
+        $this->saveUpdate($locked, $actor, $locked->status, OperationsWorkItemStatus::Completed, $note, $outcomeCode);
+
+        return $locked->refresh();
     }
 
     private function saveUpdate(OperationsWorkItem $item, User $actor, OperationsWorkItemStatus $from, OperationsWorkItemStatus $to, ?string $note, ?string $outcomeCode): void

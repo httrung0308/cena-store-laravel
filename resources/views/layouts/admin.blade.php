@@ -11,7 +11,7 @@
             'key' => 'overview',
             'label' => 'Tổng quan',
             'items' => [
-                ['route' => 'admin.dashboard', 'active' => 'admin.dashboard', 'label' => 'Tổng quan', 'icon' => 'home'],
+                ['route' => 'admin.dashboard', 'active' => 'admin.dashboard', 'label' => 'Tổng quan', 'icon' => 'home', 'admin_only' => true],
                 ['route' => 'admin.operations-work-items.index', 'active' => 'admin.operations-work-items.*', 'label' => 'Công việc xử lý', 'icon' => 'archive'],
                 ['route' => 'admin.reports.index', 'active' => 'admin.reports.*', 'label' => 'Báo cáo', 'icon' => 'chart'],
             ],
@@ -33,8 +33,7 @@
                 ['route' => 'admin.categories.index', 'active' => 'admin.categories.*', 'label' => 'Đối tượng', 'icon' => 'tag'],
                 ['route' => 'admin.classifications.index', 'active' => 'admin.classifications.*', 'label' => 'Phân loại', 'icon' => 'layers', 'admin_only' => true],
                 ['route' => 'admin.suppliers.index', 'active' => 'admin.suppliers.*', 'label' => 'Nhà cung cấp', 'icon' => 'truck'],
-                ['route' => 'admin.stock-imports.index', 'active' => 'admin.stock-imports.*', 'label' => 'Nhập kho', 'icon' => 'archive'],
-                ['route' => 'admin.shipment-returns.index', 'active' => 'admin.shipment-returns.*', 'label' => 'Hàng hoàn cách ly', 'icon' => 'archive'],
+                ['route' => 'admin.stock-imports.index', 'active' => 'admin.stock-imports.*', 'label' => 'Nhập kho', 'icon' => 'archive', 'admin_only' => true],
             ],
         ],
         [
@@ -178,7 +177,7 @@
 
     <!-- Mobile Top Navigation Bar (Hamburger) -->
     <div class="md:hidden bg-[var(--admin-sidebar-bg)] text-[var(--admin-sidebar-text)] px-4 py-3 flex items-center justify-between border-b border-[var(--admin-sidebar-border)] shrink-0">
-        <a href="{{ route('admin.dashboard') }}" class="flex items-center gap-2">
+        <a href="{{ route($isAdmin ? 'admin.dashboard' : 'admin.operations-work-items.index') }}" class="flex items-center gap-2">
             <img src="{{ asset('cena-logo-white.svg') }}" alt="Cena" class="h-5 w-auto">
             <span class="text-[10px] font-bold uppercase bg-accent text-accent-text px-2 py-0.5 rounded">{{ $isAdmin ? 'Admin' : 'Staff' }}</span>
         </a>
@@ -200,7 +199,7 @@
             <div>
                 <!-- Brand in Admin Sidebar (desktop & mobile drawer) -->
                 <div class="flex items-center justify-between mb-6 pb-4 border-b border-[var(--admin-sidebar-border)]">
-                    <a href="{{ route('admin.dashboard') }}" @click="closeSidebar()" class="flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 rounded-lg">
+                    <a href="{{ route($isAdmin ? 'admin.dashboard' : 'admin.operations-work-items.index') }}" @click="closeSidebar()" class="flex items-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/80 rounded-lg">
                         <img src="{{ asset('cena-logo-white.svg') }}" alt="Cena" class="h-6 w-auto">
                         <span class="text-[10px] font-bold uppercase bg-accent text-accent-text px-2 py-0.5 rounded">{{ $isAdmin ? 'Admin' : 'Staff' }}</span>
                     </a>

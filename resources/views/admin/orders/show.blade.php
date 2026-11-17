@@ -17,8 +17,8 @@
 @endphp
 @section('actions')
     <a class="px-4 py-2 bg-surface hover:bg-border/40 text-muted hover:text-main text-xs font-bold rounded-xl border border-border transition-colors" href="{{ route('admin.orders.index') }}">← Danh sách đơn</a>
-    @if ($status === OrderStatus::Failed && $order->shipment && in_array($order->shipment->status, [App\Enums\ShipmentStatus::Returning, App\Enums\ShipmentStatus::ReturnReceived], true))
-        <a class="px-4 py-2 bg-accent text-accent-text hover:bg-accent-hover text-xs font-bold rounded-xl transition-colors" href="{{ route('admin.shipment-returns.show', $order->shipment) }}">Nhận hàng hoàn</a>
+    @if ($status === OrderStatus::Failed && $order->shipment)
+        <a class="px-4 py-2 bg-accent text-accent-text hover:bg-accent-hover text-xs font-bold rounded-xl transition-colors" href="#xu-ly-hang-hoan">Xử lý hàng hoàn</a>
     @endif
 @endsection
 @section('content')
@@ -63,6 +63,10 @@
             <div class="flex justify-between text-lg font-semibold"><dt class="text-main">Tổng cộng</dt><dd class="text-main font-bold">{{ $vnd($order->total_amount) }}</dd></div>
             <div class="flex justify-between text-muted"><dt>Đã thu</dt><dd>{{ $vnd($order->paid_amount) }}</dd></div>
         </dl>
+
+        @if ($status === OrderStatus::Failed && $order->shipment)
+            @include('admin.orders.partials.return-processing')
+        @endif
 
         <section class="admin-card">
             <h2 class="mb-3 text-xl font-semibold text-main">Lịch sử trạng thái</h2>

@@ -62,7 +62,9 @@
 
 @section('actions')
     <a href="{{ route('admin.orders.index') }}" class="btn-pill">Danh sách đơn hàng</a>
-    <a href="{{ route('admin.stock-imports.create') }}" class="btn-pill-dark">+ Tạo phiếu nhập hàng</a>
+    @if ($isAdmin)
+        <a href="{{ route('admin.stock-imports.create') }}" class="btn-pill-dark">+ Tạo phiếu nhập hàng</a>
+    @endif
 @endsection
 
 @section('content')
@@ -776,7 +778,9 @@
                                 Xem tất cả {{ count($inventory['low']) }} size
                             </button>
                         @endif
-                        <a href="{{ route('admin.stock-imports.create') }}" class="btn-pill-dark">+ Tạo phiếu nhập hàng</a>
+                        @if ($isAdmin)
+                            <a href="{{ route('admin.stock-imports.create') }}" class="btn-pill-dark">+ Tạo phiếu nhập hàng</a>
+                        @endif
                     </div>
                 </div>
 
@@ -806,7 +810,7 @@
                                         ])>{{ $row['sellable'] <= 0 ? 'Hết hàng' : $row['sellable'].' đôi' }}</span>
                                     </td>
                                     <td class="text-right whitespace-nowrap">
-                                        @if (! empty($row['variant_id']))
+                                        @if ($isAdmin && ! empty($row['variant_id']))
                                             <a href="{{ route('admin.stock-imports.create', ['variant_id' => $row['variant_id']]) }}"
                                                class="inline-flex items-center px-2.5 py-1 rounded-lg bg-accent/10 text-accent hover:bg-accent hover:text-accent-text font-bold text-xs transition-colors">
                                                 + Nhập kho
@@ -863,7 +867,7 @@
                                             ])>{{ $row['sellable'] <= 0 ? 'Hết hàng' : $row['sellable'].' đôi' }}</span>
                                         </td>
                                         <td class="text-right whitespace-nowrap">
-                                            @if (! empty($row['variant_id']))
+                                            @if ($isAdmin && ! empty($row['variant_id']))
                                                 <a href="{{ route('admin.stock-imports.create', ['variant_id' => $row['variant_id']]) }}"
                                                    class="inline-flex items-center px-2.5 py-1 rounded-lg bg-accent/10 text-accent hover:bg-accent hover:text-accent-text font-bold text-xs transition-colors">
                                                     Nhập kho
@@ -881,7 +885,9 @@
                     </div>
                     <footer class="flex justify-end gap-3 border-t border-border p-6">
                         <button type="button" x-on:click="closeDialog()" class="btn-pill">Đóng</button>
-                        <a href="{{ route('admin.stock-imports.create') }}" class="btn-pill-dark">Tạo phiếu nhập hàng</a>
+                        @if ($isAdmin)
+                            <a href="{{ route('admin.stock-imports.create') }}" class="btn-pill-dark">Tạo phiếu nhập hàng</a>
+                        @endif
                     </footer>
                 </section>
             </div>

@@ -14,7 +14,7 @@ class StockImportSpreadsheetTest extends TestCase
 {
     use DatabaseTransactions;
 
-    private User $staff;
+    private User $admin;
 
     /** @var array<string, ProductVariant> */
     private array $variants;
@@ -22,7 +22,7 @@ class StockImportSpreadsheetTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->staff = User::factory()->staff()->create();
+        $this->admin = User::factory()->administrator()->create();
         foreach (['XLS-RUN-40', 'XLS-RUN-41', 'XLS-RUN-42'] as $sku) {
             $this->variants[$sku] = ProductVariant::factory()->create(['sku' => $sku]);
         }
@@ -38,7 +38,7 @@ class StockImportSpreadsheetTest extends TestCase
             ['', '980000', '6.0', 'XLS-RUN-42'],
         ]);
 
-        $this->actingAs($this->staff)->post(route('admin.stock-imports.spreadsheet'), ['file' => $file])
+        $this->actingAs($this->admin)->post(route('admin.stock-imports.spreadsheet'), ['file' => $file])
             ->assertRedirect(route('admin.stock-imports.create'))
             ->assertSessionHasNoErrors()
             ->assertSessionHas('status', fn (string $status) => str_contains($status, 'Đã đọc 2 dòng'))
@@ -60,7 +60,7 @@ class StockImportSpreadsheetTest extends TestCase
             .";Runner;3;900000\n"
             ."XLS-RUN-42;Runner;4;-5\n";
 
-        $this->actingAs($this->staff)->post(route('admin.stock-imports.spreadsheet'), ['file' => UploadedFile::fake()->createWithContent('nhap.csv', $csv)])
+        $this->actingAs($this->admin)->post(route('admin.stock-imports.spreadsheet'), ['file' => UploadedFile::fake()->createWithContent('nhap.csv', $csv)])
             ->assertRedirect(route('admin.stock-imports.create'))
             ->assertSessionHasInput('items', [['variant_id' => (string) $this->variants['XLS-RUN-40']->id, 'quantity' => '5', 'unit_cost_amount' => '1050000']])
             ->assertSessionHasErrorsIn('spreadsheet', [0, 1, 2, 3, 4]);
@@ -83,7 +83,7 @@ class StockImportSpreadsheetTest extends TestCase
 
     public function test_unreadable_or_unsupported_files_are_refused_with_a_clear_message(): void
     {
-        $this->actingAs($this->staff);
+        $this->actingAs($this->admin);
         $this->post(route('admin.stock-imports.spreadsheet'), ['file' => UploadedFile::fake()->createWithContent('cu.xls', 'old')])
             ->assertSessionHasErrors(['file' => 'Chỉ nhận file .xlsx hoặc .csv. Với file .xls cũ, hãy mở bằng Excel và lưu lại thành .xlsx.']);
         $upload = fn (string $name, string $content) => $this->followingRedirects()
@@ -93,6 +93,10 @@ class StockImportSpreadsheetTest extends TestCase
         $upload('dai.csv', "SKU,Số lượng,Giá nhập\n".str_repeat("XLS-RUN-40,1,1000\n", 101))
             ->assertSee('File có 101 dòng, mỗi phiếu nhập tối đa 100 dòng. Hãy tách thành nhiều file.');
         $this->assertSame(0, StockImport::query()->count());
+
+        $this->actingAs(User::factory()->staff()->create());
+        $this->get(route('admin.stock-imports.template'))->assertForbidden();
+        $this->post(route('admin.stock-imports.spreadsheet'), ['file' => UploadedFile::fake()->createWithContent('x.csv', 'a')])->assertForbidden();
 
         $this->actingAs(User::factory()->customer()->create());
         $this->post(route('admin.stock-imports.spreadsheet'), ['file' => UploadedFile::fake()->createWithContent('x.csv', 'a')])->assertForbidden();

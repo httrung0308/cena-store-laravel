@@ -3,9 +3,11 @@
 namespace App\Services;
 
 use App\Data\InventoryChange;
+use App\Data\OperationsWorkItemDefinition;
 use App\Enums\ErrorCode;
 use App\Enums\InventoryAction;
 use App\Enums\InventoryReferenceType;
+use App\Enums\OperationsSourceType;
 use App\Enums\OrderStatus;
 use App\Enums\OrderUnitState;
 use App\Enums\ReturnDisposition;
@@ -35,6 +37,7 @@ final class ShipmentReturnService
         private readonly InventoryService $inventory,
         private readonly SalesLedgerService $ledger,
         private readonly BusinessClock $clock,
+        private readonly OperationsWorkItemService $workItems,
     ) {}
 
     public function receiveUnit(Shipment $shipment, int $unitId, User $actor, string $note): ShipmentReturnItem
@@ -42,7 +45,7 @@ final class ShipmentReturnService
         $note = $this->normalizeNote($note, 5);
 
         return DB::transaction(function () use ($shipment, $unitId, $actor, $note): ShipmentReturnItem {
-            $currentActor = $this->lockActor($actor, RoleSlug::Staff);
+            $currentActor = $this->lockBackOfficeActor($actor);
             $context = $this->lockShipmentContext($shipment->id);
             $order = $context['order'];
             $lockedShipment = $context['shipment'];
@@ -110,6 +113,14 @@ final class ShipmentReturnService
                 $lockedShipment->return_received_at = $now;
                 $lockedShipment->updated_at = $now;
                 $lockedShipment->save();
+
+                $this->workItems->completeIfOpen(
+                    OperationsSourceType::Shipment,
+                    "shipment:{$lockedShipment->id}:failed-return",
+                    $currentActor,
+                    'SHIPMENT_RETURN_RECEIVED',
+                    'Đã tiếp nhận đủ tất cả đôi của kiện hoàn.',
+                );
             }
 
             return $returnItem->fresh();
@@ -125,7 +136,7 @@ final class ShipmentReturnService
         }
 
         return DB::transaction(function () use ($shipment, $unitId, $actor, $incidentType, $note): ShipmentReturnEvent {
-            $currentActor = $this->lockActor($actor, RoleSlug::Staff);
+            $currentActor = $this->lockBackOfficeActor($actor);
             $context = $this->lockShipmentContext($shipment->id);
             $unit = $context['units']->firstWhere('id', $unitId);
             if ($unit === null) {
@@ -151,7 +162,19 @@ final class ShipmentReturnService
                 throw new DomainException(ErrorCode::StateConflict);
             }
 
-            return $this->recordShipmentEvent($context['shipment']->id, $unit->id, null, $incidentType, $currentActor, $note, $this->clock->now());
+            $event = $this->recordShipmentEvent($context['shipment']->id, $unit->id, null, $incidentType, $currentActor, $note, $this->clock->now());
+
+            $this->workItems->create(new OperationsWorkItemDefinition(
+                sourceType: OperationsSourceType::Shipment,
+                sourceEventKey: "shipment-return-event:{$event->id}",
+                sourceReference: $context['order']->order_code,
+                sourceLabel: 'Bất thường hàng hoàn',
+                title: "Xử lý bất thường {$incidentType} · đơn {$context['order']->order_code}",
+                content: "Ghi nhận sự cố {$incidentType} cho đơn vị #{$unit->id} thuộc kiện hoàn #{$context['shipment']->id}: {$note}",
+                occurredAt: $event->occurred_at,
+            ), $currentActor);
+
+            return $event;
         }, 3);
     }
 
@@ -160,7 +183,7 @@ final class ShipmentReturnService
         $note = $this->normalizeNote($note, 20);
 
         return DB::transaction(function () use ($returnItem, $actor, $note): ShipmentReturnItem {
-            $currentActor = $this->lockActor($actor, RoleSlug::Staff);
+            $currentActor = $this->lockBackOfficeActor($actor);
             $context = $this->lockReturnContext($returnItem->id);
             $lockedReturnItem = $context['return_item'];
 
@@ -218,7 +241,20 @@ final class ShipmentReturnService
                 throw new DomainException(ErrorCode::StateConflict);
             }
 
-            return $this->recordEvent($lockedReturnItem, ShipmentReturnEvent::WRITE_OFF_PROPOSED, $currentActor, $note, $this->clock->now());
+            $now = $this->clock->now();
+            $event = $this->recordEvent($lockedReturnItem, ShipmentReturnEvent::WRITE_OFF_PROPOSED, $currentActor, $note, $now);
+
+            $this->workItems->create(new OperationsWorkItemDefinition(
+                sourceType: OperationsSourceType::Inventory,
+                sourceEventKey: "shipment-return:{$lockedReturnItem->id}:write-off-approval",
+                sourceReference: $context['order']->order_code,
+                sourceLabel: 'Phê duyệt ghi hỏng',
+                title: "Duyệt ghi hỏng hàng hoàn đơn {$context['order']->order_code}",
+                content: "Nhân viên đề xuất ghi hỏng 1 đôi từ hàng hoàn cách ly (#{$lockedReturnItem->id}). Lý do: {$note}",
+                occurredAt: $now,
+            ), $currentActor);
+
+            return $event;
         }, 3);
     }
 
@@ -270,6 +306,14 @@ final class ShipmentReturnService
             $lockedReturnItem->updated_at = $now;
             $lockedReturnItem->save();
             $this->recordEvent($lockedReturnItem, ShipmentReturnEvent::WRITE_OFF_APPROVED, $currentActor, $note, $now);
+
+            $this->workItems->completeIfOpen(
+                OperationsSourceType::Inventory,
+                "shipment-return:{$lockedReturnItem->id}:write-off-approval",
+                $currentActor,
+                'WRITE_OFF_APPROVED',
+                $note,
+            );
 
             return $lockedReturnItem->fresh();
         }, 3);
@@ -338,7 +382,12 @@ final class ShipmentReturnService
         }
     }
 
-    private function lockActor(User $actor, RoleSlug $requiredRole): User
+    private function lockBackOfficeActor(User $actor): User
+    {
+        return $this->lockActor($actor, null);
+    }
+
+    private function lockActor(User $actor, ?RoleSlug $requiredRole): User
     {
         if (DB::transactionLevel() < 1) {
             throw new LogicException('Shipment return actions require a surrounding transaction.');
@@ -355,6 +404,7 @@ final class ShipmentReturnService
         $hasStaffRole = $staffRoleId !== null && $assignments->contains(fn (UserRole $assignment): bool => $assignment->role_id === $staffRoleId);
 
         $allowed = match ($requiredRole) {
+            null => $hasAdminRole || $hasStaffRole,
             RoleSlug::Admin => $hasAdminRole,
             RoleSlug::Staff => $hasStaffRole && ! $hasAdminRole,
             RoleSlug::Customer => false,

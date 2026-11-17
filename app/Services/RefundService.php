@@ -2,7 +2,9 @@
 
 namespace App\Services;
 
+use App\Data\OperationsWorkItemDefinition;
 use App\Enums\ErrorCode;
+use App\Enums\OperationsSourceType;
 use App\Enums\OrderPaymentStatus;
 use App\Enums\PaymentAttemptStatus;
 use App\Enums\PaymentDisposition;
@@ -22,7 +24,10 @@ use Illuminate\Support\Facades\DB;
 
 final class RefundService
 {
-    public function __construct(private readonly BusinessClock $clock) {}
+    public function __construct(
+        private readonly BusinessClock $clock,
+        private readonly OperationsWorkItemService $workItems,
+    ) {}
 
     public function requestOrderCancellationRefund(Order $order, User $actor): Refund
     {
@@ -55,6 +60,16 @@ final class RefundService
         $order->payment_status = OrderPaymentStatus::RefundPending;
         $order->updated_at = $now;
         $order->save();
+
+        $this->workItems->create(new OperationsWorkItemDefinition(
+            sourceType: OperationsSourceType::Payment,
+            sourceEventKey: "refund:{$refund->id}:approval",
+            sourceReference: $order->order_code,
+            sourceLabel: 'Hoàn tiền chờ duyệt',
+            title: "Duyệt hoàn tiền đơn {$order->order_code}",
+            content: "Đơn trả trước {$order->order_code} đã hủy, cần Admin duyệt hoàn ".number_format($refund->amount, 0, ',', '.').' ₫.',
+            occurredAt: $now,
+        ), $actor);
 
         return $refund;
     }
@@ -91,6 +106,13 @@ final class RefundService
             $order->payment_status = OrderPaymentStatus::Refunded;
             $order->updated_at = $now;
             $order->save();
+
+            $this->workItems->completeIfOpen(
+                OperationsSourceType::Payment,
+                "refund:{$locked->id}:approval",
+                $admin,
+                'REFUND_APPROVED',
+            );
 
             return $locked;
         });

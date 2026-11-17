@@ -23,13 +23,25 @@ class NotificationController extends Controller
             ->with('order:id,order_code')
             ->orderByDesc('created_at')->orderByDesc('id')
             ->paginate(20);
+        $unreadCount = $this->notifications->unreadCount($request->user());
 
-        return view('account.notifications.index', compact('notifications'));
+        return view('account.notifications.index', compact('notifications', 'unreadCount'));
     }
 
     public function unreadCount(Request $request): JsonResponse
     {
         return ApiResponse::success($request, ['unread_count' => $this->notifications->unreadCount($request->user())]);
+    }
+
+    public function recentApi(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $recent = $this->notifications->recentForUser($user);
+
+        return ApiResponse::success($request, [
+            'unread_count' => $this->notifications->unreadCount($user),
+            'notifications' => StoreNotificationResource::collection($recent)->resolve($request),
+        ]);
     }
 
     public function markReadApi(Request $request, int $notification): JsonResponse
@@ -49,10 +61,31 @@ class NotificationController extends Controller
         ], 'Đã đánh dấu thông báo đã đọc.');
     }
 
-    public function markRead(Request $request, int $notification): RedirectResponse
+    public function markAllReadApi(Request $request): JsonResponse
     {
+        $count = $this->notifications->markAllRead($request->user());
+
+        return ApiResponse::success($request, [
+            'marked_count' => $count,
+            'unread_count' => 0,
+        ]);
+    }
+
+    public function markRead(Request $request, int $notification): RedirectResponse|JsonResponse
+    {
+        if ($request->expectsJson()) {
+            return $this->markReadApi($request, $notification);
+        }
+
         $this->notifications->markRead($request->user(), $notification);
 
-        return redirect()->route('notifications.index')->with('status', 'Đã đánh dấu thông báo đã đọc.');
+        return redirect()->route('notifications.index');
+    }
+
+    public function markAllRead(Request $request): RedirectResponse
+    {
+        $this->notifications->markAllRead($request->user());
+
+        return redirect()->route('notifications.index');
     }
 }

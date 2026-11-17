@@ -7,16 +7,21 @@ use App\Enums\InventoryAction;
 use App\Enums\InventoryReferenceType;
 use App\Enums\OrderStatus;
 use App\Enums\OutboxAggregateType;
+use App\Enums\ReturnDisposition;
 use App\Enums\RoleSlug;
+use App\Enums\SalesLedgerType;
 use App\Models\Address;
 use App\Models\Cart;
 use App\Models\CartItem;
 use App\Models\Category;
+use App\Models\InventoryMovement;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\ProductColor;
 use App\Models\ProductVariant;
 use App\Models\Role;
+use App\Models\SalesLedgerEntry;
+use App\Models\ShipmentReturnEvent;
 use App\Models\ShipmentReturnItem;
 use App\Models\StockImport;
 use App\Models\StockImportItem;
@@ -25,6 +30,7 @@ use App\Models\UserRole;
 use App\Services\CheckoutService;
 use App\Services\InventoryService;
 use App\Services\OrderWorkflowService;
+use App\Services\ShipmentReturnService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Symfony\Component\Process\Process;
@@ -50,6 +56,9 @@ class ShipmentReturnConcurrencyTest extends CommittedAtomicTestCase
     private int $colorId;
 
     private int $categoryId;
+
+    /** @var list<int> */
+    private array $extraUserIds = [];
 
     protected function setUp(): void
     {
@@ -107,10 +116,17 @@ class ShipmentReturnConcurrencyTest extends CommittedAtomicTestCase
             $orderIds = $this->orderIds;
             $shipmentIds = DB::table('shipments')->whereIn('order_id', $orderIds)->pluck('id')->all();
             $returnIds = DB::table('shipment_return_items')->whereIn('shipment_id', $shipmentIds)->pluck('id')->all();
+            $workItemKeys = array_merge(
+                array_map(fn (int $id): string => "shipment:{$id}:failed-return", $shipmentIds),
+                array_map(fn (int $id): string => "shipment-return:{$id}:write-off-approval", $returnIds),
+            );
+            $workItemIds = DB::table('operations_work_items')->whereIn('source_event_key', $workItemKeys)->pluck('id')->all();
+            DB::table('operations_work_item_histories')->whereIn('work_item_id', $workItemIds)->delete();
+            DB::table('operations_work_items')->whereIn('id', $workItemIds)->delete();
             DB::table('shipment_return_events')->whereIn('shipment_return_item_id', $returnIds)->delete();
             DB::table('shipment_return_items')->whereIn('id', $returnIds)->delete();
-            DB::table('inventory_movements')->whereIn('variant_id', [$this->variant->id])->delete();
             DB::table('sales_ledger_entries')->whereIn('order_id', $orderIds)->delete();
+            DB::table('inventory_movements')->whereIn('variant_id', [$this->variant->id])->delete();
             DB::table('payment_events')->whereIn('payment_id', DB::table('payments')->whereIn('order_id', $orderIds)->select('id'))->delete();
             DB::table('payments')->whereIn('order_id', $orderIds)->delete();
             DB::table('outbox_events')->where('aggregate_type', OutboxAggregateType::Order->value)->whereIn('aggregate_id', $orderIds)->delete();
@@ -130,8 +146,9 @@ class ShipmentReturnConcurrencyTest extends CommittedAtomicTestCase
             DB::table('products')->where('id', $this->productId)->delete();
             DB::table('categories')->where('id', $this->categoryId)->delete();
             DB::table('suppliers')->where('id', $this->supplierId)->delete();
-            DB::table('user_roles')->whereIn('user_id', [$this->actor->id, $this->customer->id])->delete();
-            DB::table('users')->where('id', $this->customer->id)->delete();
+            $userIdsToDelete = array_values(array_unique(array_merge([$this->customer->id], $this->extraUserIds)));
+            DB::table('user_roles')->whereIn('user_id', array_merge([$this->actor->id], $userIdsToDelete))->delete();
+            DB::table('users')->whereIn('id', $userIdsToDelete)->delete();
         } finally {
             parent::tearDown();
         }
@@ -191,6 +208,175 @@ class ShipmentReturnConcurrencyTest extends CommittedAtomicTestCase
             $resolved = realpath($directory);
             $base = realpath(storage_path('framework/testing'));
             if ($resolved !== false && $base !== false && str_starts_with($resolved, $base.DIRECTORY_SEPARATOR.'shipment-return-')) {
+                foreach (['ready-0', 'ready-1', 'go'] as $name) {
+                    if (is_file($resolved.DIRECTORY_SEPARATOR.$name)) {
+                        unlink($resolved.DIRECTORY_SEPARATOR.$name);
+                    }
+                }
+                rmdir($resolved);
+            }
+        }
+    }
+
+    public function test_two_worker_connections_racing_to_restock_one_return_item_restock_once(): void
+    {
+        $order = Order::query()->whereKey($this->orderIds[0])->with(['shipment', 'items.units'])->firstOrFail();
+        $unitId = $order->items->sole()->units->sole()->id;
+        $returnItem = app(ShipmentReturnService::class)->receiveUnit(
+            $order->shipment,
+            $unitId,
+            $this->actor,
+            'Đã nhận đủ hộp và tem để kiểm tra đồng thời.',
+        );
+
+        $results = $this->runInlineWorkers(
+            'restock',
+            ['return_item_id' => $returnItem->id, 'actor_id' => $this->actor->id],
+            <<<'PHP'
+            $returnItem = \App\Models\ShipmentReturnItem::findOrFail((int) $input['return_item_id']);
+            $actor = \App\Models\User::findOrFail((int) $input['actor_id']);
+            $updated = app(\App\Services\ShipmentReturnService::class)->restock(
+                $returnItem,
+                $actor,
+                'Kiểm tra đạt đồng thời: giày và hộp nguyên vẹn để bán lại.',
+            );
+            return ['disposition' => $updated->disposition->value];
+            PHP,
+        );
+
+        $this->assertTrue($results[0]['ok']);
+        $this->assertTrue($results[1]['ok']);
+        $this->assertSame(ReturnDisposition::Restock->value, $results[0]['disposition']);
+        $this->assertSame(ReturnDisposition::Restock->value, $results[1]['disposition']);
+        $this->assertNotSame($results[0]['connection'], $results[1]['connection']);
+        $this->assertSame(1, InventoryMovement::query()->where('reference_type', InventoryReferenceType::ShipmentReturnItem)->where('reference_id', $returnItem->id)->where('action', InventoryAction::ReturnRestocked)->count());
+        $this->assertSame(1, ShipmentReturnEvent::query()->where('shipment_return_item_id', $returnItem->id)->where('event_type', ShipmentReturnEvent::RESTOCKED)->count());
+        $this->assertSame([2, 0, 0], [$this->variant->fresh()->stock_qty, $this->variant->fresh()->reserved_qty, $this->variant->fresh()->quarantine_qty]);
+    }
+
+    public function test_two_worker_connections_racing_to_approve_write_off_post_one_inventory_loss(): void
+    {
+        $admin = User::factory()->administrator()->create();
+        $this->extraUserIds[] = $admin->id;
+        $order = Order::query()->whereKey($this->orderIds[0])->with(['shipment', 'items.units'])->firstOrFail();
+        $unitId = $order->items->sole()->units->sole()->id;
+        $service = app(ShipmentReturnService::class);
+        $returnItem = $service->receiveUnit(
+            $order->shipment,
+            $unitId,
+            $this->actor,
+            'Đã nhận lại và giữ riêng để đánh giá hư hỏng đồng thời.',
+        );
+        $service->proposeWriteOff($returnItem, $this->actor, 'Đế giày nứt nặng và hộp rách, đề xuất ghi hỏng.');
+
+        $results = $this->runInlineWorkers(
+            'writeoff',
+            ['return_item_id' => $returnItem->id, 'actor_id' => $admin->id],
+            <<<'PHP'
+            $returnItem = \App\Models\ShipmentReturnItem::findOrFail((int) $input['return_item_id']);
+            $actor = \App\Models\User::findOrFail((int) $input['actor_id']);
+            $updated = app(\App\Services\ShipmentReturnService::class)->approveWriteOff(
+                $returnItem,
+                $actor,
+                'Admin duyệt ghi hỏng đồng thời sau khi kiểm tra chứng cứ.',
+            );
+            return ['disposition' => $updated->disposition->value];
+            PHP,
+        );
+
+        $this->assertTrue($results[0]['ok']);
+        $this->assertTrue($results[1]['ok']);
+        $this->assertSame(ReturnDisposition::WriteOff->value, $results[0]['disposition']);
+        $this->assertSame(ReturnDisposition::WriteOff->value, $results[1]['disposition']);
+        $this->assertNotSame($results[0]['connection'], $results[1]['connection']);
+        $this->assertSame(1, InventoryMovement::query()->where('reference_type', InventoryReferenceType::ShipmentReturnItem)->where('reference_id', $returnItem->id)->where('action', InventoryAction::ReturnWrittenOff)->count());
+        $this->assertSame(1, SalesLedgerEntry::query()->where('order_id', $order->id)->where('type', SalesLedgerType::InventoryLoss)->count());
+        $this->assertSame(1, ShipmentReturnEvent::query()->where('shipment_return_item_id', $returnItem->id)->where('event_type', ShipmentReturnEvent::WRITE_OFF_APPROVED)->count());
+        $this->assertSame([1, 0, 0], [$this->variant->fresh()->stock_qty, $this->variant->fresh()->reserved_qty, $this->variant->fresh()->quarantine_qty]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return list<array<string, mixed>>
+     */
+    private function runInlineWorkers(string $prefix, array $payload, string $body): array
+    {
+        $directory = storage_path('framework/testing/shipment-return-'.$prefix.'-'.Str::uuid());
+        if (! mkdir($directory, 0700, true) && ! is_dir($directory)) {
+            $this->fail('Cannot create the private test barrier directory.');
+        }
+        $connection = DB::connection()->getConfig();
+        $environment = [
+            'APP_ENV' => 'testing', 'APP_KEY' => config('app.key'), 'DB_CONNECTION' => 'mysql', 'DB_URL' => '',
+            'DB_HOST' => $connection['host'], 'DB_PORT' => (string) $connection['port'], 'DB_DATABASE' => $connection['database'],
+            'DB_USERNAME' => $connection['username'], 'DB_PASSWORD' => $connection['password'],
+            'SESSION_DRIVER' => 'array', 'CACHE_STORE' => 'array', 'QUEUE_CONNECTION' => 'sync', 'MAIL_MAILER' => 'array',
+        ];
+        $script = <<<PHP
+        require 'vendor/autoload.php';
+        try {
+            \$app = require 'bootstrap/app.php';
+            \$app->make(\\Illuminate\\Contracts\\Console\\Kernel::class)->bootstrap();
+            \\App\\Support\\TestDatabaseGuard::assertSafe(config('database.default'), \\Illuminate\\Support\\Facades\\DB::connection()->getDatabaseName(), \\Illuminate\\Support\\Facades\\DB::connection()->getConfig('username'), \$app->configurationIsCached());
+            \$input = json_decode(stream_get_contents(STDIN), true, flags: JSON_THROW_ON_ERROR);
+            \$directory = realpath(\$input['directory']);
+            \$deadline = microtime(true) + 25;
+            file_put_contents(\$directory.'/ready-'.\$input['worker'], 'ready');
+            while (! is_file(\$directory.'/go')) {
+                if (microtime(true) >= \$deadline) {
+                    throw new RuntimeException('Test barrier timed out.');
+                }
+                usleep(10000);
+                clearstatcache(true, \$directory.'/go');
+            }
+            \$connectionId = \\Illuminate\\Support\\Facades\\DB::selectOne('SELECT CONNECTION_ID() AS id')->id;
+            \$result = (static function (array \$input): array {
+                {$body}
+            })(\$input);
+            echo json_encode(array_merge(['ok' => true, 'connection' => \$connectionId], \$result), JSON_THROW_ON_ERROR);
+        } catch (Throwable \$exception) {
+            echo json_encode([
+                'ok' => false,
+                'connection' => \$connectionId ?? null,
+                'class' => \$exception::class,
+                'code' => \$exception instanceof \\App\\Exceptions\\DomainException ? \$exception->errorCode->value : null,
+                'message' => \$exception->getMessage(),
+            ], JSON_THROW_ON_ERROR);
+            exit(\$exception instanceof \\App\\Exceptions\\DomainException ? 0 : 1);
+        }
+        PHP;
+
+        $processes = [];
+        try {
+            foreach ([0, 1] as $worker) {
+                $process = new Process([PHP_BINARY, '-r', $script], base_path(), $environment);
+                $process->setTimeout(35);
+                $process->setInput(json_encode(array_merge($payload, [
+                    'directory' => $directory,
+                    'worker' => (string) $worker,
+                ]), JSON_THROW_ON_ERROR));
+                $process->start();
+                $processes[] = $process;
+            }
+            $this->waitForReadyWorkers($directory, $processes);
+            file_put_contents($directory.'/go', 'go');
+            $results = [];
+            foreach ($processes as $process) {
+                $process->wait();
+                $this->assertSame(0, $process->getExitCode(), $process->getOutput().' '.$process->getErrorOutput());
+                $results[] = json_decode($process->getOutput(), true, flags: JSON_THROW_ON_ERROR);
+            }
+
+            return $results;
+        } finally {
+            foreach ($processes as $process) {
+                if ($process->isRunning()) {
+                    $process->stop(1);
+                }
+            }
+            $resolved = realpath($directory);
+            $base = realpath(storage_path('framework/testing'));
+            if ($resolved !== false && $base !== false && str_starts_with($resolved, $base.DIRECTORY_SEPARATOR.'shipment-return-'.$prefix.'-')) {
                 foreach (['ready-0', 'ready-1', 'go'] as $name) {
                     if (is_file($resolved.DIRECTORY_SEPARATOR.$name)) {
                         unlink($resolved.DIRECTORY_SEPARATOR.$name);

@@ -10,7 +10,20 @@
                 <span class="rounded-full bg-surface px-3 py-1 text-sm text-main">{{ $workItem->status->label() }}</span>
             </div>
             <p class="whitespace-pre-line">{{ $workItem->content }}</p>
-            <p class="text-sm text-muted">Phát sinh {{ $workItem->occurred_at->timezone($timezone)->format('d/m/Y H:i:s') }}</p>
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <p class="text-sm text-muted">Phát sinh {{ $workItem->occurred_at->timezone($timezone)->format('d/m/Y H:i:s') }}</p>
+                @if (! empty($workflowLink))
+                    <a href="{{ $workflowLink['url'] }}" class="inline-flex items-center gap-1.5 rounded-lg bg-accent px-4 py-2 text-xs font-bold text-accent-text hover:bg-accent-hover">
+                        <span>{{ $workflowLink['label'] }}</span>
+                        <span aria-hidden="true">→</span>
+                    </a>
+                @endif
+            </div>
+            @if (! empty($isWorkflowBound) && $workItem->status !== \App\Enums\OperationsWorkItemStatus::Completed)
+                <p class="rounded-lg border border-border bg-surface px-3 py-2 text-xs text-muted">
+                    Công việc này gắn với quy trình nghiệp vụ và sẽ tự động hoàn tất khi thao tác xử lý gốc hoàn thành (không thể đóng thủ công).
+                </p>
+            @endif
         </article>
 
         @if ($workItem->status !== \App\Enums\OperationsWorkItemStatus::Completed)

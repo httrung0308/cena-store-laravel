@@ -175,15 +175,106 @@ class StoreNotificationTest extends TestCase
         $readAt = $notification->fresh()->read_at;
         $this->postJson(route('notifications.api.read', $notification))->assertOk();
         $this->assertSame($readAt->toISOString(), $notification->fresh()->read_at->toISOString());
-        $this->post(route('notifications.read', $notification))->assertRedirect(route('notifications.index'));
+        $this->post(route('notifications.read', $notification))
+            ->assertRedirect(route('notifications.index'))
+            ->assertSessionMissing('status');
         $this->getJson(route('notifications.api.unread-count'))->assertOk()->assertJsonPath('data.unread_count', 0);
 
         $otherCustomer = User::factory()->customer()->create();
         $this->actingAs($otherCustomer)->get(route('notifications.index'))->assertOk()->assertDontSee($order->order_code);
         $this->postJson(route('notifications.api.read', $notification))->assertNotFound();
+        $this->post(route('notifications.read', $notification))->assertNotFound();
         $this->actingAs(User::factory()->administrator()->create())->get(route('notifications.index'))->assertForbidden();
         auth()->logout();
         $this->getJson(route('notifications.api.unread-count'))->assertUnauthorized();
+    }
+
+    public function test_recent_notifications_api_is_limited_to_six_newest_first_and_owner_scoped(): void
+    {
+        $otherCustomer = User::factory()->customer()->create();
+        $otherOrder = Order::factory()->for($otherCustomer)->create(['order_status' => OrderStatus::Packing]);
+        $otherHistory = OrderStatusHistory::withoutEvents(fn (): OrderStatusHistory => OrderStatusHistory::factory()
+            ->for($otherOrder, 'order')
+            ->create(['to_status' => OrderStatus::Packing]));
+        StoreNotification::factory()->create([
+            'user_id' => $otherCustomer->id,
+            'order_id' => $otherOrder->id,
+            'order_status_history_id' => $otherHistory->id,
+            'created_at' => now()->addMinute(),
+        ]);
+
+        $createdIds = [];
+        $baseTime = now()->subHours(2);
+        for ($i = 0; $i < 8; $i++) {
+            $order = Order::factory()->for($this->customer)->create(['order_status' => OrderStatus::Packing]);
+            $history = OrderStatusHistory::withoutEvents(fn (): OrderStatusHistory => OrderStatusHistory::factory()
+                ->for($order, 'order')
+                ->create(['to_status' => OrderStatus::Packing]));
+            $notification = StoreNotification::factory()->create([
+                'user_id' => $this->customer->id,
+                'order_id' => $order->id,
+                'order_status_history_id' => $history->id,
+                'created_at' => $baseTime->copy()->addMinutes($i),
+                'read_at' => $i === 0 ? $baseTime->copy()->addMinutes($i + 1) : null,
+            ]);
+            $createdIds[] = $notification->id;
+        }
+
+        $response = $this->actingAs($this->customer)->getJson(route('notifications.api.recent'));
+
+        $response->assertOk()
+            ->assertJsonPath('data.unread_count', 7)
+            ->assertJsonCount(6, 'data.notifications');
+
+        $returnedIds = collect($response->json('data.notifications'))->pluck('id')->all();
+        $expectedIds = array_reverse(array_slice($createdIds, 2, 6));
+        $this->assertSame($expectedIds, $returnedIds);
+        $this->assertNotContains($otherOrder->order_code, collect($response->json('data.notifications'))->pluck('order_code')->all());
+    }
+
+    public function test_mark_all_read_api_only_marks_current_users_unread_notifications(): void
+    {
+        $otherCustomer = User::factory()->customer()->create();
+        $otherOrder = Order::factory()->for($otherCustomer)->create(['order_status' => OrderStatus::Packing]);
+        $otherHistory = OrderStatusHistory::withoutEvents(fn (): OrderStatusHistory => OrderStatusHistory::factory()
+            ->for($otherOrder, 'order')
+            ->create(['to_status' => OrderStatus::Packing]));
+        $otherNotification = StoreNotification::factory()->create([
+            'user_id' => $otherCustomer->id,
+            'order_id' => $otherOrder->id,
+            'order_status_history_id' => $otherHistory->id,
+            'read_at' => null,
+        ]);
+
+        $myUnread = [];
+        for ($i = 0; $i < 2; $i++) {
+            $order = Order::factory()->for($this->customer)->create(['order_status' => OrderStatus::Packing]);
+            $history = OrderStatusHistory::withoutEvents(fn (): OrderStatusHistory => OrderStatusHistory::factory()
+                ->for($order, 'order')
+                ->create(['to_status' => OrderStatus::Packing]));
+            $myUnread[] = StoreNotification::factory()->create([
+                'user_id' => $this->customer->id,
+                'order_id' => $order->id,
+                'order_status_history_id' => $history->id,
+                'read_at' => null,
+            ]);
+        }
+
+        $this->actingAs($this->customer)
+            ->postJson(route('notifications.api.read-all'))
+            ->assertOk()
+            ->assertJsonPath('data.marked_count', 2)
+            ->assertJsonPath('data.unread_count', 0);
+
+        foreach ($myUnread as $item) {
+            $this->assertNotNull($item->fresh()->read_at);
+        }
+        $this->assertNull($otherNotification->fresh()->read_at);
+
+        $this->actingAs($this->customer)
+            ->post(route('notifications.read-all'))
+            ->assertRedirect(route('notifications.index'))
+            ->assertSessionMissing('status');
     }
 
     public function test_notification_order_resource_never_serializes_order_or_payment_details(): void

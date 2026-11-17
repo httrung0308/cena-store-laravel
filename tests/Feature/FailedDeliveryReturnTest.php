@@ -6,6 +6,7 @@ use App\Data\InventoryChange;
 use App\Enums\ErrorCode;
 use App\Enums\InventoryAction;
 use App\Enums\InventoryReferenceType;
+use App\Enums\OrderStatus;
 use App\Enums\OrderUnitState;
 use App\Enums\SalesLedgerType;
 use App\Enums\ShipmentStatus;
@@ -101,7 +102,7 @@ class FailedDeliveryReturnTest extends TestCase
         $second = $this->failedOrder(quantity: 1);
         $foreignUnit = $second->items->sole()->units->sole();
 
-        $this->actingAs($this->staff)->from(route('admin.shipment-returns.show', $first->shipment))
+        $this->actingAs($this->staff)->from(route('admin.orders.show', $first))
             ->post(route('admin.shipment-returns.receive', $first->shipment), ['unit_id' => $foreignUnit->id, 'note' => 'Đôi này thuộc một đơn hàng và kiện khác.'])
             ->assertRedirect()->assertSessionHasErrors();
 
@@ -133,7 +134,21 @@ class FailedDeliveryReturnTest extends TestCase
         $this->assertSame(OrderUnitState::Outbound, $units[0]->fresh()->state);
         $this->assertSame(OrderUnitState::Outbound, $units[1]->fresh()->state);
         $this->assertSame(OrderUnitState::ReturnedToStore, $units[2]->fresh()->state);
-        $this->get(route('admin.shipment-returns.show', $order->shipment))->assertOk()->assertSee($missingNote)->assertSee('SKU không khớp')->assertSee('Thiếu chứng cứ');
+        $this->get(route('admin.shipment-returns.show', $order->shipment))
+            ->assertRedirect(route('admin.orders.show', $order).'#xu-ly-hang-hoan');
+        $this->get(route('admin.orders.show', $order))
+            ->assertOk()
+            ->assertSee('Xử lý hàng hoàn')
+            ->assertSee('Xác nhận đã nhận')
+            ->assertSee($missingNote)
+            ->assertSee('SKU không khớp')
+            ->assertSee('Thiếu chứng cứ');
+        $this->get(route('admin.shipment-returns.index', ['return_progress' => 'partially_received']))
+            ->assertRedirect(route('admin.orders.index', ['status' => OrderStatus::Failed->value, 'return_progress' => 'partially_received']));
+        $this->get(route('admin.orders.index', ['status' => OrderStatus::Failed->value, 'return_progress' => 'partially_received']))
+            ->assertOk()
+            ->assertSee($order->order_code)
+            ->assertSee('Đã nhận một phần');
         $this->assertSame($returnItem->id, ShipmentReturnItem::query()->where('order_item_unit_id', $units[2]->id)->sole()->id);
     }
 
@@ -211,10 +226,39 @@ class FailedDeliveryReturnTest extends TestCase
 
     public function test_only_back_office_users_can_open_return_pages_and_admin_cannot_make_staff_proposal(): void
     {
-        $order = $this->failedOrder(quantity: 1);
+        $order = $this->failedOrder(quantity: 2);
+        $units = $order->items->sole()->units->sortBy('unit_no')->values();
+
         $this->actingAs($this->customer)->get(route('admin.shipment-returns.index'))->assertForbidden();
-        $this->actingAs($this->admin)->get(route('admin.shipment-returns.show', $order->shipment))->assertOk();
-        $this->post(route('admin.shipment-returns.receive', $order->shipment), ['unit_id' => $order->items->sole()->units->sole()->id, 'note' => 'Đã nhận đủ hộp và phụ kiện của đôi hàng.'])->assertForbidden();
+        $this->actingAs($this->admin)->get(route('admin.shipment-returns.index'))
+            ->assertRedirect(route('admin.orders.index', ['status' => OrderStatus::Failed->value]));
+        $this->actingAs($this->admin)->get(route('admin.shipment-returns.show', $order->shipment))
+            ->assertRedirect(route('admin.orders.show', $order).'#xu-ly-hang-hoan');
+
+        $this->actingAs($this->admin)
+            ->post(route('admin.shipment-returns.receive', $order->shipment), ['unit_id' => $units[0]->id, 'note' => 'Admin nhận đôi đầu tiên vào kho cách ly để kiểm tra.'])
+            ->assertRedirect(route('admin.orders.show', $order).'#xu-ly-hang-hoan');
+        $firstReturnItem = ShipmentReturnItem::query()->where('order_item_unit_id', $units[0]->id)->sole();
+
+        $this->actingAs($this->admin)
+            ->post(route('admin.shipment-return-items.restock', $firstReturnItem), ['note' => 'Admin kiểm tra đạt: giày nguyên vẹn, nhập lại kho bán.'])
+            ->assertRedirect(route('admin.orders.show', $order).'#xu-ly-hang-hoan');
+
+        $this->actingAs($this->staff)
+            ->post(route('admin.shipment-returns.receive', $order->shipment), ['unit_id' => $units[1]->id, 'note' => 'Staff nhận đôi thứ hai vào kho cách ly để đánh giá.'])
+            ->assertRedirect(route('admin.orders.show', $order).'#xu-ly-hang-hoan');
+        $secondReturnItem = ShipmentReturnItem::query()->where('order_item_unit_id', $units[1]->id)->sole();
+
+        $this->actingAs($this->admin)
+            ->post(route('admin.shipment-return-items.write-off-proposal', $secondReturnItem), ['note' => 'Admin không được thay Staff gửi đề xuất ghi hỏng.'])
+            ->assertForbidden();
+        $this->actingAs($this->staff)
+            ->post(route('admin.shipment-return-items.write-off-proposal', $secondReturnItem), ['note' => 'Staff đề xuất ghi hỏng vì đế giày bị nứt không bán được.'])
+            ->assertRedirect(route('admin.orders.show', $order).'#xu-ly-hang-hoan');
+        $this->actingAs($this->staff)
+            ->post(route('admin.shipment-return-items.write-off-approval', $secondReturnItem), ['note' => 'Staff không được tự phê duyệt đề xuất ghi hỏng của mình.'])
+            ->assertForbidden();
+
         $this->app['auth']->guard()->logout();
         $this->get(route('admin.shipment-returns.index'))->assertRedirect(route('login'));
     }

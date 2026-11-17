@@ -3,6 +3,45 @@
 @section('eyebrow', 'QUẢN TRỊ BÁN HÀNG')
 @php
     $tz = (string) config('store.business_timezone');
+    $returnProgressOptions = [
+        'awaiting_receive' => 'Chờ nhận',
+        'partially_received' => 'Đã nhận một phần',
+        'awaiting_inspection' => 'Chờ kiểm tra',
+        'awaiting_write_off_approval' => 'Chờ duyệt ghi hỏng',
+        'completed' => 'Đã xử lý',
+    ];
+    $resolveReturnBadge = static function ($order): ?array {
+        if ($order->order_status !== App\Enums\OrderStatus::Failed || ! $order->shipment) {
+            return null;
+        }
+        $shipment = $order->shipment;
+        $totalUnits = max(1, (int) $order->items->sum('quantity'));
+        $returnItems = $shipment->shipmentReturnItems;
+        $receivedCount = $returnItems->count();
+        if ($receivedCount === 0) {
+            if ($shipment->status === App\Enums\ShipmentStatus::Lost) {
+                return ['label' => 'Thất lạc', 'class' => 'bg-error-bg text-error-text border border-error/30'];
+            }
+
+            return ['label' => 'Chờ nhận', 'class' => 'bg-warning-bg text-warning-text border border-warning/30'];
+        }
+        if ($receivedCount < $totalUnits && $shipment->status === App\Enums\ShipmentStatus::Returning) {
+            return ['label' => 'Đã nhận một phần', 'class' => 'bg-warning-bg text-warning-text border border-warning/30'];
+        }
+        $pendingItems = $returnItems->where('disposition', App\Enums\ReturnDisposition::Pending);
+        if ($pendingItems->isNotEmpty()) {
+            $hasWriteOffProposal = $shipment->returnEvents
+                ->where('event_type', App\Models\ShipmentReturnEvent::WRITE_OFF_PROPOSED)
+                ->whereIn('shipment_return_item_id', $pendingItems->pluck('id'))
+                ->isNotEmpty();
+
+            return $hasWriteOffProposal
+                ? ['label' => 'Chờ duyệt ghi hỏng', 'class' => 'bg-error-bg text-error-text border border-error/30']
+                : ['label' => 'Chờ kiểm tra', 'class' => 'bg-warning-bg text-warning-text border border-warning/30'];
+        }
+
+        return ['label' => 'Đã xử lý', 'class' => 'bg-success-bg text-success-text border border-success/30'];
+    };
     $activeChips = [];
     if (filled($filters['search'] ?? null)) {
         $activeChips[] = [
@@ -20,6 +59,12 @@
         $activeChips[] = [
             'label' => 'Thanh toán: '.App\Enums\OrderPaymentStatus::from($filters['payment_status'])->label(),
             'url' => request()->fullUrlWithQuery(['payment_status' => null, 'page' => null]),
+        ];
+    }
+    if (filled($filters['return_progress'] ?? null)) {
+        $activeChips[] = [
+            'label' => 'Hàng hoàn: '.($returnProgressOptions[$filters['return_progress']] ?? $filters['return_progress']),
+            'url' => request()->fullUrlWithQuery(['return_progress' => null, 'page' => null]),
         ];
     }
 @endphp
@@ -48,6 +93,13 @@
                         <option value="{{ $paymentState->value }}" @selected(($filters['payment_status'] ?? '') === $paymentState->value)>{{ $paymentState->label() }}</option>
                     @endforeach
                 </x-admin.filter-select>
+
+                <x-admin.filter-select id="order-return-progress-filter" name="return_progress" label="Hàng hoàn:" :active="filled($filters['return_progress'] ?? null)">
+                    <option value="">Tất cả</option>
+                    @foreach ($returnProgressOptions as $progressKey => $progressLabel)
+                        <option value="{{ $progressKey }}" @selected(($filters['return_progress'] ?? '') === $progressKey)>{{ $progressLabel }}</option>
+                    @endforeach
+                </x-admin.filter-select>
             </x-slot:filters>
         </x-admin.search-form>
 
@@ -70,6 +122,7 @@
                             $itemsSummary = $order->items
                                 ->map(fn ($item) => $item->product_name_snapshot.' ('.$item->quantity.' đôi)')
                                 ->implode(', ');
+                            $returnBadge = $resolveReturnBadge($order);
                         @endphp
                         <article class="p-4 space-y-2.5 text-xs">
                             <div class="flex items-start justify-between gap-2">
@@ -78,7 +131,14 @@
                                     <span>{{ $order->order_code }}</span>
                                     <span aria-hidden="true">→</span>
                                 </a>
-                                <x-orders.status-badge :status="$order->order_status" />
+                                <div class="flex flex-col items-end gap-1 shrink-0">
+                                    <x-orders.status-badge :status="$order->order_status" />
+                                    @if ($returnBadge)
+                                        <span class="inline-flex items-center whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] font-semibold {{ $returnBadge['class'] }}">
+                                            {{ $returnBadge['label'] }}
+                                        </span>
+                                    @endif
+                                </div>
                             </div>
                             <div>
                                 <p class="font-bold text-main break-words">{{ $order->shipping_name }}</p>
@@ -129,6 +189,7 @@
                                     ->map(fn ($item) => $item->product_name_snapshot.' ('.$item->quantity.' đôi)')
                                     ->implode(', ');
                                 $hasLongName = mb_strlen((string) $order->shipping_name) > 22;
+                                $returnBadge = $resolveReturnBadge($order);
                             @endphp
                             <tr class="hover:bg-surface/50 transition-colors align-top">
                                 <td class="px-3.5 py-3 min-w-0">
@@ -170,8 +231,15 @@
                                     <span class="block font-mono font-extrabold text-accent text-xs tabular-nums whitespace-nowrap">{{ number_format($order->total_amount, 0, ',', '.') }} ₫</span>
                                     <span @class(['badge mt-1 inline-block', 'bg-success-bg text-success border border-success/30' => $order->payment_status === App\Enums\OrderPaymentStatus::Paid, 'bg-muted/15 text-muted border border-border/50' => $order->payment_status !== App\Enums\OrderPaymentStatus::Paid])>{{ $order->payment_status->label() }}</span>
                                 </td>
-                                <td class="px-3.5 py-3 text-right whitespace-nowrap">
-                                    <x-orders.status-badge :status="$order->order_status" />
+                                <td class="px-3.5 py-3 text-right">
+                                    <div class="flex flex-col items-end gap-1">
+                                        <x-orders.status-badge :status="$order->order_status" />
+                                        @if ($returnBadge)
+                                            <span class="inline-flex items-center whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] font-semibold {{ $returnBadge['class'] }}">
+                                                {{ $returnBadge['label'] }}
+                                            </span>
+                                        @endif
+                                    </div>
                                 </td>
                             </tr>
                         @empty

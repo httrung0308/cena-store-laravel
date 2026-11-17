@@ -35,10 +35,13 @@ Route::post('/logout', LogoutController::class)->middleware('auth')->name('logou
 Route::get('/account', AccountController::class)->middleware('auth')->name('account.index');
 Route::middleware(['auth', EnsureNonAdminShopping::class, 'role:customer'])->prefix('account/notifications')->name('notifications.')->group(function (): void {
     Route::get('/', [NotificationController::class, 'index'])->name('index');
+    Route::post('/read-all', [NotificationController::class, 'markAllRead'])->name('read-all');
     Route::post('/{notification}/read', [NotificationController::class, 'markRead'])->whereNumber('notification')->name('read');
 });
 Route::middleware(['auth', EnsureNonAdminShopping::class, 'role:customer', 'throttle:120,1'])->prefix('api/notifications')->name('notifications.api.')->group(function (): void {
     Route::get('/unread-count', [NotificationController::class, 'unreadCount'])->name('unread-count');
+    Route::get('/recent', [NotificationController::class, 'recentApi'])->name('recent');
+    Route::post('/read-all', [NotificationController::class, 'markAllReadApi'])->name('read-all');
     Route::post('/{notification}/read', [NotificationController::class, 'markReadApi'])->whereNumber('notification')->name('read');
 });
 Route::middleware('auth')->prefix('account/settings')->group(function (): void {

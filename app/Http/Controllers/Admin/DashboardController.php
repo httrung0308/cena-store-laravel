@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Enums\OrderPaymentStatus;
-use App\Enums\OrderStatus;
 use App\Enums\RefundStatus;
 use App\Enums\RoleSlug;
 use App\Enums\StockImportStatus;
@@ -12,6 +11,7 @@ use App\Models\Order;
 use App\Models\Product;
 use App\Models\Refund;
 use App\Models\StockImport;
+use App\Services\OperationsQueueService;
 use App\Services\ReportService;
 use App\Support\BusinessClock;
 use Illuminate\Contracts\View\View;
@@ -20,41 +20,46 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Operational triage hub for `/admin` (route `admin.dashboard`).
- * Surfaces current actionable queues with exact counts matching their filtered index destinations.
+ * Admin-only Overview hub for `/admin` (route `admin.dashboard`).
+ * Surfaces current-month revenue, 4 main KPIs, Admin approvals, prioritized work items, and low-stock variants.
  */
 class DashboardController extends Controller
 {
-    public function index(Request $request, BusinessClock $clock): View
+    public function __construct(private readonly OperationsQueueService $queues) {}
+
+    public function index(Request $request, BusinessClock $clock, ReportService $reportService): View
     {
         $user = $request->user();
         $isAdmin = $user?->hasRole(RoleSlug::Admin) ?? false;
         $timezone = (string) config('store.business_timezone', 'Asia/Ho_Chi_Minh');
-        $loadedAt = $clock->now()->setTimezone($timezone);
+        $now = $clock->now();
+        $loadedAt = $now->setTimezone($timezone);
 
-        // 1. Order status queue counts — each matches OrderController::index(?status=...) 100%
-        $rawOrderCounts = Order::query()
-            ->whereIn('order_status', [
-                OrderStatus::Pending->value,
-                OrderStatus::Confirmed->value,
-                OrderStatus::Packing->value,
-                OrderStatus::OnDelivery->value,
-            ])
-            ->selectRaw('order_status, COUNT(*) as total')
-            ->groupBy('order_status')
-            ->pluck('total', 'order_status');
+        // 1. Current-month revenue from ReportService ([firstDayOfMonth..today], capped at viewing time)
+        $firstDayOfMonth = $loadedAt->startOfMonth()->format('Y-m-d');
+        $today = $loadedAt->format('Y-m-d');
+        ['start' => $monthStart, 'end' => $monthEnd] = $reportService->range($firstDayOfMonth, $today);
+        if ($monthEnd->greaterThan($now)) {
+            $monthEnd = $now;
+        }
+        $currentMonthRevenue = $reportService->money($monthStart, $monthEnd)['revenue'];
 
-        $pendingOrdersCount = (int) ($rawOrderCounts[OrderStatus::Pending->value] ?? 0);
-        $confirmedOrdersCount = (int) ($rawOrderCounts[OrderStatus::Confirmed->value] ?? 0);
-        $packingOrdersCount = (int) ($rawOrderCounts[OrderStatus::Packing->value] ?? 0);
-        $onDeliveryOrdersCount = (int) ($rawOrderCounts[OrderStatus::OnDelivery->value] ?? 0);
+        // 2. Unified actionable queue counts & top 6 prioritized items from OperationsQueueService
+        $queueCounts = $this->queues->counts($isAdmin);
+        $topWorkItems = $this->queues
+            ->paginateActive($isAdmin, OperationsQueueService::TYPE_ALL, null, null, 6, 1)
+            ->items();
 
-        // 2. Stock import draft count — matches StockImportController::index(?status=DRAFT) 100%
+        $pendingOrdersCount = $queueCounts[OperationsQueueService::TYPE_ORDER_PENDING];
+        $confirmedOrdersCount = $queueCounts[OperationsQueueService::TYPE_ORDER_CONFIRMED];
+        $packingOrdersCount = $queueCounts[OperationsQueueService::TYPE_ORDER_PACKING];
+
+        // 3. Stock import draft count — matches StockImportController::index(?status=DRAFT)
         $draftImportsCount = StockImport::query()
             ->where('status', StockImportStatus::Draft->value)
             ->count();
 
-        // 3. Out-of-stock products count — matches ProductController::index(?stock=out_of_stock) 100%
+        // 4. Out-of-stock products count — matches ProductController::index(?stock=out_of_stock)
         $saleableVariantExists = static function (QueryBuilder $query): void {
             $query->selectRaw('1')
                 ->from('product_variants as v')
@@ -71,7 +76,7 @@ class DashboardController extends Controller
             ->whereNotExists($saleableVariantExists)
             ->count();
 
-        // 4. Low/out-of-stock active variants (SKU/size level, sellable <= 5) for direct "+ Nhập kho" action
+        // 5. Low/out-of-stock active variants (SKU/size level, sellable <= 5) for direct "+ Nhập kho" action
         $lowStockThreshold = ReportService::LOW_STOCK_THRESHOLD;
         $lowVariantsBaseQuery = DB::table('product_variants')
             ->join('product_colors', 'product_colors.id', '=', 'product_variants.product_color_id')
@@ -109,77 +114,51 @@ class DashboardController extends Controller
             ])
             ->all();
 
-        // 5. Priority orders queue (PENDING -> CONFIRMED -> PACKING, oldest waiting first)
-        $actionableOrders = Order::query()
-            ->with('items')
-            ->whereIn('order_status', [
-                OrderStatus::Pending->value,
-                OrderStatus::Confirmed->value,
-                OrderStatus::Packing->value,
-            ])
-            ->orderByRaw("CASE order_status WHEN 'PENDING' THEN 1 WHEN 'CONFIRMED' THEN 2 WHEN 'PACKING' THEN 3 ELSE 4 END")
-            ->orderBy('created_at')
-            ->orderBy('id')
-            ->limit(8)
-            ->get();
+        // 6. Admin approvals: refund requests & write-off proposals
+        $requestedRefundsCount = $queueCounts[OperationsQueueService::TYPE_REFUND_APPROVAL];
+        $writeOffApprovalCount = $queueCounts[OperationsQueueService::TYPE_WRITE_OFF_APPROVAL];
 
-        // 6. Draft stock imports list for quick posting/completion
-        $draftImports = StockImport::query()
-            ->where('status', StockImportStatus::Draft->value)
-            ->orderByDesc('updated_at')
-            ->orderByDesc('id')
-            ->limit(5)
-            ->get();
+        $pendingRefundOrdersCount = $isAdmin
+            ? Order::query()->where('payment_status', OrderPaymentStatus::RefundPending->value)->count()
+            : 0;
 
-        // 7. Admin-only: refund requests awaiting approval & orders with REFUND_PENDING payment status
-        $pendingRefundOrdersCount = 0;
-        $requestedRefundsCount = 0;
-        $pendingRefunds = collect();
-
-        if ($isAdmin) {
-            // Matches OrderController::index(?payment_status=REFUND_PENDING) 100%
-            $pendingRefundOrdersCount = Order::query()
-                ->where('payment_status', OrderPaymentStatus::RefundPending->value)
-                ->count();
-
-            $requestedRefundsCount = Refund::query()
-                ->where('status', RefundStatus::Requested->value)
-                ->count();
-
-            $pendingRefunds = Refund::query()
+        $pendingRefunds = ($isAdmin && $requestedRefundsCount > 0)
+            ? Refund::query()
                 ->with(['order', 'requestedBy'])
                 ->where('status', RefundStatus::Requested->value)
                 ->orderBy('created_at')
                 ->orderBy('id')
                 ->limit(5)
-                ->get();
-        }
+                ->get()
+            : collect();
 
-        $totalActionableCount = $pendingOrdersCount
-            + $confirmedOrdersCount
-            + $packingOrdersCount
-            + $draftImportsCount
-            + ($isAdmin ? $requestedRefundsCount : 0);
+        $pendingWriteOffs = ($isAdmin && $writeOffApprovalCount > 0)
+            ? $this->queues->paginateActive(true, OperationsQueueService::TYPE_WRITE_OFF_APPROVAL, null, null, 5, 1)->items()
+            : [];
+
+        $totalActionableCount = $queueCounts['total'] + $draftImportsCount;
 
         return view('admin.dashboard', [
             'isAdmin' => $isAdmin,
             'timezone' => $timezone,
             'loadedAt' => $loadedAt,
+            'currentMonthRevenue' => $currentMonthRevenue,
+            'queueCounts' => $queueCounts,
+            'topWorkItems' => $topWorkItems,
             'pendingOrdersCount' => $pendingOrdersCount,
             'confirmedOrdersCount' => $confirmedOrdersCount,
             'packingOrdersCount' => $packingOrdersCount,
-            'onDeliveryOrdersCount' => $onDeliveryOrdersCount,
             'draftImportsCount' => $draftImportsCount,
             'outOfStockProductsCount' => $outOfStockProductsCount,
             'lowStockThreshold' => $lowStockThreshold,
             'lowStockVariantsCount' => $lowStockVariantsCount,
             'depletedVariantsCount' => $depletedVariantsCount,
             'lowStockVariants' => $lowStockVariants,
-            'actionableOrders' => $actionableOrders,
-            'draftImports' => $draftImports,
             'pendingRefundOrdersCount' => $pendingRefundOrdersCount,
             'requestedRefundsCount' => $requestedRefundsCount,
+            'writeOffApprovalCount' => $writeOffApprovalCount,
             'pendingRefunds' => $pendingRefunds,
+            'pendingWriteOffs' => $pendingWriteOffs,
             'totalActionableCount' => $totalActionableCount,
         ]);
     }

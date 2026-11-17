@@ -161,8 +161,11 @@ class AdminCrudStandardizationTest extends TestCase
             ->assertSee('Giày Chạy Bộ Nam Filter');
 
         $supplier = Supplier::factory()->create(['name' => 'NCC Lọc Kho', 'is_active' => true]);
-        StockImport::factory()->create(['supplier_id' => $supplier->id, 'import_code' => 'PN-FILTER-01', 'created_by' => $this->staff->id]);
+        StockImport::factory()->create(['supplier_id' => $supplier->id, 'import_code' => 'PN-FILTER-01', 'created_by' => $this->admin->id]);
         $this->actingAs($this->staff)
+            ->get(route('admin.stock-imports.index', ['supplier_id' => $supplier->id]))
+            ->assertForbidden();
+        $this->actingAs($this->admin)
             ->get(route('admin.stock-imports.index', ['supplier_id' => $supplier->id]))
             ->assertOk()
             ->assertSee('PN-FILTER-01');
@@ -172,6 +175,9 @@ class AdminCrudStandardizationTest extends TestCase
         $variant = ProductVariant::factory()->create(['product_color_id' => $color->id, 'sku' => 'SKU-PREFILL-01']);
 
         $this->actingAs($this->staff)
+            ->get(route('admin.stock-imports.create', ['variant_id' => $variant->id]))
+            ->assertForbidden();
+        $this->actingAs($this->admin)
             ->get(route('admin.stock-imports.create', ['variant_id' => $variant->id]))
             ->assertOk()
             ->assertSee('SKU-PREFILL-01');
@@ -216,9 +222,6 @@ class AdminCrudStandardizationTest extends TestCase
 
         $this->actingAs($this->staff)
             ->get(route('admin.dashboard'))
-            ->assertOk()
-            ->assertDontSee(route('admin.classifications.index'))
-            ->assertDontSee(route('admin.banners.index'))
-            ->assertSee(route('admin.profile.show'));
+            ->assertForbidden();
     }
 }

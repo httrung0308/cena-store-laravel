@@ -17,10 +17,10 @@ class StockImportConcurrencyTest extends CommittedAtomicTestCase
 {
     public function test_two_authorized_operators_post_one_document_once_using_independent_mysql_connections(): void
     {
-        $existingRole = Role::where('slug', 'staff')->first();
-        $first = User::factory()->staff()->create();
-        $second = User::factory()->staff()->create();
-        $ownedRoleId = $existingRole ? null : $first->roles()->where('slug', 'staff')->value('roles.id');
+        $existingRole = Role::where('slug', 'admin')->first();
+        $first = User::factory()->administrator()->create();
+        $second = User::factory()->administrator()->create();
+        $ownedRoleId = $existingRole ? null : $first->roles()->where('slug', 'admin')->value('roles.id');
         $variant = ProductVariant::factory()->create();
         $color = $variant->color;
         $product = $color->product;

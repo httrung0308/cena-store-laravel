@@ -25,7 +25,9 @@ use Illuminate\Support\Facades\Route;
  * The admin sidebar shows a link only when its route exists: admin.categories.index,
  * admin.suppliers.index, admin.products.index, admin.stock-imports.index.
  */
-Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+Route::middleware('role:admin')->group(function (): void {
+    Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
+});
 Route::get('profile', [ProfileController::class, 'show'])->name('profile.show');
 Route::get('reports', [ReportController::class, 'index'])->name('reports.index');
 
@@ -48,11 +50,13 @@ Route::patch('products/{product}/activate', [ProductController::class, 'activate
 Route::patch('products/{product}/deactivate', [ProductController::class, 'deactivate'])->name('products.deactivate');
 Route::get('api/variants/search', [ProductController::class, 'searchVariants'])->name('variants.search');
 
-Route::get('stock-imports/template', [StockImportController::class, 'template'])->name('stock-imports.template');
-Route::post('stock-imports/spreadsheet', [StockImportController::class, 'spreadsheet'])->name('stock-imports.spreadsheet');
-Route::resource('stock-imports', StockImportController::class)->except('destroy');
-Route::post('stock-imports/{stock_import}/post', [StockImportController::class, 'post'])->name('stock-imports.post');
-Route::post('stock-imports/{stock_import}/cancel', [StockImportController::class, 'cancel'])->name('stock-imports.cancel');
+Route::middleware('role:admin')->group(function (): void {
+    Route::get('stock-imports/template', [StockImportController::class, 'template'])->name('stock-imports.template');
+    Route::post('stock-imports/spreadsheet', [StockImportController::class, 'spreadsheet'])->name('stock-imports.spreadsheet');
+    Route::resource('stock-imports', StockImportController::class)->except('destroy');
+    Route::post('stock-imports/{stock_import}/post', [StockImportController::class, 'post'])->name('stock-imports.post');
+    Route::post('stock-imports/{stock_import}/cancel', [StockImportController::class, 'cancel'])->name('stock-imports.cancel');
+});
 
 Route::get('orders', [OrderController::class, 'index'])->name('orders.index');
 Route::get('orders/{order}', [OrderController::class, 'show'])->whereNumber('order')->name('orders.show');

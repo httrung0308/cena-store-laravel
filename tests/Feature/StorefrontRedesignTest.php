@@ -61,11 +61,27 @@ class StorefrontRedesignTest extends TestCase
     public function test_admin_dashboard_lists_modules_and_signed_in_staff_details(): void
     {
         $staff = User::factory()->staff()->create(['full_name' => 'Nhân viên <i>Kho</i>']);
+        $admin = User::factory()->administrator()->create(['full_name' => 'Quản trị <b>CENA</b>']);
 
-        $this->actingAs($staff)->get(route('admin.dashboard'))
+        $this->post(route('login.store'), [
+            'email' => $staff->email,
+            'password' => 'factory-password',
+        ])->assertRedirect(route('admin.operations-work-items.index'));
+
+        $this->actingAs($staff)->get(route('admin.dashboard'))->assertForbidden();
+
+        $this->actingAs($staff)->get(route('admin.operations-work-items.index'))
             ->assertOk()
             ->assertSee('Nhân viên &lt;i&gt;Kho&lt;/i&gt;', false)
             ->assertSee('Nhân viên')
+            ->assertSee('href="'.route('admin.categories.index').'"', false)
+            ->assertDontSee('href="'.route('admin.dashboard').'"', false)
+            ->assertDontSee('href="'.route('admin.stock-imports.index').'"', false)
+            ->assertSee('aria-label="Điều hướng quản trị"', false);
+
+        $this->actingAs($admin)->get(route('admin.dashboard'))
+            ->assertOk()
+            ->assertSee('Quản trị &lt;b&gt;CENA&lt;/b&gt;', false)
             ->assertSee('href="'.route('admin.categories.index').'"', false)
             ->assertSee('href="'.route('admin.stock-imports.index').'"', false)
             ->assertSee('aria-label="Điều hướng quản trị"', false);
