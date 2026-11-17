@@ -5,9 +5,11 @@ namespace Tests\Feature;
 use App\Enums\InventoryAction;
 use App\Enums\InventoryReferenceType;
 use App\Models\InventoryMovement;
+use App\Models\Order;
 use App\Models\Product;
 use App\Models\ProductColor;
 use App\Models\ProductVariant;
+use App\Models\ShipmentReturnItem;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
@@ -39,18 +41,31 @@ class InventoryHistoryTest extends TestCase
 
         $adminResponse = $this->actingAs(User::factory()->administrator()->create())->get($url)->assertOk();
         $adminResponse->assertSee($variant->sku)
+            ->assertSee('Lịch sử kho — Đen · Size '.$variant->size_value)
+            ->assertSee('Có thể bán')
+            ->assertSee('Tồn kho - Đang giữ; không trừ trùng cách ly')
             ->assertSee('Khả dụng')
             ->assertSee('3')
+            ->assertSee('Tồn kho +5 đôi → 5 đôi')
+            ->assertSee('Đang giữ +2 đôi → 2 đôi')
+            ->assertSee('Cách ly +1 đôi → 1 đôi')
+            ->assertSee(route('admin.stock-imports.show', $movement->reference_id))
             ->assertSee('321.9876')
             ->assertSee('#'.$movement->id)
             ->assertSee('Đơn vị: 321.9876 ₫');
 
         $staffResponse = $this->actingAs(User::factory()->staff()->create())->get($url)->assertOk();
         $staffResponse->assertSee($variant->sku)
+            ->assertSee('Lịch sử kho — Đen · Size '.$variant->size_value)
+            ->assertSee('Có thể bán')
             ->assertSee('Khả dụng')
             ->assertSee('3')
+            ->assertSee('Tồn kho +5 đôi → 5 đôi')
             ->assertSee('#'.$movement->id)
+            ->assertDontSee(route('admin.stock-imports.show', $movement->reference_id))
             ->assertDontSee('321.9876')
+            ->assertDontSee('average_cost')
+            ->assertDontSee('unit_cost_basis')
             ->assertDontSee('Giá vốn')
             ->assertDontSee('Đơn vị:');
     }
@@ -268,6 +283,67 @@ class InventoryHistoryTest extends TestCase
             ->assertOk();
 
         $this->assertSame($before, InventoryMovement::query()->count());
+    }
+
+    public function test_simplified_layout_renders_role_scoped_document_links_reconciliation_pill_and_compact_deltas(): void
+    {
+        [$product, , $variant] = $this->productWithVariant();
+        $variant->forceFill(['stock_qty' => 4, 'reserved_qty' => 0, 'quarantine_qty' => 0])->save();
+
+        $order = Order::factory()->create();
+        $returnItem = ShipmentReturnItem::factory()->create();
+        $returnOrderId = $returnItem->shipment->order_id;
+
+        $importMovement = $this->movement($variant, [
+            'action' => InventoryAction::ImportPosted,
+            'reference_type' => InventoryReferenceType::StockImport,
+            'reference_id' => 9001,
+            'stock_before' => 0,
+            'stock_delta' => 4,
+            'stock_after' => 4,
+        ]);
+
+        $this->movement($variant, [
+            'action' => InventoryAction::OrderReserved,
+            'reference_type' => InventoryReferenceType::Order,
+            'reference_id' => $order->id,
+            'stock_before' => 4,
+            'stock_delta' => 0,
+            'stock_after' => 4,
+            'reserved_before' => 0,
+            'reserved_delta' => 0,
+            'reserved_after' => 0,
+            'quarantine_before' => 0,
+            'quarantine_delta' => 0,
+            'quarantine_after' => 0,
+        ]);
+
+        $this->movement($variant, [
+            'action' => InventoryAction::ShipmentReturnReceived,
+            'reference_type' => InventoryReferenceType::ShipmentReturnItem,
+            'reference_id' => $returnItem->id,
+            'stock_before' => 4,
+            'stock_delta' => 0,
+            'stock_after' => 4,
+        ]);
+
+        $url = route('admin.products.show', ['product' => $product, 'variant_id' => $variant->id]);
+
+        $adminResponse = $this->actingAs(User::factory()->administrator()->create())->get($url)->assertOk();
+        $adminResponse->assertSee('Đối chiếu khớp toàn bộ lịch sử')
+            ->assertSee('Không đổi số lượng')
+            ->assertSee('Chi tiết')
+            ->assertSee('Trước: 0 · Thay đổi: +4 · Sau:')
+            ->assertSee(route('admin.stock-imports.show', $importMovement->reference_id))
+            ->assertSee(route('admin.orders.show', $order->id))
+            ->assertSee(route('admin.orders.show', $returnOrderId).'#xu-ly-hang-hoan');
+
+        $staffResponse = $this->actingAs(User::factory()->staff()->create())->get($url)->assertOk();
+        $staffResponse->assertSee('Đối chiếu khớp toàn bộ lịch sử')
+            ->assertSee('Phiếu nhập kho #9001')
+            ->assertDontSee(route('admin.stock-imports.show', $importMovement->reference_id))
+            ->assertSee(route('admin.orders.show', $order->id))
+            ->assertSee(route('admin.orders.show', $returnOrderId).'#xu-ly-hang-hoan');
     }
 
     /** @return array{Product, ProductColor, ProductVariant} */

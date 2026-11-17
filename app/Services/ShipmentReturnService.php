@@ -46,84 +46,45 @@ final class ShipmentReturnService
 
         return DB::transaction(function () use ($shipment, $unitId, $actor, $note): ShipmentReturnItem {
             $currentActor = $this->lockBackOfficeActor($actor);
-            $context = $this->lockShipmentContext($shipment->id);
-            $order = $context['order'];
-            $lockedShipment = $context['shipment'];
-            $units = $context['units'];
 
-            $unit = $units->firstWhere('id', $unitId);
-            if ($unit === null) {
-                throw new DomainException(ErrorCode::NotFound);
-            }
-            $existing = ShipmentReturnItem::query()->where('order_item_unit_id', $unit->id)->lockForUpdate()->first();
-            if ($existing !== null) {
-                if ($existing->shipment_id !== $lockedShipment->id) {
-                    throw new DomainException(ErrorCode::StateConflict);
-                }
+            return $this->receiveUnitInTransaction($shipment, $unitId, $currentActor, $note)->fresh();
+        }, 3);
+    }
 
-                return $existing;
-            }
-            $this->assertReturning($order, $lockedShipment);
-            if ($unit->state !== OrderUnitState::Outbound) {
-                throw new DomainException(ErrorCode::StateConflict);
-            }
-            if ($unit->original_cogs_amount === null) {
-                throw new DomainException(ErrorCode::InvalidCost);
-            }
+    public function receiveAndRestock(Shipment $shipment, int $unitId, User $actor, string $note): ShipmentReturnItem
+    {
+        $note = $this->normalizeNote($note, 5);
 
-            $now = $this->clock->now();
-            $returnItem = new ShipmentReturnItem;
-            $returnItem->forceFill([
-                'shipment_id' => $lockedShipment->id,
-                'order_item_unit_id' => $unit->id,
-                'variant_id' => $unit->current_variant_id,
-                'received_by' => $currentActor->id,
-                'received_at' => $now,
-                'disposition' => ReturnDisposition::Pending,
-                'cost_basis' => Cost::normalize($unit->original_cogs_amount),
-                'note' => $note,
-                'created_at' => $now,
-                'updated_at' => $now,
-            ])->save();
+        return DB::transaction(function () use ($shipment, $unitId, $actor, $note): ShipmentReturnItem {
+            $currentActor = $this->lockBackOfficeActor($actor);
+            $returnItem = $this->receiveUnitInTransaction($shipment, $unitId, $currentActor, $note);
 
-            $this->inventory->receiveQuarantine(new InventoryChange(
-                OperationKey::validate("shipment-return:{$returnItem->id}:receive"),
-                $unit->current_variant_id,
-                InventoryAction::ShipmentReturnReceived,
-                InventoryReferenceType::ShipmentReturnItem,
-                $returnItem->id,
-                1,
-                Cost::normalize($unit->original_cogs_amount),
-                $currentActor->id,
-                $note,
-            ));
+            return $this->restockInTransaction($returnItem, $currentActor, $note);
+        }, 3);
+    }
 
-            $unit->state = OrderUnitState::ReturnedToStore;
-            $unit->updated_at = $now;
-            $unit->save();
-            $this->recordEvent($returnItem, ShipmentReturnEvent::RECEIVED, $currentActor, $note, $now);
+    public function receiveAndFlagDamaged(Shipment $shipment, int $unitId, User $actor, string $note): ShipmentReturnItem
+    {
+        $note = $this->normalizeNote($note, 20);
 
-            $receivedUnitCount = ShipmentReturnItem::query()
-                ->where('shipment_id', $lockedShipment->id)
-                ->whereIn('order_item_unit_id', $units->modelKeys())
-                ->count();
-
-            if ($receivedUnitCount === $units->count() && $lockedShipment->status === ShipmentStatus::Returning) {
-                $lockedShipment->status = ShipmentStatus::ReturnReceived;
-                $lockedShipment->return_received_at = $now;
-                $lockedShipment->updated_at = $now;
-                $lockedShipment->save();
-
-                $this->workItems->completeIfOpen(
-                    OperationsSourceType::Shipment,
-                    "shipment:{$lockedShipment->id}:failed-return",
-                    $currentActor,
-                    'SHIPMENT_RETURN_RECEIVED',
-                    'Đã tiếp nhận đủ tất cả đôi của kiện hoàn.',
-                );
-            }
+        return DB::transaction(function () use ($shipment, $unitId, $actor, $note): ShipmentReturnItem {
+            $currentActor = $this->lockActor($actor, RoleSlug::Staff);
+            $returnItem = $this->receiveUnitInTransaction($shipment, $unitId, $currentActor, $note);
+            $this->proposeWriteOffInTransaction($returnItem, $currentActor, $note);
 
             return $returnItem->fresh();
+        }, 3);
+    }
+
+    public function receiveAndWriteOff(Shipment $shipment, int $unitId, User $actor, string $note): ShipmentReturnItem
+    {
+        $note = $this->normalizeNote($note, 20);
+
+        return DB::transaction(function () use ($shipment, $unitId, $actor, $note): ShipmentReturnItem {
+            $currentActor = $this->lockActor($actor, RoleSlug::Admin);
+            $returnItem = $this->receiveUnitInTransaction($shipment, $unitId, $currentActor, $note);
+
+            return $this->approveWriteOffInTransaction($returnItem, $currentActor, $note);
         }, 3);
     }
 
@@ -184,38 +145,8 @@ final class ShipmentReturnService
 
         return DB::transaction(function () use ($returnItem, $actor, $note): ShipmentReturnItem {
             $currentActor = $this->lockBackOfficeActor($actor);
-            $context = $this->lockReturnContext($returnItem->id);
-            $lockedReturnItem = $context['return_item'];
 
-            if ($lockedReturnItem->disposition === ReturnDisposition::Restock) {
-                return $lockedReturnItem;
-            }
-            $this->assertPendingDisposition($context);
-            if ($lockedReturnItem->events()->whereIn('event_type', [ShipmentReturnEvent::WRITE_OFF_PROPOSED, ShipmentReturnEvent::WRITE_OFF_APPROVED])->exists()) {
-                throw new DomainException(ErrorCode::StateConflict);
-            }
-
-            $now = $this->clock->now();
-            $this->inventory->restock(new InventoryChange(
-                OperationKey::validate("shipment-return:{$lockedReturnItem->id}:restock"),
-                $lockedReturnItem->variant_id,
-                InventoryAction::ReturnRestocked,
-                InventoryReferenceType::ShipmentReturnItem,
-                $lockedReturnItem->id,
-                1,
-                Cost::normalize($lockedReturnItem->cost_basis),
-                $currentActor->id,
-                $note,
-            ));
-
-            $lockedReturnItem->disposition = ReturnDisposition::Restock;
-            $lockedReturnItem->inspected_by = $currentActor->id;
-            $lockedReturnItem->inspected_at = $now;
-            $lockedReturnItem->updated_at = $now;
-            $lockedReturnItem->save();
-            $this->recordEvent($lockedReturnItem, ShipmentReturnEvent::RESTOCKED, $currentActor, $note, $now);
-
-            return $lockedReturnItem->fresh();
+            return $this->restockInTransaction($returnItem, $currentActor, $note);
         }, 3);
     }
 
@@ -225,36 +156,8 @@ final class ShipmentReturnService
 
         return DB::transaction(function () use ($returnItem, $actor, $note): ShipmentReturnEvent {
             $currentActor = $this->lockActor($actor, RoleSlug::Staff);
-            $context = $this->lockReturnContext($returnItem->id);
-            $lockedReturnItem = $context['return_item'];
 
-            $proposal = $lockedReturnItem->events()->where('event_type', ShipmentReturnEvent::WRITE_OFF_PROPOSED)->first();
-            if ($proposal !== null) {
-                return $proposal;
-            }
-            $this->assertPendingDisposition($context);
-            if ($lockedReturnItem->events()->whereIn('event_type', [
-                ShipmentReturnEvent::RESTOCKED,
-                ShipmentReturnEvent::WRITE_OFF_PROPOSED,
-                ShipmentReturnEvent::WRITE_OFF_APPROVED,
-            ])->exists()) {
-                throw new DomainException(ErrorCode::StateConflict);
-            }
-
-            $now = $this->clock->now();
-            $event = $this->recordEvent($lockedReturnItem, ShipmentReturnEvent::WRITE_OFF_PROPOSED, $currentActor, $note, $now);
-
-            $this->workItems->create(new OperationsWorkItemDefinition(
-                sourceType: OperationsSourceType::Inventory,
-                sourceEventKey: "shipment-return:{$lockedReturnItem->id}:write-off-approval",
-                sourceReference: $context['order']->order_code,
-                sourceLabel: 'Phê duyệt ghi hỏng',
-                title: "Duyệt ghi hỏng hàng hoàn đơn {$context['order']->order_code}",
-                content: "Nhân viên đề xuất ghi hỏng 1 đôi từ hàng hoàn cách ly (#{$lockedReturnItem->id}). Lý do: {$note}",
-                occurredAt: $now,
-            ), $currentActor);
-
-            return $event;
+            return $this->proposeWriteOffInTransaction($returnItem, $currentActor, $note);
         }, 3);
     }
 
@@ -264,59 +167,214 @@ final class ShipmentReturnService
 
         return DB::transaction(function () use ($returnItem, $actor, $note): ShipmentReturnItem {
             $currentActor = $this->lockActor($actor, RoleSlug::Admin);
-            $context = $this->lockReturnContext($returnItem->id);
-            $lockedReturnItem = $context['return_item'];
 
-            if ($lockedReturnItem->disposition === ReturnDisposition::WriteOff) {
-                return $lockedReturnItem;
-            }
-            $this->assertPendingDisposition($context);
-            if (! $lockedReturnItem->events()->where('event_type', ShipmentReturnEvent::WRITE_OFF_PROPOSED)->exists()) {
+            return $this->approveWriteOffInTransaction($returnItem, $currentActor, $note);
+        }, 3);
+    }
+
+    private function receiveUnitInTransaction(Shipment $shipment, int $unitId, User $currentActor, string $note): ShipmentReturnItem
+    {
+        $context = $this->lockShipmentContext($shipment->id);
+        $order = $context['order'];
+        $lockedShipment = $context['shipment'];
+        $units = $context['units'];
+
+        $unit = $units->firstWhere('id', $unitId);
+        if ($unit === null) {
+            throw new DomainException(ErrorCode::NotFound);
+        }
+        $existing = ShipmentReturnItem::query()->where('order_item_unit_id', $unit->id)->lockForUpdate()->first();
+        if ($existing !== null) {
+            if ($existing->shipment_id !== $lockedShipment->id) {
                 throw new DomainException(ErrorCode::StateConflict);
             }
 
-            $now = $this->clock->now();
-            $movement = $this->inventory->writeOff(new InventoryChange(
-                OperationKey::validate("shipment-return:{$lockedReturnItem->id}:writeoff"),
-                $lockedReturnItem->variant_id,
-                InventoryAction::ReturnWrittenOff,
-                InventoryReferenceType::ShipmentReturnItem,
-                $lockedReturnItem->id,
-                1,
-                null,
-                $currentActor->id,
-                $note,
-            ));
+            return $existing;
+        }
+        $this->assertReturning($order, $lockedShipment);
+        if ($unit->state !== OrderUnitState::Outbound) {
+            throw new DomainException(ErrorCode::StateConflict);
+        }
+        if ($unit->original_cogs_amount === null) {
+            throw new DomainException(ErrorCode::InvalidCost);
+        }
 
-            $this->ledger->postUnique(
-                OperationKey::validate("inventory-loss:shipment-return:{$lockedReturnItem->id}"),
-                SalesLedgerType::InventoryLoss,
-                ['expense_delta' => Cost::cogs($movement->unit_cost_basis, 1)],
-                [
-                    'order_id' => $context['order']->id,
-                    'order_item_unit_id' => $context['unit']->id,
-                    'inventory_movement_id' => $movement->id,
-                ],
-                $now,
-            );
+        $now = $this->clock->now();
+        $returnItem = new ShipmentReturnItem;
+        $returnItem->forceFill([
+            'shipment_id' => $lockedShipment->id,
+            'order_item_unit_id' => $unit->id,
+            'variant_id' => $unit->current_variant_id,
+            'received_by' => $currentActor->id,
+            'received_at' => $now,
+            'disposition' => ReturnDisposition::Pending,
+            'cost_basis' => Cost::normalize($unit->original_cogs_amount),
+            'note' => $note,
+            'created_at' => $now,
+            'updated_at' => $now,
+        ])->save();
 
-            $lockedReturnItem->disposition = ReturnDisposition::WriteOff;
-            $lockedReturnItem->inspected_by = $currentActor->id;
-            $lockedReturnItem->inspected_at = $now;
-            $lockedReturnItem->updated_at = $now;
-            $lockedReturnItem->save();
-            $this->recordEvent($lockedReturnItem, ShipmentReturnEvent::WRITE_OFF_APPROVED, $currentActor, $note, $now);
+        $this->inventory->receiveQuarantine(new InventoryChange(
+            OperationKey::validate("shipment-return:{$returnItem->id}:receive"),
+            $unit->current_variant_id,
+            InventoryAction::ShipmentReturnReceived,
+            InventoryReferenceType::ShipmentReturnItem,
+            $returnItem->id,
+            1,
+            Cost::normalize($unit->original_cogs_amount),
+            $currentActor->id,
+            $note,
+        ));
+
+        $unit->state = OrderUnitState::ReturnedToStore;
+        $unit->updated_at = $now;
+        $unit->save();
+        $this->recordEvent($returnItem, ShipmentReturnEvent::RECEIVED, $currentActor, $note, $now);
+
+        $receivedUnitCount = ShipmentReturnItem::query()
+            ->where('shipment_id', $lockedShipment->id)
+            ->whereIn('order_item_unit_id', $units->modelKeys())
+            ->count();
+
+        if ($receivedUnitCount === $units->count() && $lockedShipment->status === ShipmentStatus::Returning) {
+            $lockedShipment->status = ShipmentStatus::ReturnReceived;
+            $lockedShipment->return_received_at = $now;
+            $lockedShipment->updated_at = $now;
+            $lockedShipment->save();
 
             $this->workItems->completeIfOpen(
-                OperationsSourceType::Inventory,
-                "shipment-return:{$lockedReturnItem->id}:write-off-approval",
+                OperationsSourceType::Shipment,
+                "shipment:{$lockedShipment->id}:failed-return",
                 $currentActor,
-                'WRITE_OFF_APPROVED',
-                $note,
+                'SHIPMENT_RETURN_RECEIVED',
+                'Đã tiếp nhận đủ tất cả đôi của kiện hoàn.',
             );
+        }
 
-            return $lockedReturnItem->fresh();
-        }, 3);
+        return $returnItem;
+    }
+
+    private function restockInTransaction(ShipmentReturnItem $returnItem, User $currentActor, string $note): ShipmentReturnItem
+    {
+        $context = $this->lockReturnContext($returnItem->id);
+        $lockedReturnItem = $context['return_item'];
+
+        if ($lockedReturnItem->disposition === ReturnDisposition::Restock) {
+            return $lockedReturnItem;
+        }
+        $this->assertPendingDisposition($context);
+        if ($lockedReturnItem->events()->whereIn('event_type', [ShipmentReturnEvent::WRITE_OFF_PROPOSED, ShipmentReturnEvent::WRITE_OFF_APPROVED])->exists()) {
+            throw new DomainException(ErrorCode::StateConflict);
+        }
+
+        $now = $this->clock->now();
+        $this->inventory->restock(new InventoryChange(
+            OperationKey::validate("shipment-return:{$lockedReturnItem->id}:restock"),
+            $lockedReturnItem->variant_id,
+            InventoryAction::ReturnRestocked,
+            InventoryReferenceType::ShipmentReturnItem,
+            $lockedReturnItem->id,
+            1,
+            Cost::normalize($lockedReturnItem->cost_basis),
+            $currentActor->id,
+            $note,
+        ));
+
+        $lockedReturnItem->disposition = ReturnDisposition::Restock;
+        $lockedReturnItem->inspected_by = $currentActor->id;
+        $lockedReturnItem->inspected_at = $now;
+        $lockedReturnItem->updated_at = $now;
+        $lockedReturnItem->save();
+        $this->recordEvent($lockedReturnItem, ShipmentReturnEvent::RESTOCKED, $currentActor, $note, $now);
+
+        return $lockedReturnItem->fresh();
+    }
+
+    private function proposeWriteOffInTransaction(ShipmentReturnItem $returnItem, User $currentActor, string $note): ShipmentReturnEvent
+    {
+        $context = $this->lockReturnContext($returnItem->id);
+        $lockedReturnItem = $context['return_item'];
+
+        $proposal = $lockedReturnItem->events()->where('event_type', ShipmentReturnEvent::WRITE_OFF_PROPOSED)->first();
+        if ($proposal !== null) {
+            return $proposal;
+        }
+        $this->assertPendingDisposition($context);
+        if ($lockedReturnItem->events()->whereIn('event_type', [
+            ShipmentReturnEvent::RESTOCKED,
+            ShipmentReturnEvent::WRITE_OFF_PROPOSED,
+            ShipmentReturnEvent::WRITE_OFF_APPROVED,
+        ])->exists()) {
+            throw new DomainException(ErrorCode::StateConflict);
+        }
+
+        $now = $this->clock->now();
+        $event = $this->recordEvent($lockedReturnItem, ShipmentReturnEvent::WRITE_OFF_PROPOSED, $currentActor, $note, $now);
+
+        $this->workItems->create(new OperationsWorkItemDefinition(
+            sourceType: OperationsSourceType::Inventory,
+            sourceEventKey: "shipment-return:{$lockedReturnItem->id}:write-off-approval",
+            sourceReference: $context['order']->order_code,
+            sourceLabel: 'Hàng hỏng cần xử lý',
+            title: "Ghi hỏng hàng hoàn đơn {$context['order']->order_code}",
+            content: "Nhân viên ghi nhận hàng hỏng 1 đôi từ hàng hoàn cách ly (#{$lockedReturnItem->id}). Lý do: {$note}",
+            occurredAt: $now,
+        ), $currentActor);
+
+        return $event;
+    }
+
+    private function approveWriteOffInTransaction(ShipmentReturnItem $returnItem, User $currentActor, string $note): ShipmentReturnItem
+    {
+        $context = $this->lockReturnContext($returnItem->id);
+        $lockedReturnItem = $context['return_item'];
+
+        if ($lockedReturnItem->disposition === ReturnDisposition::WriteOff) {
+            return $lockedReturnItem;
+        }
+        $this->assertPendingDisposition($context);
+
+        $now = $this->clock->now();
+        $movement = $this->inventory->writeOff(new InventoryChange(
+            OperationKey::validate("shipment-return:{$lockedReturnItem->id}:writeoff"),
+            $lockedReturnItem->variant_id,
+            InventoryAction::ReturnWrittenOff,
+            InventoryReferenceType::ShipmentReturnItem,
+            $lockedReturnItem->id,
+            1,
+            null,
+            $currentActor->id,
+            $note,
+        ));
+
+        $this->ledger->postUnique(
+            OperationKey::validate("inventory-loss:shipment-return:{$lockedReturnItem->id}"),
+            SalesLedgerType::InventoryLoss,
+            ['expense_delta' => Cost::cogs($movement->unit_cost_basis, 1)],
+            [
+                'order_id' => $context['order']->id,
+                'order_item_unit_id' => $context['unit']->id,
+                'inventory_movement_id' => $movement->id,
+            ],
+            $now,
+        );
+
+        $lockedReturnItem->disposition = ReturnDisposition::WriteOff;
+        $lockedReturnItem->inspected_by = $currentActor->id;
+        $lockedReturnItem->inspected_at = $now;
+        $lockedReturnItem->updated_at = $now;
+        $lockedReturnItem->save();
+        $this->recordEvent($lockedReturnItem, ShipmentReturnEvent::WRITE_OFF_APPROVED, $currentActor, $note, $now);
+
+        $this->workItems->completeIfOpen(
+            OperationsSourceType::Inventory,
+            "shipment-return:{$lockedReturnItem->id}:write-off-approval",
+            $currentActor,
+            'WRITE_OFF_APPROVED',
+            $note,
+        );
+
+        return $lockedReturnItem->fresh();
     }
 
     /** @return array{order: Order, shipment: Shipment, items: Collection<int, OrderItem>, units: Collection<int, OrderItemUnit>} */

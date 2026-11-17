@@ -8,6 +8,7 @@ use App\Exceptions\DomainException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\ShipmentReturnIncidentRequest;
 use App\Http\Requests\Admin\ShipmentReturnInspectionRequest;
+use App\Http\Requests\Admin\ShipmentReturnReceiveInspectionRequest;
 use App\Http\Requests\Admin\ShipmentReturnReceiveRequest;
 use App\Models\Shipment;
 use App\Models\ShipmentReturnItem;
@@ -49,6 +50,39 @@ class ShipmentReturnController extends Controller
             fn () => $this->service->receiveUnit($shipment, (int) $data['unit_id'], $request->user(), $data['note']),
             $shipment->order_id,
             'Đã nhận đúng đôi vào kho cách ly.',
+        );
+    }
+
+    public function receiveAndRestock(ShipmentReturnReceiveInspectionRequest $request, Shipment $shipment): RedirectResponse
+    {
+        $data = $request->validated();
+
+        return $this->perform(
+            fn () => $this->service->receiveAndRestock($shipment, (int) $data['unit_id'], $request->user(), $data['note']),
+            $shipment->order_id,
+            'Đã nhận hàng hoàn và nhập lại kho bán.',
+        );
+    }
+
+    public function receiveAndFlagDamaged(ShipmentReturnReceiveInspectionRequest $request, Shipment $shipment): RedirectResponse
+    {
+        $data = $request->validated();
+
+        return $this->perform(
+            fn () => $this->service->receiveAndFlagDamaged($shipment, (int) $data['unit_id'], $request->user(), $data['note']),
+            $shipment->order_id,
+            'Đã nhận hàng hoàn và ghi nhận hàng hỏng chờ Admin xử lý.',
+        );
+    }
+
+    public function receiveAndWriteOff(ShipmentReturnReceiveInspectionRequest $request, Shipment $shipment): RedirectResponse
+    {
+        $data = $request->validated();
+
+        return $this->perform(
+            fn () => $this->service->receiveAndWriteOff($shipment, (int) $data['unit_id'], $request->user(), $data['note']),
+            $shipment->order_id,
+            'Admin đã nhận hàng hoàn, ghi hỏng và ghi nhận tổn thất một lần.',
         );
     }
 

@@ -356,13 +356,13 @@ class OperationsWorkCenterTest extends TestCase
             ->get(route('admin.operations-work-items.index'))
             ->assertOk()
             ->assertDontSee('Duyệt hoàn tiền')
-            ->assertDontSee('Duyệt ghi hỏng');
+            ->assertDontSee('Hàng hỏng cần xử lý');
 
         $this->actingAs($admin)
             ->get(route('admin.operations-work-items.index'))
             ->assertOk()
             ->assertSee('Duyệt hoàn tiền')
-            ->assertSee('Duyệt ghi hỏng');
+            ->assertSee('Hàng hỏng cần xử lý');
 
         $this->actingAs($staff)
             ->get(route('admin.operations-work-items.show', $refundWorkItem))

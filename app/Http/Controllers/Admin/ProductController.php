@@ -246,10 +246,14 @@ class ProductController extends Controller
         if (isset($filters['variant_id'])) {
             $selectedVariant = $historyVariants->firstWhere('id', (int) $filters['variant_id']);
             abort_if($selectedVariant === null, 404);
+            $selectedVariant->loadMissing([
+                'color' => fn ($q) => $q->withTrashed()->select(['id', 'color_name']),
+            ]);
         }
 
         $movements = $selectedVariant === null ? null : $historyQueryService->movements($selectedVariant, $filters, $canViewCost);
         $reconciliation = $selectedVariant === null ? null : $historyQueryService->reconciliation($selectedVariant);
+        $documentUrls = $movements === null ? [] : $historyQueryService->documentUrls($movements, $canViewCost);
 
         return view('admin.products.show', [
             'product' => $product,
@@ -261,6 +265,7 @@ class ProductController extends Controller
             'selectedVariant' => $selectedVariant,
             'movements' => $movements,
             'reconciliation' => $reconciliation,
+            'documentUrls' => $documentUrls,
             'actions' => InventoryAction::cases(),
             'referenceTypes' => InventoryReferenceType::cases(),
         ]);

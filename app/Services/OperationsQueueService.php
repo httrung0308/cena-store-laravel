@@ -96,7 +96,7 @@ final class OperationsQueueService
             ],
             self::TYPE_WRITE_OFF_APPROVAL => [
                 'key' => self::TYPE_WRITE_OFF_APPROVAL,
-                'label' => 'Duyệt ghi hỏng',
+                'label' => 'Hàng hỏng cần xử lý',
                 'admin_only' => true,
             ],
             self::TYPE_REFUND_APPROVAL => [
@@ -613,20 +613,20 @@ final class OperationsQueueService
 
         return [
             'queue_type' => $type,
-            'type_label' => $isWriteOff ? 'Duyệt ghi hỏng' : 'Kiểm tra cách ly',
+            'type_label' => $isWriteOff ? 'Hàng hỏng cần xử lý' : 'Kiểm tra cách ly',
             'type_badge_class' => $isWriteOff ? 'bg-error-bg text-error border-error/30' : 'bg-accent/10 text-accent border-accent/30',
-            'status_label' => $isWriteOff ? 'Chờ duyệt ghi hỏng' : 'Chờ kiểm tra',
+            'status_label' => $isWriteOff ? 'Hàng hỏng cần xử lý' : 'Chờ kiểm tra',
             'status_badge_class' => $isWriteOff ? 'bg-error-bg text-error border-error/30' : 'bg-warning-bg text-warning-text border-warning/30',
-            'action_title' => $isWriteOff ? 'Duyệt ghi hỏng' : 'Kiểm tra hàng cách ly',
+            'action_title' => $isWriteOff ? 'Ghi hỏng' : 'Kiểm tra hàng cách ly',
             'title' => $isWriteOff
-                ? "Duyệt ghi hỏng hàng hoàn đơn {$orderCode}"
+                ? "Ghi hỏng hàng hoàn đơn {$orderCode}"
                 : "Kiểm tra hàng hoàn cách ly đơn {$orderCode}",
             'related_info' => $relatedInfo,
             'description' => $relatedInfo,
             'reference' => $orderCode,
             'reference_sub' => "Kiện #{$item->shipment_id}",
             'occurred_at' => $this->toCarbonImmutable($item->received_at ?? $item->created_at),
-            'action_label' => $isWriteOff ? 'Duyệt ghi hỏng' : 'Kiểm tra cách ly',
+            'action_label' => $isWriteOff ? 'Ghi hỏng' : 'Kiểm tra cách ly',
             'action_url' => route('admin.orders.show', $item->shipment->order_id).'#xu-ly-hang-hoan',
         ];
     }

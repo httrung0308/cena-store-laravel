@@ -2,10 +2,12 @@
 
 namespace App\Services;
 
+use App\Enums\InventoryReferenceType;
 use App\Models\InventoryMovement;
 use App\Models\Product;
 use App\Models\ProductColor;
 use App\Models\ProductVariant;
+use App\Models\ShipmentReturnItem;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
@@ -15,7 +17,7 @@ final class InventoryHistoryQueryService
     /** @return Collection<int, ProductColor> */
     public function productColorsWithVariants(Product $product, bool $includeCost = false): Collection
     {
-        return ProductColor::withTrashed()
+        $colors = ProductColor::withTrashed()
             ->where('product_id', $product->id)
             ->with(['variants' => function ($query) use ($includeCost): void {
                 $query->withTrashed();
@@ -31,6 +33,12 @@ final class InventoryHistoryQueryService
             ->orderBy('display_order')
             ->orderBy('id')
             ->get();
+
+        if (! $includeCost) {
+            $colors->each(fn (ProductColor $color) => $color->variants->each->makeHidden('average_cost'));
+        }
+
+        return $colors;
     }
 
     /** @param array<string, mixed> $filters */
@@ -72,7 +80,69 @@ final class InventoryHistoryQueryService
             $query->where('reference_id', $filters['reference_id']);
         }
 
-        return $query->orderByDesc('created_at')->orderByDesc('id')->paginate(20)->withQueryString();
+        $paginator = $query->orderByDesc('created_at')->orderByDesc('id')->paginate(20)->withQueryString();
+
+        if (! $includeCost) {
+            $paginator->getCollection()->each->makeHidden([
+                'unit_cost_basis',
+                'average_cost_before',
+                'average_cost_after',
+            ]);
+        }
+
+        return $paginator;
+    }
+
+    /**
+     * Resolve safe document URLs for a page of movements based on role permission.
+     *
+     * @param  iterable<int, InventoryMovement>  $movements
+     * @return array<int, ?string>
+     */
+    public function documentUrls(iterable $movements, bool $canViewCost): array
+    {
+        $returnItemIds = [];
+        foreach ($movements as $movement) {
+            if ($movement->reference_type === InventoryReferenceType::ShipmentReturnItem && $movement->reference_id !== null) {
+                $returnItemIds[] = $movement->reference_id;
+            }
+        }
+
+        $returnOrderIds = $returnItemIds === []
+            ? collect()
+            : ShipmentReturnItem::query()
+                ->with('shipment:id,order_id')
+                ->whereIn('id', array_values(array_unique($returnItemIds)))
+                ->get(['id', 'shipment_id'])
+                ->mapWithKeys(fn (ShipmentReturnItem $item): array => [
+                    $item->id => $item->shipment?->order_id,
+                ]);
+
+        $urls = [];
+        foreach ($movements as $movement) {
+            $urls[$movement->id] = $this->resolveDocumentUrl($movement, $canViewCost, $returnOrderIds);
+        }
+
+        return $urls;
+    }
+
+    /** @param Collection<int, ?int> $returnOrderIds */
+    private function resolveDocumentUrl(InventoryMovement $movement, bool $canViewCost, Collection $returnOrderIds): ?string
+    {
+        if ($movement->reference_id === null || $movement->reference_type === null) {
+            return null;
+        }
+
+        return match ($movement->reference_type) {
+            InventoryReferenceType::StockImport => $canViewCost
+                ? route('admin.stock-imports.show', $movement->reference_id)
+                : null,
+            InventoryReferenceType::Order => route('admin.orders.show', $movement->reference_id),
+            InventoryReferenceType::ShipmentReturnItem => ($orderId = $returnOrderIds->get($movement->reference_id)) !== null
+                ? route('admin.orders.show', $orderId).'#xu-ly-hang-hoan'
+                : null,
+            default => null,
+        };
     }
 
     /** @return array{history_incomplete: bool, observed_balance_diff: bool} */

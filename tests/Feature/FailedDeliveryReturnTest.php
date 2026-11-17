@@ -6,8 +6,11 @@ use App\Data\InventoryChange;
 use App\Enums\ErrorCode;
 use App\Enums\InventoryAction;
 use App\Enums\InventoryReferenceType;
+use App\Enums\OperationsSourceType;
+use App\Enums\OperationsWorkItemStatus;
 use App\Enums\OrderStatus;
 use App\Enums\OrderUnitState;
+use App\Enums\ReturnDisposition;
 use App\Enums\SalesLedgerType;
 use App\Enums\ShipmentStatus;
 use App\Exceptions\DomainException;
@@ -16,6 +19,7 @@ use App\Models\Cart;
 use App\Models\CartItem;
 use App\Models\Category;
 use App\Models\InventoryMovement;
+use App\Models\OperationsWorkItem;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\ProductColor;
@@ -139,7 +143,8 @@ class FailedDeliveryReturnTest extends TestCase
         $this->get(route('admin.orders.show', $order))
             ->assertOk()
             ->assertSee('Xử lý hàng hoàn')
-            ->assertSee('Xác nhận đã nhận')
+            ->assertSee('Hàng tốt — Nhập lại kho')
+            ->assertSee('Chưa kiểm tra — Đưa vào cách ly')
             ->assertSee($missingNote)
             ->assertSee('SKU không khớp')
             ->assertSee('Thiếu chứng cứ');
@@ -261,6 +266,160 @@ class FailedDeliveryReturnTest extends TestCase
 
         $this->app['auth']->guard()->logout();
         $this->get(route('admin.shipment-returns.index'))->assertRedirect(route('login'));
+    }
+
+    public function test_staff_can_receive_and_restock_in_one_step_and_close_failed_return_work_item(): void
+    {
+        $order = $this->failedOrder(quantity: 1);
+        $unit = $order->items->sole()->units->sole();
+        $this->actingAs($this->staff);
+
+        $this->post(route('admin.shipment-returns.receive-and-restock', $order->shipment), [
+            'unit_id' => $unit->id,
+            'note' => 'Hộp nguyên vẹn, giày mới 100%, nhập lại kho bán.',
+        ])->assertRedirect(route('admin.orders.show', $order).'#xu-ly-hang-hoan');
+
+        $returnItem = ShipmentReturnItem::query()->where('order_item_unit_id', $unit->id)->sole();
+        $this->assertSame(ReturnDisposition::Restock, $returnItem->disposition);
+        $this->assertSame(ShipmentStatus::ReturnReceived, $order->shipment->fresh()->status);
+        $this->assertSame(OrderUnitState::ReturnedToStore, $unit->fresh()->state);
+        $this->assertSame([8, 0, 0], [$this->shoe->fresh()->stock_qty, $this->shoe->fresh()->reserved_qty, $this->shoe->fresh()->quarantine_qty]);
+        $this->assertDatabaseHas('shipment_return_events', ['shipment_return_item_id' => $returnItem->id, 'event_type' => ShipmentReturnEvent::RECEIVED]);
+        $this->assertDatabaseHas('shipment_return_events', ['shipment_return_item_id' => $returnItem->id, 'event_type' => ShipmentReturnEvent::RESTOCKED]);
+
+        $workItem = OperationsWorkItem::query()
+            ->where('source_type', OperationsSourceType::Shipment)
+            ->where('source_event_key', "shipment:{$order->shipment->id}:failed-return")
+            ->first();
+        if ($workItem !== null) {
+            $this->assertSame(OperationsWorkItemStatus::Completed, $workItem->status);
+        }
+    }
+
+    public function test_staff_can_receive_and_flag_damaged_while_admin_is_forbidden(): void
+    {
+        $order = $this->failedOrder(quantity: 1);
+        $unit = $order->items->sole()->units->sole();
+        $note = 'Mũi giày bị rách da và hộp móp nặng không thể bán lại.';
+
+        $this->actingAs($this->admin)
+            ->post(route('admin.shipment-returns.receive-and-flag-damaged', $order->shipment), [
+                'unit_id' => $unit->id,
+                'note' => $note,
+            ])
+            ->assertForbidden();
+
+        $this->actingAs($this->staff)
+            ->post(route('admin.shipment-returns.receive-and-flag-damaged', $order->shipment), [
+                'unit_id' => $unit->id,
+                'note' => $note,
+            ])
+            ->assertRedirect(route('admin.orders.show', $order).'#xu-ly-hang-hoan');
+
+        $returnItem = ShipmentReturnItem::query()->where('order_item_unit_id', $unit->id)->sole();
+        $this->assertSame(ReturnDisposition::Pending, $returnItem->disposition);
+        $this->assertSame([7, 0, 1], [$this->shoe->fresh()->stock_qty, $this->shoe->fresh()->reserved_qty, $this->shoe->fresh()->quarantine_qty]);
+        $this->assertDatabaseHas('shipment_return_events', ['shipment_return_item_id' => $returnItem->id, 'event_type' => ShipmentReturnEvent::RECEIVED]);
+        $this->assertDatabaseHas('shipment_return_events', ['shipment_return_item_id' => $returnItem->id, 'event_type' => ShipmentReturnEvent::WRITE_OFF_PROPOSED, 'note' => $note]);
+        $this->assertDatabaseHas('operations_work_items', [
+            'source_type' => OperationsSourceType::Inventory->value,
+            'source_event_key' => "shipment-return:{$returnItem->id}:write-off-approval",
+            'status' => OperationsWorkItemStatus::Pending->value,
+        ]);
+
+        $this->get(route('admin.orders.index', ['status' => OrderStatus::Failed->value, 'return_progress' => 'awaiting_write_off_approval']))
+            ->assertOk()
+            ->assertSee($order->order_code)
+            ->assertSee('Hàng hỏng cần xử lý');
+    }
+
+    public function test_admin_can_receive_and_write_off_in_one_step_and_staff_is_forbidden(): void
+    {
+        $order = $this->failedOrder(quantity: 1);
+        $unit = $order->items->sole()->units->sole();
+        $note = 'Đế giày tách rời thân và ẩm mốc nặng, ghi hỏng ngay khi nhận.';
+
+        $this->actingAs($this->staff)
+            ->post(route('admin.shipment-returns.receive-and-write-off', $order->shipment), [
+                'unit_id' => $unit->id,
+                'note' => $note,
+            ])
+            ->assertForbidden();
+
+        $this->actingAs($this->admin)
+            ->post(route('admin.shipment-returns.receive-and-write-off', $order->shipment), [
+                'unit_id' => $unit->id,
+                'note' => $note,
+            ])
+            ->assertRedirect(route('admin.orders.show', $order).'#xu-ly-hang-hoan');
+
+        $returnItem = ShipmentReturnItem::query()->where('order_item_unit_id', $unit->id)->sole();
+        $this->assertSame(ReturnDisposition::WriteOff, $returnItem->disposition);
+        $this->assertSame(ShipmentStatus::ReturnReceived, $order->shipment->fresh()->status);
+        $this->assertSame([7, 0, 0], [$this->shoe->fresh()->stock_qty, $this->shoe->fresh()->reserved_qty, $this->shoe->fresh()->quarantine_qty]);
+        $this->assertDatabaseHas('shipment_return_events', ['shipment_return_item_id' => $returnItem->id, 'event_type' => ShipmentReturnEvent::RECEIVED]);
+        $this->assertDatabaseHas('shipment_return_events', ['shipment_return_item_id' => $returnItem->id, 'event_type' => ShipmentReturnEvent::WRITE_OFF_APPROVED]);
+        $this->assertSame(1, InventoryMovement::query()->where('reference_id', $returnItem->id)->where('action', InventoryAction::ReturnWrittenOff)->count());
+        $this->assertSame(1, SalesLedgerEntry::query()->where('type', SalesLedgerType::InventoryLoss)->where('order_id', $order->id)->count());
+    }
+
+    public function test_admin_can_directly_write_off_quarantined_item_without_prior_staff_proposal(): void
+    {
+        $order = $this->failedOrder(quantity: 1);
+        $unit = $order->items->sole()->units->sole();
+
+        $this->actingAs($this->staff)
+            ->post(route('admin.shipment-returns.receive', $order->shipment), [
+                'unit_id' => $unit->id,
+                'note' => 'Nhận vào khu cách ly chờ kiểm tra kỹ hơn.',
+            ])->assertRedirect();
+
+        $returnItem = ShipmentReturnItem::query()->where('order_item_unit_id', $unit->id)->sole();
+
+        $this->actingAs($this->admin)
+            ->post(route('admin.shipment-return-items.write-off-approval', $returnItem), [
+                'note' => 'Admin kiểm tra trực tiếp thấy hư hỏng nặng, tiến hành ghi hỏng.',
+            ])->assertRedirect(route('admin.orders.show', $order).'#xu-ly-hang-hoan');
+
+        $this->assertSame(ReturnDisposition::WriteOff, $returnItem->fresh()->disposition);
+        $this->assertSame([7, 0, 0], [$this->shoe->fresh()->stock_qty, $this->shoe->fresh()->reserved_qty, $this->shoe->fresh()->quarantine_qty]);
+        $this->assertSame(1, SalesLedgerEntry::query()->where('type', SalesLedgerType::InventoryLoss)->where('order_id', $order->id)->count());
+        $this->assertDatabaseMissing('shipment_return_events', ['shipment_return_item_id' => $returnItem->id, 'event_type' => ShipmentReturnEvent::WRITE_OFF_PROPOSED]);
+    }
+
+    public function test_receive_and_restock_rolls_back_step_one_when_step_two_fails(): void
+    {
+        $order = $this->failedOrder(quantity: 1);
+        $unit = $order->items->sole()->units->sole();
+        $actor = $this->staff;
+        $eventInserts = 0;
+
+        DB::listen(function (QueryExecuted $query) use (&$eventInserts): void {
+            if (str_starts_with(strtolower(ltrim($query->sql)), 'insert into `shipment_return_events`')) {
+                $eventInserts++;
+                if ($eventInserts === 2) {
+                    throw new RuntimeException('Injected step-2 restock failure.');
+                }
+            }
+        });
+
+        try {
+            app(ShipmentReturnService::class)->receiveAndRestock(
+                $order->shipment,
+                $unit->id,
+                $actor,
+                'Hộp nguyên vẹn, kiểm tra đạt nhập lại kho.',
+            );
+            $this->fail('The injected step-2 failure should roll back step 1 as well.');
+        } catch (RuntimeException $exception) {
+            $this->assertSame('Injected step-2 restock failure.', $exception->getMessage());
+        }
+
+        $this->assertDatabaseMissing('shipment_return_items', ['order_item_unit_id' => $unit->id]);
+        $this->assertDatabaseMissing('inventory_movements', ['reference_type' => InventoryReferenceType::ShipmentReturnItem->value]);
+        $this->assertSame(OrderUnitState::Outbound, $unit->fresh()->state);
+        $this->assertSame(ShipmentStatus::Returning, $order->shipment->fresh()->status);
+        $this->assertSame([7, 0, 0], [$this->shoe->fresh()->stock_qty, $this->shoe->fresh()->reserved_qty, $this->shoe->fresh()->quarantine_qty]);
     }
 
     private function failedOrder(int $quantity): Order

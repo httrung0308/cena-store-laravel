@@ -73,6 +73,9 @@ Route::patch('operations-work-items/{workItem}', [OperationsWorkItemController::
 Route::get('shipment-returns', [ShipmentReturnController::class, 'index'])->name('shipment-returns.index');
 Route::get('shipments/{shipment}/returns', [ShipmentReturnController::class, 'show'])->whereNumber('shipment')->name('shipment-returns.show');
 Route::post('shipments/{shipment}/returns/receive', [ShipmentReturnController::class, 'receive'])->whereNumber('shipment')->middleware('throttle:30,1')->name('shipment-returns.receive');
+Route::post('shipments/{shipment}/returns/receive-and-restock', [ShipmentReturnController::class, 'receiveAndRestock'])->whereNumber('shipment')->middleware('throttle:30,1')->name('shipment-returns.receive-and-restock');
+Route::post('shipments/{shipment}/returns/receive-and-flag-damaged', [ShipmentReturnController::class, 'receiveAndFlagDamaged'])->whereNumber('shipment')->middleware('throttle:30,1')->name('shipment-returns.receive-and-flag-damaged');
+Route::post('shipments/{shipment}/returns/receive-and-write-off', [ShipmentReturnController::class, 'receiveAndWriteOff'])->whereNumber('shipment')->middleware(['role:admin', 'throttle:30,1'])->name('shipment-returns.receive-and-write-off');
 Route::post('shipments/{shipment}/returns/incidents', [ShipmentReturnController::class, 'incident'])->whereNumber('shipment')->middleware('throttle:30,1')->name('shipment-returns.incidents');
 Route::post('shipment-return-items/{returnItem}/restock', [ShipmentReturnController::class, 'restock'])->whereNumber('returnItem')->middleware('throttle:30,1')->name('shipment-return-items.restock');
 Route::post('shipment-return-items/{returnItem}/write-off-proposal', [ShipmentReturnController::class, 'proposeWriteOff'])->whereNumber('returnItem')->middleware('throttle:30,1')->name('shipment-return-items.write-off-proposal');

@@ -224,7 +224,7 @@
                             </div>
                             <a href="{{ $writeOff['action_url'] }}"
                                class="px-3 py-1.5 rounded-lg bg-warning-bg text-warning-text border border-warning/40 hover:bg-warning/20 font-bold text-xs transition-colors shrink-0">
-                                Duyệt ghi hỏng →
+                                Ghi hỏng →
                             </a>
                         </div>
                     @endforeach

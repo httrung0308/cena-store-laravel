@@ -215,7 +215,7 @@ class OrderController extends Controller
             return $hasWriteOffProposal
                 ? [
                     'key' => 'awaiting_write_off_approval',
-                    'label' => 'Chờ duyệt ghi hỏng',
+                    'label' => 'Hàng hỏng cần xử lý',
                     'badge_class' => 'bg-error-bg text-error-text border border-error/30',
                 ]
                 : [
