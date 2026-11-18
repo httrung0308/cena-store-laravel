@@ -1,8 +1,8 @@
-# Hướng Dẫn Kiểm Thử & Dữ Liệu Mẫu Nhóm (`cena-store-demo-20261118`)
+# Hướng Dẫn Kiểm Thử Dữ Liệu Mẫu (`FullDemoSeeder`)
 
-Tài liệu này dùng chung với gói bàn giao `cena-store-demo-20261118` (`cena-store-demo-20261118.sql` + thư mục `storage/`).
+Tài liệu này mô tả dữ liệu được tạo bởi `FullDemoSeeder` (`.\scripts\php.ps1 artisan db:seed --class=FullDemoSeeder --no-interaction`).
 
-> **Lưu ý:** Dữ liệu mẫu sẽ thay đổi trạng thái/tồn kho khi bạn thao tác trên web (duyệt đơn, giao hàng, nhận hàng hoàn, đánh giá...). Hãy giữ nguyên file `.sql` và thư mục `storage/` gốc của gói để có thể import lại vào database local của bạn bất cứ lúc nào.
+> **Lưu ý:** Dữ liệu mẫu sẽ thay đổi trạng thái/tồn kho khi bạn thao tác trên web (duyệt đơn, giao hàng, nhận hàng hoàn, đánh giá...). Khi muốn khôi phục lại trạng thái mẫu ban đầu trên môi trường local, chạy `.\scripts\php.ps1 artisan migrate:fresh --no-interaction` rồi chạy lại `FullDemoSeeder`.
 
 ---
 
@@ -63,6 +63,7 @@ Lọc theo trạng thái ở `/admin/orders`:
 
 ---
 
-## 3. Lưu ý tài sản thiếu trong gói nguồn
+## 3. Lưu ý về ảnh minh họa
 
-3 bản ghi ảnh cũ trong bảng `product_images` (`id = 37, 38, 39` thuộc sản phẩm mẫu cũ) đã thiếu file gốc trên ổ đĩa trước khi xuất gói (`products/07f69ade-d8a5-4167-8351-4b983e2d6baa.jpg`, `products/d53d60a8-a42d-4bd2-a84f-f5cd79362a80.jpg`, `products/46adc73c-7629-45b3-9af4-a340bd92cfb6.jpg`). Ảnh của các sản phẩm QA, bài viết, banner và minh chứng demo đều có đầy đủ.
+- Ảnh sản phẩm lõi (`cena-demo-*`), sản phẩm QA (`Cena AeroStride Pro QA`, `Cena CloudRun Lite QA`), bài viết và banner đều dùng ảnh có sẵn trong repo (`public/legacy/img/`), không cần tải gói ngoài.
+- Một số sản phẩm phân loại trong `ProductClassificationDemoSeeder` sử dụng URL ảnh ngoài (`images.unsplash.com`), cần kết nối internet để tải ảnh khi xem.

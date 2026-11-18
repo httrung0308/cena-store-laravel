@@ -13,15 +13,12 @@ Website bán giày viết bằng Laravel 13 / PHP 8.4, MySQL 8.4 và Blade / Tai
 
 **Yêu cầu trên máy:** Git, PowerShell 7 (`pwsh`), Microsoft VC++ runtime x64, MySQL 8.4 và Mailpit. Script cài đặt sẽ tự tải PHP, Composer và Node đúng phiên bản cho project.
 
-1. **Lấy code và chuyển sang nhánh tương thích (`feat/cena-redesign`):**
+1. **Lấy code và vào thư mục project:**
 
 ```powershell
 git clone https://github.com/httrung0308/cena-store-laravel.git
 cd cena-store-laravel
-git switch feat/cena-redesign
 ```
-
-> Lưu ý: Các thay đổi giao diện mới và gói dữ liệu mẫu `demo-20261118` hiện nằm trên nhánh `feat/cena-redesign` (PR #36, đang chờ merge vào `main`).
 
 2. **Cài đặt và khởi chạy bằng một lệnh:**
 
@@ -39,35 +36,35 @@ Script tự tạo `.env` (nếu chưa có), cấu hình MySQL riêng ở `127.0.
 
 ---
 
-## 2. Chọn dữ liệu mẫu
+## 2. Tạo dữ liệu mẫu bằng PHP Artisan
 
-Chọn **một trong các cách** dưới đây để có dữ liệu thử nghiệm (chỉ dùng trên môi trường `local` / `testing`, bị chặn trên `production`). **Không chạy chồng seeder lên database đã có sẵn dữ liệu demo của cách khác.**
+Seeder `FullDemoSeeder` (chỉ chạy trên môi trường `local` / `testing`, bị chặn trên `production`) tự động tạo đủ vai trò, địa danh, tài khoản mẫu, sản phẩm (còn hàng, sắp hết, hết hàng), phiếu nhập nháp/đã ghi sổ, đơn hàng mọi trạng thái, hàng hoàn, đánh giá công khai/ẩn, bài viết, banner, mã giảm giá và số liệu báo cáo nhiều kỳ qua service nghiệp vụ.
 
-### Cách 1 — Đầy đủ bằng PHP Artisan (khuyên dùng, không cần tải gói ngoài)
-
-Seeder `FullDemoSeeder` tự dùng ảnh có sẵn trong repo (`public/legacy/img/`), chạy qua service nghiệp vụ để tạo đủ vai trò, địa danh, sản phẩm (còn hàng, sắp hết, hết hàng), phiếu nhập nháp/đã ghi sổ, đơn hàng mọi trạng thái, hàng hoàn, đánh giá công khai/ẩn, bài viết, banner, mã giảm giá và số liệu báo cáo nhiều kỳ.
-
-- **Seed trên database đã migrate:**
+- **Trường hợp 1 — Database đã migrate (chưa có dữ liệu mẫu):**
 
 ```powershell
 .\scripts\php.ps1 artisan db:seed --class=FullDemoSeeder --no-interaction
 ```
 
-- **Xóa toàn bộ bảng trên database local rồi tạo lại từ đầu** *(Cảnh báo: lệnh dưới xóa sạch dữ liệu hiện có trong database đang cấu hình ở `.env`)*:
+- **Trường hợp 2 — Xóa toàn bộ dữ liệu cũ để tạo lại từ đầu** *(Cảnh báo: `migrate:fresh` sẽ xóa sạch toàn bộ bảng và dữ liệu hiện có trong database đang cấu hình ở `.env`)*:
 
 ```powershell
 .\scripts\php.ps1 artisan migrate:fresh --no-interaction
 .\scripts\php.ps1 artisan db:seed --class=FullDemoSeeder --no-interaction
 ```
 
-- Sau đó chạy liên kết ảnh (nếu chưa có) và xóa cache:
+- **Tạo liên kết ảnh và xóa cache** (chạy sau khi seed):
 
 ```powershell
 .\scripts\php.ps1 artisan storage:link
 .\scripts\php.ps1 artisan optimize:clear
 ```
 
-**Tài khoản mẫu mặc định** (mật khẩu `CenaDemo@2026`, hoặc giá trị `STORE_DEMO_PASSWORD` dài 12–72 bytes nếu bạn đã cấu hình trong `.env`):
+> **Lưu ý về ảnh:** Không cần tải gói ảnh rời. Ảnh sản phẩm lõi (`cena-demo-*`), sản phẩm QA, bài viết và banner đều dùng ảnh có sẵn trong repo (`public/legacy/img/`). Một số sản phẩm minh họa trong `ProductClassificationDemoSeeder` vẫn dùng URL ảnh ngoài (`images.unsplash.com`), cần kết nối internet để hiển thị ảnh các sản phẩm đó.
+
+### Tài khoản đăng nhập mẫu
+
+Mật khẩu mặc định là `CenaDemo@2026` (hoặc giá trị `STORE_DEMO_PASSWORD` dài **12 đến 72 bytes** nếu bạn đã cấu hình trong `.env` trước khi seed):
 
 | Vai trò | Email |
 |---|---|
@@ -77,35 +74,6 @@ Seeder `FullDemoSeeder` tự dùng ảnh có sẵn trong repo (`public/legacy/im
 | Khách hàng 2 | `khach2.qa@demo.cena.test` |
 
 *(Ngoài ra có thêm bộ tài khoản nền `admin@demo.cena.test`, `staff@demo.cena.test`, `customer@demo.cena.test` cùng mật khẩu trên.)* Xem hướng dẫn tìm nhanh từng tình huống kiểm thử tại [TEAM_DEMO_TESTING_GUIDE.md](docs/TEAM_DEMO_TESTING_GUIDE.md).
-
-<details>
-<summary>Cách 2 — Cơ bản (chỉ vai trò, tài khoản và 4 sản phẩm tối thiểu)</summary>
-
-Thêm `STORE_DEMO_USERS=true` và `STORE_DEMO_PASSWORD` (mật khẩu riêng dài từ **12 đến 72 bytes**) vào `.env` local rồi chạy:
-
-```powershell
-.\scripts\php.ps1 artisan config:clear
-.\scripts\php.ps1 artisan db:seed --class=CoreFoundationSeeder --no-interaction
-.\scripts\php.ps1 artisan db:seed --class=StockImportDemoSeeder --no-interaction
-```
-
-Tài khoản tạo ra: `admin@demo.cena.test`, `staff@demo.cena.test`, `customer@demo.cena.test` với mật khẩu bạn vừa đặt.
-
-</details>
-
-<details>
-<summary>Cách 3 — Tùy chọn dùng bản snapshot SQL từ GitHub Release</summary>
-
-Nếu muốn dùng bản snapshot SQL thay vì `FullDemoSeeder`, tải gói tại [demo-20261118](https://github.com/httrung0308/cena-store-laravel/releases/tag/demo-20261118) ([cena-store-demo-20261118.zip](https://github.com/httrung0308/cena-store-laravel/releases/download/demo-20261118/cena-store-demo-20261118.zip)), chỉ dừng web server (giữ MySQL `127.0.0.1:3307` chạy), tạo database mới nếu cần giữ dữ liệu cũ rồi import SQL và chép `storage\app\public\` + `storage\app\private\`:
-
-```powershell
-Get-Content -Raw -Encoding utf8 'D:\duong-dan-toi\cena-store-demo-20261118.sql' | & 'C:\laragon\bin\mysql\mysql-8.4.3-winx64\bin\mysql.exe' -h 127.0.0.1 -P 3307 -u cena_app -p cena_store
-.\scripts\php.ps1 artisan storage:link
-.\scripts\php.ps1 artisan optimize:clear
-.\scripts\npm.ps1 run build
-```
-
-</details>
 
 ---
 
@@ -149,9 +117,8 @@ Sau khi `git pull`, chỉ chạy lệnh tương ứng với phần có thay đ�
 | PowerShell báo sai phiên bản | Mở PowerShell 7 (`pwsh`), không dùng Windows PowerShell 5.1. |
 | Port `8000` đang bận | Chạy server ở port khác: `.\scripts\php.ps1 artisan serve --host=127.0.0.1 --port=8001`. |
 | Không kết nối được DB (`3307`) | Chạy `.\scripts\start-local-services.ps1` và kiểm tra thông số kết nối trong `.env`. |
-| Lỗi quyền truy cập DB mới | Cấp quyền cho `'cena_app'@'127.0.0.1'` trên database mới theo mục 2. |
 | Giao diện cũ / thiếu Vite manifest | Chạy `.\scripts\npm.ps1 run build` rồi tải lại trang. |
-| Ảnh không hiển thị sau khi import | Kiểm tra thư mục `storage\app\public\` và chạy `.\scripts\php.ps1 artisan storage:link`. |
+| Ảnh không hiển thị sau khi seed | Chạy `.\scripts\php.ps1 artisan storage:link` để liên kết thư mục `public/storage`. |
 
 ---
 
