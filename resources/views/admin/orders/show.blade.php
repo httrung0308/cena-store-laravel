@@ -147,7 +147,7 @@
                         <form method="POST" action="{{ route('admin.orders.transition', [$order, 'cancel']) }}" class="space-y-4" x-on:submit="if (busy) { $event.preventDefault(); return false; } busy = true">
                             @csrf
                             <input type="hidden" name="expected_status" value="{{ $status->value }}">
-                            <p class="text-xs leading-relaxed text-muted">Hủy đơn hàng <strong class="text-main">{{ $order->order_code }}</strong> sẽ giải phóng toàn bộ số lượng hàng đang giữ về tồn kho bán và cập nhật chứng từ hủy đơn. Thao tác này không thể hoàn tác.</p>
+                            <p class="text-xs leading-relaxed text-muted">Hủy đơn hàng <strong class="text-main">{{ $order->order_code }}</strong> sẽ giải phóng toàn bộ số lượng hàng đã giữ cho đơn về tồn kho bán và cập nhật chứng từ hủy đơn. Thao tác này không thể hoàn tác.</p>
                             <div class="space-y-1.5">
                                 <label for="cancel-reason" class="admin-label text-muted">Lý do hủy</label>
                                 <input id="cancel-reason" name="reason" class="input w-full border-border bg-surface text-main" required minlength="5" maxlength="500" placeholder="Nhập lý do hủy đơn (tối thiểu 5 ký tự)...">
@@ -161,7 +161,7 @@
                             </div>
                         </form>
                     </x-ui.dialog>
-                    <x-admin.tooltip :inline="true" text="Hủy đơn hàng và giải phóng số lượng hàng đang giữ về tồn kho bán." label="Giải thích hủy đơn" />
+                    <x-admin.tooltip :inline="true" text="Hủy đơn hàng và giải phóng số lượng hàng đã giữ cho đơn về tồn kho bán." label="Giải thích hủy đơn" />
                 </div>
             @endif
             @if ($next === [] && ! $cancellable && ! in_array($status, [OrderStatus::Packing, OrderStatus::OnDelivery], true))

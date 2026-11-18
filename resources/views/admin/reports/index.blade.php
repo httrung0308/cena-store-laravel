@@ -747,7 +747,7 @@
                             <p>Trên {{ number_format($inventory['variants'], 0, ',', '.') }} size đang mở bán</p>
                         @endif
                         @if ($inventory['quarantine'] > 0)
-                            <p>Cách ly kiểm tra: {{ $inventory['quarantine'] }} đôi</p>
+                            <p>Chưa thể bán: {{ $inventory['quarantine'] }} đôi</p>
                         @endif
                     </div>
                 </article>

@@ -121,7 +121,7 @@
             </dl>
         </section>
 
-        {{-- Tổng quan kho & Biến thể --}}
+        {{-- Tổng quan kho & Màu sắc & Size --}}
         <aside class="admin-card space-y-4">
             <h2 class="text-sm font-bold text-main pb-3 border-b border-border/70">Tổng quan tồn kho</h2>
 
@@ -133,13 +133,13 @@
                     </strong>
                 </div>
                 <div class="rounded-xl border border-border bg-surface p-3.5">
-                    <span class="block text-[11px] font-semibold text-muted">Đang giữ chỗ</span>
+                    <span class="block text-[11px] font-semibold text-muted">Đã giữ cho đơn</span>
                     <strong class="block mt-1 text-lg font-extrabold font-mono tabular-nums text-main">
                         {{ number_format($totals['reserved'], 0, ',', '.') }} đôi
                     </strong>
                 </div>
                 <div class="rounded-xl border border-border bg-surface p-3.5">
-                    <span class="block text-[11px] font-semibold text-muted">Cách ly / Lỗi</span>
+                    <span class="block text-[11px] font-semibold text-muted">Chưa thể bán</span>
                     <strong class="block mt-1 text-lg font-extrabold font-mono tabular-nums {{ $totals['quarantine'] > 0 ? 'text-warning-text' : 'text-muted' }}">
                         {{ number_format($totals['quarantine'], 0, ',', '.') }} đôi
                     </strong>
@@ -162,10 +162,10 @@
         </aside>
     </div>
 
-    {{-- Khối 2: Chi tiết từng phối màu, ảnh và bảng biến thể --}}
-    <section class="space-y-4" aria-label="Phối màu và biến thể">
+    {{-- Khối 2: Chi tiết từng phối màu, ảnh và bảng màu sắc & size --}}
+    <section class="space-y-4" aria-label="Phối màu và size">
         <div class="flex items-center justify-between">
-            <h2 class="text-base font-bold text-main">Phối màu, Hình ảnh &amp; Biến thể ({{ $product->colors->count() }} màu)</h2>
+            <h2 class="text-base font-bold text-main">Phối màu, Hình ảnh &amp; Size ({{ $product->colors->count() }} màu)</h2>
         </div>
 
         @forelse ($product->colors as $color)
@@ -220,7 +220,7 @@
                     @endif
                 </div>
 
-                {{-- Bảng biến thể SKU --}}
+                {{-- Bảng màu sắc & size SKU --}}
                 <div class="overflow-x-auto rounded-xl border border-border">
                     <table class="w-full text-left text-xs text-muted border-collapse">
                         <thead class="bg-surface text-main font-bold border-b border-border">
@@ -232,11 +232,11 @@
                                     <th class="p-3 whitespace-nowrap text-right">Giá vốn BQ</th>
                                 @endif
                                 <th class="p-3 whitespace-nowrap text-right">Tồn kho</th>
-                                <th class="p-3 whitespace-nowrap text-right">Giữ chỗ</th>
+                                <th class="p-3 whitespace-nowrap text-right">Đã giữ cho đơn</th>
                                 <th class="p-3 whitespace-nowrap text-right">Khả dụng</th>
-                                <th class="p-3 whitespace-nowrap text-right">Cách ly</th>
+                                <th class="p-3 whitespace-nowrap text-right">Chưa thể bán</th>
                                 <th class="p-3 whitespace-nowrap text-center">Trạng thái</th>
-                                <th class="p-3 whitespace-nowrap text-right">Thẻ kho</th>
+                                <th class="p-3 whitespace-nowrap text-right">Biến động kho</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-border bg-surface-card">
@@ -286,16 +286,16 @@
                                             'inline-flex rounded-lg border px-2.5 py-1.5 text-[11px] font-bold transition-colors focus:outline-none focus:ring-2 focus:ring-accent',
                                             'border-accent bg-accent text-accent-text' => $selectedVariant?->id === $variant->id,
                                             'border-border bg-surface text-accent hover:bg-border/40' => $selectedVariant?->id !== $variant->id,
-                                        ]) href="{{ route('admin.products.show', ['product' => $product, 'variant_id' => $variant->id]) }}#inventory-history-section"
+                                        ]) href="{{ route('admin.products.show', ['product' => $product, 'color_id' => $color->id, 'variant_id' => $variant->id]) }}#inventory-history-section"
                                            @click.prevent="window.dispatchEvent(new CustomEvent('inventory-history:visit', { detail: { url: $el.href } }))"
-                                           aria-label="Xem thẻ kho SKU {{ $variant->sku }}">
-                                            Xem thẻ kho
+                                           aria-label="Xem biến động kho SKU {{ $variant->sku }}">
+                                            Xem biến động kho
                                         </a>
                                     </td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="{{ $canViewCost ? 10 : 9 }}" class="p-6 text-center text-muted">Chưa có biến thể size nào.</td>
+                                    <td colspan="{{ $canViewCost ? 10 : 9 }}" class="p-6 text-center text-muted">Chưa có tổ hợp màu/size nào.</td>
                                 </tr>
                             @endforelse
                         </tbody>
@@ -309,19 +309,35 @@
         @endforelse
     </section>
 
-    {{-- Khối 3: Thẻ kho SKU --}}
+    {{-- Khối 3: Biến động kho --}}
     @php
-        $variantOptions = $historyColors->flatMap(function ($color) use ($product) {
-            return $color->variants->map(function ($variant) use ($color, $product) {
+        $variantFilterOptions = $historyColors->flatMap(function ($color) {
+            return $color->variants->map(function ($variant) use ($color) {
+                $statusSuffix = $variant->trashed()
+                    ? ' (Đã xóa)'
+                    : (! $variant->is_active ? ' (Ngừng bán)' : '');
+
                 return [
                     'id' => $variant->id,
-                    'label' => ($color->color_name ?? 'Màu').' · Size '.$variant->size_value,
+                    'color_id' => $color->id,
+                    'color_name' => $color->color_name ?? 'Màu',
+                    'size_value' => $variant->size_value,
                     'sku' => $variant->sku,
-                    'inactive' => $variant->trashed() || ! $variant->is_active || $color->trashed() || ! $color->is_active,
-                    'url' => route('admin.products.show', ['product' => $product, 'variant_id' => $variant->id]).'#inventory-history-section',
+                    'label' => 'Size '.$variant->size_value.' ('.$variant->sku.')'.$statusSuffix,
+                    'full_label' => ($color->color_name ?? 'Màu').' · Size '.$variant->size_value.' ('.$variant->sku.')'.$statusSuffix,
                 ];
             });
         })->values();
+
+        $variantsInScopeCount = $selectedColorId !== null
+            ? ($historyColors->firstWhere('id', $selectedColorId)?->variants->count() ?? 0)
+            : $historyColors->sum(fn ($c) => $c->variants->count());
+
+        $diffIssues = array_values(array_filter($productReconciliationIssues, fn (array $issue): bool => $issue['observed_balance_diff']));
+        $incompleteIssues = array_values(array_filter($productReconciliationIssues, fn (array $issue): bool => $issue['history_incomplete']));
+
+        $advancedFiltersOpen = request()->filled('reference_type') || request()->filled('reference_id');
+        $resetHistoryUrl = route('admin.products.show', $product).'#inventory-history-section';
     @endphp
 
     <section
@@ -332,107 +348,27 @@
         @inventory-history:visit.window="visitUrl($event.detail.url); $el.scrollIntoView({ behavior: 'smooth', block: 'start' })"
     >
         <div id="inventory-history-region" @click="handleRegionClick($event)" :class="listLoading ? 'opacity-60 transition-opacity' : ''">
-            @if ($selectedVariant)
-                <div class="space-y-4">
-                    {{-- Header + Searchable Variant Selector + Reconciliation Pill --}}
-                    <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                        <div class="space-y-1.5 min-w-0">
-                            <div class="flex flex-wrap items-center gap-2.5">
-                                <h2 id="inventory-history-title" class="text-base font-extrabold text-main">
-                                    Lịch sử kho — {{ $selectedVariant->color?->color_name ?? 'Màu' }} · Size {{ $selectedVariant->size_value }}
-                                </h2>
-                                @unless ($reconciliation['history_incomplete'] || $reconciliation['observed_balance_diff'])
-                                    <span role="status" class="inline-flex items-center gap-1.5 rounded-full border border-success/30 bg-success-bg px-3 py-0.5 text-[11px] font-bold text-success">
-                                        <span class="h-1.5 w-1.5 rounded-full bg-success" aria-hidden="true"></span>
-                                        Đối chiếu khớp toàn bộ lịch sử
-                                    </span>
-                                @endunless
-                            </div>
-                            <p class="text-xs font-mono text-muted">
-                                SKU {{ $selectedVariant->sku }}
-                                @if ($selectedVariant->trashed())
-                                    · <span class="font-sans font-semibold text-error">Đã xóa mềm</span>
-                                @elseif (! $selectedVariant->is_active)
-                                    · <span class="font-sans font-semibold text-muted">Ngừng bán</span>
-                                @endif
-                            </p>
-                        </div>
+            <div class="space-y-4">
+                {{-- Header + Reconciliation Pill --}}
+                <div class="flex flex-wrap items-center gap-2.5">
+                    <h2 id="inventory-history-title" class="text-base font-extrabold text-main">Biến động kho</h2>
+                    @if ($selectedVariant)
+                        @unless ($reconciliation['history_incomplete'] || $reconciliation['observed_balance_diff'])
+                            <span role="status" class="inline-flex items-center gap-1.5 rounded-full border border-success/30 bg-success-bg px-3 py-0.5 text-[11px] font-bold text-success">
+                                <span class="h-1.5 w-1.5 rounded-full bg-success" aria-hidden="true"></span>
+                                Đối chiếu khớp toàn bộ lịch sử
+                            </span>
+                        @endunless
+                    @elseif ($variantsInScopeCount > 0 && $productReconciliationIssues === [])
+                        <span role="status" class="inline-flex items-center gap-1.5 rounded-full border border-success/30 bg-success-bg px-3 py-0.5 text-[11px] font-bold text-success">
+                            <span class="h-1.5 w-1.5 rounded-full bg-success" aria-hidden="true"></span>
+                            Đối chiếu khớp toàn bộ lịch sử
+                        </span>
+                    @endif
+                </div>
 
-                        {{-- Searchable Variant Selector --}}
-                        <div
-                            class="relative w-full lg:w-80 shrink-0"
-                            x-data="{
-                                open: false,
-                                query: '',
-                                options: @js($variantOptions),
-                                get filtered() {
-                                    const q = this.query.trim().toLowerCase();
-                                    if (!q) return this.options;
-                                    return this.options.filter(o =>
-                                        o.label.toLowerCase().includes(q) || o.sku.toLowerCase().includes(q)
-                                    );
-                                },
-                            }"
-                            @click.outside="open = false"
-                            @keydown.escape.window="open = false"
-                        >
-                            <button
-                                type="button"
-                                @click="open = !open; if (open) { $nextTick(() => $refs.variantSearch?.focus()); }"
-                                :aria-expanded="open ? 'true' : 'false'"
-                                class="flex min-h-10 w-full items-center justify-between gap-2 rounded-xl border border-border bg-surface-card px-3 py-2 text-left text-xs text-main shadow-sm transition-colors hover:border-accent/60 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
-                            >
-                                <span class="min-w-0 truncate">
-                                    <span class="font-bold">{{ $selectedVariant->color?->color_name ?? 'Màu' }} · Size {{ $selectedVariant->size_value }}</span>
-                                    <span class="ml-1.5 font-mono text-[11px] text-muted">{{ $selectedVariant->sku }}</span>
-                                </span>
-                                <svg class="h-4 w-4 shrink-0 text-muted transition-transform" :class="open ? 'rotate-180' : ''" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                    <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
-                                </svg>
-                            </button>
-
-                            <div
-                                x-cloak
-                                x-show="open"
-                                x-transition.opacity.duration.150ms
-                                class="absolute right-0 z-30 mt-1.5 w-full overflow-hidden rounded-xl border border-border bg-surface-card shadow-lg"
-                            >
-                                <div class="border-b border-border p-2">
-                                    <input
-                                        x-ref="variantSearch"
-                                        type="search"
-                                        x-model="query"
-                                        placeholder="Tìm màu, size hoặc SKU..."
-                                        aria-label="Tìm kiếm biến thể"
-                                        class="w-full rounded-lg border border-border bg-bg px-2.5 py-1.5 text-xs text-main placeholder:text-muted focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
-                                    >
-                                </div>
-                                <ul class="max-h-60 overflow-y-auto divide-y divide-border/50" role="listbox">
-                                    <template x-for="opt in filtered" :key="opt.id">
-                                        <li>
-                                            <button
-                                                type="button"
-                                                @click="open = false; query = ''; visitUrl(opt.url)"
-                                                class="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-xs transition-colors hover:bg-surface"
-                                                :class="opt.id === {{ $selectedVariant->id }} ? 'bg-accent/10 font-bold text-accent' : 'text-main'"
-                                            >
-                                                <span class="min-w-0 truncate">
-                                                    <span class="block truncate" x-text="opt.label"></span>
-                                                    <span class="block font-mono text-[10px] text-muted" x-text="opt.sku"></span>
-                                                </span>
-                                                <span x-show="opt.inactive" class="shrink-0 rounded-full border border-border bg-muted/15 px-2 py-0.5 text-[10px] font-semibold text-muted">Ngừng bán</span>
-                                            </button>
-                                        </li>
-                                    </template>
-                                    <li x-show="filtered.length === 0" class="px-3 py-4 text-center text-xs text-muted">
-                                        Không tìm thấy biến thể phù hợp.
-                                    </li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-
-                    {{-- Reconciliation Warnings (never inside a tooltip) --}}
+                {{-- Reconciliation Warnings (per SKU, never merged across SKUs) --}}
+                @if ($selectedVariant)
                     @if ($reconciliation['history_incomplete'] || $reconciliation['observed_balance_diff'])
                         <div class="grid gap-3 sm:grid-cols-2">
                             @if ($reconciliation['history_incomplete'])
@@ -455,339 +391,378 @@
                         <div class="rounded-xl border border-border bg-surface-card p-3.5 shadow-sm">
                             <span class="inline-flex items-center text-[11px] font-semibold text-muted">
                                 Có thể bán
-                                <x-admin.tooltip text="Tồn kho - Đang giữ; không trừ trùng cách ly" />
+                                <x-admin.tooltip text="Tồn kho - Đã giữ cho đơn; không trừ trùng chưa thể bán" />
                             </span>
                             <strong class="mt-1 block font-mono text-lg font-extrabold tabular-nums {{ ($selectedVariant->stock_qty - $selectedVariant->reserved_qty) > 0 ? 'text-main' : 'text-error' }}">
                                 {{ $selectedVariant->stock_qty - $selectedVariant->reserved_qty }} đôi
                             </strong>
                         </div>
                         <div class="rounded-xl border border-border bg-surface-card p-3.5 shadow-sm">
-                            <span class="block text-[11px] font-semibold text-muted">Đang giữ</span>
+                            <span class="block text-[11px] font-semibold text-muted">Đã giữ cho đơn</span>
                             <strong class="mt-1 block font-mono text-lg font-extrabold tabular-nums text-main">
                                 {{ $selectedVariant->reserved_qty }} đôi
                             </strong>
                         </div>
                         <div class="rounded-xl border border-border bg-surface-card p-3.5 shadow-sm">
-                            <span class="block text-[11px] font-semibold text-muted">Cách ly</span>
+                            <span class="block text-[11px] font-semibold text-muted">Chưa thể bán</span>
                             <strong class="mt-1 block font-mono text-lg font-extrabold tabular-nums {{ $selectedVariant->quarantine_qty > 0 ? 'text-warning-text' : 'text-muted' }}">
                                 {{ $selectedVariant->quarantine_qty }} đôi
                             </strong>
                         </div>
                     </div>
-
-                    {{-- Filters --}}
-                    @php
-                        $advancedFiltersOpen = request()->filled('reference_type') || request()->filled('reference_id');
-                        $resetHistoryUrl = route('admin.products.show', ['product' => $product, 'variant_id' => $selectedVariant->id]).'#inventory-history-section';
-                    @endphp
-                    <form
-                        id="inventory-history-toolbar"
-                        method="GET"
-                        action="{{ route('admin.products.show', $product) }}#inventory-history-section"
-                        @submit.prevent="submitFilter($el)"
-                        x-data="{ open: {{ $advancedFiltersOpen ? 'true' : 'false' }} }"
-                        class="space-y-3 rounded-2xl border border-border bg-surface-card p-4 shadow-sm"
-                        aria-label="Lọc thẻ kho"
-                    >
-                        <input type="hidden" name="variant_id" value="{{ $selectedVariant->id }}">
-
-                        <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                            <div class="space-y-1">
-                                <label for="movement-from" class="text-[11px] font-bold text-main">Từ ngày</label>
-                                <input id="movement-from" type="date" name="from" value="{{ request('from') }}" class="min-h-10 w-full rounded-xl border border-border bg-bg px-3 text-xs text-main focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20">
-                            </div>
-                            <div class="space-y-1">
-                                <label for="movement-to" class="text-[11px] font-bold text-main">Đến ngày</label>
-                                <input id="movement-to" type="date" name="to" value="{{ request('to') }}" class="min-h-10 w-full rounded-xl border border-border bg-bg px-3 text-xs text-main focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20">
-                            </div>
-                            <div class="space-y-1">
-                                <label for="movement-action" class="text-[11px] font-bold text-main">Hoạt động</label>
-                                <select id="movement-action" name="action" class="min-h-10 w-full rounded-xl border border-border bg-bg px-3 text-xs text-main focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20">
-                                    <option value="">Tất cả hoạt động</option>
-                                    @foreach ($actions as $action)
-                                        <option value="{{ $action->value }}" @selected(request('action') === $action->value)>{{ $action->label() }}</option>
+                @elseif ($diffIssues !== [] || $incompleteIssues !== [])
+                    <div class="grid gap-3 sm:grid-cols-2">
+                        @if ($incompleteIssues !== [])
+                            <div role="status" class="rounded-2xl border border-warning/40 bg-warning-bg p-4 text-xs leading-5 text-warning-text space-y-1.5">
+                                <strong class="block font-mono">HISTORY_INCOMPLETE ({{ count($incompleteIssues) }} SKU)</strong>
+                                <p>Các SKU sau chưa đủ lịch sử để đối chiếu liên tục từ số dư đầu kỳ:</p>
+                                <ul class="list-disc list-inside space-y-0.5 font-mono text-[11px]">
+                                    @foreach (array_slice($incompleteIssues, 0, 5) as $issue)
+                                        <li>{{ $issue['label'] }} · {{ $issue['sku'] }}</li>
                                     @endforeach
-                                </select>
+                                    @if (count($incompleteIssues) > 5)
+                                        <li class="font-sans">và {{ count($incompleteIssues) - 5 }} SKU khác</li>
+                                    @endif
+                                </ul>
                             </div>
-                            <div class="flex items-end gap-2">
-                                <button type="submit" class="min-h-10 rounded-xl bg-accent px-4 text-xs font-bold text-accent-text transition-colors hover:bg-accent-hover focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2">
-                                    Lọc
-                                </button>
-                                <a
-                                    href="{{ $resetHistoryUrl }}"
-                                    @click.prevent="resetFilters('{{ $resetHistoryUrl }}', $el.closest('form'))"
-                                    class="inline-flex min-h-10 items-center rounded-xl border border-border px-3 text-xs font-bold text-muted hover:bg-surface"
-                                >
-                                    Xóa lọc
-                                </a>
-                                <button
-                                    type="button"
-                                    @click="open = !open"
-                                    :aria-expanded="open ? 'true' : 'false'"
-                                    class="ml-auto inline-flex min-h-10 items-center gap-1 rounded-xl border border-border px-3 text-xs font-bold text-main hover:bg-surface"
-                                >
-                                    <span>Lọc thêm</span>
-                                    <svg class="h-3.5 w-3.5 transition-transform" :class="open ? 'rotate-180' : ''" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                        <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
-                                    </svg>
-                                </button>
-                            </div>
-                        </div>
-
-                        <div x-cloak x-show="open" x-transition.opacity.duration.150ms class="grid gap-3 border-t border-border/70 pt-3 sm:grid-cols-2">
-                            <div class="space-y-1">
-                                <label for="movement-reference-type" class="text-[11px] font-bold text-main">Loại chứng từ</label>
-                                <select id="movement-reference-type" name="reference_type" class="min-h-10 w-full rounded-xl border border-border bg-bg px-3 text-xs text-main focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20">
-                                    <option value="">Tất cả chứng từ</option>
-                                    @foreach ($referenceTypes as $referenceType)
-                                        <option value="{{ $referenceType->value }}" @selected(request('reference_type') === $referenceType->value)>{{ $referenceType->label() }}</option>
+                        @endif
+                        @if ($diffIssues !== [])
+                            <div role="status" class="rounded-2xl border border-error/30 bg-error-bg p-4 text-xs leading-5 text-error-text space-y-1.5">
+                                <strong class="block font-mono">OBSERVED_BALANCE_DIFF ({{ count($diffIssues) }} SKU)</strong>
+                                <p>Số dư sau biến động cuối khác số dư bucket hiện tại ở các SKU sau:</p>
+                                <ul class="list-disc list-inside space-y-0.5 font-mono text-[11px]">
+                                    @foreach ($diffIssues as $issue)
+                                        <li>{{ $issue['label'] }} · {{ $issue['sku'] }}</li>
                                     @endforeach
-                                </select>
+                                </ul>
                             </div>
-                            <div class="space-y-1">
-                                <label for="movement-reference-id" class="text-[11px] font-bold text-main">Mã chứng từ</label>
-                                <input id="movement-reference-id" type="number" min="1" name="reference_id" value="{{ request('reference_id') }}" class="min-h-10 w-full rounded-xl border border-border bg-bg px-3 text-xs text-main focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20">
-                            </div>
-                        </div>
-                    </form>
+                        @endif
+                    </div>
+                @endif
 
-                    {{-- Movements: Desktop 4-column table + Mobile cards --}}
-                    <div class="overflow-hidden rounded-2xl border border-border bg-surface-card shadow-sm">
-                        {{-- Desktop 4-column table --}}
-                        <div class="hidden md:block">
-                            <table class="w-full border-collapse text-left text-xs text-muted">
-                                <caption class="sr-only">Lịch sử biến động tồn kho của SKU {{ $selectedVariant->sku }}</caption>
-                                <thead class="border-b border-border bg-surface text-[11px] font-bold text-main">
-                                    <tr>
-                                        <th scope="col" class="px-4 py-3">Thời gian</th>
-                                        <th scope="col" class="px-4 py-3">Hoạt động</th>
-                                        <th scope="col" class="px-4 py-3">Thay đổi</th>
-                                        <th scope="col" class="px-4 py-3">Người thực hiện</th>
-                                    </tr>
-                                </thead>
-                                @forelse ($movements as $movement)
-                                    @php
-                                        $docUrl = $documentUrls[$movement->id] ?? null;
-                                        $docLabel = ($movement->reference_type?->label() ?? $movement->reference_type?->value ?? 'Chứng từ').' #'.($movement->reference_id ?? '—');
-                                        $deltas = array_values(array_filter([
-                                            ['label' => 'Tồn kho', 'delta' => $movement->stock_delta, 'after' => $movement->stock_after],
-                                            ['label' => 'Đang giữ', 'delta' => $movement->reserved_delta, 'after' => $movement->reserved_after],
-                                            ['label' => 'Cách ly', 'delta' => $movement->quarantine_delta, 'after' => $movement->quarantine_after],
-                                        ], fn (array $item): bool => $item['delta'] !== 0));
-                                    @endphp
-                                    <tbody x-data="{ open: false }" class="divide-y divide-border/60 border-b border-border last:border-b-0">
-                                        <tr class="align-top transition-colors hover:bg-surface/50">
-                                            <td class="px-4 py-3 whitespace-nowrap">
-                                                <time class="block font-medium text-main" datetime="{{ $movement->created_at?->toISOString() }}">{{ $movement->created_at?->setTimezone(config('store.business_timezone'))->format('d/m/Y H:i:s') }}</time>
-                                                <span class="mt-0.5 block font-mono text-[11px] text-muted">#{{ $movement->id }}</span>
-                                            </td>
-                                            <td class="px-4 py-3">
-                                                <span class="block font-bold text-main">{{ $movement->action?->label() ?? $movement->action }}</span>
-                                                @if ($docUrl !== null)
-                                                    <a href="{{ $docUrl }}" class="mt-0.5 inline-flex items-center gap-1 text-[11px] font-semibold text-accent hover:underline">
-                                                        {{ $docLabel }}
-                                                    </a>
-                                                @else
-                                                    <span class="mt-0.5 block text-[11px] text-muted">{{ $docLabel }}</span>
-                                                @endif
-                                            </td>
-                                            <td class="px-4 py-3">
-                                                @if ($deltas === [])
-                                                    <span class="text-muted">Không đổi số lượng</span>
-                                                @else
-                                                    <ul class="space-y-0.5 font-mono text-[11px] text-main">
-                                                        @foreach ($deltas as $item)
-                                                            <li>{{ $item['label'] }} {{ $item['delta'] > 0 ? '+'.$item['delta'] : $item['delta'] }} đôi → {{ $item['after'] }} đôi</li>
-                                                        @endforeach
-                                                    </ul>
-                                                @endif
-                                            </td>
-                                            <td class="px-4 py-3">
-                                                <div class="flex items-start justify-between gap-2">
-                                                    <span class="text-main">{{ $movement->actor_name_snapshot ?? $movement->actor?->full_name ?? 'Hệ thống' }}</span>
-                                                    <button
-                                                        type="button"
-                                                        @click="open = !open"
-                                                        :aria-expanded="open ? 'true' : 'false'"
-                                                        class="shrink-0 rounded-lg border border-border bg-surface px-2 py-1 text-[11px] font-semibold text-muted transition-colors hover:border-accent/60 hover:text-main"
-                                                    >
-                                                        <span x-text="open ? 'Thu gọn' : 'Chi tiết'">Chi tiết</span>
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                        <tr x-cloak x-show="open" class="bg-surface/40">
-                                            <td colspan="4" class="px-4 py-3 text-[11px]">
-                                                <div class="grid gap-3 sm:grid-cols-3">
-                                                    <div class="rounded-lg border border-border/80 bg-surface-card px-3 py-2">
-                                                        <span class="block font-bold text-main">Tồn kho</span>
-                                                        <span class="font-mono text-muted">Trước: {{ $movement->stock_before }} · Thay đổi: {{ $movement->stock_delta > 0 ? '+'.$movement->stock_delta : $movement->stock_delta }} · Sau: <strong class="text-main">{{ $movement->stock_after }}</strong></span>
-                                                    </div>
-                                                    <div class="rounded-lg border border-border/80 bg-surface-card px-3 py-2">
-                                                        <span class="block font-bold text-main">Đang giữ</span>
-                                                        <span class="font-mono text-muted">Trước: {{ $movement->reserved_before }} · Thay đổi: {{ $movement->reserved_delta > 0 ? '+'.$movement->reserved_delta : $movement->reserved_delta }} · Sau: <strong class="text-main">{{ $movement->reserved_after }}</strong></span>
-                                                    </div>
-                                                    <div class="rounded-lg border border-border/80 bg-surface-card px-3 py-2">
-                                                        <span class="block font-bold text-main">Cách ly</span>
-                                                        <span class="font-mono text-muted">Trước: {{ $movement->quarantine_before }} · Thay đổi: {{ $movement->quarantine_delta > 0 ? '+'.$movement->quarantine_delta : $movement->quarantine_delta }} · Sau: <strong class="text-main">{{ $movement->quarantine_after }}</strong></span>
-                                                    </div>
-                                                </div>
-                                                <div class="mt-2.5 flex flex-wrap items-center justify-between gap-2 text-muted">
-                                                    <span>
-                                                        Chứng từ:
-                                                        @if ($docUrl !== null)
-                                                            <a href="{{ $docUrl }}" class="font-semibold text-accent hover:underline">{{ $docLabel }}</a>
-                                                        @else
-                                                            <span class="font-semibold text-main">{{ $docLabel }}</span>
-                                                        @endif
-                                                    </span>
-                                                    @if ($canViewCost)
-                                                        <span class="font-mono text-main">
-                                                            @if ($movement->unit_cost_basis !== null)
-                                                                Đơn vị: {{ $movement->unit_cost_basis }} ₫ ·
-                                                            @endif
-                                                            Bình quân: {{ $movement->average_cost_before }} → {{ $movement->average_cost_after }} ₫
-                                                        </span>
-                                                    @endif
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                @empty
-                                    <tbody>
-                                        <tr>
-                                            <td colspan="4" class="px-4 py-10 text-center text-xs text-muted">Không có biến động phù hợp với bộ lọc.</td>
-                                        </tr>
-                                    </tbody>
-                                @endforelse
-                            </table>
+                {{-- Filters --}}
+                <form
+                    id="inventory-history-toolbar"
+                    method="GET"
+                    action="{{ route('admin.products.show', $product) }}#inventory-history-section"
+                    @submit.prevent="submitFilter($el)"
+                    x-data="{
+                        open: {{ $advancedFiltersOpen ? 'true' : 'false' }},
+                        selectedColorId: '{{ $selectedColorId ?? '' }}',
+                        selectedVariantId: '{{ $selectedVariant?->id ?? '' }}',
+                        allVariants: @js($variantFilterOptions),
+                        get filteredVariants() {
+                            if (!this.selectedColorId) return this.allVariants;
+                            return this.allVariants.filter(v => String(v.color_id) === String(this.selectedColorId));
+                        },
+                        onColorChange() {
+                            const stillValid = this.filteredVariants.some(v => String(v.id) === String(this.selectedVariantId));
+                            if (!stillValid) {
+                                this.selectedVariantId = '';
+                            }
+                        },
+                    }"
+                    class="space-y-3 rounded-2xl border border-border bg-surface-card p-4 shadow-sm"
+                    aria-label="Lọc biến động kho"
+                >
+                    <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
+                        <div class="space-y-1">
+                            <label for="movement-color" class="text-[11px] font-bold text-main">Màu</label>
+                            <select
+                                id="movement-color"
+                                name="color_id"
+                                x-model="selectedColorId"
+                                @change="onColorChange()"
+                                class="min-h-10 w-full rounded-xl border border-border bg-bg px-3 text-xs text-main focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
+                            >
+                                <option value="">Tất cả màu</option>
+                                @foreach ($historyColors as $historyColor)
+                                    <option value="{{ $historyColor->id }}" @selected($selectedColorId === $historyColor->id)>
+                                        {{ $historyColor->color_name }}@if ($historyColor->trashed()) (Đã xóa)@elseif (! $historyColor->is_active) (Ngừng bán)@endif
+                                    </option>
+                                @endforeach
+                            </select>
                         </div>
 
-                        {{-- Mobile compact cards --}}
-                        <div class="divide-y divide-border md:hidden">
+                        <div class="space-y-1">
+                            <label for="movement-variant" class="text-[11px] font-bold text-main">Size</label>
+                            <select
+                                id="movement-variant"
+                                name="variant_id"
+                                x-model="selectedVariantId"
+                                x-effect="
+                                    Array.from($el.options).forEach(opt => {
+                                        if (!opt.value) return;
+                                        const match = !selectedColorId || opt.dataset.colorId === String(selectedColorId);
+                                        opt.hidden = !match;
+                                        opt.disabled = !match;
+                                    });
+                                "
+                                class="min-h-10 w-full rounded-xl border border-border bg-bg px-3 text-xs text-main focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
+                            >
+                                <option value="">Tất cả size</option>
+                                @foreach ($variantFilterOptions as $opt)
+                                    <option
+                                        value="{{ $opt['id'] }}"
+                                        data-color-id="{{ $opt['color_id'] }}"
+                                        @selected($selectedVariant?->id === $opt['id'])
+                                    >
+                                        {{ $selectedColorId !== null ? $opt['label'] : $opt['full_label'] }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <div class="space-y-1">
+                            <label for="movement-from" class="text-[11px] font-bold text-main">Từ ngày</label>
+                            <input id="movement-from" type="date" name="from" value="{{ request('from') }}" class="min-h-10 w-full rounded-xl border border-border bg-bg px-3 text-xs text-main focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20">
+                        </div>
+                        <div class="space-y-1">
+                            <label for="movement-to" class="text-[11px] font-bold text-main">Đến ngày</label>
+                            <input id="movement-to" type="date" name="to" value="{{ request('to') }}" class="min-h-10 w-full rounded-xl border border-border bg-bg px-3 text-xs text-main focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20">
+                        </div>
+                        <div class="space-y-1">
+                            <label for="movement-action" class="text-[11px] font-bold text-main">Hoạt động</label>
+                            <select id="movement-action" name="action" class="min-h-10 w-full rounded-xl border border-border bg-bg px-3 text-xs text-main focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20">
+                                <option value="">Tất cả hoạt động</option>
+                                @foreach ($actions as $action)
+                                    <option value="{{ $action->value }}" @selected(request('action') === $action->value)>{{ $action->label() }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="flex items-end gap-2">
+                            <button type="submit" class="min-h-10 rounded-xl bg-accent px-4 text-xs font-bold text-accent-text transition-colors hover:bg-accent-hover focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2">
+                                Lọc
+                            </button>
+                            <a
+                                href="{{ $resetHistoryUrl }}"
+                                @click.prevent="visitUrl('{{ $resetHistoryUrl }}')"
+                                class="inline-flex min-h-10 items-center rounded-xl border border-border px-3 text-xs font-bold text-muted hover:bg-surface"
+                            >
+                                Xóa lọc
+                            </a>
+                            <button
+                                type="button"
+                                @click="open = !open"
+                                :aria-expanded="open ? 'true' : 'false'"
+                                class="ml-auto inline-flex min-h-10 items-center gap-1 rounded-xl border border-border px-3 text-xs font-bold text-main hover:bg-surface"
+                            >
+                                <span>Lọc thêm</span>
+                                <svg class="h-3.5 w-3.5 transition-transform" :class="open ? 'rotate-180' : ''" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                    <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div x-cloak x-show="open" x-transition.opacity.duration.150ms class="grid gap-3 border-t border-border/70 pt-3 sm:grid-cols-2">
+                        <div class="space-y-1">
+                            <label for="movement-reference-type" class="text-[11px] font-bold text-main">Loại chứng từ</label>
+                            <select id="movement-reference-type" name="reference_type" class="min-h-10 w-full rounded-xl border border-border bg-bg px-3 text-xs text-main focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20">
+                                <option value="">Tất cả chứng từ</option>
+                                @foreach ($referenceTypes as $referenceType)
+                                    <option value="{{ $referenceType->value }}" @selected(request('reference_type') === $referenceType->value)>{{ $referenceType->label() }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="space-y-1">
+                            <label for="movement-reference-id" class="text-[11px] font-bold text-main">Mã chứng từ</label>
+                            <input id="movement-reference-id" type="number" min="1" name="reference_id" value="{{ request('reference_id') }}" class="min-h-10 w-full rounded-xl border border-border bg-bg px-3 text-xs text-main focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20">
+                        </div>
+                    </div>
+                </form>
+
+                {{-- Movements: Desktop 4-column table + Mobile cards --}}
+                <div class="overflow-hidden rounded-2xl border border-border bg-surface-card shadow-sm">
+                    {{-- Desktop 4-column table --}}
+                    <div class="hidden md:block">
+                        <table class="w-full border-collapse text-left text-xs text-muted">
+                            <caption class="sr-only">Biến động kho của {{ $product->name }}</caption>
+                            <thead class="border-b border-border bg-surface text-[11px] font-bold text-main">
+                                <tr>
+                                    <th scope="col" class="px-4 py-3">Thời gian</th>
+                                    <th scope="col" class="px-4 py-3">Hoạt động</th>
+                                    <th scope="col" class="px-4 py-3">Thay đổi</th>
+                                    <th scope="col" class="px-4 py-3">Người thực hiện</th>
+                                </tr>
+                            </thead>
                             @forelse ($movements as $movement)
                                 @php
                                     $docUrl = $documentUrls[$movement->id] ?? null;
                                     $docLabel = ($movement->reference_type?->label() ?? $movement->reference_type?->value ?? 'Chứng từ').' #'.($movement->reference_id ?? '—');
                                     $deltas = array_values(array_filter([
                                         ['label' => 'Tồn kho', 'delta' => $movement->stock_delta, 'after' => $movement->stock_after],
-                                        ['label' => 'Đang giữ', 'delta' => $movement->reserved_delta, 'after' => $movement->reserved_after],
-                                        ['label' => 'Cách ly', 'delta' => $movement->quarantine_delta, 'after' => $movement->quarantine_after],
+                                        ['label' => 'Đã giữ cho đơn', 'delta' => $movement->reserved_delta, 'after' => $movement->reserved_after],
+                                        ['label' => 'Chưa thể bán', 'delta' => $movement->quarantine_delta, 'after' => $movement->quarantine_after],
                                     ], fn (array $item): bool => $item['delta'] !== 0));
                                 @endphp
-                                <div x-data="{ open: false }" class="p-4 space-y-2.5 text-xs">
-                                    <div class="flex items-start justify-between gap-2">
-                                        <div>
+                                <tbody x-data="{ open: false }" class="divide-y divide-border/60 border-b border-border last:border-b-0">
+                                    <tr class="align-top transition-colors hover:bg-surface/50">
+                                        <td class="px-4 py-3 whitespace-nowrap">
+                                            <time class="block font-medium text-main" datetime="{{ $movement->created_at?->toISOString() }}">{{ $movement->created_at?->setTimezone(config('store.business_timezone'))->format('d/m/Y H:i:s') }}</time>
+                                            <span class="mt-0.5 block font-mono text-[11px] text-muted">#{{ $movement->id }}</span>
+                                        </td>
+                                        <td class="px-4 py-3">
                                             <span class="block font-bold text-main">{{ $movement->action?->label() ?? $movement->action }}</span>
+                                            @if ($selectedVariant === null && $movement->variant)
+                                                <span class="mt-0.5 block text-[11px] font-semibold text-main">
+                                                    {{ $movement->variant->color?->color_name ?? 'Màu' }} · Size {{ $movement->variant->size_value }}
+                                                    <span class="ml-1 font-mono font-normal text-muted">{{ $movement->variant->sku }}</span>
+                                                </span>
+                                            @endif
                                             @if ($docUrl !== null)
-                                                <a href="{{ $docUrl }}" class="mt-0.5 inline-flex text-[11px] font-semibold text-accent hover:underline">{{ $docLabel }}</a>
+                                                <a href="{{ $docUrl }}" class="mt-0.5 inline-flex items-center gap-1 text-[11px] font-semibold text-accent hover:underline">
+                                                    {{ $docLabel }}
+                                                </a>
                                             @else
                                                 <span class="mt-0.5 block text-[11px] text-muted">{{ $docLabel }}</span>
                                             @endif
-                                        </div>
-                                        <div class="text-right shrink-0">
-                                            <time class="block text-[11px] text-main" datetime="{{ $movement->created_at?->toISOString() }}">{{ $movement->created_at?->setTimezone(config('store.business_timezone'))->format('d/m/Y H:i') }}</time>
-                                            <span class="font-mono text-[10px] text-muted">#{{ $movement->id }}</span>
-                                        </div>
-                                    </div>
-
-                                    @if ($deltas === [])
-                                        <p class="text-[11px] text-muted">Không đổi số lượng</p>
-                                    @else
-                                        <ul class="space-y-0.5 font-mono text-[11px] text-main">
-                                            @foreach ($deltas as $item)
-                                                <li>{{ $item['label'] }} {{ $item['delta'] > 0 ? '+'.$item['delta'] : $item['delta'] }} đôi → {{ $item['after'] }} đôi</li>
-                                            @endforeach
-                                        </ul>
-                                    @endif
-
-                                    <div class="flex items-center justify-between pt-1 text-[11px] text-muted">
-                                        <span>{{ $movement->actor_name_snapshot ?? $movement->actor?->full_name ?? 'Hệ thống' }}</span>
-                                        <button type="button" @click="open = !open" :aria-expanded="open ? 'true' : 'false'" class="rounded-lg border border-border bg-surface px-2.5 py-1 font-semibold text-main">
-                                            <span x-text="open ? 'Thu gọn' : 'Chi tiết'">Chi tiết</span>
-                                        </button>
-                                    </div>
-
-                                    <div x-cloak x-show="open" class="space-y-1.5 rounded-xl border border-border/80 bg-surface/50 p-3 text-[11px] font-mono text-muted">
-                                        <div>Tồn kho: {{ $movement->stock_before }} → {{ $movement->stock_after }} ({{ $movement->stock_delta > 0 ? '+'.$movement->stock_delta : $movement->stock_delta }})</div>
-                                        <div>Đang giữ: {{ $movement->reserved_before }} → {{ $movement->reserved_after }} ({{ $movement->reserved_delta > 0 ? '+'.$movement->reserved_delta : $movement->reserved_delta }})</div>
-                                        <div>Cách ly: {{ $movement->quarantine_before }} → {{ $movement->quarantine_after }} ({{ $movement->quarantine_delta > 0 ? '+'.$movement->quarantine_delta : $movement->quarantine_delta }})</div>
-                                        @if ($canViewCost)
-                                            <div class="pt-1 border-t border-border/60 text-main">
-                                                @if ($movement->unit_cost_basis !== null)
-                                                    <span class="block">Đơn vị: {{ $movement->unit_cost_basis }} ₫</span>
-                                                @endif
-                                                <span class="block">Bình quân: {{ $movement->average_cost_before }} → {{ $movement->average_cost_after }} ₫</span>
+                                        </td>
+                                        <td class="px-4 py-3">
+                                            @if ($deltas === [])
+                                                <span class="text-muted">Không đổi số lượng</span>
+                                            @else
+                                                <ul class="space-y-0.5 font-mono text-[11px] text-main">
+                                                    @foreach ($deltas as $item)
+                                                        <li>{{ $item['label'] }} {{ $item['delta'] > 0 ? '+'.$item['delta'] : $item['delta'] }} đôi → {{ $item['after'] }} đôi</li>
+                                                    @endforeach
+                                                </ul>
+                                            @endif
+                                        </td>
+                                        <td class="px-4 py-3">
+                                            <div class="flex items-start justify-between gap-2">
+                                                <span class="text-main">{{ $movement->actor_name_snapshot ?? $movement->actor?->full_name ?? 'Hệ thống' }}</span>
+                                                <button
+                                                    type="button"
+                                                    @click="open = !open"
+                                                    :aria-expanded="open ? 'true' : 'false'"
+                                                    class="shrink-0 rounded-lg border border-border bg-surface px-2 py-1 text-[11px] font-semibold text-muted transition-colors hover:border-accent/60 hover:text-main"
+                                                >
+                                                    <span x-text="open ? 'Thu gọn' : 'Chi tiết'">Chi tiết</span>
+                                                </button>
                                             </div>
+                                        </td>
+                                    </tr>
+                                    <tr x-cloak x-show="open" class="bg-surface/40">
+                                        <td colspan="4" class="px-4 py-3 text-[11px]">
+                                            <div class="grid gap-3 sm:grid-cols-3">
+                                                <div class="rounded-lg border border-border/80 bg-surface-card px-3 py-2">
+                                                    <span class="block font-bold text-main">Tồn kho</span>
+                                                    <span class="font-mono text-muted">Trước: {{ $movement->stock_before }} · Thay đổi: {{ $movement->stock_delta > 0 ? '+'.$movement->stock_delta : $movement->stock_delta }} · Sau: <strong class="text-main">{{ $movement->stock_after }}</strong></span>
+                                                </div>
+                                                <div class="rounded-lg border border-border/80 bg-surface-card px-3 py-2">
+                                                    <span class="block font-bold text-main">Đã giữ cho đơn</span>
+                                                    <span class="font-mono text-muted">Trước: {{ $movement->reserved_before }} · Thay đổi: {{ $movement->reserved_delta > 0 ? '+'.$movement->reserved_delta : $movement->reserved_delta }} · Sau: <strong class="text-main">{{ $movement->reserved_after }}</strong></span>
+                                                </div>
+                                                <div class="rounded-lg border border-border/80 bg-surface-card px-3 py-2">
+                                                    <span class="block font-bold text-main">Chưa thể bán</span>
+                                                    <span class="font-mono text-muted">Trước: {{ $movement->quarantine_before }} · Thay đổi: {{ $movement->quarantine_delta > 0 ? '+'.$movement->quarantine_delta : $movement->quarantine_delta }} · Sau: <strong class="text-main">{{ $movement->quarantine_after }}</strong></span>
+                                                </div>
+                                            </div>
+                                            <div class="mt-2.5 flex flex-wrap items-center justify-between gap-2 text-muted">
+                                                <span>
+                                                    Chứng từ:
+                                                    @if ($docUrl !== null)
+                                                        <a href="{{ $docUrl }}" class="font-semibold text-accent hover:underline">{{ $docLabel }}</a>
+                                                    @else
+                                                        <span class="font-semibold text-main">{{ $docLabel }}</span>
+                                                    @endif
+                                                </span>
+                                                @if ($canViewCost)
+                                                    <span class="font-mono text-main">
+                                                        @if ($movement->unit_cost_basis !== null)
+                                                            Đơn vị: {{ $movement->unit_cost_basis }} ₫ ·
+                                                        @endif
+                                                        Bình quân: {{ $movement->average_cost_before }} → {{ $movement->average_cost_after }} ₫
+                                                    </span>
+                                                @endif
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            @empty
+                                <tbody>
+                                    <tr>
+                                        <td colspan="4" class="px-4 py-10 text-center text-xs text-muted">Không có biến động phù hợp với bộ lọc.</td>
+                                    </tr>
+                                </tbody>
+                            @endforelse
+                        </table>
+                    </div>
+
+                    {{-- Mobile compact cards --}}
+                    <div class="divide-y divide-border md:hidden">
+                        @forelse ($movements as $movement)
+                            @php
+                                $docUrl = $documentUrls[$movement->id] ?? null;
+                                $docLabel = ($movement->reference_type?->label() ?? $movement->reference_type?->value ?? 'Chứng từ').' #'.($movement->reference_id ?? '—');
+                                $deltas = array_values(array_filter([
+                                    ['label' => 'Tồn kho', 'delta' => $movement->stock_delta, 'after' => $movement->stock_after],
+                                    ['label' => 'Đã giữ cho đơn', 'delta' => $movement->reserved_delta, 'after' => $movement->reserved_after],
+                                    ['label' => 'Chưa thể bán', 'delta' => $movement->quarantine_delta, 'after' => $movement->quarantine_after],
+                                ], fn (array $item): bool => $item['delta'] !== 0));
+                            @endphp
+                            <div x-data="{ open: false }" class="p-4 space-y-2.5 text-xs">
+                                <div class="flex items-start justify-between gap-2">
+                                    <div>
+                                        <span class="block font-bold text-main">{{ $movement->action?->label() ?? $movement->action }}</span>
+                                        @if ($selectedVariant === null && $movement->variant)
+                                            <span class="mt-0.5 block text-[11px] font-semibold text-main">
+                                                {{ $movement->variant->color?->color_name ?? 'Màu' }} · Size {{ $movement->variant->size_value }}
+                                                <span class="ml-1 font-mono font-normal text-muted">{{ $movement->variant->sku }}</span>
+                                            </span>
+                                        @endif
+                                        @if ($docUrl !== null)
+                                            <a href="{{ $docUrl }}" class="mt-0.5 inline-flex text-[11px] font-semibold text-accent hover:underline">{{ $docLabel }}</a>
+                                        @else
+                                            <span class="mt-0.5 block text-[11px] text-muted">{{ $docLabel }}</span>
                                         @endif
                                     </div>
-                                </div>
-                            @empty
-                                <p class="px-4 py-10 text-center text-xs text-muted">Không có biến động phù hợp với bộ lọc.</p>
-                            @endforelse
-                        </div>
-
-                        <x-ui.pagination :paginator="$movements" />
-                    </div>
-                </div>
-            @else
-                <div class="rounded-2xl border border-dashed border-border bg-surface-card p-6 text-center text-xs text-muted space-y-3">
-                    <div>
-                        <span id="inventory-history-title" class="font-bold text-main block mb-1">Lịch sử kho</span>
-                        Chọn nút <strong>Xem thẻ kho</strong> ở bảng size phía trên hoặc chọn biến thể bên dưới để xem lịch sử biến động và đối chiếu số dư.
-                    </div>
-                    @if ($variantOptions->isNotEmpty())
-                        <div class="mx-auto max-w-xs">
-                            <div
-                                class="relative"
-                                x-data="{
-                                    open: false,
-                                    query: '',
-                                    options: @js($variantOptions),
-                                    get filtered() {
-                                        const q = this.query.trim().toLowerCase();
-                                        if (!q) return this.options;
-                                        return this.options.filter(o =>
-                                            o.label.toLowerCase().includes(q) || o.sku.toLowerCase().includes(q)
-                                        );
-                                    },
-                                }"
-                                @click.outside="open = false"
-                                @keydown.escape.window="open = false"
-                            >
-                                <button
-                                    type="button"
-                                    @click="open = !open; if (open) { $nextTick(() => $refs.emptyVariantSearch?.focus()); }"
-                                    :aria-expanded="open ? 'true' : 'false'"
-                                    class="flex min-h-10 w-full items-center justify-between gap-2 rounded-xl border border-border bg-surface px-3 py-2 text-left text-xs text-main transition-colors hover:border-accent/60"
-                                >
-                                    <span class="font-semibold text-muted">Chọn phối màu &amp; size...</span>
-                                    <svg class="h-4 w-4 shrink-0 text-muted" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                        <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
-                                    </svg>
-                                </button>
-                                <div x-cloak x-show="open" class="absolute left-0 right-0 z-30 mt-1.5 overflow-hidden rounded-xl border border-border bg-surface-card text-left shadow-lg">
-                                    <div class="border-b border-border p-2">
-                                        <input x-ref="emptyVariantSearch" type="search" x-model="query" placeholder="Tìm màu, size hoặc SKU..." class="w-full rounded-lg border border-border bg-bg px-2.5 py-1.5 text-xs text-main">
+                                    <div class="text-right shrink-0">
+                                        <time class="block text-[11px] text-main" datetime="{{ $movement->created_at?->toISOString() }}">{{ $movement->created_at?->setTimezone(config('store.business_timezone'))->format('d/m/Y H:i') }}</time>
+                                        <span class="font-mono text-[10px] text-muted">#{{ $movement->id }}</span>
                                     </div>
-                                    <ul class="max-h-56 overflow-y-auto divide-y divide-border/50">
-                                        <template x-for="opt in filtered" :key="opt.id">
-                                            <li>
-                                                <button type="button" @click="open = false; query = ''; visitUrl(opt.url)" class="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-xs hover:bg-surface text-main">
-                                                    <span>
-                                                        <span class="block font-semibold" x-text="opt.label"></span>
-                                                        <span class="block font-mono text-[10px] text-muted" x-text="opt.sku"></span>
-                                                    </span>
-                                                </button>
-                                            </li>
-                                        </template>
+                                </div>
+
+                                @if ($deltas === [])
+                                    <p class="text-[11px] text-muted">Không đổi số lượng</p>
+                                @else
+                                    <ul class="space-y-0.5 font-mono text-[11px] text-main">
+                                        @foreach ($deltas as $item)
+                                            <li>{{ $item['label'] }} {{ $item['delta'] > 0 ? '+'.$item['delta'] : $item['delta'] }} đôi → {{ $item['after'] }} đôi</li>
+                                        @endforeach
                                     </ul>
+                                @endif
+
+                                <div class="flex items-center justify-between pt-1 text-[11px] text-muted">
+                                    <span>{{ $movement->actor_name_snapshot ?? $movement->actor?->full_name ?? 'Hệ thống' }}</span>
+                                    <button type="button" @click="open = !open" :aria-expanded="open ? 'true' : 'false'" class="rounded-lg border border-border bg-surface px-2.5 py-1 font-semibold text-main">
+                                        <span x-text="open ? 'Thu gọn' : 'Chi tiết'">Chi tiết</span>
+                                    </button>
+                                </div>
+
+                                <div x-cloak x-show="open" class="space-y-1.5 rounded-xl border border-border/80 bg-surface/50 p-3 text-[11px] font-mono text-muted">
+                                    <div>Tồn kho: {{ $movement->stock_before }} → {{ $movement->stock_after }} ({{ $movement->stock_delta > 0 ? '+'.$movement->stock_delta : $movement->stock_delta }})</div>
+                                    <div>Đã giữ cho đơn: {{ $movement->reserved_before }} → {{ $movement->reserved_after }} ({{ $movement->reserved_delta > 0 ? '+'.$movement->reserved_delta : $movement->reserved_delta }})</div>
+                                    <div>Chưa thể bán: {{ $movement->quarantine_before }} → {{ $movement->quarantine_after }} ({{ $movement->quarantine_delta > 0 ? '+'.$movement->quarantine_delta : $movement->quarantine_delta }})</div>
+                                    @if ($canViewCost)
+                                        <div class="pt-1 border-t border-border/60 text-main">
+                                            @if ($movement->unit_cost_basis !== null)
+                                                <span class="block">Đơn vị: {{ $movement->unit_cost_basis }} ₫</span>
+                                            @endif
+                                            <span class="block">Bình quân: {{ $movement->average_cost_before }} → {{ $movement->average_cost_after }} ₫</span>
+                                        </div>
+                                    @endif
                                 </div>
                             </div>
-                        </div>
-                    @endif
+                        @empty
+                            <p class="px-4 py-10 text-center text-xs text-muted">Không có biến động phù hợp với bộ lọc.</p>
+                        @endforelse
+                    </div>
+
+                    <x-ui.pagination :paginator="$movements" />
                 </div>
-            @endif
+            </div>
         </div>
     </section>
 </div>

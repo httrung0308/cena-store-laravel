@@ -91,12 +91,12 @@ final class OperationsQueueService
             ],
             self::TYPE_QUARANTINE_INSPECTION => [
                 'key' => self::TYPE_QUARANTINE_INSPECTION,
-                'label' => 'Kiểm tra cách ly',
+                'label' => 'Hàng chờ kiểm tra',
                 'admin_only' => false,
             ],
             self::TYPE_WRITE_OFF_APPROVAL => [
                 'key' => self::TYPE_WRITE_OFF_APPROVAL,
-                'label' => 'Hàng hỏng cần xử lý',
+                'label' => 'Hàng hỏng chờ xử lý',
                 'admin_only' => true,
             ],
             self::TYPE_REFUND_APPROVAL => [
@@ -607,26 +607,26 @@ final class OperationsQueueService
     private function formatReturnItem(ShipmentReturnItem $item, string $type): array
     {
         $orderCode = $item->shipment?->order?->order_code ?? "#{$item->shipment_id}";
-        $sku = $item->variant?->sku ?? "Biến thể #{$item->variant_id}";
+        $sku = $item->variant?->sku ?? "Màu/Size #{$item->variant_id}";
         $isWriteOff = $type === self::TYPE_WRITE_OFF_APPROVAL;
         $relatedInfo = "SKU: {$sku} · Kiện #{$item->shipment_id}";
 
         return [
             'queue_type' => $type,
-            'type_label' => $isWriteOff ? 'Hàng hỏng cần xử lý' : 'Kiểm tra cách ly',
+            'type_label' => $isWriteOff ? 'Hàng hỏng chờ xử lý' : 'Hàng chờ kiểm tra',
             'type_badge_class' => $isWriteOff ? 'bg-error-bg text-error border-error/30' : 'bg-accent/10 text-accent border-accent/30',
-            'status_label' => $isWriteOff ? 'Hàng hỏng cần xử lý' : 'Chờ kiểm tra',
+            'status_label' => $isWriteOff ? 'Hàng hỏng chờ xử lý' : 'Hàng chờ kiểm tra',
             'status_badge_class' => $isWriteOff ? 'bg-error-bg text-error border-error/30' : 'bg-warning-bg text-warning-text border-warning/30',
-            'action_title' => $isWriteOff ? 'Ghi hỏng' : 'Kiểm tra hàng cách ly',
+            'action_title' => $isWriteOff ? 'Ghi hỏng' : 'Kiểm tra hàng chờ xử lý',
             'title' => $isWriteOff
                 ? "Ghi hỏng hàng hoàn đơn {$orderCode}"
-                : "Kiểm tra hàng hoàn cách ly đơn {$orderCode}",
+                : "Kiểm tra hàng hoàn đơn {$orderCode}",
             'related_info' => $relatedInfo,
             'description' => $relatedInfo,
             'reference' => $orderCode,
             'reference_sub' => "Kiện #{$item->shipment_id}",
             'occurred_at' => $this->toCarbonImmutable($item->received_at ?? $item->created_at),
-            'action_label' => $isWriteOff ? 'Ghi hỏng' : 'Kiểm tra cách ly',
+            'action_label' => $isWriteOff ? 'Ghi hỏng' : 'Kiểm tra hàng',
             'action_url' => route('admin.orders.show', $item->shipment->order_id).'#xu-ly-hang-hoan',
         ];
     }

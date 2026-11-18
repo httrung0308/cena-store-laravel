@@ -102,7 +102,7 @@
                                     <th class="p-3">Đối tượng</th>
                                     <th class="p-3">Giá gốc</th>
                                     <th class="p-3">Các màu</th>
-                                    <th class="p-3 text-center">Tổng biến thể</th>
+                                    <th class="p-3 text-center">Số tổ hợp màu/size</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-border bg-surface/40">
@@ -426,7 +426,7 @@
                                 'bg-surface text-main border-border' => $stock > 0,
                                 'bg-error-bg text-error border-error/30' => $stock <= 0,
                             ])>{{ $stock }} đôi</span>
-                            <span class="inline-flex items-center whitespace-nowrap bg-surface text-muted border border-border px-2 py-0.5 rounded text-[11px] font-mono tabular-nums">{{ $product->variants_count }} biến thể</span>
+                            <span class="inline-flex items-center whitespace-nowrap bg-surface text-muted border border-border px-2 py-0.5 rounded text-[11px] font-mono tabular-nums">{{ $product->variants_count }} tổ hợp màu/size</span>
                         </div>
                     </div>
 
@@ -481,7 +481,7 @@
                         <th class="px-3 py-3.5 whitespace-nowrap">Giá bán</th>
                         <th class="px-3 py-3.5 text-center whitespace-nowrap">Tồn kho</th>
                         <th class="px-3 py-3.5 text-left whitespace-nowrap">Trạng thái</th>
-                        <th class="px-3 py-3.5 text-center whitespace-nowrap">Biến thể</th>
+                        <th class="px-3 py-3.5 text-center whitespace-nowrap">Màu sắc &amp; Size</th>
                         <th class="px-3 py-3.5 whitespace-nowrap hidden 2xl:table-cell">Ngày tạo</th>
                         <th class="px-3 py-3.5 text-right whitespace-nowrap">Thao tác</th>
                     </tr>

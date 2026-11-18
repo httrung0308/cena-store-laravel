@@ -20,7 +20,7 @@ class NotificationController extends Controller
     public function index(Request $request): View
     {
         $notifications = $request->user()->storeNotifications()
-            ->with('order:id,order_code')
+            ->with($this->notifications->summaryRelations())
             ->orderByDesc('created_at')->orderByDesc('id')
             ->paginate(20);
         $unreadCount = $this->notifications->unreadCount($request->user());
@@ -57,7 +57,7 @@ class NotificationController extends Controller
         }
 
         return ApiResponse::success($request, [
-            'notification' => (new StoreNotificationResource($record->loadMissing('order:id,order_code')))->resolve($request),
+            'notification' => (new StoreNotificationResource($record->loadMissing($this->notifications->summaryRelations())))->resolve($request),
         ], 'Đã đánh dấu thông báo đã đọc.');
     }
 

@@ -188,6 +188,7 @@ class ProductController extends Controller
     public function show(Request $request, Product $product, InventoryHistoryQueryService $historyQueryService): View
     {
         $filters = $request->validate([
+            'color_id' => ['nullable', 'integer', 'min:1'],
             'variant_id' => ['nullable', 'integer', 'min:1'],
             'from' => ['nullable', 'date_format:Y-m-d'],
             'to' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:from'],
@@ -241,7 +242,14 @@ class ProductController extends Controller
 
         $historyColors = $historyQueryService->productColorsWithVariants($product, $canViewCost);
         $historyVariants = $historyColors->flatMap(fn ($color) => $color->variants);
+        $selectedColorId = null;
         $selectedVariant = null;
+
+        if (isset($filters['color_id'])) {
+            $selectedColor = $historyColors->firstWhere('id', (int) $filters['color_id']);
+            abort_if($selectedColor === null, 404);
+            $selectedColorId = $selectedColor->id;
+        }
 
         if (isset($filters['variant_id'])) {
             $selectedVariant = $historyVariants->firstWhere('id', (int) $filters['variant_id']);
@@ -249,11 +257,23 @@ class ProductController extends Controller
             $selectedVariant->loadMissing([
                 'color' => fn ($q) => $q->withTrashed()->select(['id', 'color_name']),
             ]);
+
+            if ($selectedColorId === null) {
+                $selectedColorId = $selectedVariant->product_color_id;
+            } elseif ($selectedVariant->product_color_id !== $selectedColorId) {
+                $selectedVariant = null;
+            }
         }
 
-        $movements = $selectedVariant === null ? null : $historyQueryService->movements($selectedVariant, $filters, $canViewCost);
+        $movements = $historyQueryService->movementsForProduct($product, $selectedColorId, $selectedVariant, $filters, $canViewCost);
         $reconciliation = $selectedVariant === null ? null : $historyQueryService->reconciliation($selectedVariant);
-        $documentUrls = $movements === null ? [] : $historyQueryService->documentUrls($movements, $canViewCost);
+        $variantsToReconcile = $selectedColorId !== null
+            ? $historyVariants->where('product_color_id', $selectedColorId)
+            : $historyVariants;
+        $productReconciliationIssues = $selectedVariant === null
+            ? $historyQueryService->reconciliationIssuesForVariants($variantsToReconcile, $historyColors)
+            : [];
+        $documentUrls = $historyQueryService->documentUrls($movements, $canViewCost);
 
         return view('admin.products.show', [
             'product' => $product,
@@ -262,9 +282,11 @@ class ProductController extends Controller
             'blockingReasons' => $blockingReasons,
             'totals' => $totals,
             'historyColors' => $historyColors,
+            'selectedColorId' => $selectedColorId,
             'selectedVariant' => $selectedVariant,
             'movements' => $movements,
             'reconciliation' => $reconciliation,
+            'productReconciliationIssues' => $productReconciliationIssues,
             'documentUrls' => $documentUrls,
             'actions' => InventoryAction::cases(),
             'referenceTypes' => InventoryReferenceType::cases(),

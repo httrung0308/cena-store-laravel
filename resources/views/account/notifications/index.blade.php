@@ -55,30 +55,43 @@
                          this.markingAll = false;
                      }
                  },
-                 async markOne(id, url) {
+                 async openOrder(id, initialRead, markUrl, orderUrl) {
                      if (this.markingId !== null) return;
-                     this.markingId = id;
-                     this.errorMessage = '';
-                     try {
-                         const res = await fetch(url, {
-                             method: 'POST',
-                             credentials: 'same-origin',
-                             headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-TOKEN': this.csrf() },
-                         });
-                         if (!res.ok) {
-                             this.errorMessage = res.status === 419 ? 'Phiên làm việc đã hết hạn. Vui lòng tải lại trang.' : 'Không thể đánh dấu thông báo đã đọc.';
-                             return;
+                     if (!this.isRead(id, initialRead)) {
+                         this.markingId = id;
+                         this.errorMessage = '';
+                         try {
+                             const res = await fetch(markUrl, {
+                                 method: 'POST',
+                                 credentials: 'same-origin',
+                                 headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-TOKEN': this.csrf() },
+                             });
+                             if (res.ok) {
+                                 this.readIds = { ...this.readIds, [id]: true };
+                                 this.unreadCount = Math.max(0, this.unreadCount - 1);
+                                 window.dispatchEvent(new CustomEvent('cena:notifications-sync', { detail: { unreadCount: this.unreadCount, readId: id } }));
+                             }
+                         } catch {
+                             // Proceed to order page even if background mark-read fails.
+                         } finally {
+                             this.markingId = null;
                          }
-                         if (!this.readIds[id]) {
-                             this.readIds = { ...this.readIds, [id]: true };
-                             this.unreadCount = Math.max(0, this.unreadCount - 1);
-                         }
-                         window.dispatchEvent(new CustomEvent('cena:notifications-sync', { detail: { unreadCount: this.unreadCount, readId: id } }));
-                     } catch {
-                         this.errorMessage = 'Không kết nối được máy chủ.';
-                     } finally {
-                         this.markingId = null;
                      }
+                     if (orderUrl) {
+                         window.location.assign(orderUrl);
+                     }
+                 },
+                 markReadKeepalive(id, initialRead, markUrl) {
+                     if (this.isRead(id, initialRead)) return;
+                     this.readIds = { ...this.readIds, [id]: true };
+                     this.unreadCount = Math.max(0, this.unreadCount - 1);
+                     window.dispatchEvent(new CustomEvent('cena:notifications-sync', { detail: { unreadCount: this.unreadCount, readId: id } }));
+                     fetch(markUrl, {
+                         method: 'POST',
+                         keepalive: true,
+                         credentials: 'same-origin',
+                         headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest', 'X-CSRF-TOKEN': this.csrf() },
+                     }).catch(() => {});
                  }
              }">
         <div class="mx-auto flex max-w-4xl flex-col gap-6">
@@ -112,45 +125,54 @@
                 <div class="rounded-2xl border border-border bg-surface-card divide-y divide-border overflow-hidden">
                     @foreach ($notifications as $notification)
                         @php($initiallyRead = $notification->read_at !== null)
-                        @php($orderCode = $notification->order?->order_code)
-                        <article :class="isRead({{ $notification->id }}, {{ $initiallyRead ? 'true' : 'false' }}) ? 'bg-surface-card' : 'bg-accent/5'"
-                                 class="flex flex-col gap-3 px-4 py-3.5 transition-colors sm:flex-row sm:items-center sm:justify-between sm:px-5">
-                            <div class="min-w-0 flex-1 space-y-1">
-                                <div class="flex flex-wrap items-center gap-2">
+                        @php($item = \App\Http\Resources\Customer\StoreNotificationResource::present($notification))
+                        @php($formattedTime = $notification->created_at?->setTimezone($tz)->format('d/m/Y H:i') ?? '')
+                        <div :class="isRead({{ $notification->id }}, {{ $initiallyRead ? 'true' : 'false' }}) ? 'bg-surface-card hover:bg-surface/60' : 'bg-accent/5 hover:bg-accent/10'"
+                             class="px-4 py-3.5 transition-colors sm:px-5">
+                            <button type="button"
+                                    @click="openOrder({{ $notification->id }}, {{ $initiallyRead ? 'true' : 'false' }}, @js(route('notifications.api.read', $notification)), @js($item['url']))"
+                                    :disabled="markingId === {{ $notification->id }}"
+                                    class="group flex w-full items-start gap-3 rounded-lg text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-accent">
+                                <span class="mt-2 h-2 w-2 shrink-0 rounded-full"
+                                      :class="isRead({{ $notification->id }}, {{ $initiallyRead ? 'true' : 'false' }}) ? 'bg-transparent' : 'bg-accent'"
+                                      aria-hidden="true"></span>
+                                <span class="h-12 w-12 shrink-0 overflow-hidden rounded-xl border border-border bg-surface">
+                                    @if ($item['thumbnail_url'] !== null)
+                                        <img src="{{ $item['thumbnail_url'] }}"
+                                             alt="{{ $item['item_summary'] }}"
+                                             class="h-full w-full object-cover"
+                                             loading="lazy"
+                                             decoding="async">
+                                    @else
+                                        <span class="flex h-full w-full items-center justify-center text-muted" aria-hidden="true">
+                                            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+                                        </span>
+                                    @endif
+                                </span>
+                                <span class="min-w-0 flex-1">
+                                    <span class="block text-sm leading-snug"
+                                          :class="isRead({{ $notification->id }}, {{ $initiallyRead ? 'true' : 'false' }}) ? 'font-medium text-muted group-hover:text-main' : 'font-bold text-main'">
+                                        {{ $item['headline'] }}
+                                    </span>
                                     <span x-show="!isRead({{ $notification->id }}, {{ $initiallyRead ? 'true' : 'false' }})"
-                                          @class(['inline-flex items-center gap-1.5 rounded-full bg-accent-sub px-2 py-0.5 text-[11px] font-semibold text-accent-sub-text', 'hidden' => $initiallyRead])
-                                          @if ($initiallyRead) x-cloak @endif>
-                                        <span class="h-1.5 w-1.5 rounded-full bg-current" aria-hidden="true"></span>
-                                        Chưa đọc
-                                    </span>
-                                    <span x-show="isRead({{ $notification->id }}, {{ $initiallyRead ? 'true' : 'false' }})"
-                                          @class(['inline-flex items-center rounded-full bg-surface px-2 py-0.5 text-[11px] font-medium text-muted', 'hidden' => ! $initiallyRead])
-                                          @if (! $initiallyRead) x-cloak @endif>
-                                        Đã đọc
-                                    </span>
-                                    <span class="text-xs text-muted">{{ $notification->created_at?->setTimezone($tz)->format('d/m/Y H:i') }}</span>
-                                </div>
-                                <p class="min-w-0 break-words text-sm leading-snug"
-                                   :class="isRead({{ $notification->id }}, {{ $initiallyRead ? 'true' : 'false' }}) ? 'font-normal text-muted' : 'font-semibold text-main'">
-                                    Đơn <span class="font-mono break-all">{{ $orderCode }}</span> &middot; {{ $notification->order_status->label() }}
-                                </p>
-                            </div>
+                                          @if ($initiallyRead) x-cloak @endif
+                                          class="sr-only">Chưa đọc</span>
+                                    <span class="mt-0.5 block break-words text-xs leading-snug text-muted">{{ $item['item_summary'] }}</span>
+                                    <span class="mt-1 block text-xs text-muted/80" title="{{ $formattedTime }}">{{ $formattedTime }}</span>
+                                </span>
+                            </button>
 
-                            <div class="flex shrink-0 flex-wrap items-center gap-2 sm:gap-3">
-                                @if ($orderCode !== null)
-                                    <a href="{{ route('orders.show', $orderCode) }}"
-                                       class="btn-secondary px-3 py-1.5 text-xs font-semibold">Xem đơn</a>
-                                @endif
-                                <button type="button"
-                                        x-show="!isRead({{ $notification->id }}, {{ $initiallyRead ? 'true' : 'false' }})"
-                                        @if ($initiallyRead) x-cloak @endif
-                                        :disabled="markingId === {{ $notification->id }}"
-                                        @click="markOne({{ $notification->id }}, @js(route('notifications.api.read', $notification)))"
-                                        class="px-2 py-1.5 text-xs font-semibold text-accent transition-colors hover:text-accent-hover disabled:opacity-50">
-                                    <span x-text="markingId === {{ $notification->id }} ? 'Đang lưu...' : 'Đánh dấu đã đọc'">Đánh dấu đã đọc</span>
-                                </button>
-                            </div>
-                        </article>
+                            @if ($item['review_cta'] !== null)
+                                <div class="mt-2.5 flex flex-wrap items-center justify-between gap-2 pl-[4.5rem]">
+                                    <p class="min-w-0 text-xs leading-snug text-muted">{{ $item['review_cta']['prompt'] }}</p>
+                                    <a href="{{ $item['review_cta']['url'] }}"
+                                       @click="markReadKeepalive({{ $notification->id }}, {{ $initiallyRead ? 'true' : 'false' }}, @js(route('notifications.api.read', $notification)))"
+                                       class="btn-secondary inline-flex shrink-0 items-center px-3 py-1.5 text-xs font-semibold">
+                                        {{ $item['review_cta']['label'] }}
+                                    </a>
+                                </div>
+                            @endif
+                        </div>
                     @endforeach
                 </div>
             @endif

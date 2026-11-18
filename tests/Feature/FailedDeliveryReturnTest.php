@@ -144,7 +144,7 @@ class FailedDeliveryReturnTest extends TestCase
             ->assertOk()
             ->assertSee('Xử lý hàng hoàn')
             ->assertSee('Hàng tốt — Nhập lại kho')
-            ->assertSee('Chưa kiểm tra — Đưa vào cách ly')
+            ->assertSee('Chưa kiểm tra — Đưa vào hàng chờ kiểm tra')
             ->assertSee($missingNote)
             ->assertSee('SKU không khớp')
             ->assertSee('Thiếu chứng cứ');
@@ -330,7 +330,7 @@ class FailedDeliveryReturnTest extends TestCase
         $this->get(route('admin.orders.index', ['status' => OrderStatus::Failed->value, 'return_progress' => 'awaiting_write_off_approval']))
             ->assertOk()
             ->assertSee($order->order_code)
-            ->assertSee('Hàng hỏng cần xử lý');
+            ->assertSee('Hàng hỏng chờ xử lý');
     }
 
     public function test_admin_can_receive_and_write_off_in_one_step_and_staff_is_forbidden(): void

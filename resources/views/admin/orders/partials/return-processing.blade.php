@@ -26,15 +26,15 @@
     } elseif ($receivedCount < $totalUnits && $shipment->status === ShipmentStatus::Returning) {
         $progressBadge = ['label' => 'Đã nhận một phần', 'class' => 'bg-warning-bg text-warning-text border border-warning/30'];
     } elseif ($hasWriteOffProposal) {
-        $progressBadge = ['label' => 'Hàng hỏng cần xử lý', 'class' => 'bg-error-bg text-error-text border border-error/30'];
+        $progressBadge = ['label' => 'Hàng hỏng chờ xử lý', 'class' => 'bg-error-bg text-error-text border border-error/30'];
     } elseif ($pendingItems->isNotEmpty()) {
-        $progressBadge = ['label' => 'Chờ kiểm tra', 'class' => 'bg-warning-bg text-warning-text border border-warning/30'];
+        $progressBadge = ['label' => 'Hàng chờ kiểm tra', 'class' => 'bg-warning-bg text-warning-text border border-warning/30'];
     } else {
         $progressBadge = ['label' => 'Đã xử lý', 'class' => 'bg-success-bg text-success-text border border-success/30'];
     }
 
     $eventLabel = static fn (string $type): string => match ($type) {
-        ShipmentReturnEvent::RECEIVED => 'Đã nhận vào kho cách ly',
+        ShipmentReturnEvent::RECEIVED => 'Đã nhận vào hàng chờ kiểm tra',
         ShipmentReturnEvent::RESTOCKED => 'Đã nhập lại kho bán',
         ShipmentReturnEvent::WRITE_OFF_PROPOSED => 'Ghi nhận hàng hỏng',
         ShipmentReturnEvent::WRITE_OFF_APPROVED => 'Đã ghi hỏng & ghi nhận tổn thất',
@@ -126,11 +126,11 @@
                             @elseif ($returnItem->disposition === ReturnDisposition::Pending)
                                 @if ($proposal)
                                     <span class="inline-flex items-center rounded-full border border-error/30 bg-error-bg px-2.5 py-0.5 text-[11px] font-semibold text-error-text">
-                                        Hàng hỏng cần xử lý
+                                        Hàng hỏng chờ xử lý
                                     </span>
                                 @else
                                     <span class="inline-flex items-center rounded-full border border-warning/30 bg-warning-bg px-2.5 py-0.5 text-[11px] font-semibold text-warning-text">
-                                        Đang cách ly · Chờ kiểm tra
+                                        Hàng chờ kiểm tra
                                     </span>
                                 @endif
                             @elseif ($returnItem->disposition === ReturnDisposition::Restock)
@@ -216,7 +216,7 @@
                             </form>
                         </div>
 
-                        {{-- 2-step fallback: Chưa kiểm tra — Đưa vào cách ly --}}
+                        {{-- 2-step fallback: Chưa kiểm tra — Đưa vào hàng chờ kiểm tra --}}
                         <div class="rounded-xl border border-dashed border-border bg-surface/60 p-3.5 space-y-2.5">
                             <form method="POST"
                                   action="{{ route('admin.shipment-returns.receive', $shipment) }}"
@@ -225,7 +225,7 @@
                                   x-on:submit="if (busy) { $event.preventDefault(); return false; } busy = true">
                                 @csrf
                                 <input type="hidden" name="unit_id" value="{{ $unit->id }}">
-                                <label class="admin-label text-muted" for="receive-note-{{ $unit->id }}">Chưa kiểm tra — Đưa vào cách ly</label>
+                                <label class="admin-label text-muted" for="receive-note-{{ $unit->id }}">Chưa kiểm tra — Đưa vào hàng chờ kiểm tra</label>
                                 <textarea id="receive-note-{{ $unit->id }}"
                                           name="note"
                                           rows="2"
@@ -233,10 +233,10 @@
                                           required
                                           minlength="5"
                                           maxlength="500"
-                                          placeholder="Mô tả tình trạng hộp/giày thực tế khi nhận hoàn để đưa vào kho cách ly (tối thiểu 5 ký tự)...">{{ old('unit_id') == $unit->id ? old('note') : '' }}</textarea>
+                                          placeholder="Mô tả tình trạng hộp/giày thực tế khi nhận hoàn để đưa vào hàng chờ kiểm tra (tối thiểu 5 ký tự)...">{{ old('unit_id') == $unit->id ? old('note') : '' }}</textarea>
                                 <div class="flex flex-wrap items-center justify-between gap-2">
                                     <button type="submit" :disabled="busy" class="btn-pill px-4 py-2 text-xs font-semibold disabled:opacity-50">
-                                        <span x-show="!busy">Chưa kiểm tra — Đưa vào cách ly</span>
+                                        <span x-show="!busy">Chưa kiểm tra — Đưa vào hàng chờ kiểm tra</span>
                                         <span x-cloak x-show="busy" class="inline-flex items-center gap-1.5"><x-ui.spinner :compact="true" /> Đang ghi nhận...</span>
                                     </button>
                                     @if ($canReportIncident)

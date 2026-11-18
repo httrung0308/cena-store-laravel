@@ -17,6 +17,7 @@ use App\Models\OrderStatusHistory;
 use App\Models\Product;
 use App\Models\ProductColor;
 use App\Models\ProductVariant;
+use App\Models\Review;
 use App\Models\SalesLedgerEntry;
 use App\Models\StockImportItem;
 use App\Models\StoreNotification;
@@ -166,12 +167,25 @@ class StoreNotificationTest extends TestCase
         $notification = StoreNotification::query()->where('order_id', $order->id)->sole();
         $url = route('orders.show', $order->order_code);
 
+        $firstItem = $order->items()->orderBy('id')->firstOrFail();
+        $expectedSummary = $firstItem->product_name_snapshot.' · '.$firstItem->color_name_snapshot.' · Size '.$firstItem->size_value_snapshot;
+
         $this->actingAs($this->customer)->get(route('notifications.index'))
-            ->assertOk()->assertSee($order->order_code)->assertSee('Đang đóng gói')->assertSee($url)->assertDontSee('payment')->assertDontSee('cost');
+            ->assertOk()
+            ->assertSee('Đơn hàng đang được đóng gói')
+            ->assertSee($expectedSummary)
+            ->assertDontSee('Đã đọc')
+            ->assertDontSee('Xem đơn')
+            ->assertDontSee('payment')
+            ->assertDontSee('cost');
         $this->get(route('home'))->assertOk()->assertSee(route('notifications.index'))->assertSee('1 chưa đọc');
         $this->getJson(route('notifications.api.unread-count'))->assertOk()->assertJsonPath('data.unread_count', 1);
-        $this->postJson(route('notifications.api.read', $notification))->assertOk()->assertJsonPath('data.notification.order_code', $order->order_code)
-            ->assertJsonPath('data.notification.order_status', OrderStatus::Packing->value)->assertJsonPath('data.notification.url', $url);
+        $this->postJson(route('notifications.api.read', $notification))->assertOk()
+            ->assertJsonPath('data.notification.order_code', $order->order_code)
+            ->assertJsonPath('data.notification.order_status', OrderStatus::Packing->value)
+            ->assertJsonPath('data.notification.headline', 'Đơn hàng đang được đóng gói')
+            ->assertJsonPath('data.notification.item_summary', $expectedSummary)
+            ->assertJsonPath('data.notification.url', $url);
         $readAt = $notification->fresh()->read_at;
         $this->postJson(route('notifications.api.read', $notification))->assertOk();
         $this->assertSame($readAt->toISOString(), $notification->fresh()->read_at->toISOString());
@@ -287,6 +301,154 @@ class StoreNotificationTest extends TestCase
         $response = $this->postJson(route('notifications.api.read', $notification));
         $response->assertOk()->assertDontSee('sensitive')->assertDontSee('total_amount')->assertDontSee('customer_note');
         $this->assertSame($this->customer->id, $notification->fresh()->user_id);
+    }
+
+    public function test_notification_summary_uses_snapshots_after_product_rename_or_delete_and_handles_empty_items(): void
+    {
+        $secondShoe = $this->variant(stock: 4, cost: 250_000);
+        $thirdShoe = $this->variant(stock: 4, cost: 250_000);
+        $order = $this->placeOrderWithVariants([$this->shoe, $secondShoe, $thirdShoe]);
+        app(OrderWorkflowService::class)->confirmAndPack($order, $this->staff, OrderStatus::Pending->value);
+
+        $firstItem = $order->items()->orderBy('id')->firstOrFail();
+        $expectedSummary = $firstItem->product_name_snapshot.' · '.$firstItem->color_name_snapshot.' · Size '.$firstItem->size_value_snapshot.' · Cùng 2 sản phẩm khác';
+
+        // Rename and soft-delete the underlying product to verify snapshot resilience.
+        $product = $this->shoe->color->product;
+        $product->forceFill(['name' => 'Renamed Product Should Not Appear'])->save();
+        $product->delete();
+
+        $emptyOrder = Order::factory()->for($this->customer)->create(['order_status' => OrderStatus::Cancelled]);
+        OrderStatusHistory::factory()->for($emptyOrder, 'order')->create(['to_status' => OrderStatus::Cancelled]);
+
+        $recent = $this->actingAs($this->customer)->getJson(route('notifications.api.recent'));
+        $recent->assertOk();
+        $notifications = collect($recent->json('data.notifications'));
+
+        $multiItemNotification = $notifications->firstWhere('order_code', $order->order_code);
+        $this->assertNotNull($multiItemNotification);
+        $this->assertSame('Đơn hàng đang được đóng gói', $multiItemNotification['headline']);
+        $this->assertSame($expectedSummary, $multiItemNotification['item_summary']);
+        $this->assertStringNotContainsString('Renamed Product Should Not Appear', $multiItemNotification['item_summary']);
+
+        $emptyItemNotification = $notifications->firstWhere('order_code', $emptyOrder->order_code);
+        $this->assertNotNull($emptyItemNotification);
+        $this->assertSame('Đơn hàng đã bị hủy', $emptyItemNotification['headline']);
+        $this->assertSame('Đơn hàng', $emptyItemNotification['item_summary']);
+
+        $this->actingAs($this->customer)->get(route('notifications.index'))
+            ->assertOk()
+            ->assertSee($expectedSummary)
+            ->assertDontSee('Renamed Product Should Not Appear');
+    }
+
+    public function test_delivered_notification_includes_review_cta_according_to_eligibility(): void
+    {
+        $workflow = app(OrderWorkflowService::class);
+
+        // 1. Single eligible active product -> shoes.show#product-reviews
+        $singleOrder = $this->placeOrder();
+        $workflow->confirmAndPack($singleOrder, $this->staff, OrderStatus::Pending->value);
+        $workflow->ship($singleOrder->fresh(), $this->staff, OrderStatus::Packing->value, 'GHN', 'GHN-REV-1');
+        $workflow->deliver($singleOrder->fresh(), $this->staff, OrderStatus::OnDelivery->value, UploadedFile::fake()->image('proof1.jpg'));
+
+        $singleProduct = $this->shoe->color->product;
+        $expectedSingleUrl = route('shoes.show', $singleProduct->slug).'#product-reviews';
+
+        $recent = $this->actingAs($this->customer)->getJson(route('notifications.api.recent'))->assertOk();
+        $singleDelivered = collect($recent->json('data.notifications'))
+            ->firstWhere('order_code', $singleOrder->order_code);
+        $this->assertSame('Đơn hàng đã giao thành công', $singleDelivered['headline']);
+        $this->assertSame([
+            'label' => 'Đánh giá sản phẩm',
+            'prompt' => 'Chia sẻ cảm nhận về sản phẩm bạn vừa nhận.',
+            'url' => $expectedSingleUrl,
+        ], $singleDelivered['review_cta']);
+
+        // 2. Unpaid delivered order -> review_cta is null
+        $singleOrder->refresh()->forceFill(['payment_status' => OrderPaymentStatus::Unpaid])->save();
+        $unpaidRecent = $this->actingAs($this->customer)->getJson(route('notifications.api.recent'))->assertOk();
+        $unpaidDelivered = collect($unpaidRecent->json('data.notifications'))
+            ->firstWhere('order_code', $singleOrder->order_code);
+        $this->assertNull($unpaidDelivered['review_cta']);
+
+        // Restore paid status for remaining checks
+        $singleOrder->refresh()->forceFill(['payment_status' => OrderPaymentStatus::Paid])->save();
+
+        // 3. Multiple eligible distinct products -> orders.show
+        $secondShoe = $this->variant(stock: 4, cost: 250_000);
+        $multiOrder = $this->placeOrderWithVariants([$this->shoe, $secondShoe]);
+        $workflow->confirmAndPack($multiOrder, $this->staff, OrderStatus::Pending->value);
+        $workflow->ship($multiOrder->fresh(), $this->staff, OrderStatus::Packing->value, 'GHN', 'GHN-REV-2');
+        $workflow->deliver($multiOrder->fresh(), $this->staff, OrderStatus::OnDelivery->value, UploadedFile::fake()->image('proof2.jpg', 120, 120));
+
+        $multiRecent = $this->actingAs($this->customer)->getJson(route('notifications.api.recent'))->assertOk();
+        $multiDelivered = collect($multiRecent->json('data.notifications'))
+            ->firstWhere('order_code', $multiOrder->order_code);
+        $this->assertSame(route('orders.show', $multiOrder->order_code), $multiDelivered['review_cta']['url']);
+
+        // 4. Once all units are reviewed -> review_cta is null
+        foreach ($singleOrder->items()->with('units')->get() as $item) {
+            foreach ($item->units as $unit) {
+                Review::factory()->create([
+                    'order_item_unit_id' => $unit->id,
+                    'user_id' => $this->customer->id,
+                ]);
+            }
+        }
+        $afterReviewRecent = $this->actingAs($this->customer)->getJson(route('notifications.api.recent'))->assertOk();
+        $afterReviewDelivered = collect($afterReviewRecent->json('data.notifications'))
+            ->firstWhere('order_code', $singleOrder->order_code);
+        $this->assertNull($afterReviewDelivered['review_cta']);
+    }
+
+    public function test_reading_notification_does_not_review_and_reviewing_does_not_alter_notifications(): void
+    {
+        $workflow = app(OrderWorkflowService::class);
+        $order = $this->placeOrder();
+        $workflow->confirmAndPack($order, $this->staff, OrderStatus::Pending->value);
+        $workflow->ship($order->fresh(), $this->staff, OrderStatus::Packing->value, 'GHN', 'GHN-REV-3');
+        $workflow->deliver($order->fresh(), $this->staff, OrderStatus::OnDelivery->value, UploadedFile::fake()->image('proof3.jpg'));
+
+        $deliveredNotification = StoreNotification::query()
+            ->where('order_id', $order->id)
+            ->where('order_status', OrderStatus::Delivered)
+            ->sole();
+        $originalCreatedAt = $deliveredNotification->created_at->toISOString();
+        $notificationCountBefore = StoreNotification::query()->where('order_id', $order->id)->count();
+
+        $unit = $order->items()->firstOrFail()->units()->firstOrFail();
+
+        // Reading the notification does not mark the unit reviewed or change created_at.
+        $readResponse = $this->actingAs($this->customer)
+            ->postJson(route('notifications.api.read', $deliveredNotification))
+            ->assertOk();
+        $this->assertNotNull($readResponse->json('data.notification.review_cta'));
+        $this->assertFalse(Review::query()->where('order_item_unit_id', $unit->id)->exists());
+        $this->assertSame($originalCreatedAt, $deliveredNotification->fresh()->created_at->toISOString());
+
+        // Creating a review does not create a new notification or mutate created_at.
+        Review::factory()->create([
+            'order_item_unit_id' => $unit->id,
+            'user_id' => $this->customer->id,
+        ]);
+
+        $this->assertSame($notificationCountBefore, StoreNotification::query()->where('order_id', $order->id)->count());
+        $this->assertSame($originalCreatedAt, $deliveredNotification->fresh()->created_at->toISOString());
+    }
+
+    /** @param list<ProductVariant> $variants */
+    private function placeOrderWithVariants(array $variants, ?string $note = null): Order
+    {
+        $address = Address::factory()->create(['user_id' => $this->customer->id]);
+        $cart = Cart::query()->where('user_id', $this->customer->id)->first() ?? new Cart;
+        $cart->forceFill(['user_id' => $this->customer->id, 'version' => ($cart->version ?? 0) + 1])->save();
+        foreach ($variants as $variant) {
+            (new CartItem)->forceFill(['cart_id' => $cart->id, 'variant_id' => $variant->id, 'quantity' => 1])->save();
+        }
+        $checkout = app(CheckoutService::class);
+
+        return $checkout->place($this->customer, $address->id, (string) Str::uuid(), $checkout->quote($this->customer, $address)['fingerprint'], $note);
     }
 
     private function placeOrder(?string $note = null): Order

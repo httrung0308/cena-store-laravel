@@ -140,7 +140,7 @@
                         <span class="text-xs font-bold text-main">SP hết hàng</span>
                     </div>
                     <span class="mt-1 block text-[11px] font-semibold text-muted">
-                        {{ number_format($lowStockVariantsCount) }} biến thể ≤ {{ $lowStockThreshold }} đôi
+                        {{ number_format($lowStockVariantsCount) }} tổ hợp màu/size ≤ {{ $lowStockThreshold }} đôi
                     </span>
                 </div>
             </a>
@@ -306,13 +306,13 @@
                             <h2 id="low-stock-heading" class="text-base font-extrabold text-main">Hàng cần nhập</h2>
                             <x-admin.tooltip
                                 label="Quy tắc hàng cần nhập"
-                                :text="'Phân biệt biến thể hết hàng (0 đôi) và sắp hết (1–' . $lowStockThreshold . ' đôi) đang mở bán theo tồn khả dụng.'"
+                                :text="'Phân biệt tổ hợp màu/size hết hàng (0 đôi) và sắp hết (1–' . $lowStockThreshold . ' đôi) đang mở bán theo tồn khả dụng.'"
                             />
                         </div>
                         <p class="mt-1 text-[11px] text-muted">
                             <strong class="font-mono text-error">{{ number_format($outOfStockProductsCount) }}</strong> sản phẩm hết hàng ·
-                            <strong class="font-mono text-error">{{ number_format($depletedVariantsCount) }}</strong> biến thể hết hàng (0 đôi) ·
-                            <strong class="font-mono text-warning-text">{{ number_format($inStockLowVariantsCount) }}</strong> biến thể sắp hết (1–{{ $lowStockThreshold }} đôi)
+                            <strong class="font-mono text-error">{{ number_format($depletedVariantsCount) }}</strong> tổ hợp màu/size hết hàng (0 đôi) ·
+                            <strong class="font-mono text-warning-text">{{ number_format($inStockLowVariantsCount) }}</strong> tổ hợp màu/size sắp hết (1–{{ $lowStockThreshold }} đôi)
                         </p>
                     </div>
                     <a href="{{ route('admin.products.index', ['stock' => 'out_of_stock']) }}"
@@ -352,7 +352,7 @@
                     </div>
                     @if ($lowStockVariantsCount > count($lowStockVariants))
                         <div class="px-5 py-3 bg-surface/50 border-t border-border flex items-center justify-between text-xs">
-                            <span class="text-muted">Còn {{ number_format($lowStockVariantsCount - count($lowStockVariants)) }} biến thể cần nhập khác</span>
+                            <span class="text-muted">Còn {{ number_format($lowStockVariantsCount - count($lowStockVariants)) }} tổ hợp màu/size cần nhập khác</span>
                             <a href="{{ route('admin.reports.index', ['tab' => 'inventory']) }}" class="font-bold text-accent hover:underline">
                                 Xem báo cáo tồn kho →
                             </a>
@@ -360,7 +360,7 @@
                     @endif
                 @else
                     <div class="p-6 text-center">
-                        <p class="text-xs font-bold text-main">Tồn kho các biến thể đang mở bán ổn định (trên {{ $lowStockThreshold }} đôi).</p>
+                        <p class="text-xs font-bold text-main">Tồn kho các tổ hợp màu/size đang mở bán ổn định (trên {{ $lowStockThreshold }} đôi).</p>
                     </div>
                 @endif
             </section>

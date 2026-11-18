@@ -344,27 +344,51 @@
                             </template>
 
                             <template x-for="item in items" :key="item.id">
-                                <button type="button"
-                                        @click="openItem(item)"
-                                        :disabled="openingId === item.id"
-                                        :class="item.read_at ? 'bg-surface-card hover:bg-surface text-muted' : 'bg-accent/5 hover:bg-accent/10 text-main'"
-                                        class="flex w-full items-start gap-2.5 px-4 py-2.5 text-left transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent">
-                                    <span class="mt-1.5 h-2 w-2 shrink-0 rounded-full"
-                                          :class="item.read_at ? 'border border-border bg-transparent' : 'bg-accent'"
-                                          aria-hidden="true"></span>
-                                    <span class="min-w-0 flex-1">
-                                        <span class="flex items-baseline justify-between gap-2">
-                                            <span class="min-w-0 truncate text-xs"
-                                                  :class="item.read_at ? 'font-medium text-muted' : 'font-bold text-main'"
-                                                  x-text="item.order_status_label"></span>
-                                            <span x-show="!item.read_at" class="sr-only">Chưa đọc</span>
-                                            <span class="shrink-0 text-[11px] text-muted" x-text="formatTime(item.created_at)"></span>
+                                <div :class="item.read_at ? 'bg-surface-card hover:bg-surface/60' : 'bg-accent/5 hover:bg-accent/10'"
+                                     class="px-4 py-3 transition-colors">
+                                    <button type="button"
+                                            @click="openItem(item)"
+                                            :disabled="openingId === item.id"
+                                            class="group flex w-full items-start gap-3 rounded-lg text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-accent">
+                                        <span class="mt-2 h-2 w-2 shrink-0 rounded-full"
+                                              :class="item.read_at ? 'bg-transparent' : 'bg-accent'"
+                                              aria-hidden="true"></span>
+                                        <span class="h-11 w-11 shrink-0 overflow-hidden rounded-xl border border-border bg-surface">
+                                            <template x-if="item.thumbnail_url">
+                                                <img :src="item.thumbnail_url"
+                                                     :alt="item.item_summary || item.headline"
+                                                     class="h-full w-full object-cover"
+                                                     loading="lazy"
+                                                     decoding="async">
+                                            </template>
+                                            <template x-if="!item.thumbnail_url">
+                                                <span class="flex h-full w-full items-center justify-center text-muted" aria-hidden="true">
+                                                    <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
+                                                </span>
+                                            </template>
                                         </span>
-                                        <span class="mt-0.5 block truncate break-all font-mono text-[11px]"
-                                              :class="item.read_at ? 'text-muted' : 'font-semibold text-main'"
-                                              x-text="item.order_code ? 'Đơn ' + item.order_code : ''"></span>
-                                    </span>
-                                </button>
+                                        <span class="min-w-0 flex-1">
+                                            <span class="block text-xs leading-snug"
+                                                  :class="item.read_at ? 'font-medium text-muted group-hover:text-main' : 'font-bold text-main'"
+                                                  x-text="item.headline || item.order_status_label"></span>
+                                            <span x-show="!item.read_at" class="sr-only">Chưa đọc</span>
+                                            <span class="mt-0.5 line-clamp-2 break-words text-[11px] leading-snug text-muted"
+                                                  x-text="item.item_summary || 'Đơn hàng'"></span>
+                                            <span class="mt-1 block text-[11px] text-muted/80"
+                                                  :title="formatTime(item.created_at)"
+                                                  x-text="formatTime(item.created_at)"></span>
+                                        </span>
+                                    </button>
+                                    <template x-if="item.review_cta">
+                                        <div class="mt-2.5 flex flex-wrap items-center justify-between gap-2 pl-[4.25rem]">
+                                            <p class="min-w-0 text-[11px] leading-snug text-muted" x-text="item.review_cta.prompt"></p>
+                                            <a :href="item.review_cta.url"
+                                               @click="markReadOnly(item)"
+                                               class="btn-secondary inline-flex shrink-0 items-center px-2.5 py-1 text-[11px] font-semibold"
+                                               x-text="item.review_cta.label"></a>
+                                        </div>
+                                    </template>
+                                </div>
                             </template>
                         </div>
 

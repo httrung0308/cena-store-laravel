@@ -69,13 +69,30 @@ final class StoreNotificationService
     }
 
     /**
+     * @return array<int|string, mixed>
+     */
+    public function summaryRelations(): array
+    {
+        return [
+            'order:id,order_code,user_id,order_status,payment_status',
+            'order.items' => static fn ($query) => $query->orderBy('id'),
+            'order.items.units:id,order_item_id',
+            'order.items.units.review:id,order_item_unit_id',
+            'order.items.variant:id,product_color_id',
+            'order.items.variant.color:id,product_id',
+            'order.items.variant.color.thumbnail',
+            'order.items.variant.color.product:id,slug,is_active',
+        ];
+    }
+
+    /**
      * @return Collection<int, StoreNotification>
      */
     public function recentForUser(User $user, int $limit = 6): Collection
     {
         return StoreNotification::query()
             ->where('user_id', $user->id)
-            ->with('order:id,order_code')
+            ->with($this->summaryRelations())
             ->orderByDesc('created_at')
             ->orderByDesc('id')
             ->limit($limit)

@@ -44,9 +44,47 @@ final class InventoryHistoryQueryService
     /** @param array<string, mixed> $filters */
     public function movements(ProductVariant $variant, array $filters, bool $includeCost = false): LengthAwarePaginator
     {
+        $color = $variant->relationLoaded('color')
+            ? $variant->color
+            : ProductColor::withTrashed()->find($variant->product_color_id, ['id', 'product_id']);
+        $product = $color !== null ? Product::withTrashed()->find($color->product_id) : new Product;
+
+        return $this->movementsForProduct($product ?? new Product, $variant->product_color_id, $variant, $filters, $includeCost);
+    }
+
+    /** @param array<string, mixed> $filters */
+    public function movementsForProduct(
+        Product $product,
+        ?int $colorId,
+        ?ProductVariant $selectedVariant,
+        array $filters,
+        bool $includeCost = false,
+    ): LengthAwarePaginator {
         $query = InventoryMovement::query()
-            ->with('actor:id,full_name')
-            ->where('variant_id', $variant->id);
+            ->with([
+                'actor:id,full_name',
+                'variant' => fn ($q) => $q->withTrashed()->select(['id', 'product_color_id', 'size_value', 'sku']),
+                'variant.color' => fn ($q) => $q->withTrashed()->select(['id', 'color_name']),
+            ]);
+
+        if ($selectedVariant !== null) {
+            $query->where('variant_id', $selectedVariant->id);
+        } elseif ($colorId !== null) {
+            $query->whereIn(
+                'variant_id',
+                ProductVariant::withTrashed()->where('product_color_id', $colorId)->select('id')
+            );
+        } else {
+            $query->whereIn(
+                'variant_id',
+                ProductVariant::withTrashed()
+                    ->whereIn(
+                        'product_color_id',
+                        ProductColor::withTrashed()->where('product_id', $product->id)->select('id')
+                    )
+                    ->select('id')
+            );
+        }
 
         if (! $includeCost) {
             $query->select([
@@ -83,11 +121,14 @@ final class InventoryHistoryQueryService
         $paginator = $query->orderByDesc('created_at')->orderByDesc('id')->paginate(20)->withQueryString();
 
         if (! $includeCost) {
-            $paginator->getCollection()->each->makeHidden([
-                'unit_cost_basis',
-                'average_cost_before',
-                'average_cost_after',
-            ]);
+            $paginator->getCollection()->each(function (InventoryMovement $movement): void {
+                $movement->makeHidden([
+                    'unit_cost_basis',
+                    'average_cost_before',
+                    'average_cost_after',
+                ]);
+                $movement->variant?->makeHidden('average_cost');
+            });
         }
 
         return $paginator;
@@ -195,5 +236,36 @@ final class InventoryHistoryQueryService
             'history_incomplete' => $historyIncomplete,
             'observed_balance_diff' => $lastAfter !== null && $lastAfter !== $current,
         ];
+    }
+
+    /**
+     * Compute per-SKU reconciliation issues without ever merging balances across SKUs.
+     *
+     * @param  Collection<int, ProductVariant>  $variants
+     * @param  Collection<int, ProductColor>  $colors
+     * @return list<array{variant_id: int, sku: string, label: string, history_incomplete: bool, observed_balance_diff: bool}>
+     */
+    public function reconciliationIssuesForVariants(Collection $variants, Collection $colors): array
+    {
+        $colorNames = $colors->mapWithKeys(fn (ProductColor $color): array => [
+            $color->id => $color->color_name,
+        ]);
+
+        $issues = [];
+        foreach ($variants as $variant) {
+            $result = $this->reconciliation($variant);
+            if ($result['history_incomplete'] || $result['observed_balance_diff']) {
+                $colorName = $colorNames->get($variant->product_color_id, 'Màu');
+                $issues[] = [
+                    'variant_id' => $variant->id,
+                    'sku' => $variant->sku,
+                    'label' => $colorName.' · Size '.$variant->size_value,
+                    'history_incomplete' => $result['history_incomplete'],
+                    'observed_balance_diff' => $result['observed_balance_diff'],
+                ];
+            }
+        }
+
+        return $issues;
     }
 }

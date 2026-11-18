@@ -7,7 +7,7 @@
         'awaiting_receive' => 'Chờ nhận',
         'partially_received' => 'Đã nhận một phần',
         'awaiting_inspection' => 'Chờ kiểm tra',
-        'awaiting_write_off_approval' => 'Hàng hỏng cần xử lý',
+        'awaiting_write_off_approval' => 'Hàng hỏng chờ xử lý',
         'completed' => 'Đã xử lý',
     ];
     $resolveReturnBadge = static function ($order): ?array {
@@ -36,7 +36,7 @@
                 ->isNotEmpty();
 
             return $hasWriteOffProposal
-                ? ['label' => 'Hàng hỏng cần xử lý', 'class' => 'bg-error-bg text-error-text border border-error/30']
+                ? ['label' => 'Hàng hỏng chờ xử lý', 'class' => 'bg-error-bg text-error-text border border-error/30']
                 : ['label' => 'Chờ kiểm tra', 'class' => 'bg-warning-bg text-warning-text border border-warning/30'];
         }
 

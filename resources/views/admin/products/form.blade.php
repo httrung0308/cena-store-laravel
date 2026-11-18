@@ -263,7 +263,7 @@
             <section class="admin-card space-y-5" aria-label="Phối màu, size và ảnh">
                 <div class="flex flex-wrap items-center justify-between gap-3">
                     <div>
-                        <h2 class="text-base font-bold text-main">3. Phối màu, Ảnh &amp; Biến thể Size</h2>
+                        <h2 class="text-base font-bold text-main">3. Màu sắc &amp; Size, Hình ảnh</h2>
                         <p class="text-xs text-muted mt-0.5">Chọn tab màu để chỉnh sửa nhanh từng màu mà không phải cuộn dài.</p>
                     </div>
                     <button type="button" @click="addColor()"
@@ -699,7 +699,7 @@
                         <span class="font-bold text-main font-mono" x-text="colors.length"></span>
                     </div>
                     <div class="flex justify-between">
-                        <span class="text-muted">Tổng biến thể size:</span>
+                        <span class="text-muted">Số tổ hợp màu/size:</span>
                         <span class="font-bold text-main font-mono" x-text="totalVariantsCount"></span>
                     </div>
                     <div x-show="colorsMissingImages > 0" class="pt-1 text-warning-text font-medium">

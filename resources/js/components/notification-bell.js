@@ -163,6 +163,30 @@ export function notificationBell({
             return this.fetchRecent();
         },
 
+        markReadOnly(item) {
+            if (!item || item.read_at || !readUrlTemplate) {
+                return;
+            }
+            const readAt = new Date().toISOString();
+            item.read_at = readAt;
+            this.unreadCount = Math.max(0, this.unreadCount - 1);
+            window.dispatchEvent(new CustomEvent('cena:notifications-sync', {
+                detail: { unreadCount: this.unreadCount, readId: item.id, readAt },
+            }));
+            const url = readUrlTemplate.replace('__ID__', String(item.id));
+            fetch(url, {
+                method: 'POST',
+                keepalive: true,
+                credentials: 'same-origin',
+                headers: {
+                    Accept: 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': this.csrfToken(),
+                },
+            }).catch(() => {});
+        },
+
         async openItem(item) {
             if (!item || this.openingId !== null) {
                 return;

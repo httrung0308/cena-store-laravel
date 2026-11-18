@@ -41,14 +41,15 @@ class InventoryHistoryTest extends TestCase
 
         $adminResponse = $this->actingAs(User::factory()->administrator()->create())->get($url)->assertOk();
         $adminResponse->assertSee($variant->sku)
-            ->assertSee('Lịch sử kho — Đen · Size '.$variant->size_value)
+            ->assertSee('Biến động kho')
+            ->assertSee('Xem biến động kho')
             ->assertSee('Có thể bán')
-            ->assertSee('Tồn kho - Đang giữ; không trừ trùng cách ly')
+            ->assertSee('Tồn kho - Đã giữ cho đơn; không trừ trùng chưa thể bán')
             ->assertSee('Khả dụng')
             ->assertSee('3')
             ->assertSee('Tồn kho +5 đôi → 5 đôi')
-            ->assertSee('Đang giữ +2 đôi → 2 đôi')
-            ->assertSee('Cách ly +1 đôi → 1 đôi')
+            ->assertSee('Đã giữ cho đơn +2 đôi → 2 đôi')
+            ->assertSee('Chưa thể bán +1 đôi → 1 đôi')
             ->assertSee(route('admin.stock-imports.show', $movement->reference_id))
             ->assertSee('321.9876')
             ->assertSee('#'.$movement->id)
@@ -56,11 +57,14 @@ class InventoryHistoryTest extends TestCase
 
         $staffResponse = $this->actingAs(User::factory()->staff()->create())->get($url)->assertOk();
         $staffResponse->assertSee($variant->sku)
-            ->assertSee('Lịch sử kho — Đen · Size '.$variant->size_value)
+            ->assertSee('Biến động kho')
+            ->assertSee('Xem biến động kho')
             ->assertSee('Có thể bán')
             ->assertSee('Khả dụng')
             ->assertSee('3')
             ->assertSee('Tồn kho +5 đôi → 5 đôi')
+            ->assertSee('Đã giữ cho đơn +2 đôi → 2 đôi')
+            ->assertSee('Chưa thể bán +1 đôi → 1 đôi')
             ->assertSee('#'.$movement->id)
             ->assertDontSee(route('admin.stock-imports.show', $movement->reference_id))
             ->assertDontSee('321.9876')
@@ -344,6 +348,116 @@ class InventoryHistoryTest extends TestCase
             ->assertDontSee(route('admin.stock-imports.show', $importMovement->reference_id))
             ->assertSee(route('admin.orders.show', $order->id))
             ->assertSee(route('admin.orders.show', $returnOrderId).'#xu-ly-hang-hoan');
+    }
+
+    public function test_product_page_defaults_to_whole_product_movements_across_colors_sizes_and_trashed_skus(): void
+    {
+        [$product, $blackColor, $blackVariant] = $this->productWithVariant();
+        $blackVariant->forceFill(['size_value' => '40', 'stock_qty' => 2])->save();
+        $whiteColor = ProductColor::factory()->for($product, 'product')->create(['color_name' => 'Trắng']);
+        $whiteVariant = ProductVariant::factory()->for($whiteColor, 'color')->create([
+            'size_value' => '41',
+            'stock_qty' => 3,
+        ]);
+
+        $blackMovement = $this->movement($blackVariant, [
+            'stock_before' => 0,
+            'stock_delta' => 2,
+            'stock_after' => 2,
+            'unit_cost_basis' => '111.2222',
+            'average_cost_after' => '111.2222',
+            'created_at' => now()->subMinute(),
+        ]);
+        $whiteMovement = $this->movement($whiteVariant, [
+            'stock_before' => 0,
+            'stock_delta' => 3,
+            'stock_after' => 3,
+            'unit_cost_basis' => '222.3333',
+            'average_cost_after' => '222.3333',
+            'created_at' => now(),
+        ]);
+
+        $whiteVariant->delete();
+        $whiteColor->delete();
+
+        $staff = User::factory()->staff()->create();
+        $response = $this->actingAs($staff)
+            ->get(route('admin.products.show', $product))
+            ->assertOk();
+
+        $response->assertSee('Biến động kho')
+            ->assertSee('Xem biến động kho')
+            ->assertSee('#'.$blackMovement->id)
+            ->assertSee('#'.$whiteMovement->id)
+            ->assertSee('Đen · Size 40')
+            ->assertSee('Trắng · Size 41')
+            ->assertSee($blackVariant->sku)
+            ->assertSee($whiteVariant->sku)
+            ->assertSee('Đối chiếu khớp toàn bộ lịch sử')
+            ->assertDontSee('111.2222')
+            ->assertDontSee('222.3333')
+            ->assertDontSee('Giá vốn');
+
+        $colorFiltered = $this->actingAs($staff)
+            ->get(route('admin.products.show', ['product' => $product, 'color_id' => $blackColor->id]))
+            ->assertOk();
+
+        $colorFiltered->assertViewHas('movements', fn ($paginator): bool => $paginator->total() === 1 && $paginator->items()[0]->id === $blackMovement->id);
+
+        $variantFiltered = $this->actingAs($staff)
+            ->get(route('admin.products.show', ['product' => $product, 'color_id' => $whiteColor->id, 'variant_id' => $whiteVariant->id]))
+            ->assertOk();
+
+        $variantFiltered->assertViewHas('movements', fn ($paginator): bool => $paginator->total() === 1 && $paginator->items()[0]->id === $whiteMovement->id);
+
+        [, $foreignColor] = $this->productWithVariant('Sản phẩm khác');
+        $this->actingAs($staff)
+            ->get(route('admin.products.show', ['product' => $product, 'color_id' => $foreignColor->id]))
+            ->assertNotFound();
+    }
+
+    public function test_whole_product_reconciliation_reports_issues_per_sku_without_merging_balances(): void
+    {
+        [$product, $color, $okVariant] = $this->productWithVariant();
+        $okVariant->forceFill(['size_value' => '39', 'stock_qty' => 2])->save();
+        $this->movement($okVariant, [
+            'stock_before' => 0,
+            'stock_delta' => 2,
+            'stock_after' => 2,
+        ]);
+
+        $diffVariant = ProductVariant::factory()->for($color, 'color')->create([
+            'size_value' => '42',
+            'stock_qty' => 5,
+        ]);
+        $this->movement($diffVariant, [
+            'stock_before' => 0,
+            'stock_delta' => 2,
+            'stock_after' => 2,
+        ]);
+
+        $emptyVariant = ProductVariant::factory()->for($color, 'color')->create([
+            'size_value' => '43',
+            'stock_qty' => 0,
+        ]);
+
+        $response = $this->actingAs(User::factory()->staff()->create())
+            ->get(route('admin.products.show', $product))
+            ->assertOk();
+
+        $response->assertSee('OBSERVED_BALANCE_DIFF')
+            ->assertSee('HISTORY_INCOMPLETE')
+            ->assertSee($diffVariant->sku)
+            ->assertSee($emptyVariant->sku)
+            ->assertDontSee('Đối chiếu khớp toàn bộ lịch sử');
+
+        $response->assertViewHas('productReconciliationIssues', function (array $issues) use ($okVariant, $diffVariant, $emptyVariant): bool {
+            $byId = collect($issues)->keyBy('variant_id');
+
+            return ! $byId->has($okVariant->id)
+                && ($byId->get($diffVariant->id)['observed_balance_diff'] ?? false) === true
+                && ($byId->get($emptyVariant->id)['history_incomplete'] ?? false) === true;
+        });
     }
 
     /** @return array{Product, ProductColor, ProductVariant} */
