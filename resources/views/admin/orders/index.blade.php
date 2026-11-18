@@ -117,11 +117,10 @@
                     @forelse ($orders as $order)
                         @php
                             $firstItem = $order->items->first();
-                            $totalPairs = $order->items->sum('quantity');
-                            $extraItems = max(0, $order->items->count() - 1);
+                            $totalPairs = (int) $order->items->sum('quantity');
                             $itemsSummary = $order->items
-                                ->map(fn ($item) => $item->product_name_snapshot.' ('.$item->quantity.' đôi)')
-                                ->implode(', ');
+                                ->map(fn ($item) => "• {$item->product_name_snapshot} — {$item->color_name_snapshot} · Size {$item->size_value_snapshot} ({$item->quantity} đôi)")
+                                ->implode("\n");
                             $returnBadge = $resolveReturnBadge($order);
                         @endphp
                         <article class="p-4 space-y-2.5 text-xs">
@@ -147,11 +146,9 @@
                             @if ($firstItem)
                                 <div class="flex items-center gap-1 text-[11px] text-muted min-w-0">
                                     <span class="truncate">
-                                        {{ $firstItem->product_name_snapshot }}@if ($extraItems > 0) (+{{ $extraItems }} SP khác)@endif · <span class="font-semibold text-main">{{ $totalPairs }} đôi</span>
+                                        {{ $firstItem->product_name_snapshot }} · <span class="font-semibold text-main">{{ $totalPairs }} đôi</span>
                                     </span>
-                                    @if ($extraItems > 0 || mb_strlen($firstItem->product_name_snapshot) > 28)
-                                        <x-admin.tooltip :text="$itemsSummary" label="Xem đầy đủ sản phẩm" />
-                                    @endif
+                                    <x-admin.tooltip :text="$itemsSummary" label="Xem đầy đủ sản phẩm trong đơn" />
                                 </div>
                             @endif
                             <div class="flex flex-wrap items-center justify-between gap-2 pt-1">
@@ -183,11 +180,10 @@
                         @forelse ($orders as $order)
                             @php
                                 $firstItem = $order->items->first();
-                                $totalPairs = $order->items->sum('quantity');
-                                $extraItems = max(0, $order->items->count() - 1);
+                                $totalPairs = (int) $order->items->sum('quantity');
                                 $itemsSummary = $order->items
-                                    ->map(fn ($item) => $item->product_name_snapshot.' ('.$item->quantity.' đôi)')
-                                    ->implode(', ');
+                                    ->map(fn ($item) => "• {$item->product_name_snapshot} — {$item->color_name_snapshot} · Size {$item->size_value_snapshot} ({$item->quantity} đôi)")
+                                    ->implode("\n");
                                 $hasLongName = mb_strlen((string) $order->shipping_name) > 22;
                                 $returnBadge = $resolveReturnBadge($order);
                             @endphp
@@ -215,16 +211,11 @@
                                             <span class="block truncate font-semibold text-main text-xs">
                                                 {{ $firstItem->product_name_snapshot }}
                                             </span>
-                                            @if ($extraItems > 0 || mb_strlen($firstItem->product_name_snapshot) > 26)
-                                                <x-admin.tooltip :text="$itemsSummary" label="Xem đầy đủ sản phẩm trong đơn" />
-                                            @endif
+                                            <x-admin.tooltip :text="$itemsSummary" label="Xem đầy đủ sản phẩm trong đơn" />
                                         </div>
                                     @endif
                                     <span class="inline-flex items-center gap-1.5 mt-1 text-[11px] text-muted">
                                         <span class="bg-surface text-main border border-border px-1.5 py-0.5 rounded-md font-mono font-bold">{{ $totalPairs }} đôi</span>
-                                        @if ($extraItems > 0)
-                                            <span>+{{ $extraItems }} SP khác</span>
-                                        @endif
                                     </span>
                                 </td>
                                 <td class="px-3.5 py-3 text-right">

@@ -48,7 +48,7 @@
             @mouseleave="closeHover()"
             role="tooltip"
             :style="`top: ${posTop}px; left: ${posLeft}px;`"
-            class="fixed z-[60] w-max max-w-[min(18rem,calc(100vw-24px))] whitespace-normal break-words rounded-xl border border-border bg-surface-card px-3 py-2 text-left text-xs font-normal leading-relaxed text-main shadow-lg pointer-events-auto"
+            class="fixed z-[60] w-max max-w-[min(22rem,calc(100vw-24px))] whitespace-pre-line break-words rounded-xl border border-border bg-surface-card px-3 py-2 text-left text-xs font-normal leading-relaxed text-main shadow-lg pointer-events-auto"
         >
             {{ $text }}
         </div>
