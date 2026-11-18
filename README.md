@@ -41,65 +41,33 @@ Script tự tạo `.env` (nếu chưa có), cấu hình MySQL riêng ở `127.0.
 
 ## 2. Chọn dữ liệu mẫu
 
-Chọn **một trong hai cách** dưới đây để có dữ liệu thử nghiệm. **Không chạy seeder của Cách 1 đè lên database đã import SQL ở Cách 2** để tránh trùng dữ liệu.
+Chọn **một trong các cách** dưới đây để có dữ liệu thử nghiệm (chỉ dùng trên môi trường `local` / `testing`, bị chặn trên `production`). **Không chạy chồng seeder lên database đã có sẵn dữ liệu demo của cách khác.**
 
-### Cách 1 — Cơ bản (có sẵn trong repo, không cần tải gói riêng)
+### Cách 1 — Đầy đủ bằng PHP Artisan (khuyên dùng, không cần tải gói ngoài)
 
-Phù hợp khi chỉ cần tài khoản và vài sản phẩm mẫu tối thiểu. Thêm `STORE_DEMO_USERS=true` và `STORE_DEMO_PASSWORD` (mật khẩu riêng dài từ **12 đến 72 bytes**) vào file `.env` local trên máy bạn, rồi chạy:
+Seeder `FullDemoSeeder` tự dùng ảnh có sẵn trong repo (`public/legacy/img/`), chạy qua service nghiệp vụ để tạo đủ vai trò, địa danh, sản phẩm (còn hàng, sắp hết, hết hàng), phiếu nhập nháp/đã ghi sổ, đơn hàng mọi trạng thái, hàng hoàn, đánh giá công khai/ẩn, bài viết, banner, mã giảm giá và số liệu báo cáo nhiều kỳ.
 
-```powershell
-.\scripts\php.ps1 artisan config:clear
-.\scripts\php.ps1 artisan db:seed --class=CoreFoundationSeeder --no-interaction
-.\scripts\php.ps1 artisan db:seed --class=StockImportDemoSeeder --no-interaction
-```
-
-**Tài khoản tạo bởi seeder (mật khẩu là giá trị `STORE_DEMO_PASSWORD` bạn vừa đặt):**
-- Admin: `admin@demo.cena.test`
-- Staff: `staff@demo.cena.test`
-- Customer: `customer@demo.cena.test`
-
-### Cách 2 — Đầy đủ (tải gói dữ liệu mẫu từ GitHub Release)
-
-Phù hợp khi muốn thử ngay đầy đủ đơn hàng các trạng thái, hàng hoàn, đánh giá, bài viết, banner, mã giảm giá và biểu đồ báo cáo.
-
-- **Trang Release:** [demo-20261118](https://github.com/httrung0308/cena-store-laravel/releases/tag/demo-20261118)
-- **Tải trực tiếp (11.65 MB):** [cena-store-demo-20261118.zip](https://github.com/httrung0308/cena-store-laravel/releases/download/demo-20261118/cena-store-demo-20261118.zip)
-
-> **Lưu ý an toàn:** Nếu bạn đã có dữ liệu riêng trong `cena_store` cần giữ lại, hãy sao lưu trước và import vào một **database mới** (xem hướng dẫn thu gọn bên dưới).
-
-1. Giải nén `cena-store-demo-20261118.zip`.
-2. **Chỉ dừng web server** (`Ctrl + C` ở cửa sổ đang chạy web), **giữ MySQL (`127.0.0.1:3307`) đang chạy** (nếu MySQL chưa chạy, mở bằng `.\scripts\start-local-services.ps1`).
-3. **Import file SQL** vào database mặc định `cena_store` (lấy `DB_PASSWORD` trong file `.env` trên máy bạn và nhập khi được hỏi):
+- **Seed trên database đã migrate:**
 
 ```powershell
-Get-Content -Raw -Encoding utf8 'D:\duong-dan-toi\cena-store-demo-20261118.sql' | & 'C:\laragon\bin\mysql\mysql-8.4.3-winx64\bin\mysql.exe' -h 127.0.0.1 -P 3307 -u cena_app -p cena_store
+.\scripts\php.ps1 artisan db:seed --class=FullDemoSeeder --no-interaction
 ```
 
-<details>
-<summary>Tùy chọn: Tạo database mới riêng (nếu không muốn ghi đè dữ liệu trong cena_store)</summary>
+- **Xóa toàn bộ bảng trên database local rồi tạo lại từ đầu** *(Cảnh báo: lệnh dưới xóa sạch dữ liệu hiện có trong database đang cấu hình ở `.env`)*:
 
-Dùng tài khoản `root` của MySQL `127.0.0.1:3307` (mật khẩu `admin_password` nằm trong `%LOCALAPPDATA%\CenaStore\services\local-credentials.json` trên máy bạn) để tạo database mới và cấp quyền cho `'cena_app'@'127.0.0.1'`:
-
-```sql
-CREATE DATABASE IF NOT EXISTS `cena_store_demo` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, ALTER, INDEX, DROP, REFERENCES ON `cena_store_demo`.* TO 'cena_app'@'127.0.0.1';
-FLUSH PRIVILEGES;
+```powershell
+.\scripts\php.ps1 artisan migrate:fresh --no-interaction
+.\scripts\php.ps1 artisan db:seed --class=FullDemoSeeder --no-interaction
 ```
 
-Sau đó đổi `DB_DATABASE=cena_store_demo` trong `.env` trên máy bạn và thay `cena_store` ở lệnh import phía trên thành `cena_store_demo`.
-
-</details>
-
-4. **Chép ảnh và file đính kèm:** chép nội dung `storage\app\public\` và `storage\app\private\` từ gói vừa giải nén vào đúng `storage\app\public\` và `storage\app\private\` trong thư mục project (giữ tách riêng `public` và `private`).
-5. **Tạo liên kết ảnh, xóa cache và build giao diện (nếu cần):**
+- Sau đó chạy liên kết ảnh (nếu chưa có) và xóa cache:
 
 ```powershell
 .\scripts\php.ps1 artisan storage:link
 .\scripts\php.ps1 artisan optimize:clear
-.\scripts\npm.ps1 run build
 ```
 
-**Tài khoản mẫu của gói dữ liệu đầy đủ (chỉ dùng cho môi trường local, mật khẩu chung `CenaDemo@2026`):**
+**Tài khoản mẫu mặc định** (mật khẩu `CenaDemo@2026`, hoặc giá trị `STORE_DEMO_PASSWORD` dài 12–72 bytes nếu bạn đã cấu hình trong `.env`):
 
 | Vai trò | Email |
 |---|---|
@@ -108,7 +76,36 @@ Sau đó đổi `DB_DATABASE=cena_store_demo` trong `.env` trên máy bạn và 
 | Khách hàng 1 | `khach1.qa@demo.cena.test` |
 | Khách hàng 2 | `khach2.qa@demo.cena.test` |
 
-Xem hướng dẫn tìm từng tình huống kiểm thử tại [TEAM_DEMO_TESTING_GUIDE.md](docs/TEAM_DEMO_TESTING_GUIDE.md). Hãy giữ bản gốc `.sql` và `storage/` để import lại khi cần khôi phục dữ liệu ban đầu.
+*(Ngoài ra có thêm bộ tài khoản nền `admin@demo.cena.test`, `staff@demo.cena.test`, `customer@demo.cena.test` cùng mật khẩu trên.)* Xem hướng dẫn tìm nhanh từng tình huống kiểm thử tại [TEAM_DEMO_TESTING_GUIDE.md](docs/TEAM_DEMO_TESTING_GUIDE.md).
+
+<details>
+<summary>Cách 2 — Cơ bản (chỉ vai trò, tài khoản và 4 sản phẩm tối thiểu)</summary>
+
+Thêm `STORE_DEMO_USERS=true` và `STORE_DEMO_PASSWORD` (mật khẩu riêng dài từ **12 đến 72 bytes**) vào `.env` local rồi chạy:
+
+```powershell
+.\scripts\php.ps1 artisan config:clear
+.\scripts\php.ps1 artisan db:seed --class=CoreFoundationSeeder --no-interaction
+.\scripts\php.ps1 artisan db:seed --class=StockImportDemoSeeder --no-interaction
+```
+
+Tài khoản tạo ra: `admin@demo.cena.test`, `staff@demo.cena.test`, `customer@demo.cena.test` với mật khẩu bạn vừa đặt.
+
+</details>
+
+<details>
+<summary>Cách 3 — Tùy chọn dùng bản snapshot SQL từ GitHub Release</summary>
+
+Nếu muốn dùng bản snapshot SQL thay vì `FullDemoSeeder`, tải gói tại [demo-20261118](https://github.com/httrung0308/cena-store-laravel/releases/tag/demo-20261118) ([cena-store-demo-20261118.zip](https://github.com/httrung0308/cena-store-laravel/releases/download/demo-20261118/cena-store-demo-20261118.zip)), chỉ dừng web server (giữ MySQL `127.0.0.1:3307` chạy), tạo database mới nếu cần giữ dữ liệu cũ rồi import SQL và chép `storage\app\public\` + `storage\app\private\`:
+
+```powershell
+Get-Content -Raw -Encoding utf8 'D:\duong-dan-toi\cena-store-demo-20261118.sql' | & 'C:\laragon\bin\mysql\mysql-8.4.3-winx64\bin\mysql.exe' -h 127.0.0.1 -P 3307 -u cena_app -p cena_store
+.\scripts\php.ps1 artisan storage:link
+.\scripts\php.ps1 artisan optimize:clear
+.\scripts\npm.ps1 run build
+```
+
+</details>
 
 ---
 
