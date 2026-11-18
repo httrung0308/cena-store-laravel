@@ -460,6 +460,190 @@ class InventoryHistoryTest extends TestCase
         });
     }
 
+    public function test_size_filter_matches_across_colors_intersects_with_color_and_handles_empty_combinations(): void
+    {
+        [$product, $blackColor, $black40] = $this->productWithVariant();
+        $black40->forceFill(['size_value' => '40', 'size_numeric' => 40.0])->save();
+        $black405 = ProductVariant::factory()->for($blackColor, 'color')->create([
+            'size_value' => '40.5',
+            'size_numeric' => 40.5,
+        ]);
+
+        $whiteColor = ProductColor::factory()->for($product, 'product')->create(['color_name' => 'Trắng']);
+        $white40 = ProductVariant::factory()->for($whiteColor, 'color')->create([
+            'size_value' => '40',
+            'size_numeric' => 40.0,
+        ]);
+        $white41 = ProductVariant::factory()->for($whiteColor, 'color')->create([
+            'size_value' => '41',
+            'size_numeric' => 41.0,
+        ]);
+
+        $black40Movement = $this->movement($black40, ['created_at' => now()->subMinutes(4)]);
+        $white40Movement = $this->movement($white40, ['created_at' => now()->subMinutes(3)]);
+        $black405Movement = $this->movement($black405, ['created_at' => now()->subMinutes(2)]);
+        $white41Movement = $this->movement($white41, ['created_at' => now()->subMinute()]);
+
+        $staff = User::factory()->staff()->create();
+
+        $size40Response = $this->actingAs($staff)
+            ->get(route('admin.products.show', ['product' => $product, 'size' => '40']))
+            ->assertOk();
+
+        $size40Response->assertViewHas('historySizes', ['40', '40.5', '41']);
+        $size40Response->assertViewHas('movements', function ($paginator) use ($black40Movement, $white40Movement): bool {
+            $ids = collect($paginator->items())->pluck('id')->all();
+
+            return $paginator->total() === 2
+                && in_array($black40Movement->id, $ids, true)
+                && in_array($white40Movement->id, $ids, true);
+        });
+
+        $intersectionResponse = $this->actingAs($staff)
+            ->get(route('admin.products.show', [
+                'product' => $product,
+                'color_id' => $blackColor->id,
+                'size' => '40',
+            ]))
+            ->assertOk();
+
+        $intersectionResponse->assertViewHas('movements', fn ($paginator): bool => $paginator->total() === 1
+            && $paginator->items()[0]->id === $black40Movement->id);
+
+        $emptyIntersection = $this->actingAs($staff)
+            ->get(route('admin.products.show', [
+                'product' => $product,
+                'color_id' => $blackColor->id,
+                'size' => '41',
+            ]))
+            ->assertOk();
+
+        $emptyIntersection->assertViewHas('movements', fn ($paginator): bool => $paginator->total() === 0)
+            ->assertSee('Không có biến động phù hợp với bộ lọc.');
+
+        // Backward-compatible ?variant_id= derives selectedColorId and selectedSize
+        $variantParamResponse = $this->actingAs($staff)
+            ->get(route('admin.products.show', ['product' => $product, 'variant_id' => $black405->id]))
+            ->assertOk();
+
+        $variantParamResponse->assertViewHas('selectedColorId', $blackColor->id)
+            ->assertViewHas('selectedSize', '40.5')
+            ->assertViewHas('movements', fn ($paginator): bool => $paginator->total() === 1
+                && $paginator->items()[0]->id === $black405Movement->id);
+
+        $this->assertNotNull($white41Movement->id);
+    }
+
+    public function test_activity_group_filtering_covers_all_groups_and_keeps_order_reserved_out_of_dispatch(): void
+    {
+        [$product, , $variant] = $this->productWithVariant();
+        $staff = User::factory()->staff()->create();
+
+        $importMovement = $this->movement($variant, ['action' => InventoryAction::ImportPosted]);
+        $dispatchMovement = $this->movement($variant, ['action' => InventoryAction::OrderDispatched]);
+        $returnMovement = $this->movement($variant, ['action' => InventoryAction::ShipmentReturnReceived]);
+        $writeOffMovement = $this->movement($variant, ['action' => InventoryAction::QuarantineWriteoff]);
+        $reservedMovement = $this->movement($variant, ['action' => InventoryAction::OrderReserved]);
+
+        $cases = [
+            'import' => [$importMovement->id],
+            'dispatch' => [$dispatchMovement->id],
+            'return' => [$returnMovement->id],
+            'write_off' => [$writeOffMovement->id],
+            'reservation' => [$reservedMovement->id],
+        ];
+
+        foreach ($cases as $group => $expectedIds) {
+            $response = $this->actingAs($staff)
+                ->get(route('admin.products.show', ['product' => $product, 'action_group' => $group]))
+                ->assertOk();
+
+            $response->assertViewHas('movements', function ($paginator) use ($expectedIds): bool {
+                $actualIds = collect($paginator->items())->pluck('id')->all();
+
+                return $paginator->total() === count($expectedIds) && $actualIds === $expectedIds;
+            });
+        }
+
+        // Empty action_group ("Tất cả") returns all 5 movements
+        $allResponse = $this->actingAs($staff)
+            ->get(route('admin.products.show', ['product' => $product, 'action_group' => '']))
+            ->assertOk();
+
+        $allResponse->assertViewHas('movements', fn ($paginator): bool => $paginator->total() === 5);
+    }
+
+    public function test_date_range_is_inclusive_of_end_day_and_rejects_invalid_range(): void
+    {
+        [$product, , $variant] = $this->productWithVariant();
+        $staff = User::factory()->staff()->create();
+        $tz = config('store.business_timezone');
+        $day = CarbonImmutable::parse('2026-10-15', $tz)->startOfDay();
+
+        $insideStart = $this->movement($variant, ['created_at' => $day->setTime(0, 0, 0)->utc()]);
+        $insideEnd = $this->movement($variant, ['created_at' => $day->setTime(23, 59, 59)->utc()]);
+        $outsideNextDay = $this->movement($variant, ['created_at' => $day->addDay()->setTime(0, 0, 0)->utc()]);
+
+        $validResponse = $this->actingAs($staff)
+            ->get(route('admin.products.show', [
+                'product' => $product,
+                'from' => '2026-10-15',
+                'to' => '2026-10-15',
+            ]))
+            ->assertOk();
+
+        $validResponse->assertViewHas('movements', function ($paginator) use ($insideStart, $insideEnd, $outsideNextDay): bool {
+            $ids = collect($paginator->items())->pluck('id')->all();
+
+            return $paginator->total() === 2
+                && in_array($insideStart->id, $ids, true)
+                && in_array($insideEnd->id, $ids, true)
+                && ! in_array($outsideNextDay->id, $ids, true);
+        });
+
+        $this->actingAs($staff)
+            ->from(route('admin.products.show', $product))
+            ->get(route('admin.products.show', [
+                'product' => $product,
+                'from' => '2026-10-16',
+                'to' => '2026-10-15',
+            ]))
+            ->assertSessionHasErrors(['to']);
+    }
+
+    public function test_staff_receives_zero_cost_in_html_and_ajax_and_simplified_toolbar_is_outside_results(): void
+    {
+        [$product, , $variant] = $this->productWithVariant();
+        $variant->forceFill(['stock_qty' => 2, 'average_cost' => '456.7890'])->save();
+        $movement = $this->movement($variant, [
+            'unit_cost_basis' => '456.7890',
+            'average_cost_before' => '0.0000',
+            'average_cost_after' => '456.7890',
+        ]);
+
+        $staff = User::factory()->staff()->create();
+        $url = route('admin.products.show', ['product' => $product, 'size' => $variant->size_value]);
+
+        foreach ([$this->actingAs($staff)->get($url), $this->actingAs($staff)->get($url, ['X-Requested-With' => 'XMLHttpRequest'])] as $response) {
+            $response->assertOk()
+                ->assertSee('#'.$movement->id)
+                ->assertSee('id="inventory-history-toolbar"', false)
+                ->assertSee('id="inventory-history-results"', false)
+                ->assertDontSee('Lọc thêm')
+                ->assertDontSee('movement-reference-type')
+                ->assertDontSee('456.7890')
+                ->assertDontSee('average_cost')
+                ->assertDontSee('unit_cost_basis')
+                ->assertDontSee('Đơn vị:');
+
+            $html = $response->getContent();
+            $this->assertLessThan(
+                strpos($html, 'id="inventory-history-results"'),
+                strpos($html, 'id="inventory-history-toolbar"')
+            );
+        }
+    }
+
     /** @return array{Product, ProductColor, ProductVariant} */
     private function productWithVariant(string $name = 'Giày kiểm tra'): array
     {

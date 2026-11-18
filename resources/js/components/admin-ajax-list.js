@@ -1,6 +1,8 @@
 export function adminAjaxList({ regionSelector = '#admin-list-region', toolbarSelector = '.bg-surface-card.mb-6' } = {}) {
     return {
         listLoading: false,
+        listError: null,
+        lastFailedUrl: null,
         listSeq: 0,
         listController: null,
 
@@ -11,8 +13,22 @@ export function adminAjaxList({ regionSelector = '#admin-list-region', toolbarSe
             });
         },
 
+        getFilterForm() {
+            const toolbar = document.querySelector(toolbarSelector);
+            if (toolbar) {
+                if (toolbar.matches('form')) {
+                    return toolbar;
+                }
+                const nestedForm = toolbar.querySelector('form[method="GET"], form');
+                if (nestedForm) {
+                    return nestedForm;
+                }
+            }
+            return document.querySelector('form[method="GET"]');
+        },
+
         syncSelectHighlights() {
-            const form = document.querySelector('form[method="GET"]');
+            const form = this.getFilterForm();
             if (!form) return;
             form.querySelectorAll('select[name]').forEach((el) => {
                 const isActive = el.value !== '';
@@ -50,13 +66,15 @@ export function adminAjaxList({ regionSelector = '#admin-list-region', toolbarSe
         },
 
         resetFilters(baseUrl, form) {
-            if (form) {
-                form.querySelectorAll('input[type="text"], input[type="search"], select').forEach((el) => {
+            const targetForm = form || this.getFilterForm();
+            if (targetForm) {
+                targetForm.querySelectorAll('input[type="text"], input[type="search"], input[type="date"], input[type="number"], select').forEach((el) => {
                     if (el.tagName === 'SELECT') {
                         el.selectedIndex = 0;
                     } else {
                         el.value = '';
                     }
+                    el.dispatchEvent(new Event('input', { bubbles: true }));
                 });
             }
             this.fetchList(baseUrl, { pushHistory: true, syncForm: false });
@@ -64,6 +82,12 @@ export function adminAjaxList({ regionSelector = '#admin-list-region', toolbarSe
 
         visitUrl(url) {
             this.fetchList(url, { pushHistory: true, syncForm: true });
+        },
+
+        retryLastFetch() {
+            if (this.lastFailedUrl) {
+                this.fetchList(this.lastFailedUrl, { pushHistory: false, syncForm: false });
+            }
         },
 
         handleRegionClick(event) {
@@ -77,14 +101,15 @@ export function adminAjaxList({ regionSelector = '#admin-list-region', toolbarSe
 
         syncFormFromUrl(urlStr) {
             const url = new URL(urlStr, window.location.origin);
-            const form = document.querySelector('form[method="GET"]');
+            const form = this.getFilterForm();
             if (!form) return;
             form.querySelectorAll('input[name], select[name]').forEach((el) => {
                 const name = el.getAttribute('name');
                 if (!name) return;
                 const val = url.searchParams.get(name) ?? '';
-                if (el.tagName === 'SELECT' || el.type === 'text' || el.type === 'search') {
+                if (el.tagName === 'SELECT' || el.type === 'text' || el.type === 'search' || el.type === 'date' || el.type === 'number') {
                     el.value = val;
+                    el.dispatchEvent(new Event('input', { bubbles: true }));
                 }
             });
         },
@@ -97,6 +122,8 @@ export function adminAjaxList({ regionSelector = '#admin-list-region', toolbarSe
             this.listController = controller;
             const seq = ++this.listSeq;
             this.listLoading = true;
+            this.listError = null;
+            this.lastFailedUrl = null;
 
             try {
                 if (pushHistory && window.location.href !== url) {
@@ -116,7 +143,12 @@ export function adminAjaxList({ regionSelector = '#admin-list-region', toolbarSe
                         Accept: 'text/html',
                     },
                 });
-                if (!response.ok || seq !== this.listSeq) return;
+                if (seq !== this.listSeq) return;
+                if (!response.ok) {
+                    this.listError = 'Không thể tải dữ liệu. Vui lòng thử lại.';
+                    this.lastFailedUrl = url;
+                    return;
+                }
 
                 if (response.redirected && response.url && response.url !== window.location.href) {
                     window.history.replaceState({}, '', response.url);
@@ -146,7 +178,8 @@ export function adminAjaxList({ regionSelector = '#admin-list-region', toolbarSe
                 }
             } catch (error) {
                 if (error?.name !== 'AbortError') {
-                    window.location.href = url;
+                    this.listError = 'Không thể kết nối máy chủ. Vui lòng thử lại.';
+                    this.lastFailedUrl = url;
                 }
             } finally {
                 if (seq === this.listSeq) {

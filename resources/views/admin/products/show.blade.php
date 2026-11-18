@@ -286,7 +286,7 @@
                                             'inline-flex rounded-lg border px-2.5 py-1.5 text-[11px] font-bold transition-colors focus:outline-none focus:ring-2 focus:ring-accent',
                                             'border-accent bg-accent text-accent-text' => $selectedVariant?->id === $variant->id,
                                             'border-border bg-surface text-accent hover:bg-border/40' => $selectedVariant?->id !== $variant->id,
-                                        ]) href="{{ route('admin.products.show', ['product' => $product, 'color_id' => $color->id, 'variant_id' => $variant->id]) }}#inventory-history-section"
+                                        ]) href="{{ route('admin.products.show', ['product' => $product, 'color_id' => $color->id, 'size' => $variant->size_value, 'variant_id' => $variant->id]) }}#inventory-history-section"
                                            @click.prevent="window.dispatchEvent(new CustomEvent('inventory-history:visit', { detail: { url: $el.href } }))"
                                            aria-label="Xem biến động kho SKU {{ $variant->sku }}">
                                             Xem biến động kho
@@ -311,32 +311,8 @@
 
     {{-- Khối 3: Biến động kho --}}
     @php
-        $variantFilterOptions = $historyColors->flatMap(function ($color) {
-            return $color->variants->map(function ($variant) use ($color) {
-                $statusSuffix = $variant->trashed()
-                    ? ' (Đã xóa)'
-                    : (! $variant->is_active ? ' (Ngừng bán)' : '');
-
-                return [
-                    'id' => $variant->id,
-                    'color_id' => $color->id,
-                    'color_name' => $color->color_name ?? 'Màu',
-                    'size_value' => $variant->size_value,
-                    'sku' => $variant->sku,
-                    'label' => 'Size '.$variant->size_value.' ('.$variant->sku.')'.$statusSuffix,
-                    'full_label' => ($color->color_name ?? 'Màu').' · Size '.$variant->size_value.' ('.$variant->sku.')'.$statusSuffix,
-                ];
-            });
-        })->values();
-
-        $variantsInScopeCount = $selectedColorId !== null
-            ? ($historyColors->firstWhere('id', $selectedColorId)?->variants->count() ?? 0)
-            : $historyColors->sum(fn ($c) => $c->variants->count());
-
         $diffIssues = array_values(array_filter($productReconciliationIssues, fn (array $issue): bool => $issue['observed_balance_diff']));
         $incompleteIssues = array_values(array_filter($productReconciliationIssues, fn (array $issue): bool => $issue['history_incomplete']));
-
-        $advancedFiltersOpen = request()->filled('reference_type') || request()->filled('reference_id');
         $resetHistoryUrl = route('admin.products.show', $product).'#inventory-history-section';
     @endphp
 
@@ -344,14 +320,158 @@
         id="inventory-history-section"
         class="space-y-4"
         aria-labelledby="inventory-history-title"
-        x-data="adminAjaxList({ regionSelector: '#inventory-history-region', toolbarSelector: '#inventory-history-toolbar' })"
+        x-data="adminAjaxList({ regionSelector: '#inventory-history-results', toolbarSelector: '#inventory-history-toolbar' })"
         @inventory-history:visit.window="visitUrl($event.detail.url); $el.scrollIntoView({ behavior: 'smooth', block: 'start' })"
     >
-        <div id="inventory-history-region" @click="handleRegionClick($event)" :class="listLoading ? 'opacity-60 transition-opacity' : ''">
+        {{-- Header --}}
+        <div class="flex flex-wrap items-center justify-between gap-2.5">
+            <h2 id="inventory-history-title" class="text-base font-extrabold text-main">Biến động kho</h2>
+            <span x-cloak x-show="listLoading" role="status" class="inline-flex items-center gap-1.5 text-xs font-semibold text-muted">
+                <svg class="h-3.5 w-3.5 animate-spin text-accent" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                </svg>
+                Đang tải...
+            </span>
+        </div>
+
+        {{-- Filters (OUTSIDE #inventory-history-results so the form is preserved across AJAX updates) --}}
+        <form
+            id="inventory-history-toolbar"
+            x-ref="historyToolbar"
+            method="GET"
+            action="{{ route('admin.products.show', $product) }}#inventory-history-section"
+            @submit.prevent="if (!dateRangeError) submitFilter($el)"
+            x-data="{
+                fromDate: '{{ request('from', '') }}',
+                toDate: '{{ request('to', '') }}',
+                get dateRangeError() {
+                    if (this.fromDate && this.toDate && this.toDate < this.fromDate) {
+                        return 'Đến ngày phải lớn hơn hoặc bằng Từ ngày.';
+                    }
+                    return null;
+                }
+            }"
+            class="space-y-3 rounded-2xl border border-border bg-surface-card p-4 shadow-sm"
+            aria-label="Lọc biến động kho"
+        >
+            <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
+                <div class="min-w-0 space-y-1">
+                    <label for="movement-color" class="text-[11px] font-bold text-main">Màu</label>
+                    <select
+                        id="movement-color"
+                        name="color_id"
+                        @change="if (!dateRangeError) submitFilter($refs.historyToolbar)"
+                        class="min-h-10 w-full rounded-xl border border-border bg-bg px-3 text-xs text-main focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
+                    >
+                        <option value="">Tất cả màu</option>
+                        @foreach ($historyColors as $historyColor)
+                            <option value="{{ $historyColor->id }}" @selected($selectedColorId === $historyColor->id)>
+                                {{ $historyColor->color_name }}@if ($historyColor->trashed()) (Đã xóa)@elseif (! $historyColor->is_active) (Ngừng bán)@endif
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div class="min-w-0 space-y-1">
+                    <label for="movement-size" class="text-[11px] font-bold text-main">Size</label>
+                    <select
+                        id="movement-size"
+                        name="size"
+                        @change="if (!dateRangeError) submitFilter($refs.historyToolbar)"
+                        class="min-h-10 w-full rounded-xl border border-border bg-bg px-3 text-xs text-main focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
+                    >
+                        <option value="">Tất cả size</option>
+                        @foreach ($historySizes as $sizeValue)
+                            <option value="{{ $sizeValue }}" @selected($selectedSize === $sizeValue)>
+                                Size {{ $sizeValue }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div class="min-w-0 space-y-1">
+                    <label for="movement-from" class="text-[11px] font-bold text-main">Từ ngày</label>
+                    <input
+                        id="movement-from"
+                        type="date"
+                        name="from"
+                        x-model="fromDate"
+                        @change="if (!dateRangeError) submitFilter($refs.historyToolbar)"
+                        value="{{ request('from') }}"
+                        class="min-h-10 w-full rounded-xl border border-border bg-bg px-3 text-xs text-main focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
+                    >
+                </div>
+
+                <div class="min-w-0 space-y-1">
+                    <label for="movement-to" class="text-[11px] font-bold text-main">Đến ngày</label>
+                    <input
+                        id="movement-to"
+                        type="date"
+                        name="to"
+                        x-model="toDate"
+                        @change="if (!dateRangeError) submitFilter($refs.historyToolbar)"
+                        value="{{ request('to') }}"
+                        class="min-h-10 w-full rounded-xl border border-border bg-bg px-3 text-xs text-main focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
+                    >
+                </div>
+
+                <div class="min-w-0 space-y-1">
+                    <label for="movement-action-group" class="text-[11px] font-bold text-main">Hoạt động</label>
+                    <select
+                        id="movement-action-group"
+                        name="action_group"
+                        @change="if (!dateRangeError) submitFilter($refs.historyToolbar)"
+                        class="min-h-10 w-full rounded-xl border border-border bg-bg px-3 text-xs text-main focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
+                    >
+                        <option value="">Tất cả</option>
+                        @foreach ($actionGroups as $groupKey => $group)
+                            <option value="{{ $groupKey }}" @selected(request('action_group') === $groupKey)>{{ $group['label'] }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div class="flex flex-wrap items-end gap-2">
+                    <button type="submit" class="min-h-10 rounded-xl bg-accent px-4 text-xs font-bold text-accent-text transition-colors hover:bg-accent-hover focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2">
+                        Lọc
+                    </button>
+                    <a
+                        href="{{ $resetHistoryUrl }}"
+                        @click.prevent="resetFilters('{{ $resetHistoryUrl }}', $el.closest('form'))"
+                        class="inline-flex min-h-10 items-center rounded-xl border border-border px-3 text-xs font-bold text-muted hover:bg-surface"
+                    >
+                        Xóa lọc
+                    </a>
+                </div>
+            </div>
+
+            <p x-cloak x-show="dateRangeError" x-text="dateRangeError" role="alert" class="text-xs font-semibold text-error"></p>
+            @error('to')
+                <p role="alert" class="text-xs font-semibold text-error">{{ $message }}</p>
+            @enderror
+        </form>
+
+        {{-- Inline AJAX Error Banner --}}
+        <div
+            x-cloak
+            x-show="listError"
+            role="alert"
+            class="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-error/30 bg-error-bg px-4 py-3 text-xs text-error-text"
+        >
+            <span x-text="listError"></span>
+            <button
+                type="button"
+                @click="retryLastFetch()"
+                class="rounded-xl border border-error/40 bg-surface-card px-3 py-1.5 font-bold text-error transition-colors hover:bg-error/10"
+            >
+                Thử lại
+            </button>
+        </div>
+
+        <div id="inventory-history-results" @click="handleRegionClick($event)" :class="listLoading ? 'opacity-60 transition-opacity' : ''">
             <div class="space-y-4">
-                {{-- Header + Reconciliation Pill --}}
+                {{-- Reconciliation Pill --}}
                 <div class="flex flex-wrap items-center gap-2.5">
-                    <h2 id="inventory-history-title" class="text-base font-extrabold text-main">Biến động kho</h2>
                     @if ($selectedVariant)
                         @unless ($reconciliation['history_incomplete'] || $reconciliation['observed_balance_diff'])
                             <span role="status" class="inline-flex items-center gap-1.5 rounded-full border border-success/30 bg-success-bg px-3 py-0.5 text-[11px] font-bold text-success">
@@ -387,6 +507,15 @@
                     @endif
 
                     {{-- Balance Summary for Selected Variant --}}
+                    <div class="flex flex-wrap items-center gap-2 text-xs text-muted">
+                        <span class="font-bold text-main">SKU đang xem:</span>
+                        <span class="font-mono font-semibold text-main">{{ $selectedVariant->color?->color_name ?? 'Màu' }} · Size {{ $selectedVariant->size_value }} · {{ $selectedVariant->sku }}</span>
+                        @if ($selectedVariant->trashed())
+                            <span class="inline-flex items-center rounded-full border border-error/30 bg-error-bg px-2 py-0.5 text-[10px] font-bold text-error">Đã xóa mềm</span>
+                        @elseif (! $selectedVariant->is_active)
+                            <span class="inline-flex items-center rounded-full border border-border bg-muted/15 px-2 py-0.5 text-[10px] font-bold text-muted">Ngừng bán</span>
+                        @endif
+                    </div>
                     <div class="grid grid-cols-1 gap-3 sm:grid-cols-3">
                         <div class="rounded-xl border border-border bg-surface-card p-3.5 shadow-sm">
                             <span class="inline-flex items-center text-[11px] font-semibold text-muted">
@@ -439,138 +568,6 @@
                         @endif
                     </div>
                 @endif
-
-                {{-- Filters --}}
-                <form
-                    id="inventory-history-toolbar"
-                    method="GET"
-                    action="{{ route('admin.products.show', $product) }}#inventory-history-section"
-                    @submit.prevent="submitFilter($el)"
-                    x-data="{
-                        open: {{ $advancedFiltersOpen ? 'true' : 'false' }},
-                        selectedColorId: '{{ $selectedColorId ?? '' }}',
-                        selectedVariantId: '{{ $selectedVariant?->id ?? '' }}',
-                        allVariants: @js($variantFilterOptions),
-                        get filteredVariants() {
-                            if (!this.selectedColorId) return this.allVariants;
-                            return this.allVariants.filter(v => String(v.color_id) === String(this.selectedColorId));
-                        },
-                        onColorChange() {
-                            const stillValid = this.filteredVariants.some(v => String(v.id) === String(this.selectedVariantId));
-                            if (!stillValid) {
-                                this.selectedVariantId = '';
-                            }
-                        },
-                    }"
-                    class="space-y-3 rounded-2xl border border-border bg-surface-card p-4 shadow-sm"
-                    aria-label="Lọc biến động kho"
-                >
-                    <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
-                        <div class="space-y-1">
-                            <label for="movement-color" class="text-[11px] font-bold text-main">Màu</label>
-                            <select
-                                id="movement-color"
-                                name="color_id"
-                                x-model="selectedColorId"
-                                @change="onColorChange()"
-                                class="min-h-10 w-full rounded-xl border border-border bg-bg px-3 text-xs text-main focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
-                            >
-                                <option value="">Tất cả màu</option>
-                                @foreach ($historyColors as $historyColor)
-                                    <option value="{{ $historyColor->id }}" @selected($selectedColorId === $historyColor->id)>
-                                        {{ $historyColor->color_name }}@if ($historyColor->trashed()) (Đã xóa)@elseif (! $historyColor->is_active) (Ngừng bán)@endif
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
-
-                        <div class="space-y-1">
-                            <label for="movement-variant" class="text-[11px] font-bold text-main">Size</label>
-                            <select
-                                id="movement-variant"
-                                name="variant_id"
-                                x-model="selectedVariantId"
-                                x-effect="
-                                    Array.from($el.options).forEach(opt => {
-                                        if (!opt.value) return;
-                                        const match = !selectedColorId || opt.dataset.colorId === String(selectedColorId);
-                                        opt.hidden = !match;
-                                        opt.disabled = !match;
-                                    });
-                                "
-                                class="min-h-10 w-full rounded-xl border border-border bg-bg px-3 text-xs text-main focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20"
-                            >
-                                <option value="">Tất cả size</option>
-                                @foreach ($variantFilterOptions as $opt)
-                                    <option
-                                        value="{{ $opt['id'] }}"
-                                        data-color-id="{{ $opt['color_id'] }}"
-                                        @selected($selectedVariant?->id === $opt['id'])
-                                    >
-                                        {{ $selectedColorId !== null ? $opt['label'] : $opt['full_label'] }}
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
-
-                        <div class="space-y-1">
-                            <label for="movement-from" class="text-[11px] font-bold text-main">Từ ngày</label>
-                            <input id="movement-from" type="date" name="from" value="{{ request('from') }}" class="min-h-10 w-full rounded-xl border border-border bg-bg px-3 text-xs text-main focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20">
-                        </div>
-                        <div class="space-y-1">
-                            <label for="movement-to" class="text-[11px] font-bold text-main">Đến ngày</label>
-                            <input id="movement-to" type="date" name="to" value="{{ request('to') }}" class="min-h-10 w-full rounded-xl border border-border bg-bg px-3 text-xs text-main focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20">
-                        </div>
-                        <div class="space-y-1">
-                            <label for="movement-action" class="text-[11px] font-bold text-main">Hoạt động</label>
-                            <select id="movement-action" name="action" class="min-h-10 w-full rounded-xl border border-border bg-bg px-3 text-xs text-main focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20">
-                                <option value="">Tất cả hoạt động</option>
-                                @foreach ($actions as $action)
-                                    <option value="{{ $action->value }}" @selected(request('action') === $action->value)>{{ $action->label() }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="flex items-end gap-2">
-                            <button type="submit" class="min-h-10 rounded-xl bg-accent px-4 text-xs font-bold text-accent-text transition-colors hover:bg-accent-hover focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2">
-                                Lọc
-                            </button>
-                            <a
-                                href="{{ $resetHistoryUrl }}"
-                                @click.prevent="visitUrl('{{ $resetHistoryUrl }}')"
-                                class="inline-flex min-h-10 items-center rounded-xl border border-border px-3 text-xs font-bold text-muted hover:bg-surface"
-                            >
-                                Xóa lọc
-                            </a>
-                            <button
-                                type="button"
-                                @click="open = !open"
-                                :aria-expanded="open ? 'true' : 'false'"
-                                class="ml-auto inline-flex min-h-10 items-center gap-1 rounded-xl border border-border px-3 text-xs font-bold text-main hover:bg-surface"
-                            >
-                                <span>Lọc thêm</span>
-                                <svg class="h-3.5 w-3.5 transition-transform" :class="open ? 'rotate-180' : ''" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                    <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
-
-                    <div x-cloak x-show="open" x-transition.opacity.duration.150ms class="grid gap-3 border-t border-border/70 pt-3 sm:grid-cols-2">
-                        <div class="space-y-1">
-                            <label for="movement-reference-type" class="text-[11px] font-bold text-main">Loại chứng từ</label>
-                            <select id="movement-reference-type" name="reference_type" class="min-h-10 w-full rounded-xl border border-border bg-bg px-3 text-xs text-main focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20">
-                                <option value="">Tất cả chứng từ</option>
-                                @foreach ($referenceTypes as $referenceType)
-                                    <option value="{{ $referenceType->value }}" @selected(request('reference_type') === $referenceType->value)>{{ $referenceType->label() }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="space-y-1">
-                            <label for="movement-reference-id" class="text-[11px] font-bold text-main">Mã chứng từ</label>
-                            <input id="movement-reference-id" type="number" min="1" name="reference_id" value="{{ request('reference_id') }}" class="min-h-10 w-full rounded-xl border border-border bg-bg px-3 text-xs text-main focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20">
-                        </div>
-                    </div>
-                </form>
 
                 {{-- Movements: Desktop 4-column table + Mobile cards --}}
                 <div class="overflow-hidden rounded-2xl border border-border bg-surface-card shadow-sm">

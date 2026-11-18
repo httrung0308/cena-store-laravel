@@ -189,12 +189,16 @@ class ProductController extends Controller
     {
         $filters = $request->validate([
             'color_id' => ['nullable', 'integer', 'min:1'],
+            'size' => ['nullable', 'string', 'max:20'],
             'variant_id' => ['nullable', 'integer', 'min:1'],
             'from' => ['nullable', 'date_format:Y-m-d'],
-            'to' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:from'],
+            'to' => ['nullable', 'date_format:Y-m-d', Rule::when($request->filled('from'), ['after_or_equal:from'])],
+            'action_group' => ['nullable', Rule::in(array_keys(InventoryHistoryQueryService::actionGroups()))],
             'action' => ['nullable', Rule::enum(InventoryAction::class)],
             'reference_type' => ['nullable', Rule::enum(InventoryReferenceType::class)],
             'reference_id' => ['nullable', 'integer', 'min:1'],
+        ], [
+            'to.after_or_equal' => 'Đến ngày phải lớn hơn hoặc bằng Từ ngày.',
         ]);
 
         $product->load([
@@ -242,7 +246,9 @@ class ProductController extends Controller
 
         $historyColors = $historyQueryService->productColorsWithVariants($product, $canViewCost);
         $historyVariants = $historyColors->flatMap(fn ($color) => $color->variants);
+        $historySizes = $historyQueryService->productSizeValues($product);
         $selectedColorId = null;
+        $selectedSize = null;
         $selectedVariant = null;
 
         if (isset($filters['color_id'])) {
@@ -251,25 +257,38 @@ class ProductController extends Controller
             $selectedColorId = $selectedColor->id;
         }
 
+        if (isset($filters['size']) && $filters['size'] !== '') {
+            $selectedSize = (string) $filters['size'];
+        }
+
         if (isset($filters['variant_id'])) {
-            $selectedVariant = $historyVariants->firstWhere('id', (int) $filters['variant_id']);
-            abort_if($selectedVariant === null, 404);
-            $selectedVariant->loadMissing([
+            $variantFromParam = $historyVariants->firstWhere('id', (int) $filters['variant_id']);
+            abort_if($variantFromParam === null, 404);
+            $variantFromParam->loadMissing([
                 'color' => fn ($q) => $q->withTrashed()->select(['id', 'color_name']),
             ]);
 
             if ($selectedColorId === null) {
-                $selectedColorId = $selectedVariant->product_color_id;
-            } elseif ($selectedVariant->product_color_id !== $selectedColorId) {
-                $selectedVariant = null;
+                $selectedColorId = $variantFromParam->product_color_id;
+            }
+            if ($selectedSize === null) {
+                $selectedSize = $variantFromParam->size_value;
+            }
+
+            if ($selectedColorId === $variantFromParam->product_color_id && $selectedSize === $variantFromParam->size_value) {
+                $selectedVariant = $variantFromParam;
             }
         }
 
-        $movements = $historyQueryService->movementsForProduct($product, $selectedColorId, $selectedVariant, $filters, $canViewCost);
+        $movements = $historyQueryService->movementsForProduct($product, $selectedColorId, $selectedVariant, $filters, $canViewCost, $selectedSize);
         $reconciliation = $selectedVariant === null ? null : $historyQueryService->reconciliation($selectedVariant);
-        $variantsToReconcile = $selectedColorId !== null
-            ? $historyVariants->where('product_color_id', $selectedColorId)
-            : $historyVariants;
+        $variantsToReconcile = $historyVariants;
+        if ($selectedColorId !== null) {
+            $variantsToReconcile = $variantsToReconcile->where('product_color_id', $selectedColorId);
+        }
+        if ($selectedSize !== null) {
+            $variantsToReconcile = $variantsToReconcile->where('size_value', $selectedSize);
+        }
         $productReconciliationIssues = $selectedVariant === null
             ? $historyQueryService->reconciliationIssuesForVariants($variantsToReconcile, $historyColors)
             : [];
@@ -282,14 +301,16 @@ class ProductController extends Controller
             'blockingReasons' => $blockingReasons,
             'totals' => $totals,
             'historyColors' => $historyColors,
+            'historySizes' => $historySizes,
             'selectedColorId' => $selectedColorId,
+            'selectedSize' => $selectedSize,
             'selectedVariant' => $selectedVariant,
+            'variantsInScopeCount' => $variantsToReconcile->count(),
             'movements' => $movements,
             'reconciliation' => $reconciliation,
             'productReconciliationIssues' => $productReconciliationIssues,
             'documentUrls' => $documentUrls,
-            'actions' => InventoryAction::cases(),
-            'referenceTypes' => InventoryReferenceType::cases(),
+            'actionGroups' => InventoryHistoryQueryService::actionGroups(),
         ]);
     }
 

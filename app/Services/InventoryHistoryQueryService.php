@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\InventoryAction;
 use App\Enums\InventoryReferenceType;
 use App\Models\InventoryMovement;
 use App\Models\Product;
@@ -52,6 +53,72 @@ final class InventoryHistoryQueryService
         return $this->movementsForProduct($product ?? new Product, $variant->product_color_id, $variant, $filters, $includeCost);
     }
 
+    /** @return array<string, array{label: string, actions: list<InventoryAction>}> */
+    public static function actionGroups(): array
+    {
+        return [
+            'import' => [
+                'label' => 'Nhập kho',
+                'actions' => [
+                    InventoryAction::ImportPosted,
+                    InventoryAction::ManualAdjustIn,
+                ],
+            ],
+            'dispatch' => [
+                'label' => 'Xuất kho',
+                'actions' => [
+                    InventoryAction::OrderDispatched,
+                    InventoryAction::ExchangeCompletedOut,
+                    InventoryAction::ManualAdjustOut,
+                ],
+            ],
+            'return' => [
+                'label' => 'Hàng hoàn',
+                'actions' => [
+                    InventoryAction::ShipmentReturnReceived,
+                    InventoryAction::ReturnRestocked,
+                    InventoryAction::ExchangeOldReceived,
+                    InventoryAction::ExchangeCompletedIn,
+                    InventoryAction::DefectReceived,
+                ],
+            ],
+            'write_off' => [
+                'label' => 'Ghi hỏng',
+                'actions' => [
+                    InventoryAction::ReturnWrittenOff,
+                    InventoryAction::QuarantineWriteoff,
+                ],
+            ],
+            'reservation' => [
+                'label' => 'Giữ / trả hàng cho đơn',
+                'actions' => [
+                    InventoryAction::OrderReserved,
+                    InventoryAction::OrderReleased,
+                    InventoryAction::ExchangeReserved,
+                    InventoryAction::ExchangeReleased,
+                ],
+            ],
+        ];
+    }
+
+    /** @return list<string> */
+    public function productSizeValues(Product $product): array
+    {
+        return ProductVariant::withTrashed()
+            ->whereIn(
+                'product_color_id',
+                ProductColor::withTrashed()->where('product_id', $product->id)->select('id')
+            )
+            ->select('size_value')
+            ->selectRaw('MIN(size_numeric) as min_size_numeric')
+            ->groupBy('size_value')
+            ->orderBy('min_size_numeric')
+            ->orderBy('size_value')
+            ->pluck('size_value')
+            ->values()
+            ->all();
+    }
+
     /** @param array<string, mixed> $filters */
     public function movementsForProduct(
         Product $product,
@@ -59,6 +126,7 @@ final class InventoryHistoryQueryService
         ?ProductVariant $selectedVariant,
         array $filters,
         bool $includeCost = false,
+        ?string $sizeValue = null,
     ): LengthAwarePaginator {
         $query = InventoryMovement::query()
             ->with([
@@ -67,23 +135,27 @@ final class InventoryHistoryQueryService
                 'variant.color' => fn ($q) => $q->withTrashed()->select(['id', 'color_name']),
             ]);
 
+        $effectiveSize = $sizeValue ?? (isset($filters['size']) && $filters['size'] !== '' ? (string) $filters['size'] : null);
+
         if ($selectedVariant !== null) {
             $query->where('variant_id', $selectedVariant->id);
-        } elseif ($colorId !== null) {
-            $query->whereIn(
-                'variant_id',
-                ProductVariant::withTrashed()->where('product_color_id', $colorId)->select('id')
-            );
         } else {
-            $query->whereIn(
-                'variant_id',
-                ProductVariant::withTrashed()
-                    ->whereIn(
-                        'product_color_id',
-                        ProductColor::withTrashed()->where('product_id', $product->id)->select('id')
-                    )
-                    ->select('id')
-            );
+            $variantQuery = ProductVariant::withTrashed()->select('id');
+
+            if ($colorId !== null) {
+                $variantQuery->where('product_color_id', $colorId);
+            } else {
+                $variantQuery->whereIn(
+                    'product_color_id',
+                    ProductColor::withTrashed()->where('product_id', $product->id)->select('id')
+                );
+            }
+
+            if ($effectiveSize !== null) {
+                $variantQuery->where('size_value', $effectiveSize);
+            }
+
+            $query->whereIn('variant_id', $variantQuery);
         }
 
         if (! $includeCost) {
@@ -96,17 +168,27 @@ final class InventoryHistoryQueryService
             ]);
         }
 
-        if (isset($filters['from'])) {
+        if (isset($filters['from']) && $filters['from'] !== '') {
             $from = CarbonImmutable::parse($filters['from'], config('store.business_timezone'))->startOfDay()->utc();
             $query->where('created_at', '>=', $from);
         }
 
-        if (isset($filters['to'])) {
+        if (isset($filters['to']) && $filters['to'] !== '') {
             $to = CarbonImmutable::parse($filters['to'], config('store.business_timezone'))->startOfDay()->addDay()->utc();
             $query->where('created_at', '<', $to);
         }
 
-        if (isset($filters['action'])) {
+        if (isset($filters['action_group']) && $filters['action_group'] !== '') {
+            $group = self::actionGroups()[(string) $filters['action_group']] ?? null;
+            if ($group !== null) {
+                $query->whereIn(
+                    'action',
+                    array_map(fn (InventoryAction $action): string => $action->value, $group['actions'])
+                );
+            }
+        }
+
+        if (isset($filters['action']) && $filters['action'] !== '') {
             $query->where('action', $filters['action']);
         }
 

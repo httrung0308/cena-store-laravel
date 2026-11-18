@@ -10,6 +10,7 @@ use App\Exceptions\DomainException;
 use App\Models\Order;
 use App\Models\OrderItemUnit;
 use App\Models\Product;
+use App\Models\ProductImage;
 use App\Models\Review;
 use App\Models\User;
 use App\Support\BusinessClock;
@@ -163,7 +164,7 @@ final class ReviewService
      *
      * @return array{
      *     status: 'guest'|'admin'|'can_review'|'already_reviewed'|'pending_delivery'|'not_purchased',
-     *     pending_units: list<array{unit_id: int, order_code: string, color_name: string, size_value: string}>,
+     *     pending_units: list<array{unit_id: int, order_id: int, order_code: string, color_id: int, color_name: string, size_value: string, quantity: int, delivered_at: ?string, thumbnail_url: ?string}>,
      *     reviewed_units: list<array{unit_id: int, order_code: string, color_name: string, size_value: string, rating: string, comment: string, is_visible: bool}>,
      *     pending_order: ?array{order_code: string, order_url: string}
      * }
@@ -197,9 +198,14 @@ final class ReviewService
             ->orderBy('u.unit_no')
             ->get([
                 'u.id as unit_id',
+                'u.unit_no',
+                'o.id as order_id',
                 'o.order_code',
                 'o.order_status',
                 'o.payment_status',
+                'o.delivered_at',
+                'o.created_at',
+                'c.id as color_id',
                 'c.color_name',
                 'oi.size_value_snapshot',
                 'r.id as review_id',
@@ -208,7 +214,24 @@ final class ReviewService
                 'r.is_visible as review_is_visible',
             ]);
 
-        $pendingUnits = [];
+        $colorIds = $units->pluck('color_id')->filter()->unique()->map(fn ($id) => (int) $id)->values()->all();
+        $thumbnailsByColor = [];
+        if ($colorIds !== []) {
+            $images = ProductImage::query()
+                ->whereIn('product_color_id', $colorIds)
+                ->orderByDesc('is_thumbnail')
+                ->orderBy('display_order')
+                ->orderBy('id')
+                ->get();
+
+            foreach ($images as $image) {
+                if (! isset($thumbnailsByColor[$image->product_color_id])) {
+                    $thumbnailsByColor[$image->product_color_id] = $image->thumbnailUrl();
+                }
+            }
+        }
+
+        $pendingGroups = [];
         $reviewedUnits = [];
         $pendingOrder = null;
 
@@ -228,12 +251,22 @@ final class ReviewService
             }
 
             if ($row->review_id === null) {
-                $pendingUnits[] = [
-                    'unit_id' => (int) $row->unit_id,
-                    'order_code' => $row->order_code,
-                    'color_name' => $row->color_name,
-                    'size_value' => $row->size_value_snapshot,
-                ];
+                $groupKey = $row->order_id.'|'.$row->color_name.'|'.$row->size_value_snapshot;
+                if (! isset($pendingGroups[$groupKey])) {
+                    $pendingGroups[$groupKey] = [
+                        'unit_id' => (int) $row->unit_id,
+                        'order_id' => (int) $row->order_id,
+                        'order_code' => $row->order_code,
+                        'color_id' => (int) $row->color_id,
+                        'color_name' => $row->color_name,
+                        'size_value' => $row->size_value_snapshot,
+                        'quantity' => 1,
+                        'delivered_at' => $row->delivered_at ?? $row->created_at,
+                        'thumbnail_url' => $thumbnailsByColor[(int) $row->color_id] ?? null,
+                    ];
+                } else {
+                    $pendingGroups[$groupKey]['quantity']++;
+                }
             } else {
                 $reviewedUnits[] = [
                     'unit_id' => (int) $row->unit_id,
@@ -246,6 +279,8 @@ final class ReviewService
                 ];
             }
         }
+
+        $pendingUnits = array_values($pendingGroups);
 
         if ($pendingUnits !== []) {
             $status = 'can_review';

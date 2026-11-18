@@ -21,6 +21,7 @@ import { passwordField } from './components/password-field';
 import { productFormWorkspace } from './components/product-form-workspace';
 import { productImages } from './components/product-images';
 import { reportCharts } from './components/report-charts';
+import { starRating } from './components/star-rating';
 import { toastsController } from './components/toasts';
 import { variantPicker } from './components/variant-picker';
 
@@ -44,6 +45,7 @@ Alpine.data('passwordField', passwordField);
 Alpine.data('productFormWorkspace', productFormWorkspace);
 Alpine.data('productImages', productImages);
 Alpine.data('reportCharts', reportCharts);
+Alpine.data('starRating', starRating);
 Alpine.data('toastsController', toastsController);
 Alpine.data('variantPicker', variantPicker);
 

@@ -194,19 +194,43 @@
             </div>
         @endif
 
-        <div class="grid gap-8 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)] items-start">
-            {{-- Left Column: Aggregate Summary & Customer Write/Edit State --}}
+        @php
+            $hasReviewFormState = $errors->has('rating')
+                || $errors->has('comment')
+                || $errors->has('unit_id')
+                || old('comment') !== null
+                || old('rating') !== null
+                || old('unit_id') !== null;
+            $selectedUnitId = (int) (old('unit_id') ?: ($pendingUnits[0]['unit_id'] ?? ($reviewedUnits[0]['unit_id'] ?? 0)));
+            $businessTz = (string) config('store.business_timezone');
+        @endphp
+
+        <div class="grid gap-8 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)] items-start"
+            x-data="{
+                formOpen: {{ $hasReviewFormState ? 'true' : 'false' }},
+                submitting: false,
+                selectedUnit: @js($selectedUnitId > 0 ? $selectedUnitId : null),
+                init() {
+                    if (@js($reviewStatus === 'can_review') && window.location.hash === '#product-reviews') {
+                        this.formOpen = true;
+                    }
+                },
+            }"
+            x-on:hashchange.window="if (@js($reviewStatus === 'can_review') && window.location.hash === '#product-reviews') { formOpen = true }">
+            {{-- Left Column: Aggregate Summary & Customer Write/Edit Trigger --}}
             <div class="space-y-4">
                 <div class="rounded-2xl border border-border bg-surface-card p-5 space-y-4">
-                    @if ($reviewTotal > 0)
-                        <div class="flex items-center gap-4">
-                            <span class="font-mono text-4xl font-extrabold text-main">{{ number_format($reviewAverage, 1, ',', '.') }}</span>
-                            <div>
-                                <x-reviews.stars :rating="$reviewAverage" />
-                                <p class="mt-1 text-xs text-muted">Trên tổng số {{ $reviewTotal }} đánh giá hiển thị</p>
-                            </div>
+                    <div class="flex items-center gap-4">
+                        <span class="font-mono text-4xl font-extrabold text-main">{{ number_format($reviewAverage, 1, ',', '.') }}</span>
+                        <div>
+                            <x-reviews.stars :rating="$reviewAverage" />
+                            <p class="mt-1 text-xs text-muted">
+                                {{ $reviewTotal > 0 ? "Trên tổng số {$reviewTotal} đánh giá hiển thị" : '0 đánh giá hiển thị' }}
+                            </p>
                         </div>
+                    </div>
 
+                    @if ($reviewTotal > 0)
                         <div class="space-y-2 border-t border-border/70 pt-4">
                             @for ($star = 5; $star >= 1; $star--)
                                 @php
@@ -224,83 +248,32 @@
                                 </a>
                             @endfor
                         </div>
-                    @else
-                        <div class="space-y-1.5">
-                            <p class="text-sm font-bold text-main">Chưa có đánh giá công khai</p>
-                            <p class="text-xs leading-relaxed text-muted">Sản phẩm này chưa có đánh giá nào được hiển thị.</p>
-                        </div>
                     @endif
                 </div>
 
                 {{-- Customer Review Action / Eligibility Status --}}
-                <div class="rounded-2xl border border-border bg-surface-card p-5 space-y-3"
-                    x-data="{
-                        formOpen: {{ $errors->has('rating') || $errors->has('comment') || $errors->has('unit_id') ? 'true' : 'false' }},
-                        submitting: false,
-                        selectedUnit: @js(old('unit_id') ?? ($pendingUnits[0]['unit_id'] ?? ($reviewedUnits[0]['unit_id'] ?? null))),
-                    }">
+                <div class="rounded-2xl border border-border bg-surface-card p-5 space-y-3">
                     @if ($reviewStatus === 'can_review')
-                        <div class="space-y-2">
+                        <div class="space-y-2.5">
                             <p class="text-xs font-bold text-main">Bạn đã nhận và thanh toán sản phẩm này</p>
-                            <p class="text-xs text-muted">Có {{ count($pendingUnits) }} đôi đang chờ bạn đánh giá.</p>
+                            <p class="text-xs text-muted">
+                                {{ count($pendingUnits) === 1 ? 'Bạn có 1 lựa chọn mua hàng sẵn sàng để đánh giá.' : 'Có '.count($pendingUnits).' lựa chọn mua hàng đang chờ bạn đánh giá.' }}
+                            </p>
                             <button type="button"
                                 x-on:click="formOpen = !formOpen"
                                 :aria-expanded="formOpen.toString()"
-                                class="btn w-full py-2.5 text-xs">
-                                <span x-text="formOpen ? 'Thu gọn biểu mẫu' : 'Viết đánh giá'">Viết đánh giá</span>
+                                :class="formOpen ? 'btn-secondary px-3.5 py-2 text-xs' : 'btn w-full py-2.5 text-xs'">
+                                <span x-text="formOpen ? 'Đóng' : 'Viết đánh giá'">Viết đánh giá</span>
                             </button>
                         </div>
-                        <form x-cloak
-                            x-show="formOpen"
-                            method="POST"
-                            action="{{ route('account.reviews.store') }}"
-                            x-on:submit="if (submitting) { $event.preventDefault(); return false; } submitting = true"
-                            class="space-y-3 border-t border-border pt-3">
-                            @csrf
-                            <div>
-                                <label for="review-unit-select" class="mb-1 block text-xs font-semibold text-main">Đôi giày đã nhận</label>
-                                <select id="review-unit-select" name="unit_id" class="input w-full py-2 text-xs">
-                                    @foreach ($pendingUnits as $u)
-                                        <option value="{{ $u['unit_id'] }}" @selected((int) old('unit_id') === $u['unit_id'])>
-                                            Đơn {{ $u['order_code'] }} · {{ $u['color_name'] }} · Size {{ $u['size_value'] }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <div>
-                                <label for="review-rating-select" class="mb-1 block text-xs font-semibold text-main">Mức đánh giá</label>
-                                <select id="review-rating-select" name="rating" class="input w-full py-2 text-xs">
-                                    @foreach (array_reverse(App\Http\Requests\Account\ReviewRequest::RATINGS) as $val)
-                                        <option value="{{ $val }}" @selected(old('rating', '5.0') === $val)>
-                                            {{ rtrim(rtrim(str_replace('.', ',', $val), '0'), ',') }} sao
-                                        </option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <div>
-                                <label for="review-comment-input" class="mb-1 block text-xs font-semibold text-main">Nhận xét (10–2000 ký tự)</label>
-                                <textarea id="review-comment-input"
-                                    name="comment"
-                                    rows="3"
-                                    minlength="10"
-                                    maxlength="2000"
-                                    required
-                                    placeholder="Chia sẻ độ êm, phom dáng, size thực tế khi sử dụng..."
-                                    class="input w-full text-xs leading-relaxed">{{ old('comment') }}</textarea>
-                            </div>
-                            <button type="submit" x-bind:disabled="submitting" class="btn w-full py-2.5 text-xs">
-                                <span x-show="!submitting">Gửi đánh giá</span>
-                                <span x-cloak x-show="submitting">Đang gửi...</span>
-                            </button>
-                        </form>
                     @elseif ($reviewStatus === 'already_reviewed')
-                        @php($latestReviewed = $reviewedUnits[0])
-                        <div class="space-y-2">
+                        @php $latestReviewed = $reviewedUnits[0]; @endphp
+                        <div class="space-y-2.5">
                             <p class="text-xs font-bold text-main">Bạn đã gửi đánh giá cho sản phẩm này</p>
                             @if (! $latestReviewed['is_visible'])
                                 <p class="text-xs text-muted">Đánh giá của bạn hiện đang tạm ẩn khỏi mục công khai.</p>
                             @endif
-                            <div class="flex flex-wrap gap-2">
+                            <div class="flex flex-wrap items-center gap-2">
                                 <button type="button"
                                     x-on:click="formOpen = !formOpen"
                                     :aria-expanded="formOpen.toString()"
@@ -312,39 +285,6 @@
                                 </a>
                             </div>
                         </div>
-                        <form x-cloak
-                            x-show="formOpen"
-                            method="POST"
-                            action="{{ route('account.reviews.store') }}"
-                            x-on:submit="if (submitting) { $event.preventDefault(); return false; } submitting = true"
-                            class="space-y-3 border-t border-border pt-3">
-                            @csrf
-                            <input type="hidden" name="unit_id" value="{{ old('unit_id', $latestReviewed['unit_id']) }}">
-                            <div>
-                                <label for="edit-review-rating" class="mb-1 block text-xs font-semibold text-main">Mức đánh giá</label>
-                                <select id="edit-review-rating" name="rating" class="input w-full py-2 text-xs">
-                                    @foreach (array_reverse(App\Http\Requests\Account\ReviewRequest::RATINGS) as $val)
-                                        <option value="{{ $val }}" @selected(old('rating', $latestReviewed['rating']) === $val)>
-                                            {{ rtrim(rtrim(str_replace('.', ',', $val), '0'), ',') }} sao
-                                        </option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <div>
-                                <label for="edit-review-comment" class="mb-1 block text-xs font-semibold text-main">Nhận xét</label>
-                                <textarea id="edit-review-comment"
-                                    name="comment"
-                                    rows="3"
-                                    minlength="10"
-                                    maxlength="2000"
-                                    required
-                                    class="input w-full text-xs leading-relaxed">{{ old('comment', $latestReviewed['comment']) }}</textarea>
-                            </div>
-                            <button type="submit" x-bind:disabled="submitting" class="btn w-full py-2.5 text-xs">
-                                <span x-show="!submitting">Cập nhật đánh giá</span>
-                                <span x-cloak x-show="submitting">Đang lưu...</span>
-                            </button>
-                        </form>
                     @elseif ($reviewStatus === 'pending_delivery' && $pendingOrder)
                         <p class="text-xs font-bold text-main">Chưa đủ điều kiện viết đánh giá</p>
                         <p class="text-xs leading-relaxed text-muted">Đánh giá chỉ mở sau khi đơn hàng được giao và thanh toán hoàn tất.</p>
@@ -369,8 +309,179 @@
                 </div>
             </div>
 
-            {{-- Right Column: Filter Bar + Review List + Pagination --}}
+            {{-- Right Column: Review Form (when opened) + Filter Bar + Review List + Pagination --}}
             <div class="space-y-4">
+                @if ($reviewStatus === 'can_review' || $reviewStatus === 'already_reviewed')
+                    @php
+                        $isEditReview = $reviewStatus === 'already_reviewed';
+                        $initialRatingValue = old('rating', $isEditReview ? $reviewedUnits[0]['rating'] : '5.0');
+                        $initialCommentValue = old('comment', $isEditReview ? $reviewedUnits[0]['comment'] : '');
+                    @endphp
+                    <div x-cloak
+                        x-show="formOpen"
+                        class="rounded-2xl border border-border bg-surface-card p-5 sm:p-6 space-y-4">
+                        <div class="flex items-start justify-between gap-3">
+                            <div>
+                                <h3 class="text-base font-bold text-main">
+                                    {{ $isEditReview ? 'Cập nhật đánh giá của bạn' : 'Viết đánh giá của bạn' }}
+                                </h3>
+                                <p class="mt-0.5 text-xs text-muted">
+                                    Chia sẻ cảm nhận về độ êm, phom dáng và size thực tế sau khi nhận giày.
+                                </p>
+                            </div>
+                            <button type="button"
+                                x-on:click="formOpen = false"
+                                class="btn-secondary shrink-0 px-3 py-1.5 text-xs">
+                                Đóng
+                            </button>
+                        </div>
+
+                        <form method="POST"
+                            action="{{ route('account.reviews.store') }}"
+                            x-on:submit="if (submitting) { $event.preventDefault(); return false; } submitting = true"
+                            class="space-y-4 border-t border-border/70 pt-4">
+                            @csrf
+
+                            {{-- Smart Purchase Selection --}}
+                            @if (! $isEditReview)
+                                @if (count($pendingUnits) === 1)
+                                    @php
+                                        $onlyUnit = $pendingUnits[0];
+                                        $onlyDeliveredLabel = ! empty($onlyUnit['delivered_at'])
+                                            ? \Illuminate\Support\Carbon::parse($onlyUnit['delivered_at'], 'UTC')->setTimezone($businessTz)->format('d/m/Y')
+                                            : null;
+                                    @endphp
+                                    <input type="hidden" name="unit_id" value="{{ $onlyUnit['unit_id'] }}">
+                                    <div class="flex items-center gap-3 rounded-xl border border-border bg-surface px-3.5 py-2.5">
+                                        @if (! empty($onlyUnit['thumbnail_url']))
+                                            <img src="{{ $onlyUnit['thumbnail_url'] }}" alt="{{ $onlyUnit['color_name'] }}" class="h-11 w-11 shrink-0 rounded-lg border border-border object-cover">
+                                        @endif
+                                        <div class="min-w-0 flex-1">
+                                            <p class="text-xs font-bold text-main">
+                                                {{ $onlyUnit['color_name'] }} · Size {{ $onlyUnit['size_value'] }}
+                                                @if (($onlyUnit['quantity'] ?? 1) > 1)
+                                                    <span class="font-semibold text-muted">({{ $onlyUnit['quantity'] }} đôi)</span>
+                                                @endif
+                                            </p>
+                                            <p class="mt-0.5 text-[11px] text-muted">
+                                                @if ($onlyDeliveredLabel)
+                                                    Đã giao {{ $onlyDeliveredLabel }} ·
+                                                @endif
+                                                Đơn {{ $onlyUnit['order_code'] }}
+                                            </p>
+                                        </div>
+                                    </div>
+                                @else
+                                    <fieldset class="space-y-2">
+                                        <legend class="text-xs font-semibold text-main">Chọn đôi giày đã nhận</legend>
+                                        <div class="grid gap-2.5 sm:grid-cols-2">
+                                            @foreach ($pendingUnits as $u)
+                                                @php
+                                                    $deliveredLabel = ! empty($u['delivered_at'])
+                                                        ? \Illuminate\Support\Carbon::parse($u['delivered_at'], 'UTC')->setTimezone($businessTz)->format('d/m/Y')
+                                                        : null;
+                                                @endphp
+                                                <label class="flex cursor-pointer items-center gap-3 rounded-xl border p-3 transition"
+                                                    :class="Number(selectedUnit) === {{ $u['unit_id'] }} ? 'border-accent bg-surface ring-1 ring-accent' : 'border-border bg-surface-card hover:border-accent/60'">
+                                                    <input type="radio"
+                                                        name="unit_id"
+                                                        value="{{ $u['unit_id'] }}"
+                                                        x-model.number="selectedUnit"
+                                                        class="h-4 w-4 shrink-0 accent-accent">
+                                                    @if (! empty($u['thumbnail_url']))
+                                                        <img src="{{ $u['thumbnail_url'] }}" alt="{{ $u['color_name'] }}" class="h-10 w-10 shrink-0 rounded-lg border border-border object-cover">
+                                                    @endif
+                                                    <div class="min-w-0 flex-1">
+                                                        <div class="flex flex-wrap items-center gap-1.5">
+                                                            <span class="text-xs font-bold text-main">{{ $u['color_name'] }} · Size {{ $u['size_value'] }}</span>
+                                                            @if (($u['quantity'] ?? 1) > 1)
+                                                                <span class="rounded-full bg-surface px-2 py-0.5 text-[10px] font-semibold text-main border border-border">{{ $u['quantity'] }} đôi</span>
+                                                            @endif
+                                                        </div>
+                                                        <p class="mt-0.5 truncate text-[11px] text-muted">
+                                                            @if ($deliveredLabel)
+                                                                Đã giao {{ $deliveredLabel }} ·
+                                                            @endif
+                                                            Đơn {{ $u['order_code'] }}
+                                                        </p>
+                                                    </div>
+                                                </label>
+                                            @endforeach
+                                        </div>
+                                    </fieldset>
+                                @endif
+                            @else
+                                @php $latestReviewed = $reviewedUnits[0]; @endphp
+                                <input type="hidden" name="unit_id" value="{{ old('unit_id', $latestReviewed['unit_id']) }}">
+                                <div class="flex items-center justify-between gap-2 rounded-xl border border-border bg-surface px-3.5 py-2.5 text-xs">
+                                    <span class="font-bold text-main">{{ $latestReviewed['color_name'] }} · Size {{ $latestReviewed['size_value'] }}</span>
+                                    <span class="text-[11px] text-muted">Đơn {{ $latestReviewed['order_code'] }}</span>
+                                </div>
+                            @endif
+
+                            {{-- Interactive Half-Star Rating Picker --}}
+                            <div x-data="starRating({ initial: @js($initialRatingValue) })" class="space-y-1.5">
+                                <span class="block text-xs font-semibold text-main">Mức đánh giá</span>
+                                <input type="hidden" name="rating" :value="value">
+                                <div class="flex flex-wrap items-center gap-3">
+                                    <div role="slider"
+                                        tabindex="0"
+                                        aria-label="Mức đánh giá"
+                                        aria-valuemin="0.5"
+                                        aria-valuemax="5"
+                                        :aria-valuenow="ariaValueNow"
+                                        :aria-valuetext="labelText"
+                                        x-on:keydown="onKeydown($event)"
+                                        x-on:mouseleave="onLeave()"
+                                        class="inline-flex items-center gap-1 rounded-xl border border-border bg-surface px-2.5 py-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
+                                        @for ($star = 1; $star <= 5; $star++)
+                                            @php $gradId = 'star-picker-'.($isEditReview ? 'edit' : 'new').'-'.$star; @endphp
+                                            <button type="button"
+                                                tabindex="-1"
+                                                aria-label="Chọn {{ $star }} sao"
+                                                x-on:mousemove="onHover($event, {{ $star }})"
+                                                x-on:click="onSelect($event, {{ $star }})"
+                                                x-on:touchend.prevent="onTouch($event, {{ $star }})"
+                                                class="p-0.5 text-warning transition-transform hover:scale-110 focus:outline-none">
+                                                <svg class="h-6 w-6" viewBox="0 0 24 24" aria-hidden="true">
+                                                    <defs>
+                                                        <linearGradient id="{{ $gradId }}">
+                                                            <stop offset="50%" stop-color="currentColor" />
+                                                            <stop offset="50%" stop-color="rgb(var(--border-rgb, 203 213 225))" />
+                                                        </linearGradient>
+                                                    </defs>
+                                                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"
+                                                        :fill="starFill({{ $star }}) === 'full' ? 'currentColor' : (starFill({{ $star }}) === 'half' ? 'url(#{{ $gradId }})' : 'rgb(var(--border-rgb, 203 213 225))')" />
+                                                </svg>
+                                            </button>
+                                        @endfor
+                                    </div>
+                                    <span class="text-xs font-bold text-main tabular-nums" x-text="labelText">5 / 5 sao</span>
+                                </div>
+                            </div>
+
+                            {{-- Review Comment --}}
+                            <div>
+                                <label for="review-comment-input" class="mb-1.5 block text-xs font-semibold text-main">Nhận xét (10–2000 ký tự)</label>
+                                <textarea id="review-comment-input"
+                                    name="comment"
+                                    rows="4"
+                                    minlength="10"
+                                    maxlength="2000"
+                                    required
+                                    placeholder="Chia sẻ độ êm, phom dáng, size thực tế khi sử dụng..."
+                                    class="input w-full text-sm leading-relaxed">{{ $initialCommentValue }}</textarea>
+                            </div>
+
+                            <div class="flex items-center justify-end gap-3">
+                                <button type="submit" x-bind:disabled="submitting" class="btn px-5 py-2.5 text-xs">
+                                    <span x-show="!submitting">{{ $isEditReview ? 'Cập nhật đánh giá' : 'Gửi đánh giá' }}</span>
+                                    <span x-cloak x-show="submitting">Đang gửi...</span>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                @endif
                 @if ($reviewTotal > 0)
                     <div class="flex flex-wrap items-center gap-2" aria-label="Lọc đánh giá">
                         <a href="{{ $reviewFilterUrl(null, false) }}"
