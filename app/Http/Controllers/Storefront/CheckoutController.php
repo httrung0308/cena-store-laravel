@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers\Storefront;
 
-use App\Exceptions\DomainException;
 use App\Enums\PaymentMethod;
+use App\Exceptions\DomainException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Storefront\CheckoutOrderRequest;
 use App\Models\Address;

@@ -24,6 +24,7 @@ use App\Services\StockImportService;
 use App\Support\BusinessClock;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Seeder;
+use Illuminate\Http\Testing\File;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Str;
 use LogicException;
@@ -461,7 +462,7 @@ class StoreSalesDemoSeeder extends Seeder
         imagedestroy($image);
         fwrite($temp, ob_get_clean());
 
-        return new \Illuminate\Http\Testing\File('proof-'.$order->order_code.'.jpg', $temp);
+        return new File('proof-'.$order->order_code.'.jpg', $temp);
     }
 
     private function userWithRole(RoleSlug $role): ?User

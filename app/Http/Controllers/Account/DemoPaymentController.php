@@ -2,8 +2,6 @@
 
 namespace App\Http\Controllers\Account;
 
-use App\Enums\OrderPaymentStatus;
-use App\Enums\PaymentAttemptStatus;
 use App\Enums\PaymentMethod;
 use App\Exceptions\DomainException;
 use App\Http\Controllers\Controller;

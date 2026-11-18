@@ -3,14 +3,14 @@
 namespace App\Services;
 
 use App\Data\InventoryChange;
+use App\Enums\CouponRedemptionStatus;
+use App\Enums\CouponType;
 use App\Enums\ErrorCode;
 use App\Enums\InventoryAction;
 use App\Enums\InventoryReferenceType;
 use App\Enums\OrderPaymentStatus;
 use App\Enums\OrderStatus;
 use App\Enums\OrderUnitState;
-use App\Enums\CouponRedemptionStatus;
-use App\Enums\CouponType;
 use App\Enums\OutboxAggregateType;
 use App\Enums\PaymentAttemptStatus;
 use App\Enums\PaymentMethod;
@@ -31,6 +31,7 @@ use App\Models\User;
 use App\Support\BusinessClock;
 use App\Support\CanonicalPayload;
 use App\Support\Money;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
@@ -251,7 +252,7 @@ final class CheckoutService
         return $history;
     }
 
-    public function consumeCoupon(Order $order, \Carbon\CarbonImmutable $now): void
+    public function consumeCoupon(Order $order, CarbonImmutable $now): void
     {
         $redemption = CouponRedemption::query()->where('order_id', $order->id)->lockForUpdate()->first();
         if ($redemption !== null && $redemption->status === CouponRedemptionStatus::Reserved) {
@@ -262,7 +263,7 @@ final class CheckoutService
         }
     }
 
-    public function releaseCoupon(Order $order, \Carbon\CarbonImmutable $now): void
+    public function releaseCoupon(Order $order, CarbonImmutable $now): void
     {
         $redemption = CouponRedemption::query()->where('order_id', $order->id)->lockForUpdate()->first();
         if ($redemption !== null && $redemption->status === CouponRedemptionStatus::Reserved) {

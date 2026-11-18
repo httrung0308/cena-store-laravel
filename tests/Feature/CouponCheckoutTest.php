@@ -13,7 +13,6 @@ use App\Models\Cart;
 use App\Models\CartItem;
 use App\Models\Category;
 use App\Models\Coupon;
-use App\Models\CouponRedemption;
 use App\Models\Product;
 use App\Models\ProductColor;
 use App\Models\ProductVariant;
@@ -21,6 +20,7 @@ use App\Models\StockImportItem;
 use App\Models\User;
 use App\Services\CheckoutService;
 use App\Services\InventoryService;
+use App\Services\OrderWorkflowService;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -59,7 +59,7 @@ class CouponCheckoutTest extends TestCase
         $this->assertSame(900_000, $order->items->sole()->units->sole()->net_amount);
         $this->assertSame(CouponRedemptionStatus::Reserved, $order->redemption->status);
 
-        app(\App\Services\OrderWorkflowService::class)->cancel($order, $this->customer, OrderStatus::Pending->value, 'Đặt nhầm size', true);
+        app(OrderWorkflowService::class)->cancel($order, $this->customer, OrderStatus::Pending->value, 'Đặt nhầm size', true);
         $this->assertSame(CouponRedemptionStatus::Released, $order->redemption->fresh()->status);
 
         $secondCustomer = User::factory()->customer()->create();

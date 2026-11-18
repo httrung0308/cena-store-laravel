@@ -1,8 +1,8 @@
 <?php
 
+use App\Http\Controllers\Account\DemoPaymentController;
 use App\Http\Controllers\Account\OrderController;
 use App\Http\Controllers\Account\ReviewController;
-use App\Http\Controllers\Account\DemoPaymentController;
 use App\Http\Controllers\Storefront\CheckoutController;
 use App\Http\Middleware\EnsureNonAdminShopping;
 use Illuminate\Support\Facades\Route;
