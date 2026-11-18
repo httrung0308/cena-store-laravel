@@ -54,12 +54,25 @@ class SharedFoundationTest extends TestCase
     {
         $user = User::factory()->{$state}()->create(['full_name' => 'Nhân sự <b>Cena</b>']);
 
-        $this->actingAs($user)->get('/admin')
+        if ($state === 'administrator') {
+            $this->actingAs($user)->get('/admin')
+                ->assertOk()
+                ->assertViewIs('admin.dashboard')
+                ->assertSee('href="'.route('admin.dashboard').'"', false)
+                ->assertSee('Nhân sự &lt;b&gt;Cena&lt;/b&gt;', false)
+                ->assertSee('href="'.route('admin.products.index').'"', false);
+
+            return;
+        }
+
+        $this->actingAs($user)->get('/admin')->assertForbidden();
+        $this->actingAs($user)->get(route('admin.operations-work-items.index'))
             ->assertOk()
-            ->assertViewIs('admin.dashboard')
-            ->assertSee('href="'.route('admin.dashboard').'"', false)
+            ->assertSee('href="'.route('admin.operations-work-items.index').'"', false)
             ->assertSee('Nhân sự &lt;b&gt;Cena&lt;/b&gt;', false)
-            ->assertSee('href="'.route('admin.products.index').'"', false);
+            ->assertSee('href="'.route('admin.products.index').'"', false)
+            ->assertDontSee('href="'.route('admin.dashboard').'"', false)
+            ->assertDontSee('href="'.route('admin.stock-imports.index').'"', false);
     }
 
     public function test_customer_inactive_or_deleted_staff_and_user_without_role_are_forbidden(): void

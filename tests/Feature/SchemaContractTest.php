@@ -316,6 +316,12 @@ class SchemaContractTest extends TestCase
         if (isset($this->fixtureIds[$table])) {
             return $this->fixtureIds[$table];
         }
+        if ($table === 'roles') {
+            $existingRoleId = DB::table('roles')->where('slug', 'customer')->value('id');
+            if ($existingRoleId !== null) {
+                return $this->fixtureIds[$table] = (int) $existingRoleId;
+            }
+        }
         $definition = self::contract()['tables'][$table];
         $foreignKeys = array_column($definition['foreign_keys'], null, 'column');
         $data = [];

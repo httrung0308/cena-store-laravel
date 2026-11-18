@@ -187,7 +187,8 @@ class ReportDashboardTest extends TestCase
             ->assertSee('Sản phẩm bán chạy')->assertSee('Staff View')->assertSee('Tồn kho còn bán được')->assertSee('data-orders-heatmap', false)->assertSee('Lịch số đơn mỗi ngày')
             ->assertDontSee('data-metric', false)->assertDontSee('data-report-chart', false)->assertDontSee('data-margin-chart', false)->assertDontSee('563.457')
             ->assertDontSee('&quot;revenue&quot;', false)->assertDontSee('"revenue"', false)->assertDontSee('Mỗi 100 đồng doanh thu');
-        $this->actingAs($this->staff)->get(route('admin.dashboard'))->assertSee('href="'.route('admin.reports.index').'"', false);
+        $this->actingAs($this->staff)->get(route('admin.dashboard'))->assertForbidden();
+        $this->actingAs($this->staff)->get(route('admin.operations-work-items.index'))->assertOk()->assertSee('href="'.route('admin.reports.index').'"', false);
 
         $this->actingAs($this->customer)->get(route('admin.reports.index'))->assertForbidden();
         auth()->logout();

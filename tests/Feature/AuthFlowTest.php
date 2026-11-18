@@ -121,10 +121,16 @@ class AuthFlowTest extends TestCase
 
     public function test_admin_and_staff_land_on_back_office_after_login(): void
     {
+        User::factory()->administrator()->create(['email' => 'quantri@cena.test', 'password' => self::PASSWORD]);
         User::factory()->staff()->create(['email' => 'nhanvien@cena.test', 'password' => self::PASSWORD]);
 
-        $this->post(route('login.store'), ['email' => 'nhanvien@cena.test', 'password' => self::PASSWORD])
+        $this->post(route('login.store'), ['email' => 'quantri@cena.test', 'password' => self::PASSWORD])
             ->assertRedirect(route('admin.dashboard'));
+
+        $this->post(route('logout'));
+
+        $this->post(route('login.store'), ['email' => 'nhanvien@cena.test', 'password' => self::PASSWORD])
+            ->assertRedirect(route('admin.operations-work-items.index'));
     }
 
     public function test_wrong_password_locked_and_deleted_accounts_cannot_sign_in(): void

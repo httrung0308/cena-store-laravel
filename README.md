@@ -31,7 +31,7 @@ Script tự cài thư viện theo lockfile, mở dịch vụ local, tạo `.env`
 
 **3. Mở trình duyệt:** [http://127.0.0.1:8000](http://127.0.0.1:8000).
 
-- Đăng ký/đăng nhập: `/register`, `/login`; quản trị: `/admin` (cần Admin/Staff).
+- Đăng ký/đăng nhập: `/register`, `/login`; quản trị: `/admin` (**Admin** mặc định vào Tổng quan; **Staff** mặc định vào Công việc xử lý `/admin/operations-work-items` và bị chặn Tổng quan cũng như toàn bộ Phiếu nhập kho).
 - Mail local: [Mailpit](http://127.0.0.1:8025); kiểm server: `/up`.
 - Script dùng MySQL riêng tại `127.0.0.1:3307`, dữ liệu trong `%LOCALAPPDATA%/CenaStore`; không dùng datadir Laragon cũ.
 
@@ -48,9 +48,11 @@ Mở lại http://127.0.0.1:8000. Không cần cài thư viện, seed hay chạy
 
 Sau khi lấy code mới: chạy `composer.ps1 install` nếu `composer.lock` đổi; `npm.ps1 ci` nếu `package-lock.json` đổi; `npm.ps1 run build` nếu giao diện đổi; `php.ps1 artisan migrate --no-interaction` nếu có migration mới. Các lệnh này nằm trong thư mục `scripts` như ví dụ bên dưới.
 
-## Tài khoản và sản phẩm demo (tùy chọn)
+## Hai cách chuẩn bị dữ liệu trên máy thành viên
 
-Chỉ dùng trên máy local. Sửa hai biến trong `.env` (thêm nếu chưa có): `STORE_DEMO_USERS=true` và `STORE_DEMO_PASSWORD` là mật khẩu riêng bạn tự chọn, dài12–72bytes. Không gửi hoặc commit mật khẩu này.
+### Cách A — Cài mới và tự tạo dữ liệu tối thiểu
+
+Chỉ dùng trên máy local. Sửa hai biến trong `.env` (thêm nếu chưa có): `STORE_DEMO_USERS=true` và `STORE_DEMO_PASSWORD` là mật khẩu riêng bạn tự chọn, dài 12–72 bytes. Không gửi hoặc commit mật khẩu này.
 
 ```powershell
 .\scripts\php.ps1 artisan config:clear
@@ -62,11 +64,30 @@ Chỉ dùng trên máy local. Sửa hai biến trong `.env` (thêm nếu chưa c
 
 | Vai trò | Email |
 |---|---|
-| Admin | admin@demo.cena.test |
-| Staff | staff@demo.cena.test |
-| Customer | customer@demo.cena.test |
+| Admin | `admin@demo.cena.test` |
+| Staff | `staff@demo.cena.test` |
+| Customer | `customer@demo.cena.test` |
 
-Seeder sản phẩm tạo phiếu nhập thực qua service, không gán tồn trực tiếp. Chạy lại không nhân bản phiếu; không đổi mật khẩu/quyền tài khoản đã bị thay đổi. Catalog `/shoes` thuộc X4 đang được tích hợp riêng; có dữ liệu demo không có nghĩa X4 đã merge.
+Seeder sản phẩm tạo phiếu nhập thực qua service, không gán tồn trực tiếp. Chạy lại không nhân bản phiếu; không đổi mật khẩu/quyền tài khoản đã bị thay đổi.
+
+### Cách B — Dùng gói Database + Asset mẫu của nhóm (`cena-store-demo-20261118`)
+
+Phù hợp khi cần kiểm thử đầy đủ tình huống hoặc viết báo cáo mà không phải tự tạo lại dữ liệu:
+
+1. Cài đặt môi trường lần đầu bằng `.\scripts\setup-project.ps1` (hoặc bật dịch vụ bằng `.\scripts\start-local-services.ps1`), **dừng web server** nếu đang chạy.
+2. Nếu database local của bạn đã có dữ liệu riêng, hãy sao lưu trước và tạo một database riêng (cập nhật `DB_DATABASE` trong `.env` local của máy bạn, không chia sẻ `.env` tác giả).
+3. Import file SQL `cena-store-demo-20261118.sql` vào database local của bạn. **Không chạy thêm seeder demo** lên database vừa import SQL để tránh trùng dữ liệu.
+4. Chép thư mục `storage/app/public/` và `storage/app/private/` từ gói mẫu vào đúng `storage/app/` trong project (giữ tách `public` và `private`, không chép file private ra `public`).
+5. Tạo liên kết storage, xóa cache và build giao diện (nếu cần):
+
+```powershell
+.\scripts\php.ps1 artisan storage:link
+.\scripts\php.ps1 artisan optimize:clear
+.\scripts\npm.ps1 run build
+.\scripts\start-local.ps1
+```
+
+Xem danh sách tài khoản mẫu và cách tìm từng tình huống trong [Hướng dẫn kiểm thử dữ liệu mẫu](docs/TEAM_DEMO_TESTING_GUIDE.md). Lưu ý giữ nguyên gói `.sql` và `storage/` gốc để khôi phục lại database riêng khi cần.
 
 ## Gửi code cho team: một task, một PR
 
@@ -142,11 +163,18 @@ Không push trực tiếp vào main. Worktree chỉ cần khi cùng máy làm nh
 - MySQL app/test dùng user khác nhau, test không truy cập DB phát triển. Không chạy mode `configure-env.php --ci` trên server đang dùng chung: mode này chỉ cho MySQL disposable của CI.
 - `public/storage` chỉ nối disk public; chứng từ private không đặt vào đó. Demo không dùng trên staging/production.
 
-## Tiến độ và tài liệu
+## Tính năng hiện có và tài liệu
 
-Đợt7 chức năng trên main đã có đăng ký/đăng nhập, tỉnh/phường, sổ địa chỉ, backend/drawer giỏ, admin danh mục/NCC/sản phẩm và phiếu nhập. X4 catalog/chi tiết đang làm riêng; checkout/thanh toán và các phase sau chưa hoàn tất. Không dùng các ghi chú P00/P01 cũ làm trạng thái tính năng hiện tại.
+Các phân hệ chính đã tích hợp trên nhánh hiện tại:
+- **Cửa hàng (`/`, `/shoes`, `/news`):** trang chủ, banner, danh mục/bộ lọc giày, giỏ hàng & đặt hàng (`COD`, `PREPAID_DEMO`, mã giảm giá), đơn hàng khách (`/account/orders`), thông báo, đánh giá sản phẩm theo đôi đã nhận và bài viết tin tức.
+- **Quản trị & Vận hành (`/admin`):**
+  - **Admin** mặc định vào **Tổng quan** (`/admin`), quản lý toàn bộ sản phẩm, **Phiếu nhập kho** (chỉ Admin), người dùng, bài viết, banner, mã giảm giá, phân loại, duyệt hoàn tiền và duyệt ghi hỏng hàng hoàn.
+  - **Staff** mặc định vào **Công việc xử lý** (`/admin/operations-work-items`), xử lý đơn hàng, xem báo cáo vận hành/tồn kho (không thấy tài chính/giá vốn) và tiếp nhận/kiểm tra hàng hoàn (luồng riêng, bị chặn Tổng quan và Phiếu nhập kho).
 
-- [Kế hoạch7 chức năng và phân chia phạm vi](docs/collaboration/PLAN_7_CHUC_NANG.md)
+Một số luồng mở rộng sau giao thành công (như đổi trả khách chủ động sau khi đã nhận hàng) và tác vụ vận hành nền vẫn đang được hoàn thiện tiếp theo lộ trình.
+
+- [Hướng dẫn kiểm thử dữ liệu mẫu nhóm](docs/TEAM_DEMO_TESTING_GUIDE.md)
+- [Kế hoạch 7 chức năng và phân chia phạm vi](docs/collaboration/PLAN_7_CHUC_NANG.md)
 - [Nhật ký mới nhất](docs/ai-progress.md) · [GitHub Actions](https://github.com/httrung0308/cena-store-laravel/actions)
 - [Luồng nghiệp vụ và ERD](docs/NGHIEP_VU_ERD_CHUC_NANG.md) · [Schema](docs/database/schema.md)
 - [Đặc tả đầy đủ](docs/specification.md) · [Quyết định kiến trúc](docs/architecture/decisions.md)

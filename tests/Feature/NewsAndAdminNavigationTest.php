@@ -132,12 +132,18 @@ class NewsAndAdminNavigationTest extends TestCase
             ->assertOk()
             ->assertSee('aria-current="page"', false);
 
-        // Staff does NOT see Admin-only links or group
-        $this->actingAs($staff)->get(route('admin.dashboard'))
+        // Staff lands on Operations Work Center, is forbidden from Admin Overview & Stock Imports, and does NOT see Admin-only links
+        $this->actingAs($staff)->get(route('admin.dashboard'))->assertForbidden();
+        $this->actingAs($staff)->get(route('admin.stock-imports.index'))->assertForbidden();
+        $this->actingAs($staff)->get(route('admin.operations-work-items.index'))
             ->assertOk()
             ->assertSee('Staff Test (Nhân viên)')
+            ->assertSee('href="'.route('admin.operations-work-items.index').'"', false)
             ->assertSee('href="'.route('admin.orders.index').'"', false)
             ->assertSee('href="'.route('admin.products.index').'"', false)
+            ->assertSee('href="'.route('admin.reports.index').'"', false)
+            ->assertDontSee('href="'.route('admin.dashboard').'"', false)
+            ->assertDontSee('href="'.route('admin.stock-imports.index').'"', false)
             ->assertDontSee('href="'.route('admin.coupons.index').'"', false)
             ->assertDontSee('href="'.route('admin.banners.index').'"', false)
             ->assertDontSee('href="'.route('admin.classifications.index').'"', false)

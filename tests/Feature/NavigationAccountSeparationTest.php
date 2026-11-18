@@ -119,7 +119,8 @@ class NavigationAccountSeparationTest extends TestCase
             ->assertSee('Các đơn hàng gần đây');
         $this->get(route('orders.index'))->assertOk();
         $this->getJson(route('cart.show'))->assertOk();
-        $this->getJson(route('admin.dashboard'))->assertStatus($state === 'staff' ? 200 : 403);
+        $this->getJson(route('admin.dashboard'))->assertForbidden();
+        $this->getJson(route('admin.operations-work-items.index'))->assertStatus($state === 'staff' ? 200 : 403);
     }
 
     public static function customerRoles(): array

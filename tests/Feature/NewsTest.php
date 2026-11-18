@@ -166,7 +166,8 @@ class NewsTest extends TestCase
         $this->get(route('admin.articles.edit', $article))->assertForbidden();
         $this->post(route('admin.articles.store'), $this->fields(['cover' => UploadedFile::fake()->image('c.jpg')]))->assertForbidden();
         $this->patch(route('admin.articles.hide', $article))->assertForbidden();
-        $this->get(route('admin.dashboard'))->assertOk()->assertDontSee('href="'.route('admin.articles.index').'"', false);
+        $this->get(route('admin.dashboard'))->assertForbidden();
+        $this->get(route('admin.operations-work-items.index'))->assertOk()->assertDontSee('href="'.route('admin.articles.index').'"', false);
 
         $this->actingAs(User::factory()->customer()->create())->get(route('admin.articles.index'))->assertForbidden();
         $this->actingAs($this->admin)->get(route('admin.dashboard'))->assertSee('href="'.route('admin.articles.index').'"', false);

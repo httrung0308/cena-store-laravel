@@ -23,7 +23,8 @@ class UserManagementTest extends TestCase
         $this->get(route('admin.users.index'))->assertRedirect(route('login'));
         $this->actingAs(User::factory()->customer()->create())->get(route('admin.users.index'))->assertForbidden();
         $this->actingAs(User::factory()->staff()->create())->get(route('admin.users.index'))->assertForbidden();
-        $this->actingAs(User::factory()->staff()->create())->get(route('admin.dashboard'))->assertOk()->assertSee('(chỉ Admin)')->assertDontSee('href="'.route('admin.users.index').'"', false);
+        $this->actingAs(User::factory()->staff()->create())->get(route('admin.dashboard'))->assertForbidden();
+        $this->actingAs(User::factory()->staff()->create())->get(route('admin.operations-work-items.index'))->assertOk()->assertDontSee('href="'.route('admin.users.index').'"', false);
 
         $admin = User::factory()->administrator()->create();
         $target = User::factory()->customer()->create(['full_name' => 'Khách <i>Tìm</i>', 'email' => 'tim-kiem@nike.test']);
