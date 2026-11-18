@@ -152,12 +152,12 @@ class ProductDetailRedesignTest extends TestCase
         $deliveredOrder = $this->placeOrder($buyer, $variant, 7, deliverAndPay: true);
         $units = $deliveredOrder->items->sole()->units->sortBy('unit_no')->values();
 
-        // Before reviewing any unit: inline "Viết đánh giá" CTA is visible
+        // Before reviewing any unit: inline "Viết đánh giá" CTA is visible (identical pairs grouped into 1 choice)
         $this->actingAs($buyer)
             ->get(route('shoes.show', $product->slug))
             ->assertOk()
             ->assertSee('Viết đánh giá')
-            ->assertSee('Có 7 đôi đang chờ bạn đánh giá');
+            ->assertSee('Bạn có 1 lựa chọn mua hàng sẵn sàng để đánh giá.');
 
         // Submit 6 visible 5-star reviews + 1 2-star review + mark 1st hidden via DB check
         foreach ($units->take(6) as $idx => $unit) {
