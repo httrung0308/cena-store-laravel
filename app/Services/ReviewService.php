@@ -199,6 +199,7 @@ final class ReviewService
             ->get([
                 'u.id as unit_id',
                 'u.unit_no',
+                'oi.id as order_item_id',
                 'o.id as order_id',
                 'o.order_code',
                 'o.order_status',
@@ -231,6 +232,13 @@ final class ReviewService
             }
         }
 
+        $reviewedGroupKeys = [];
+        foreach ($units as $row) {
+            if ($row->review_id !== null) {
+                $reviewedGroupKeys[$row->order_id.'|'.$row->color_name.'|'.$row->size_value_snapshot] = true;
+            }
+        }
+
         $pendingGroups = [];
         $reviewedUnits = [];
         $pendingOrder = null;
@@ -250,8 +258,12 @@ final class ReviewService
                 continue;
             }
 
+            $groupKey = $row->order_id.'|'.$row->color_name.'|'.$row->size_value_snapshot;
+
             if ($row->review_id === null) {
-                $groupKey = $row->order_id.'|'.$row->color_name.'|'.$row->size_value_snapshot;
+                if (isset($reviewedGroupKeys[$groupKey])) {
+                    continue;
+                }
                 if (! isset($pendingGroups[$groupKey])) {
                     $pendingGroups[$groupKey] = [
                         'unit_id' => (int) $row->unit_id,

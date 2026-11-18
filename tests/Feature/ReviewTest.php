@@ -173,6 +173,47 @@ class ReviewTest extends TestCase
         $this->assertSame(1, substr_count($html, 'Chưa có đánh giá nào.'));
     }
 
+    public function test_reviewing_grouped_identical_pairs_once_completes_form_and_clears_notification_review_cta(): void
+    {
+        $order = $this->deliveredOrder(2);
+        $firstUnit = $order->items->sole()->units->sortBy('unit_no')->first();
+
+        $this->actingAs($this->customer)
+            ->getJson(route('notifications.api.recent'))
+            ->assertOk()
+            ->assertJsonPath('data.notifications.0.review_cta.label', 'Đánh giá sản phẩm');
+
+        $this->actingAs($this->customer)
+            ->post(route('account.reviews.store'), [
+                'unit_id' => $firstUnit->id,
+                'rating' => '4.5',
+                'comment' => 'Mua hai đôi cùng cỡ đều vừa chân và êm.',
+            ])
+            ->assertRedirect();
+
+        $this->assertSame(1, Review::query()->count());
+        $state = app(ReviewService::class)->customerReviewState($this->customer, $this->product->id);
+        $this->assertSame('already_reviewed', $state['status']);
+        $this->assertSame([], $state['pending_units']);
+
+        $this->actingAs($this->customer)
+            ->get(route('shoes.show', $this->product->slug))
+            ->assertOk()
+            ->assertSee('Sửa đánh giá')
+            ->assertDontSee('Bạn có 1 lựa chọn mua hàng sẵn sàng để đánh giá.');
+
+        $this->actingAs($this->customer)
+            ->getJson(route('notifications.api.recent'))
+            ->assertOk()
+            ->assertJsonPath('data.notifications.0.review_cta', null);
+
+        $this->actingAs($this->customer)
+            ->get(route('notifications.index'))
+            ->assertOk()
+            ->assertSee('Đơn hàng đã giao thành công')
+            ->assertDontSee('Đánh giá sản phẩm');
+    }
+
     private function deliveredOrder(int $quantity): Order
     {
         return $this->deliveredOrderForVariant($this->shoe, $quantity);

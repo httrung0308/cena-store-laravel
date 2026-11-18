@@ -86,6 +86,7 @@ class StoreNotificationTest extends TestCase
     public function test_status_rollback_also_rolls_back_notification_creation(): void
     {
         $order = $this->placeOrder();
+        $beforeCount = StoreNotification::query()->count();
         $workflow = app(OrderWorkflowService::class);
 
         try {
@@ -100,7 +101,8 @@ class StoreNotificationTest extends TestCase
 
         $this->assertSame(OrderStatus::Pending, $order->fresh()->order_status);
         $this->assertSame(1, $order->statusHistories()->count(), 'Only the original PENDING history remains.');
-        $this->assertDatabaseCount('notifications', 0);
+        $this->assertSame($beforeCount, StoreNotification::query()->count());
+        $this->assertDatabaseMissing('notifications', ['order_id' => $order->id]);
     }
 
     public function test_status_history_is_not_discarded_for_inactive_or_soft_deleted_owners(): void
@@ -162,6 +164,7 @@ class StoreNotificationTest extends TestCase
     public function test_notification_page_api_count_mark_read_and_owner_scope_are_safe(): void
     {
         $order = $this->placeOrder();
+        $beforeCount = StoreNotification::query()->count();
         $workflow = app(OrderWorkflowService::class);
         $workflow->confirmAndPack($order, $this->staff, OrderStatus::Pending->value);
         $notification = StoreNotification::query()->where('order_id', $order->id)->sole();

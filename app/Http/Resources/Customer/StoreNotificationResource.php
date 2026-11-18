@@ -113,7 +113,8 @@ class StoreNotificationResource extends OwnedResource
         }
 
         $eligibleItems = $order->items->filter(
-            static fn (OrderItem $item): bool => $item->units->whereNull('review')->count() > 0
+            static fn (OrderItem $item): bool => $item->units->isNotEmpty()
+                && $item->units->every(static fn ($unit): bool => $unit->review === null)
         );
 
         if ($eligibleItems->isEmpty()) {
