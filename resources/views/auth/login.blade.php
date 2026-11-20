@@ -3,7 +3,7 @@
 @section('title', 'Đăng nhập')
 @section('heading', 'Chào mừng trở lại.')
 @section('switch')
-    <a href="{{ route('register') }}" class="underline">Chưa có tài khoản? Đăng ký tại đây!</a>
+    <a href="{{ route('register') }}" class="font-semibold text-accent hover:text-accent-hover hover:underline transition-colors">Chưa có tài khoản? Đăng ký tại đây!</a>
 @endsection
 
 @section('content')

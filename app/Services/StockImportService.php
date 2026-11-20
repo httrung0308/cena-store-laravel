@@ -14,6 +14,7 @@ use App\Models\StockImport;
 use App\Models\StockImportItem;
 use App\Models\Supplier;
 use App\Models\User;
+use App\Models\UserRole;
 use App\Support\BusinessClock;
 use App\Support\CanonicalPayload;
 use App\Support\Cost;
@@ -51,7 +52,7 @@ final class StockImportService
         $data = $this->normalize(Validator::make($input, $this->rules($import === null))->validate());
         try {
             return DB::transaction(function () use ($actor, $import, $data): StockImport {
-                $currentActor = ProductManagementAccess::lock($actor);
+                $currentActor = $this->lockAdminActor($actor);
                 if ($import === null) {
                     $existing = StockImport::where('command_key', $data['command_key'])->lockForUpdate()->first();
                     if ($existing) {
@@ -94,7 +95,7 @@ final class StockImportService
             }
 
             return DB::transaction(function () use ($actor, $data, $exception): StockImport {
-                $currentActor = ProductManagementAccess::lock($actor);
+                $currentActor = $this->lockAdminActor($actor);
                 $existing = StockImport::where('command_key', $data['command_key'])->lockForUpdate()->first();
                 if (! $existing) {
                     throw $exception;
@@ -108,7 +109,7 @@ final class StockImportService
     public function post(User $actor, StockImport $import): StockImport
     {
         return DB::transaction(function () use ($actor, $import): StockImport {
-            $currentActor = ProductManagementAccess::lock($actor);
+            $currentActor = $this->lockAdminActor($actor);
             $current = StockImport::whereKey($import->id)->lockForUpdate()->firstOrFail();
             if ($current->status === StockImportStatus::Posted) {
                 return $current;
@@ -147,7 +148,7 @@ final class StockImportService
         $data = Validator::make(['reason' => trim($reason)], ['reason' => ['required', 'string', 'max:500']])->validate();
 
         return DB::transaction(function () use ($actor, $import, $data): StockImport {
-            $currentActor = ProductManagementAccess::lock($actor);
+            $currentActor = $this->lockAdminActor($actor);
             $current = StockImport::whereKey($import->id)->lockForUpdate()->firstOrFail();
             $this->draftOnly($current);
             $current->status = StockImportStatus::Cancelled;
@@ -228,6 +229,23 @@ final class StockImportService
         }
 
         return $existing;
+    }
+
+    private function lockAdminActor(User $actor): User
+    {
+        $current = User::whereKey($actor->id)->lockForUpdate()->first();
+        if (! $current || ! $current->is_active) {
+            throw new DomainException(ErrorCode::Forbidden);
+        }
+        $assignment = UserRole::where('user_id', $current->id)
+            ->whereHas('role', fn ($query) => $query->where('slug', RoleSlug::Admin))
+            ->lockForUpdate()
+            ->first();
+        if (! $assignment) {
+            throw new DomainException(ErrorCode::Forbidden);
+        }
+
+        return $current;
     }
 
     private function invalid(string $field, string $message): never

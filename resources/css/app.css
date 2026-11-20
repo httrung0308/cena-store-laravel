@@ -1,36 +1,202 @@
+/* Be Vietnam Pro (300, 400, 400-italic, 500, 600, 700, 800) */
+@import '@fontsource/be-vietnam-pro/latin-300.css';
+@import '@fontsource/be-vietnam-pro/vietnamese-300.css';
+@import '@fontsource/be-vietnam-pro/latin-400.css';
+@import '@fontsource/be-vietnam-pro/vietnamese-400.css';
+@import '@fontsource/be-vietnam-pro/latin-400-italic.css';
+@import '@fontsource/be-vietnam-pro/vietnamese-400-italic.css';
+@import '@fontsource/be-vietnam-pro/latin-500.css';
+@import '@fontsource/be-vietnam-pro/vietnamese-500.css';
+@import '@fontsource/be-vietnam-pro/latin-600.css';
+@import '@fontsource/be-vietnam-pro/vietnamese-600.css';
+@import '@fontsource/be-vietnam-pro/latin-700.css';
+@import '@fontsource/be-vietnam-pro/vietnamese-700.css';
+@import '@fontsource/be-vietnam-pro/latin-800.css';
+@import '@fontsource/be-vietnam-pro/vietnamese-800.css';
+
 @import '@fontsource/montserrat/latin-400.css';
 @import '@fontsource/montserrat/vietnamese-400.css';
-@import '@fontsource/montserrat/latin-500.css';
-@import '@fontsource/montserrat/vietnamese-500.css';
 @import '@fontsource/montserrat/latin-600.css';
 @import '@fontsource/montserrat/vietnamese-600.css';
-@import '@fontsource/montserrat/latin-700.css';
-@import '@fontsource/montserrat/vietnamese-700.css';
-@import '@fontsource/montserrat/latin-800.css';
-@import '@fontsource/montserrat/vietnamese-800.css';
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --bg: #f8fafc;
+  --bg-rgb: 248 250 252;
+  --surface: #f1f5f9;
+  --surface-rgb: 241 245 249;
+  --surface-card: #ffffff;
+  --surface-card-rgb: 255 255 255;
+  --border: #cbd5e1;
+  --border-rgb: 203 213 225;
+  --text-main: #020617;
+  --main-rgb: 2 6 23;
+  --text-muted: #334155;
+  --muted-rgb: 51 65 85;
+  --accent: #201464;
+  --accent-rgb: 32 20 100;
+  --accent-hover: #160c4a;
+  --accent-hover-rgb: 22 12 74;
+  --accent-text: #ffffff;
+  --accent-sub: #be123c;
+  --accent-sub-rgb: 190 18 60;
+  --accent-sub-hover: #9f1239;
+  --accent-sub-hover-rgb: 159 18 57;
+  --accent-sub-text: #ffffff;
+  --success: #15803d;
+  --success-rgb: 21 128 61;
+  --success-bg: #dcfce7;
+  --success-text: #14532d;
+  --warning: #a16207;
+  --warning-rgb: 161 98 7;
+  --warning-bg: #fef9c3;
+  --warning-text: #713f12;
+  --error: #b91c1c;
+  --error-rgb: 185 28 28;
+  --error-bg: #fee2e2;
+  --error-text: #7f1d1d;
+  --admin-sidebar-bg: #0f172a;
+  --admin-sidebar-border: #1e293b;
+  --admin-sidebar-text: #cbd5e1;
+  --admin-sidebar-muted: #94a3b8;
+  --admin-sidebar-hover: #1e293b;
+  --footer-bg: #0b192c;
+  --footer-border: #1e293b;
+  --footer-text: #cbd5e1;
+  --footer-muted: #94a3b8;
+}
+
+html[data-theme='light'] {
+  color-scheme: light;
+}
+
+html[data-theme='dark'] {
+  color-scheme: dark;
+  --bg: #0b0f19;
+  --bg-rgb: 11 15 25;
+  --surface: #111827;
+  --surface-rgb: 17 24 39;
+  --surface-card: #182235;
+  --surface-card-rgb: 24 34 53;
+  --border: #29354d;
+  --border-rgb: 41 53 77;
+  --text-main: #f8fafc;
+  --main-rgb: 248 250 252;
+  --text-muted: #94a3b8;
+  --muted-rgb: 148 163 184;
+  --accent: #4f46e5;
+  --accent-rgb: 79 70 229;
+  --accent-hover: #4338ca;
+  --accent-hover-rgb: 67 56 202;
+  --accent-text: #ffffff;
+  --accent-sub: #e11d48;
+  --accent-sub-rgb: 225 29 72;
+  --accent-sub-hover: #be123c;
+  --accent-sub-hover-rgb: 190 18 60;
+  --accent-sub-text: #ffffff;
+  --success: #22c55e;
+  --success-rgb: 34 197 94;
+  --success-bg: rgba(34, 197, 94, 0.15);
+  --success-text: #86efac;
+  --warning: #eab308;
+  --warning-rgb: 234 179 8;
+  --warning-bg: rgba(234, 179, 8, 0.15);
+  --warning-text: #fde047;
+  --error: #ef4444;
+  --error-rgb: 239 68 68;
+  --error-bg: rgba(239, 68, 68, 0.15);
+  --error-text: #fca5a5;
+}
+
+@media (prefers-color-scheme: dark) {
+  html[data-theme='system'] {
+    color-scheme: dark;
+    --bg: #0b0f19;
+    --bg-rgb: 11 15 25;
+    --surface: #111827;
+    --surface-rgb: 17 24 39;
+    --surface-card: #182235;
+    --surface-card-rgb: 24 34 53;
+    --border: #29354d;
+    --border-rgb: 41 53 77;
+    --text-main: #f8fafc;
+    --main-rgb: 248 250 252;
+    --text-muted: #94a3b8;
+    --muted-rgb: 148 163 184;
+    --accent: #4f46e5;
+    --accent-rgb: 79 70 229;
+    --accent-hover: #4338ca;
+    --accent-hover-rgb: 67 56 202;
+    --accent-text: #ffffff;
+    --accent-sub: #e11d48;
+    --accent-sub-rgb: 225 29 72;
+    --accent-sub-hover: #be123c;
+    --accent-sub-hover-rgb: 190 18 60;
+    --accent-sub-text: #ffffff;
+    --success: #22c55e;
+    --success-rgb: 34 197 94;
+    --success-bg: rgba(34, 197, 94, 0.15);
+    --success-text: #86efac;
+    --warning: #eab308;
+    --warning-rgb: 234 179 8;
+    --warning-bg: rgba(234, 179, 8, 0.15);
+    --warning-text: #fde047;
+    --error: #ef4444;
+    --error-rgb: 239 68 68;
+    --error-bg: rgba(239, 68, 68, 0.15);
+    --error-text: #fca5a5;
+  }
+}
+
+.theme-logo-dark {
+  display: none !important;
+}
+.theme-logo-light {
+  display: block !important;
+}
+
+html[data-theme='dark'] .theme-logo-dark {
+  display: block !important;
+}
+html[data-theme='dark'] .theme-logo-light {
+  display: none !important;
+}
+
+@media (prefers-color-scheme: dark) {
+  html[data-theme='system'] .theme-logo-dark {
+    display: block !important;
+  }
+  html[data-theme='system'] .theme-logo-light {
+    display: none !important;
+  }
+}
+
+::selection {
+  background-color: var(--accent);
+  color: #ffffff;
+}
+
 * {
-  @apply font-montserrat font-medium ring-zinc-400 focus:outline-none focus:ring-4;
-  scrollbar-width: thin; /* Firefox */
-  -ms-overflow-style: none; /* IE 10+ */
+  @apply ring-accent/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-surface-card;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+  -ms-overflow-style: none;
 }
 
 *::-webkit-scrollbar-track {
-  -webkit-box-shadow: none !important;
   background-color: transparent !important;
 }
 
 *::-webkit-scrollbar {
   width: 6px !important;
-  position: absolute;
   background-color: transparent;
 }
 
 *::-webkit-scrollbar-thumb {
-  @apply bg-black/75;
+  background-color: var(--border);
+  border-radius: 9999px;
 }
 
 input[type='checkbox'] {
@@ -43,7 +209,6 @@ input[type='checkbox'] {
   width: 1px;
 }
 
-/* Opt back in to a visible native checkbox (forms that have no custom checkbox visual). */
 input[type='checkbox'].native-checkbox {
   clip: auto;
   clip-path: none;
@@ -63,22 +228,33 @@ input[type='number']::-webkit-outer-spin-button {
 body {
   min-height: 100vh;
   min-height: -webkit-fill-available;
+  background-color: var(--bg);
+  color: var(--text-main);
+  font-family: 'Be Vietnam Pro', sans-serif;
 }
+
 html {
   height: -webkit-fill-available;
+  background-color: var(--bg);
+  color: var(--text-main);
+  font-family: 'Be Vietnam Pro', sans-serif;
 }
 
 @layer components {
   .btn {
-    @apply bg-black px-5 py-3 text-white transition-all hover:scale-105 active:scale-100;
+    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-accent px-5 py-3 text-sm font-semibold text-accent-text shadow-sm transition-colors hover:bg-accent-hover hover:shadow-card active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-surface-card;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-surface-card px-5 py-3 text-sm font-semibold text-main transition-colors hover:bg-surface active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40;
   }
 
   .btn-icon {
-    @apply fill-black p-1 text-xl transition-all hover:scale-105 active:scale-100;
+    @apply rounded-xl p-2 text-muted transition-colors hover:bg-surface hover:text-accent active:scale-95;
   }
 
   .divider {
-    @apply my-5 h-px w-full bg-zinc-200;
+    @apply my-5 h-px w-full bg-border;
   }
 
   .overflow-overlay {
@@ -87,48 +263,69 @@ html {
   }
 
   .input {
-    @apply rounded-md border px-2 py-1;
+    @apply rounded-xl border border-border bg-surface-card px-3 py-2 text-sm text-main transition-colors focus:border-accent focus:ring-2 focus:ring-accent/20;
   }
 
-  /* Back office: rounded cards, tables and pill buttons of the management pages. */
-  .admin-card {
-    @apply rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm;
-  }
-
-  .admin-table-wrap {
-    @apply overflow-x-auto rounded-3xl border border-zinc-200 bg-white shadow-sm;
-  }
-
-  .admin-table {
-    @apply w-full text-left text-sm;
-  }
-
-  .admin-table th {
-    @apply whitespace-nowrap border-b border-zinc-200 bg-zinc-50 px-6 py-4 font-semibold text-zinc-700;
-  }
-
-  .admin-table td {
-    @apply border-b border-zinc-100 px-6 py-4 align-middle text-zinc-700;
-  }
-
-  .admin-table tbody tr:hover {
-    @apply bg-zinc-50;
-  }
-
-  .admin-label {
-    @apply mb-2 block text-sm font-semibold text-zinc-700;
-  }
-
-  .btn-pill {
-    @apply inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full border border-zinc-200 bg-white px-4 py-2 text-sm font-semibold text-black transition hover:border-zinc-900 disabled:cursor-not-allowed disabled:opacity-40;
-  }
-
-  .btn-pill-dark {
-    @apply inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-full bg-black px-5 py-2 text-sm font-semibold text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-40;
+  .input::placeholder {
+    color: var(--text-muted);
+    opacity: 0.6;
   }
 
   .badge {
-    @apply inline-block whitespace-nowrap rounded-full px-3 py-1 text-xs font-semibold;
+    @apply inline-flex items-center whitespace-nowrap rounded-full px-2.5 py-0.5 text-xs font-semibold;
+  }
+
+  .badge-ruby {
+    @apply inline-flex items-center whitespace-nowrap rounded-full bg-accent-sub px-2.5 py-0.5 text-xs font-bold text-accent-sub-text shadow-sm;
+  }
+
+  .badge-accent {
+    @apply inline-flex items-center whitespace-nowrap rounded-full bg-accent/10 px-2.5 py-0.5 text-xs font-semibold text-accent;
+  }
+
+  .card {
+    @apply rounded-2xl border border-border bg-surface-card p-6 shadow-card transition-[box-shadow,border-color] duration-200 hover:shadow-card-hover;
+  }
+
+  /* Back office & general buttons */
+  .admin-card {
+    @apply rounded-2xl border border-border bg-surface-card p-6 shadow-sm;
+  }
+
+  .admin-table-wrap {
+    @apply overflow-x-auto rounded-2xl border border-border bg-surface-card shadow-sm;
+  }
+
+  .admin-table {
+    @apply w-full text-left text-xs text-muted border-collapse;
+  }
+
+  .admin-table th {
+    @apply whitespace-nowrap border-b border-border bg-surface p-4 text-xs font-bold text-main;
+  }
+
+  .admin-table td {
+    @apply border-b border-border/60 p-4 align-middle text-muted;
+  }
+
+  .admin-table tbody tr:hover {
+    @apply bg-surface/50 transition-colors;
+  }
+
+  .admin-label {
+    @apply mb-2 block text-xs font-bold text-main;
+  }
+
+  .btn-pill {
+    @apply inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-xl border border-border bg-surface-card px-3 py-1.5 text-xs font-bold text-main shadow-sm transition-colors duration-150 hover:border-accent hover:bg-surface hover:text-accent disabled:cursor-not-allowed disabled:opacity-40;
+  }
+
+  .btn-pill-dark {
+    @apply inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-xl bg-accent px-4 py-2 text-xs font-bold text-accent-text shadow-sm transition-colors duration-150 hover:bg-accent-hover hover:shadow-md disabled:cursor-not-allowed disabled:opacity-40;
+  }
+
+  .badge {
+    @apply inline-block whitespace-nowrap rounded-full px-2.5 py-0.5 text-[11px] font-bold;
   }
 
   /* News article text rendered by App\Support\ArticleFormatter (and the editor preview). */
@@ -137,27 +334,31 @@ html {
   }
 
   .article-body h2 {
-    @apply pt-3 text-2xl font-bold leading-snug text-zinc-900;
+    @apply pt-4 text-2xl font-bold font-sans leading-snug text-main sm:text-3xl;
   }
 
   .article-body h3 {
-    @apply pt-2 text-xl font-semibold leading-snug text-zinc-900;
+    @apply pt-3 text-xl font-bold font-sans leading-snug text-main sm:text-2xl;
+  }
+
+  .article-body p {
+    @apply leading-relaxed text-main/90;
   }
 
   .article-body ul {
-    @apply list-disc space-y-2 pl-6;
+    @apply list-disc space-y-2 pl-6 text-main/90;
   }
 
   .article-body ol {
-    @apply list-decimal space-y-2 pl-6;
+    @apply list-decimal space-y-2 pl-6 text-main/90;
   }
 
   .article-body blockquote {
-    @apply border-l-4 border-zinc-900 pl-4 italic text-zinc-600;
+    @apply border-l-4 border-accent bg-surface/40 py-2 pl-5 italic text-muted rounded-r-xl;
   }
 
   .article-body strong {
-    @apply font-semibold text-zinc-900;
+    @apply font-semibold text-main;
   }
 }
 

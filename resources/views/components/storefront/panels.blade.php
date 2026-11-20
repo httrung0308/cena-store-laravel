@@ -1,63 +1,212 @@
 @php
     $isAdminAccount = auth()->user()?->hasRole(App\Enums\RoleSlug::Admin) ?? false;
+    $navGenderCategories = $navGenderCategories ?? [];
+    $navSilhouettes = $navSilhouettes ?? collect();
+    $navActivities = $navActivities ?? collect();
 @endphp
 {{-- Click-catcher; the account dropdown keeps the page undimmed like a menu, other panels dim it. --}}
 <div x-cloak x-show="panel" class="fixed inset-0 z-30" x-bind:class="panel === 'account' ? 'bg-transparent' : 'bg-black/50'" @click="closePanel()" x-transition.opacity></div>
-<section id="mobile-menu" x-cloak x-show="panel === 'menu'" x-transition.opacity role="dialog" aria-modal="true" aria-label="Menu" class="fixed inset-0 z-40 flex flex-col items-center justify-center gap-5 bg-white" @keydown.tab="trapFocus($event)">
-    <button type="button" class="btn-icon absolute right-10 top-5" @click="closePanel()" aria-label="Close menu"><x-storefront.icon name="close"/></button>
-    @foreach (['Men' => 'men', 'Women' => 'women', 'Kids' => 'kids', 'Unisex' => 'unisex'] as $label => $gender)
-        <a href="{{ route('shoes.index', ['gender' => $gender]) }}" class="text-2xl font-semibold" @click="closePanel()">{{ $label }}</a>
-    @endforeach
-    <a href="{{ route('news.index') }}" class="text-2xl font-semibold" @click="closePanel()">News</a>
+<section id="mobile-menu" x-cloak x-show="panel === 'menu'" x-transition.opacity role="dialog" aria-modal="true" aria-label="Menu" class="fixed inset-0 z-40 flex flex-col overflow-y-auto bg-surface-card p-6 pt-16 pb-8" @keydown.tab="trapFocus($event)">
+    <button type="button" data-autofocus class="btn-icon fixed right-5 top-4" @click="closePanel()" aria-label="Close menu"><x-storefront.icon name="close"/></button>
+    <div class="mx-auto flex w-full max-w-sm flex-col gap-5">
+        <a href="{{ route('home') }}" class="self-start" @click="closePanel()">
+            <img src="{{ asset('cena-logo.svg') }}" alt="Cena" class="theme-logo-light h-8 w-auto">
+            <img src="{{ asset('cena-logo-white.svg') }}" alt="Cena" class="theme-logo-dark h-8 w-auto">
+        </a>
+
+        {{-- Tìm kiếm trên mobile --}}
+        <form action="{{ route('shoes.index') }}" method="GET" role="search" class="flex items-center gap-2">
+            <div class="relative flex-1">
+                <svg class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35m1.85-5.15a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                </svg>
+                <input type="search"
+                       name="search"
+                       value="{{ request('search') }}"
+                       placeholder="Tìm kiếm giày..."
+                       aria-label="Tìm kiếm sản phẩm"
+                       class="input w-full py-2 pl-9 pr-3 text-sm">
+            </div>
+            <button type="submit" class="btn py-2 px-3.5 text-xs">Tìm</button>
+        </form>
+
+        <nav class="flex flex-col divide-y divide-border/70 border-y border-border/70" aria-label="Menu di động">
+            <a href="{{ route('shoes.index') }}"
+               @click="closePanel()"
+               @class([
+                   'py-3.5 text-base transition-colors',
+                   'font-bold text-accent' => request()->routeIs('shoes.*'),
+                   'font-semibold text-main hover:text-accent' => ! request()->routeIs('shoes.*'),
+               ])>
+                Sản phẩm
+            </a>
+
+            <div x-data="{ catOpen: false }" class="py-3.5">
+                <div class="flex items-center justify-between gap-2">
+                    <a href="{{ route('categories.index') }}"
+                       @click="closePanel()"
+                       @class([
+                           'flex-1 text-base transition-colors',
+                           'font-bold text-accent' => request()->routeIs('categories.index'),
+                           'font-semibold text-main hover:text-accent' => ! request()->routeIs('categories.index'),
+                       ])>
+                        Danh mục &amp; Phân loại
+                    </a>
+                    <button type="button"
+                            @click="catOpen = !catOpen"
+                            :aria-expanded="catOpen.toString()"
+                            aria-label="Mở rộng danh mục và phân loại"
+                            class="rounded-lg border border-border bg-surface p-1.5 text-muted transition-colors hover:text-accent">
+                        <svg class="h-4 w-4 transition-transform duration-150" :class="catOpen && 'rotate-180'" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <div x-cloak x-show="catOpen" class="mt-3 space-y-3 rounded-xl border border-border/70 bg-surface/50 p-3">
+                    <div class="space-y-1.5">
+                        <p class="text-[11px] font-bold uppercase tracking-wider text-muted font-mono">Đối tượng</p>
+                        <div class="grid grid-cols-2 gap-1.5">
+                            @foreach (['Giày Nam' => 'men', 'Giày Nữ' => 'women', 'Trẻ Em' => 'kids', 'Unisex' => 'unisex'] as $label => $gender)
+                                <a href="{{ route('shoes.index', ['gender' => $gender]) }}"
+                                   @click="closePanel()"
+                                   class="rounded-lg border border-border bg-surface-card px-2.5 py-1.5 text-xs font-semibold text-main hover:border-accent hover:text-accent">
+                                    {{ $label }}
+                                </a>
+                            @endforeach
+                        </div>
+                    </div>
+
+                    @if ($navSilhouettes->isNotEmpty())
+                        <div class="space-y-1.5 border-t border-border/60 pt-2.5">
+                            <p class="text-[11px] font-bold uppercase tracking-wider text-muted font-mono">Kiểu dáng</p>
+                            <div class="flex flex-wrap gap-1.5">
+                                @foreach ($navSilhouettes as $silhouette)
+                                    <a href="{{ route('shoes.index', ['silhouette' => [$silhouette->slug]]) }}"
+                                       @click="closePanel()"
+                                       class="max-w-full rounded-lg border border-border bg-surface-card px-2 py-1 text-left text-xs font-medium leading-snug text-main break-words hover:border-accent hover:text-accent">
+                                        {{ $silhouette->name }}
+                                    </a>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
+
+                    @if ($navActivities->isNotEmpty())
+                        <div class="space-y-1.5 border-t border-border/60 pt-2.5">
+                            <p class="text-[11px] font-bold uppercase tracking-wider text-muted font-mono">Mục đích sử dụng</p>
+                            <div class="flex flex-wrap gap-1.5">
+                                @foreach ($navActivities as $activity)
+                                    <a href="{{ route('shoes.index', ['activity' => [$activity->slug]]) }}"
+                                       @click="closePanel()"
+                                       class="inline-flex max-w-full items-center gap-1 rounded-full border border-accent/25 bg-accent/5 px-2.5 py-1 text-left text-xs font-medium leading-snug text-main break-words hover:border-accent hover:text-accent">
+                                        <span class="h-1.5 w-1.5 shrink-0 rounded-full bg-accent" aria-hidden="true"></span>
+                                        <span class="min-w-0 break-words">{{ $activity->name }}</span>
+                                    </a>
+                                @endforeach
+                            </div>
+                        </div>
+                    @endif
+
+                    @if ($navSilhouettes->isEmpty() && $navActivities->isEmpty())
+                        <div class="border-t border-border/60 pt-2.5">
+                            <a href="{{ route('categories.index') }}" @click="closePanel()" class="inline-flex items-center gap-1 text-xs font-semibold text-accent hover:underline">
+                                <span>Xem toàn bộ kiểu dáng &amp; mục đích</span>
+                                <span aria-hidden="true">→</span>
+                            </a>
+                        </div>
+                    @endif
+                </div>
+            </div>
+
+            <a href="{{ route('news.index') }}"
+               @click="closePanel()"
+               @class([
+                   'py-3.5 text-base transition-colors',
+                   'font-bold text-accent' => request()->routeIs('news.*'),
+                   'font-semibold text-main hover:text-accent' => ! request()->routeIs('news.*'),
+               ])>
+                Bài viết
+            </a>
+        </nav>
+
+        <div class="flex items-center justify-between gap-2 pt-1">
+            @auth
+                <a href="{{ route('account.index') }}" @click="closePanel()" class="btn-secondary flex-1 py-2 text-xs">Tài khoản của tôi</a>
+            @else
+                <a href="{{ route('login') }}" @click="closePanel()" class="btn flex-1 py-2 text-xs">Đăng nhập</a>
+            @endauth
+        </div>
+
+        <div class="flex items-center justify-center gap-1.5 rounded-xl border border-border bg-surface p-1 text-xs">
+            <button type="button" @click="setTheme('light')" class="flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2.5 py-1.5 font-medium transition" :class="theme === 'light' ? 'bg-surface-card text-accent shadow-sm font-semibold' : 'text-muted hover:text-main'" aria-label="Giao diện Sáng">
+                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+                <span>Sáng</span>
+            </button>
+            <button type="button" @click="setTheme('dark')" class="flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2.5 py-1.5 font-medium transition" :class="theme === 'dark' ? 'bg-surface-card text-accent shadow-sm font-semibold' : 'text-muted hover:text-main'" aria-label="Giao diện Tối">
+                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+                <span>Tối</span>
+            </button>
+            <button type="button" @click="setTheme('system')" class="flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2.5 py-1.5 font-medium transition" :class="theme === 'system' ? 'bg-surface-card text-accent shadow-sm font-semibold' : 'text-muted hover:text-main'" aria-label="Giao diện Theo hệ thống">
+                <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></svg>
+                <span>Hệ thống</span>
+            </button>
+        </div>
+    </div>
 </section>
 @unless ($isAdminAccount)
-<section id="cart-panel" x-cloak x-show="panel === 'cart'" x-transition:enter="transition-transform duration-300" x-transition:enter-start="translate-x-full" x-transition:enter-end="translate-x-0" x-transition:leave="transition-transform duration-300" x-transition:leave-start="translate-x-0" x-transition:leave-end="translate-x-full" class="fixed right-0 top-0 z-40 flex h-full w-full flex-col gap-5 bg-white p-5 sm:w-[32rem] sm:p-10 lg:w-[36rem]" role="dialog" aria-modal="true" aria-label="Giỏ hàng" @keydown.tab="trapFocus($event)"
+<section id="cart-panel" x-cloak x-show="panel === 'cart'" x-transition:enter="transition-transform duration-300" x-transition:enter-start="translate-x-full" x-transition:enter-end="translate-x-0" x-transition:leave="transition-transform duration-300" x-transition:leave-start="translate-x-0" x-transition:leave-end="translate-x-full" class="fixed right-0 top-0 z-40 flex h-full w-full flex-col gap-5 border-l border-border bg-surface-card p-6 shadow-elevated sm:w-[32rem] sm:p-8 lg:w-[36rem]" role="dialog" aria-modal="true" aria-label="Giỏ hàng" @keydown.tab="trapFocus($event)"
     x-init="$store.cart.configure(@js(['show' => route('cart.show'), 'add' => route('cart.items.store'), 'item' => route('cart.items.update', ['item' => '__ID__']), 'clear' => route('cart.clear')])); $store.cart.load()">
-    <div class="flex w-full items-center justify-between">
+    <div class="flex w-full items-center justify-between border-b border-border pb-4">
         <div class="flex items-center gap-2">
-            <h2 class="text-xl font-semibold">Giỏ hàng (<span x-text="$store.cart.count">0</span>)</h2>
-            <button type="button" class="text-sm hover:underline disabled:opacity-40" x-show="$store.cart.items.length > 0" x-bind:disabled="$store.cart.isBusy()" @click="$store.cart.clear()">(Xóa tất cả)</button>
+            <h2 class="text-xl font-bold text-main">Giỏ hàng (<span x-text="$store.cart.count" class="text-accent">0</span>)</h2>
+            <button type="button" class="text-xs text-muted hover:text-accent hover:underline disabled:opacity-40" x-show="$store.cart.items.length > 0" x-bind:disabled="$store.cart.isBusy()" @click="$store.cart.clear()">(Xóa tất cả)</button>
         </div>
         <button type="button" class="btn-icon" @click="closePanel()" aria-label="Đóng giỏ hàng"><x-storefront.icon name="close"/></button>
     </div>
 
     <div aria-live="polite" class="space-y-2 text-sm">
-        <p x-show="$store.cart.error" x-text="$store.cart.error" role="alert" class="border border-red-300 bg-red-50 px-3 py-2 text-red-700"></p>
-        <template x-for="notice in $store.cart.notices" :key="notice"><p x-text="notice" class="border border-amber-300 bg-amber-50 px-3 py-2 text-amber-800"></p></template>
+        <div x-show="$store.cart.error" role="alert" class="flex items-center justify-between rounded-xl border border-error/30 bg-error-bg px-3.5 py-2.5 text-error-text font-medium text-xs">
+            <span x-text="$store.cart.error" class="flex-1 break-words"></span>
+            <button type="button" @click="$store.cart.error = ''" class="ml-2 text-error-text/70 hover:text-error-text font-bold text-sm leading-none" aria-label="Đóng thông báo">×</button>
+        </div>
+        <template x-for="notice in $store.cart.notices" :key="notice"><p x-text="notice" class="rounded-xl border border-warning/30 bg-warning-bg px-3.5 py-2.5 text-warning-text font-medium text-xs"></p></template>
     </div>
 
-    <ul class="overflow-overlay -mr-1 flex flex-1 flex-col gap-5 overflow-x-hidden p-1" aria-label="Sản phẩm trong giỏ">
+    <ul class="overflow-overlay -mr-1 flex flex-1 flex-col gap-4 overflow-x-hidden p-1" aria-label="Sản phẩm trong giỏ">
         <template x-for="item in $store.cart.items" :key="item.id">
-            <li class="flex gap-4" x-bind:aria-busy="$store.cart.isBusy('item-' + item.id).toString()">
-                <div class="h-24 w-24 shrink-0 bg-zinc-100">
-                    <img x-show="item.thumbnail_url" x-bind:src="item.thumbnail_url" alt="" class="h-full w-full object-cover" loading="lazy">
+            <li class="flex gap-4 rounded-xl border border-border/70 bg-surface/40 p-3 transition-opacity duration-150" x-bind:class="$store.cart.isBusy('item-' + item.id) && 'opacity-50 pointer-events-none'" x-bind:aria-busy="$store.cart.isBusy('item-' + item.id).toString()">
+                <div class="h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-surface-card border border-border/60">
+                    <img x-show="item.thumbnail_url" x-bind:src="item.thumbnail_url" alt="Ảnh sản phẩm trong giỏ" class="h-full w-full object-cover" loading="lazy" decoding="async">
                 </div>
-                <div class="flex min-w-0 flex-1 flex-col gap-1 text-sm">
-                    <template x-if="item.product_url"><a x-bind:href="item.product_url" class="truncate font-semibold hover:underline" x-text="item.product_name"></a></template>
-                    <template x-if="!item.product_url"><p class="truncate font-semibold" x-text="item.product_name"></p></template>
-                    <p class="text-zinc-600"><span x-text="item.color_name"></span> · Size <span x-text="item.size_value"></span></p>
-                    <p x-text="$store.cart.price(item.unit_price)"></p>
-                    <p x-show="item.notice" x-text="item.notice" class="text-xs text-red-600"></p>
-                    <div class="mt-1 flex items-center gap-3">
-                        <div class="flex items-center border border-zinc-300">
-                            <button type="button" class="px-2 py-1 disabled:opacity-30" aria-label="Giảm số lượng" x-bind:disabled="$store.cart.isBusy() || item.quantity <= 1" @click="$store.cart.update(item, item.quantity - 1)">−</button>
-                            <span class="w-8 text-center" x-text="item.quantity"></span>
-                            <button type="button" class="px-2 py-1 disabled:opacity-30" aria-label="Tăng số lượng" x-bind:disabled="$store.cart.isBusy() || item.quantity >= item.max_quantity" @click="$store.cart.update(item, item.quantity + 1)">+</button>
+                <div class="flex min-w-0 flex-1 flex-col justify-between text-sm">
+                    <div>
+                        <template x-if="item.product_url"><a x-bind:href="item.product_url" class="truncate font-semibold text-main hover:text-accent hover:underline block" x-text="item.product_name"></a></template>
+                        <template x-if="!item.product_url"><p class="truncate font-semibold text-main" x-text="item.product_name"></p></template>
+                        <p class="text-xs text-muted mt-0.5"><span x-text="item.color_name"></span> · Size <span x-text="item.size_value" class="font-medium text-main"></span></p>
+                    </div>
+                    <p class="text-xs font-semibold text-accent" x-text="$store.cart.price(item.unit_price)"></p>
+                    <p x-show="item.notice" x-text="item.notice" class="text-xs text-error font-medium"></p>
+                    <div class="mt-2 flex items-center justify-between">
+                        <div class="flex items-center rounded-lg border border-border bg-surface-card shadow-subtle">
+                            <button type="button" class="px-2.5 py-1 text-muted hover:text-main disabled:opacity-30 rounded-md focus-visible:ring-1 focus-visible:ring-accent focus-visible:ring-offset-1 focus-visible:ring-offset-surface-card" aria-label="Giảm số lượng" x-bind:disabled="$store.cart.isBusy() || item.quantity <= 1" @click="$store.cart.update(item, item.quantity - 1)">−</button>
+                            <span class="w-7 text-center text-xs font-bold text-main" x-text="item.quantity"></span>
+                            <button type="button" class="px-2.5 py-1 text-muted hover:text-main disabled:opacity-30 rounded-md focus-visible:ring-1 focus-visible:ring-accent focus-visible:ring-offset-1 focus-visible:ring-offset-surface-card" aria-label="Tăng số lượng" x-bind:disabled="$store.cart.isBusy() || item.quantity >= item.max_quantity" @click="$store.cart.update(item, item.quantity + 1)">+</button>
                         </div>
-                        <button type="button" class="text-xs underline disabled:opacity-30" x-bind:disabled="$store.cart.isBusy()" @click="$store.cart.remove(item)">Xóa</button>
+                        <button type="button" class="text-xs text-muted hover:text-error underline disabled:opacity-30 rounded focus-visible:ring-1 focus-visible:ring-error focus-visible:ring-offset-1 focus-visible:ring-offset-surface-card" x-bind:disabled="$store.cart.isBusy()" @click="$store.cart.remove(item)">Xóa</button>
                     </div>
                 </div>
-                <p class="shrink-0 text-sm font-semibold" x-text="$store.cart.price(item.line_total)"></p>
+                <p class="shrink-0 text-sm font-bold text-main" x-text="$store.cart.price(item.line_total)"></p>
             </li>
         </template>
-        <li x-show="$store.cart.loaded && $store.cart.items.length === 0" class="py-10 text-center text-sm text-zinc-500">
-            Giỏ hàng đang trống. <a href="{{ route('shoes.index') }}" class="underline">Xem sản phẩm</a>
+        <li x-show="$store.cart.loaded && $store.cart.items.length === 0" class="py-12 text-center text-sm text-muted">
+            Giỏ hàng đang trống. <a href="{{ route('shoes.index') }}" class="font-semibold text-accent underline hover:text-accent-hover">Xem sản phẩm</a>
         </li>
     </ul>
 
-    <div class="space-y-2 border-t border-zinc-200 pt-4">
-        <div class="flex w-full items-center justify-between"><h3 class="text-xl font-semibold">Tạm tính</h3><p class="text-xl font-semibold" x-text="$store.cart.price($store.cart.subtotal)">0 ₫</p></div>
-        <p class="text-xs text-zinc-500" x-text="$store.cart.checkoutNote"></p>
+    <div class="space-y-3 border-t border-border pt-4">
+        <div class="flex w-full items-center justify-between"><h3 class="text-base font-semibold text-muted">Tạm tính</h3><p class="text-2xl font-bold text-accent" x-text="$store.cart.price($store.cart.subtotal)">0 ₫</p></div>
+        <p class="text-xs text-muted" x-text="$store.cart.checkoutNote"></p>
         @auth
             <a href="{{ route('checkout.show') }}" class="btn block w-full text-center" x-bind:class="$store.cart.count === 0 && 'pointer-events-none opacity-50'" x-bind:aria-disabled="($store.cart.count === 0).toString()">Đặt hàng</a>
         @else
@@ -66,11 +215,11 @@
     </div>
 </section>
 @else
-<section id="cart-panel" x-cloak x-show="panel === 'cart'" class="fixed right-0 top-0 z-40 flex h-full w-full flex-col gap-5 bg-white p-5 sm:w-[32rem] sm:p-10 lg:w-[36rem]" role="dialog" aria-modal="true" aria-label="Tài khoản quản trị" @keydown.tab="trapFocus($event)"
+<section id="cart-panel" x-cloak x-show="panel === 'cart'" class="fixed right-0 top-0 z-40 flex h-full w-full flex-col gap-5 border-l border-border bg-surface-card p-6 shadow-elevated sm:w-[32rem] sm:p-8 lg:w-[36rem]" role="dialog" aria-modal="true" aria-label="Tài khoản quản trị" @keydown.tab="trapFocus($event)"
     x-init="$store.cart.configure(@js(['show' => route('cart.show'), 'add' => route('cart.items.store'), 'item' => route('cart.items.update', ['item' => '__ID__']), 'clear' => route('cart.clear')]))">
     <button type="button" class="btn-icon self-end" @click="closePanel()" aria-label="Đóng thông báo"><x-storefront.icon name="close"/></button>
-    <h2 class="text-xl font-semibold">Tài khoản quản trị</h2>
-    <p>Tài khoản quản trị không dùng để mua sắm. Vui lòng đăng nhập bằng tài khoản khách hàng để đặt hàng.</p>
+    <h2 class="text-xl font-bold text-main">Tài khoản quản trị</h2>
+    <p class="text-sm text-muted">Tài khoản quản trị không dùng để mua sắm. Vui lòng đăng nhập bằng tài khoản khách hàng để đặt hàng.</p>
     <a href="{{ route('admin.dashboard') }}" class="btn text-center">Về trang quản trị</a>
 </section>
 @endunless
@@ -78,7 +227,9 @@
     @php
         $accountUser = auth()->user();
         $isBackOffice = $accountUser->roles()->whereIn('slug', ['admin', 'staff'])->exists();
+        $isCustomerAccount = $accountUser->hasRole(App\Enums\RoleSlug::Customer) && ! $isAdminAccount;
         $menuItems = array_values(array_filter([
+            $isCustomerAccount ? ['href' => route('notifications.index'), 'label' => 'Thông báo', 'icon' => 'M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4'] : null,
             $isAdminAccount ? null : ['href' => route('orders.index'), 'label' => 'Đơn hàng của tôi', 'icon' => 'M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4zM3 6h18M16 10a4 4 0 0 1-8 0'],
             $isAdminAccount ? null : ['href' => route('account.addresses.index'), 'label' => 'Sổ địa chỉ', 'icon' => 'M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0zM12 13a3 3 0 1 0 0-6 3 3 0 0 0 0 6z'],
             ['href' => route('account.settings'), 'label' => 'Cài đặt tài khoản', 'icon' => 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z'],
@@ -90,43 +241,43 @@
     <section id="account-panel" x-cloak x-show="panel === 'account'"
         x-transition:enter="transition duration-150 ease-out" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100"
         x-transition:leave="transition duration-100 ease-in" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95"
-        class="fixed right-3 top-16 z-40 w-[calc(100%-1.5rem)] max-w-sm origin-top-right rounded-2xl bg-white p-3 text-black shadow-[0_12px_28px_rgba(0,0,0,0.2),0_2px_4px_rgba(0,0,0,0.1)] sm:right-10 xl:right-24 2xl:right-48"
+        class="fixed right-3 top-16 z-40 w-[calc(100%-1.5rem)] max-w-sm origin-top-right rounded-2xl border border-border bg-surface-card p-4 text-main shadow-card-hover sm:right-8 xl:right-16"
         role="dialog" aria-modal="true" aria-labelledby="account-title" @keydown.tab="trapFocus($event)">
-        <div class="rounded-xl p-2 shadow-[0_2px_12px_rgba(0,0,0,0.12)]">
-            <a href="{{ route('account.index') }}" data-autofocus class="flex items-center gap-3 rounded-lg p-2 transition hover:bg-zinc-100 focus-visible:ring-4">
-                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-black text-lg font-semibold text-white" aria-hidden="true">{{ $initial }}</span>
+        <div class="rounded-xl border border-border/80 bg-surface/50 p-2.5">
+            <a href="{{ route('account.index') }}" data-autofocus class="flex items-center gap-3 rounded-lg p-2 transition hover:bg-surface-card focus-visible:ring-4">
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent text-base font-bold text-accent-text" aria-hidden="true">{{ $initial }}</span>
                 <span class="min-w-0">
-                    <span id="account-title" class="block truncate text-base font-semibold">{{ $accountUser->full_name }}</span>
-                    <span class="block truncate text-xs text-zinc-500">{{ $accountUser->email }}</span>
+                    <span id="account-title" class="block truncate text-sm font-bold text-main">{{ $accountUser->full_name }}</span>
+                    <span class="block truncate text-xs text-muted">{{ $accountUser->email }}</span>
                 </span>
             </a>
-            <div class="mx-2 my-2 h-px bg-zinc-200"></div>
-            <a href="{{ route('account.index') }}" class="flex items-center justify-center gap-2 rounded-lg bg-zinc-100 px-3 py-2 text-sm font-semibold transition hover:bg-zinc-200">
+            <div class="mx-2 my-2 h-px bg-border"></div>
+            <a href="{{ route('account.index') }}" class="flex items-center justify-center gap-2 rounded-lg bg-surface-card border border-border/60 px-3 py-2 text-xs font-semibold text-main transition hover:border-accent hover:text-accent shadow-subtle">
                 <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"/></svg>
                 Tài khoản của tôi
             </a>
         </div>
-        <nav class="mt-2 flex flex-col" aria-label="Tài khoản">
+        <nav class="mt-2 flex flex-col gap-1" aria-label="Tài khoản">
             @foreach ($menuItems as $item)
-                <a href="{{ $item['href'] }}" class="flex items-center gap-3 rounded-lg p-2 text-sm font-semibold transition hover:bg-zinc-100">
-                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-zinc-200" aria-hidden="true"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{ $item['icon'] }}"/></svg></span>
+                <a href="{{ $item['href'] }}" class="flex items-center gap-3 rounded-lg p-2.5 text-xs font-semibold text-muted transition hover:bg-surface hover:text-accent">
+                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface border border-border/60" aria-hidden="true"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="{{ $item['icon'] }}"/></svg></span>
                     <span class="flex-1">{{ $item['label'] }}</span>
-                    <svg class="h-4 w-4 text-zinc-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+                    <svg class="h-4 w-4 text-muted/60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
                 </a>
             @endforeach
             <form method="POST" action="{{ route('logout') }}">
                 @csrf
-                <button type="submit" class="flex w-full items-center gap-3 rounded-lg p-2 text-left text-sm font-semibold transition hover:bg-zinc-100">
-                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-zinc-200" aria-hidden="true"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg></span>
+                <button type="submit" class="flex w-full items-center gap-3 rounded-lg p-2.5 text-left text-xs font-semibold text-muted transition hover:bg-error-bg hover:text-error">
+                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface border border-border/60" aria-hidden="true"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg></span>
                     Đăng xuất
                 </button>
             </form>
         </nav>
-        <p class="px-2 pt-2 text-[11px] text-zinc-400">Fakestore · bản demo đồ án</p>
+        <p class="px-2 pt-2 text-[11px] text-muted/70">Cena · bản demo đồ án</p>
     </section>
 @endauth
-<section id="notice-panel" x-cloak x-show="panel === 'notice'" x-transition.opacity class="fixed left-1/2 top-1/2 z-40 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 bg-white p-8" role="dialog" aria-modal="true" aria-labelledby="notice-title" @keydown.tab="trapFocus($event)">
-    <button type="button" class="btn-icon absolute right-3 top-3" @click="closePanel()" aria-label="Close notification"><x-storefront.icon name="close"/></button>
-    <h2 id="notice-title" class="mb-4 text-xl font-semibold" x-text="noticeTitle"></h2>
-    <p class="text-sm leading-6">Our online shop is getting ready. Please check back soon.</p>
+<section id="notice-panel" x-cloak x-show="panel === 'notice'" x-transition.opacity class="fixed left-1/2 top-1/2 z-40 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-border bg-surface-card p-8 shadow-elevated" role="dialog" aria-modal="true" aria-labelledby="notice-title" @keydown.tab="trapFocus($event)">
+    <button type="button" class="btn-icon absolute right-4 top-4" @click="closePanel()" aria-label="Close notification"><x-storefront.icon name="close"/></button>
+    <h2 id="notice-title" class="mb-3 text-lg font-bold text-main" x-text="noticeTitle"></h2>
+    <p class="text-sm leading-relaxed text-muted">Cửa hàng trực tuyến đang chuẩn bị sẵn sàng. Vui lòng quay lại sau.</p>
 </section>

@@ -23,7 +23,7 @@
             <template x-for="ward in wards" :key="ward.code"><option x-bind:value="ward.code" x-text="ward.name" x-bind:selected="wardCode === ward.code"></option></template>
         </select><x-forms.field-error name="ward_code" />
         <p x-show="loading" role="status" class="text-sm">Đang tải xã/phường...</p>
-        <p x-show="error" role="alert" class="text-sm text-red-500"><span x-text="error"></span> <button type="button" class="underline" x-on:click="retry()">Thử lại</button></p>
+        <p x-show="error" role="alert" class="text-sm text-error"><span x-text="error"></span> <button type="button" class="underline" x-on:click="retry()">Thử lại</button></p>
     </div>
-    <p x-show="!available" role="status" class="text-xs text-zinc-500">Chưa có nguồn dữ liệu địa giới được kết nối.</p>
+    <p x-show="!available" role="status" class="text-xs text-muted">Chưa có nguồn dữ liệu địa giới được kết nối.</p>
 </div>

@@ -1,8 +1,9 @@
 <?php
 
+use App\Http\Controllers\Storefront\HomeController;
 use Illuminate\Support\Facades\Route;
 
-Route::view('/', 'storefront.home')->name('home');
+Route::get('/', [HomeController::class, 'index'])->name('home');
 
 /*
  * Each area lives in its own route file so parallel work never edits the same file.

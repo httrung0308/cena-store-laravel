@@ -8,6 +8,7 @@ use App\Http\Requests\Admin\ArticleRequest;
 use App\Models\Article;
 use App\Services\ArticleService;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -20,21 +21,32 @@ class ArticleController extends Controller
     public function index(Request $request): View
     {
         $filters = $request->validate([
+            'search' => ['nullable', 'string', 'max:150'],
             'status' => ['nullable', Rule::enum(ArticleStatus::class)],
             'sort' => ['nullable', Rule::in(['latest', 'helpful', 'unhelpful'])],
         ]);
+        $search = trim((string) ($filters['search'] ?? ''));
+
         $articles = Article::query()
             ->withCount([
                 'feedback as helpful_count' => fn ($query) => $query->where('is_helpful', true),
                 'feedback as unhelpful_count' => fn ($query) => $query->where('is_helpful', false),
             ])
+            ->when($search !== '', function ($query) use ($search): void {
+                $pattern = '%'.str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $search).'%';
+                $query->whereRaw("title LIKE ? ESCAPE '!'", [$pattern]);
+            })
             ->when($filters['status'] ?? null, fn ($query, $status) => $query->where('status', $status))
             ->when(($filters['sort'] ?? 'latest') === 'helpful', fn ($query) => $query->orderByDesc('helpful_count')->orderBy('unhelpful_count'))
             ->when(($filters['sort'] ?? 'latest') === 'unhelpful', fn ($query) => $query->orderByDesc('unhelpful_count')->orderBy('helpful_count'))
             ->orderByDesc('updated_at')->orderByDesc('id')
             ->paginate(15)->withQueryString();
 
-        return view('admin.articles.index', ['articles' => $articles, 'filters' => $filters]);
+        return view('admin.articles.index', [
+            'articles' => $articles,
+            'filters' => $filters,
+            'search' => $search,
+        ]);
     }
 
     public function create(): View
@@ -61,10 +73,27 @@ class ArticleController extends Controller
         return to_route('admin.articles.index')->with('status', 'Đã lưu bài viết.');
     }
 
-    public function hide(Article $article): RedirectResponse
+    public function hide(Request $request, Article $article): RedirectResponse|JsonResponse
     {
         $this->articles->hide($article);
+        $message = 'Đã ẩn bài viết; bài vẫn được lưu lại.';
 
-        return to_route('admin.articles.index')->with('status', 'Đã ẩn bài viết; bài vẫn được lưu lại.');
+        if ($request->expectsJson()) {
+            return response()->json(['message' => $message, 'status' => ArticleStatus::Hidden->value]);
+        }
+
+        return to_route('admin.articles.index')->with('status', $message);
+    }
+
+    public function publish(Request $request, Article $article): RedirectResponse|JsonResponse
+    {
+        $updated = $this->articles->publish($article);
+        $message = 'Đã hiển thị lại bài viết.';
+
+        if ($request->expectsJson()) {
+            return response()->json(['message' => $message, 'status' => $updated->status->value]);
+        }
+
+        return to_route('admin.articles.index')->with('status', $message);
     }
 }

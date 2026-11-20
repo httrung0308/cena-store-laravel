@@ -1,12 +1,39 @@
 // Back-office report charts. Long ranges are grouped by week (Monday first) so a quarter reads as ~13 bars
-// instead of 90 spikes. Colours: neutral gray for COGS, the validated categorical orange/aqua for other expenses
-// and profit, blue for counts. Every chart keeps one y-axis and has a table view in the page.
-const COLORS = { cogs: '#b4b2a9', expense: '#eb6834', profit: '#1baf7a', count: '#2a78d6' };
-const INK = { secondary: '#52525b', muted: '#a1a1aa', grid: '#f4f4f5', surface: '#ffffff' };
+// instead of 90 spikes. Colors are read from CSS variables / tokens to respect light/dark themes.
+// Every chart keeps one y-axis and has a table view in the page.
 const WEEKLY_AFTER_DAYS = 31;
 
 const money = new Intl.NumberFormat('vi-VN');
 const vnd = (value) => `${money.format(value)} ₫`;
+
+function getCssVar(name, fallback) {
+    if (typeof window === 'undefined') return fallback;
+    const val = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    return val || fallback;
+}
+
+function getTheme() {
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark' ||
+        (document.documentElement.getAttribute('data-theme') === 'system' && window.matchMedia?.('(prefers-color-scheme: dark)').matches);
+
+    const colors = {
+        cogs: isDark ? '#94a3b8' : '#64748b',
+        expense: getCssVar('--accent-sub', '#be123c'),
+        profit: getCssVar('--success', '#15803d'),
+        count: isDark ? '#818cf8' : getCssVar('--accent', '#201464'),
+    };
+
+    const ink = {
+        secondary: getCssVar('--text-muted', '#334155'),
+        muted: isDark ? '#94a3b8' : '#64748b',
+        grid: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)',
+        surface: getCssVar('--surface-card', isDark ? '#182235' : '#ffffff'),
+        title: getCssVar('--text-main', isDark ? '#f8fafc' : '#020617'),
+        border: getCssVar('--border', isDark ? '#29354d' : '#cbd5e1'),
+    };
+
+    return { colors, ink, isDark };
+}
 
 /** 1.250.000 → "1,25 tr", 3.400.000.000 → "3,4 tỷ": short labels for the money axis. */
 export function compactVnd(value) {
@@ -45,30 +72,51 @@ export function buckets(rows, fields) {
     });
 }
 
-const tooltip = {
-    backgroundColor: INK.surface,
-    titleColor: '#18181b',
-    bodyColor: INK.secondary,
-    footerColor: '#18181b',
-    borderColor: '#e4e4e7',
-    borderWidth: 1,
-    padding: 12,
-    boxPadding: 4,
-    usePointStyle: true,
-    titleFont: { family: 'Montserrat', weight: '600' },
-    bodyFont: { family: 'Montserrat' },
-    footerFont: { family: 'Montserrat', weight: '600' },
-};
+function createTooltip(theme) {
+    return {
+        backgroundColor: theme.ink.surface,
+        titleColor: theme.ink.title,
+        bodyColor: theme.ink.secondary,
+        footerColor: theme.ink.title,
+        borderColor: theme.ink.border,
+        borderWidth: 1,
+        padding: 12,
+        boxPadding: 4,
+        usePointStyle: true,
+        titleFont: { family: 'Be Vietnam Pro', weight: '600' },
+        bodyFont: { family: 'Be Vietnam Pro' },
+        footerFont: { family: 'Be Vietnam Pro', weight: '600' },
+    };
+}
 
-const axisX = { grid: { display: false }, border: { color: '#e4e4e7' }, ticks: { color: INK.muted, maxRotation: 0, autoSkipPadding: 12, font: { family: 'Montserrat', size: 11 } } };
-const axisY = (callback, extra = {}) => ({ grid: { color: INK.grid }, border: { display: false }, ticks: { color: INK.muted, padding: 8, maxTicksLimit: 5, callback, font: { family: 'Montserrat', size: 11 } }, ...extra });
+function createAxisX(theme) {
+    return {
+        grid: { display: false },
+        border: { color: theme.ink.border },
+        ticks: { color: theme.ink.muted, maxRotation: 0, autoSkipPadding: 12, font: { family: 'Be Vietnam Pro', size: 11 } }
+    };
+}
 
-function financeChart(Chart, canvas, periods) {
+function createAxisY(theme, callback, extra = {}) {
+    return {
+        grid: { color: theme.ink.grid },
+        border: { display: false },
+        ticks: { color: theme.ink.muted, padding: 8, maxTicksLimit: 5, callback, font: { family: 'Be Vietnam Pro', size: 11 } },
+        ...extra
+    };
+}
+
+function resetChartTooltip(chart) {
+    chart.setActiveElements?.([]);
+    chart.tooltip?.setActiveElements?.([], { x: 0, y: 0 });
+}
+
+function financeChart(Chart, canvas, periods, theme, animate = true) {
     const stack = (label, field, color, top) => ({
         label,
         data: periods.map((period) => period[field]),
         backgroundColor: color,
-        borderColor: INK.surface,
+        borderColor: theme.ink.surface,
         borderWidth: { top: 2 },
         borderRadius: top ? { topLeft: 4, topRight: 4 } : 0,
         borderSkipped: 'bottom',
@@ -81,32 +129,43 @@ function financeChart(Chart, canvas, periods) {
         data: {
             labels: periods.map((period) => period.short),
             datasets: [
-                stack('Giá vốn', 'cogs', COLORS.cogs, false),
-                stack('Chi phí khác', 'expense', COLORS.expense, false),
-                stack('Lợi nhuận', 'profit', COLORS.profit, true),
+                stack('Giá vốn', 'cogs', theme.colors.cogs, false),
+                stack('Chi phí khác', 'expense', theme.colors.expense, false),
+                stack('Lợi nhuận', 'profit', theme.colors.profit, true),
             ],
         },
         options: {
+            ...(animate ? {} : { animation: false }),
             maintainAspectRatio: false,
             interaction: { mode: 'index', intersect: false },
             plugins: {
                 legend: { display: false },
                 tooltip: {
-                    ...tooltip,
-                    filter: (item) => item.parsed.y !== 0,
+                    ...createTooltip(theme),
                     callbacks: {
-                        title: (items) => periods[items[0].dataIndex].label,
-                        label: (context) => ` ${context.dataset.label}: ${vnd(context.parsed.y)}`,
-                        footer: (items) => `Doanh thu: ${vnd(periods[items[0].dataIndex].revenue)}`,
+                        title: (items) => {
+                            if (!items?.length) return '';
+                            return periods[items[0].dataIndex]?.label ?? '';
+                        },
+                        label: (context) => {
+                            if (!context?.dataset) return '';
+                            return ` ${context.dataset.label}: ${vnd(context.parsed?.y ?? 0)}`;
+                        },
+                        footer: (items) => {
+                            if (!items?.length) return '';
+                            const period = periods[items[0].dataIndex];
+                            if (!period) return '';
+                            return `Doanh thu: ${vnd(period.revenue)} · Lợi nhuận: ${vnd(period.profit)}`;
+                        },
                     },
                 },
             },
-            scales: { x: { ...axisX, stacked: true }, y: { ...axisY(compactVnd), stacked: true } },
+            scales: { x: { ...createAxisX(theme), stacked: true }, y: { ...createAxisY(theme, compactVnd), stacked: true } },
         },
     });
 }
 
-function marginChart(Chart, canvas, periods) {
+function marginChart(Chart, canvas, periods, theme, animate = true) {
     const margin = periods.map((period) => (period.revenue > 0 ? Math.round((period.profit / period.revenue) * 1000) / 10 : null));
     const revenue = periods.reduce((sum, period) => sum + period.revenue, 0);
     const average = revenue > 0 ? Math.round((periods.reduce((sum, period) => sum + period.profit, 0) / revenue) * 1000) / 10 : null;
@@ -120,20 +179,20 @@ function marginChart(Chart, canvas, periods) {
                 {
                     label: 'Biên lợi nhuận',
                     data: margin,
-                    borderColor: COLORS.profit,
-                    backgroundColor: COLORS.profit,
+                    borderColor: theme.colors.profit,
+                    backgroundColor: theme.colors.profit,
                     borderWidth: 2,
                     tension: 0.3,
                     spanGaps: true,
                     pointRadius: periods.length > WEEKLY_AFTER_DAYS ? 0 : 4,
                     pointHoverRadius: 5,
-                    pointBorderColor: INK.surface,
+                    pointBorderColor: theme.ink.surface,
                     pointBorderWidth: 2,
                 },
                 {
                     label: 'Trung bình cả kỳ',
                     data: periods.map(() => average),
-                    borderColor: INK.muted,
+                    borderColor: theme.ink.muted,
                     borderDash: [4, 4],
                     borderWidth: 1,
                     pointRadius: 0,
@@ -142,41 +201,49 @@ function marginChart(Chart, canvas, periods) {
             ],
         },
         options: {
+            ...(animate ? {} : { animation: false }),
             maintainAspectRatio: false,
             interaction: { mode: 'index', intersect: false },
             plugins: {
                 legend: { display: false },
                 tooltip: {
-                    ...tooltip,
+                    ...createTooltip(theme),
                     callbacks: {
-                        title: (items) => periods[items[0].dataIndex].label,
-                        label: (context) => (context.parsed.y === null ? ' Chưa có doanh thu' : ` ${context.dataset.label}: ${percent(context.parsed.y)}`),
+                        title: (items) => {
+                            if (!items?.length) return '';
+                            return periods[items[0].dataIndex]?.label ?? '';
+                        },
+                        label: (context) => {
+                            if (!context?.dataset) return '';
+                            const value = context.parsed?.y;
+                            if (value === null || value === undefined || Number.isNaN(value)) {
+                                return ` ${context.dataset.label}: Chưa có doanh thu`;
+                            }
+                            return ` ${context.dataset.label}: ${percent(value)}`;
+                        },
                     },
                 },
             },
-            scales: { x: axisX, y: axisY((value) => `${value}%`, { grace: '10%' }) },
+            scales: { x: createAxisX(theme), y: createAxisY(theme, (value) => (Number.isFinite(Number(value)) ? percent(Number(value)) : ''), { grace: '10%' }) },
         },
     });
 }
 
-/** One horizontal stacked bar per article: helpful (aqua) then not helpful (orange), counted in answers. */
-function feedbackChart(Chart, canvas, articles) {
+/** One horizontal stacked bar per article: helpful then not helpful, counted in answers. */
+function feedbackChart(Chart, canvas, articles, theme, animate = true) {
     const stack = (label, field, color, last) => ({
         label,
         data: articles.map((article) => article[field]),
         backgroundColor: color,
-        borderColor: INK.surface,
+        borderColor: theme.ink.surface,
         borderWidth: { right: 2 },
         borderRadius: last ? { topRight: 4, bottomRight: 4 } : 0,
         borderSkipped: 'left',
         maxBarThickness: 22,
     });
-    // The title column has a fixed share of the width and titles are cut to fit it, so a late-loading web font can
-    // never push them past the canvas edge.
     const labelWidth = (chart) => Math.min(240, Math.round(chart.width * 0.4));
     const shorten = (title, chart) => {
         const fit = Math.max(8, Math.floor(labelWidth(chart) / 6.6));
-
         return title.length > fit ? `${title.slice(0, fit - 1)}…` : title;
     };
 
@@ -184,36 +251,44 @@ function feedbackChart(Chart, canvas, articles) {
         type: 'bar',
         data: {
             labels: articles.map((article) => article.title),
-            datasets: [stack('Hữu ích', 'helpful', COLORS.profit, false), stack('Không hữu ích', 'unhelpful', COLORS.expense, true)],
+            datasets: [stack('Hữu ích', 'helpful', theme.colors.profit, false), stack('Không hữu ích', 'unhelpful', theme.colors.expense, true)],
         },
         options: {
+            ...(animate ? {} : { animation: false }),
             indexAxis: 'y',
             maintainAspectRatio: false,
             interaction: { mode: 'index', intersect: false, axis: 'y' },
             plugins: {
                 legend: { display: false },
                 tooltip: {
-                    ...tooltip,
+                    ...createTooltip(theme),
                     callbacks: {
-                        title: (items) => articles[items[0].dataIndex].title,
-                        label: (context) => ` ${context.dataset.label}: ${context.parsed.x} lượt`,
+                        title: (items) => {
+                            if (!items?.length) return '';
+                            return articles[items[0].dataIndex]?.title ?? '';
+                        },
+                        label: (context) => {
+                            if (!context?.dataset) return '';
+                            return ` ${context.dataset.label}: ${context.parsed?.x ?? 0} lượt`;
+                        },
                         footer: (items) => {
+                            if (!items?.length) return '';
                             const article = articles[items[0].dataIndex];
+                            if (!article) return '';
                             const total = article.helpful + article.unhelpful;
-
                             return total ? `${Math.round((article.helpful / total) * 100)}% thấy hữu ích` : '';
                         },
                     },
                 },
             },
             scales: {
-                x: { ...axisY((value) => (Number.isInteger(value) ? value : '')), stacked: true, beginAtZero: true },
+                x: { ...createAxisY(theme, (value) => (Number.isInteger(value) ? value : '')), stacked: true, beginAtZero: true },
                 y: {
-                    ...axisX,
+                    ...createAxisX(theme),
                     stacked: true,
                     grid: { display: false },
                     border: { display: false },
-                    ticks: { ...axisX.ticks, autoSkip: false, callback(value, index) { return shorten(articles[index].title, this.chart); } },
+                    ticks: { ...createAxisX(theme).ticks, autoSkip: false, callback(value, index) { return shorten(articles[index].title, this.chart); } },
                     afterFit: (scale) => { scale.width = labelWidth(scale.chart); },
                 },
             },
@@ -235,28 +310,160 @@ function sparkline(Chart, canvas, values, color) {
     });
 }
 
-export function reportCharts() {
-    return {
-        charts: [],
-        init() {
-            const Chart = window.Chart;
-            if (!Chart) return;
-            const data = JSON.parse(this.$refs.data.textContent);
-            const money = buckets((data.daily ?? []).map((row) => ({ ...row, expense: row.revenue - row.cogs - row.profit })), ['revenue', 'cogs', 'expense', 'profit']);
-            const operations = buckets(data.operations ?? [], ['orders', 'pairs']);
-            const series = { ...Object.fromEntries(['revenue', 'cogs', 'expense', 'profit'].map((field) => [field, money])), orders: operations, pairs: operations };
-            const sparkColor = { revenue: COLORS.count, cogs: COLORS.cogs, expense: COLORS.expense, profit: COLORS.profit, orders: COLORS.count, pairs: COLORS.count };
+export function reportCharts(initialTab = 'finance', allowedTabs = ['finance', 'operations', 'inventory', 'feedback']) {
+    let charts = [];
+    let observer = null;
+    let mediaQuery = null;
+    let onSystemThemeChange = null;
+    let onHashChange = null;
+    const hashToTab = {
+        '#vung-tai-chinh': 'finance',
+        '#vung-van-hanh': 'operations',
+        '#vung-ton-kho': 'inventory',
+        '#vung-bai-viet': 'feedback',
+    };
+    const tabToHash = Object.fromEntries(
+        Object.entries(hashToTab).map(([hash, tab]) => [tab, hash]),
+    );
 
-            if (this.$refs.money && money.length) this.charts.push(financeChart(Chart, this.$refs.money, money));
-            if (this.$refs.margin && money.length) this.charts.push(marginChart(Chart, this.$refs.margin, money));
-            if (this.$refs.feedback && data.feedback?.length) this.charts.push(feedbackChart(Chart, this.$refs.feedback, data.feedback));
-            this.$el.querySelectorAll('canvas[data-sparkline]').forEach((canvas) => {
-                const field = canvas.dataset.sparkline;
-                if (series[field]?.length > 1 && series[field].some((period) => period[field] !== 0)) this.charts.push(sparkline(Chart, canvas, series[field].map((period) => period[field]), sparkColor[field]));
+    const resolveInitialTab = () => {
+        if (typeof window !== 'undefined') {
+            const hashTab = hashToTab[window.location.hash];
+            if (hashTab && allowedTabs.includes(hashTab)) {
+                return hashTab;
+            }
+        }
+        return allowedTabs.includes(initialTab) ? initialTab : allowedTabs[0];
+    };
+
+    return {
+        activeTab: resolveInitialTab(),
+        setTab(tab, { syncHash = true } = {}) {
+            if (!allowedTabs.includes(tab)) return;
+            this.activeTab = tab;
+            if (syncHash && typeof window !== 'undefined' && window.history?.replaceState) {
+                const nextHash = tabToHash[tab];
+                if (nextHash && window.location.hash !== nextHash) {
+                    window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}${nextHash}`);
+                }
+            }
+            this.$nextTick(() => this.resizeCharts());
+        },
+        handleTabKeydown(event, currentTab) {
+            const idx = allowedTabs.indexOf(currentTab);
+            if (idx === -1) return;
+            let nextIdx = null;
+            if (event.key === 'ArrowRight') nextIdx = (idx + 1) % allowedTabs.length;
+            else if (event.key === 'ArrowLeft') nextIdx = (idx - 1 + allowedTabs.length) % allowedTabs.length;
+            else if (event.key === 'Home') nextIdx = 0;
+            else if (event.key === 'End') nextIdx = allowedTabs.length - 1;
+            if (nextIdx === null) return;
+            event.preventDefault();
+            const nextTab = allowedTabs[nextIdx];
+            this.setTab(nextTab);
+            this.$nextTick(() => {
+                this.$el.querySelector(`[data-report-tab="${nextTab}"]`)?.focus();
             });
         },
+        resizeCharts() {
+            charts.forEach((chart) => {
+                try {
+                    resetChartTooltip(chart);
+                    chart.resize();
+                    chart.update('none');
+                } catch {}
+            });
+        },
+        destroyCharts() {
+            charts.forEach((chart) => {
+                try {
+                    resetChartTooltip(chart);
+                    chart.destroy();
+                } catch {}
+            });
+            charts = [];
+        },
+        renderCharts(animate = true) {
+            const Chart = window.Chart;
+            if (!Chart || !this.$refs?.data) return;
+            this.destroyCharts();
+
+            const theme = getTheme();
+            const data = JSON.parse(this.$refs.data.textContent);
+            const moneyRows = buckets(
+                (data.daily ?? []).map((row) => ({ ...row, expense: row.expense ?? 0 })),
+                ['revenue', 'cogs', 'expense', 'profit'],
+            );
+            const operations = buckets(data.operations ?? [], ['orders', 'pairs']);
+            const series = { ...Object.fromEntries(['revenue', 'cogs', 'expense', 'profit'].map((field) => [field, moneyRows])), orders: operations, pairs: operations };
+            const sparkColor = { revenue: theme.colors.count, cogs: theme.colors.cogs, expense: theme.colors.expense, profit: theme.colors.profit, orders: theme.colors.count, pairs: theme.colors.count };
+            const hasFinanceActivity = moneyRows.some(
+                (period) => period.revenue !== 0 || period.cogs !== 0 || period.expense !== 0 || period.profit !== 0,
+            );
+
+            if (this.$refs.money && hasFinanceActivity) {
+                Chart.getChart?.(this.$refs.money)?.destroy();
+                charts.push(financeChart(Chart, this.$refs.money, moneyRows, theme, animate));
+            }
+            if (this.$refs.margin && hasFinanceActivity) {
+                Chart.getChart?.(this.$refs.margin)?.destroy();
+                charts.push(marginChart(Chart, this.$refs.margin, moneyRows, theme, animate));
+            }
+            if (this.$refs.feedback && data.feedback?.length) {
+                Chart.getChart?.(this.$refs.feedback)?.destroy();
+                charts.push(feedbackChart(Chart, this.$refs.feedback, data.feedback, theme, animate));
+            }
+            this.$el.querySelectorAll('canvas[data-sparkline]').forEach((canvas) => {
+                const field = canvas.dataset.sparkline;
+                const wrapper = canvas.parentElement;
+                const hasSparkline = Boolean(series[field]?.length > 1 && series[field].some((period) => period[field] !== 0));
+                if (wrapper) {
+                    wrapper.classList.toggle('hidden', !hasSparkline);
+                }
+                if (hasSparkline) {
+                    Chart.getChart?.(canvas)?.destroy();
+                    charts.push(sparkline(Chart, canvas, series[field].map((period) => period[field]), sparkColor[field]));
+                }
+            });
+        },
+        init() {
+            this.renderCharts();
+            if (typeof window !== 'undefined') {
+                onHashChange = () => {
+                    const hashTab = hashToTab[window.location.hash];
+                    if (hashTab && allowedTabs.includes(hashTab)) {
+                        this.setTab(hashTab, { syncHash: false });
+                    }
+                };
+                window.addEventListener('hashchange', onHashChange);
+            }
+            if (typeof MutationObserver !== 'undefined') {
+                observer = new MutationObserver(() => this.renderCharts(false));
+                observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'class'] });
+            }
+            if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
+                mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+                onSystemThemeChange = () => this.renderCharts(false);
+                if (typeof mediaQuery.addEventListener === 'function') {
+                    mediaQuery.addEventListener('change', onSystemThemeChange);
+                }
+            }
+        },
         destroy() {
-            this.charts.forEach((chart) => chart.destroy());
+            this.destroyCharts();
+            if (observer) {
+                observer.disconnect();
+                observer = null;
+            }
+            if (mediaQuery && onSystemThemeChange && typeof mediaQuery.removeEventListener === 'function') {
+                mediaQuery.removeEventListener('change', onSystemThemeChange);
+            }
+            if (typeof window !== 'undefined' && onHashChange) {
+                window.removeEventListener('hashchange', onHashChange);
+            }
+            mediaQuery = null;
+            onSystemThemeChange = null;
+            onHashChange = null;
         },
     };
 }

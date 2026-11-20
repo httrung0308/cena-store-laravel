@@ -20,17 +20,17 @@ class CatalogTest extends TestCase
 {
     use DatabaseTransactions;
 
-    public function test_public_catalog_applies_color_size_price_and_stock_to_same_variant(): void
+    public function test_public_catalog_applies_size_price_and_stock_to_same_variant(): void
     {
         [$product,$red] = $this->shoe('Same variant');
         $red->forceFill(['color_key' => 'red'])->save();
         $white = $this->color($product, 'white');
         $this->variant($red, '40', 100, 4, 4);
         $this->variant($white, '40.5', 900, 4, 0);
-        foreach (['colors[]=red&size=40.5', 'colors[]=red&min_price=800', 'colors[]=red&in_stock=1', 'colors[]=white&max_price=500'] as $query) {
+        foreach (['size=40&min_price=800', 'size=40&in_stock=1', 'size=40.5&max_price=500'] as $query) {
             $this->get('/shoes?'.$query)->assertOk()->assertViewHas('paginator', fn ($p) => $p->total() === 0);
         }
-        $this->get('/shoes?colors[]=white&size=40.5&min_price=800&in_stock=1')->assertOk()
+        $this->get('/shoes?size=40.5&min_price=800&in_stock=1')->assertOk()
             ->assertViewHas('paginator', fn ($p) => $p->total() === 1 && $p->items()[0]['product']['effective_price'] === 900 && ! $p->items()[0]['product']['sold_out']);
     }
 
@@ -123,7 +123,7 @@ class CatalogTest extends TestCase
             $this->variant($color, '40.5', 100);
             $ids[] = $p->id;
         }
-        $base = ['gender' => 'men', 'colors' => ['black'], 'size' => '40.5', 'min_price' => 100, 'max_price' => 100, 'promotion' => 1, 'sort' => 'price_asc'];
+        $base = ['gender' => 'men', 'size' => '40.5', 'min_price' => 100, 'max_price' => 100, 'promotion' => 1, 'sort' => 'price_asc'];
         $page = $this->get('/shoes?'.http_build_query($base))->assertOk();
         $page->assertViewHas('paginator', fn ($p) => $p->total() === 11 && $p->perPage() === 9 && array_column(array_column($p->items(), 'product'), 'id') === array_slice($ids, 0, 9));
         $page->assertSee('page=2', false)->assertSee('size=40.5', false)->assertSee('gender=men', false)->assertSee('max_price=100', false);
@@ -216,11 +216,30 @@ class CatalogTest extends TestCase
         $white = $this->color($product, 'white');
         $this->variant($white, '41', null, 1);
 
-        $this->get('/shoes?colors[]=white')->assertOk()
-            ->assertSee('href="'.e(route('shoes.show', ['slug' => $product->slug, 'style_color' => $white->style_color_code])).'"', false)
-            ->assertDontSee('style_color='.urlencode($black->style_color_code), false);
-        $this->get('/shoes')->assertSee('style_color='.urlencode($black->style_color_code), false)
+        $this->get('/shoes')
+            ->assertOk()
+            ->assertSee('style_color='.urlencode($black->style_color_code), false)
             ->assertSee('style_color='.urlencode($white->style_color_code), false);
+    }
+
+    public function test_legacy_colors_query_parameter_is_ignored_and_style_color_still_works(): void
+    {
+        [$product, $black] = $this->shoe('Legacy Colors');
+        $this->variant($black, '40', null, 1);
+        $white = $this->color($product, 'white');
+        $this->variant($white, '41', null, 1);
+
+        foreach (['/shoes?colors[]=black', '/shoes?colors=red', '/shoes?colors[]=unknown'] as $legacyUrl) {
+            $this->get($legacyUrl)
+                ->assertOk()
+                ->assertViewHas('paginator', fn ($p) => $p->total() === 1)
+                ->assertSee('style_color='.urlencode($black->style_color_code), false)
+                ->assertSee('style_color='.urlencode($white->style_color_code), false);
+        }
+
+        $this->get('/shoes/'.$product->slug.'?style_color='.urlencode($white->style_color_code))
+            ->assertOk()
+            ->assertViewHas('initialColorId', $white->id);
     }
 
     #[DataProvider('invalidFilters')]
@@ -231,7 +250,7 @@ class CatalogTest extends TestCase
 
     public static function invalidFilters(): array
     {
-        return array_map(fn ($q) => [$q], ['sort=cost_desc', 'gender=ADMIN', 'colors[]=unknown', 'colors=red', 'colors[]=red&colors[]=red', 'size=40.25', 'size[]=40', 'min_price=-1', 'min_price=1.5', 'max_price=9223372036854775808', 'min_price=100&max_price=99', 'page=0', 'page=abc', 'search[]=unsafe', 'promotion=true']);
+        return array_map(fn ($q) => [$q], ['sort=cost_desc', 'gender=ADMIN', 'size=40.25', 'size[]=40', 'min_price=-1', 'min_price=1.5', 'max_price=9223372036854775808', 'min_price=100&max_price=99', 'page=0', 'page=abc', 'search[]=unsafe', 'promotion=true']);
     }
 
     public function test_unsafe_image_metadata_falls_back_to_real_asset_and_catalog_does_not_mutate_stock(): void

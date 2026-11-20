@@ -2,7 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Enums\ClassificationGroup;
 use App\Models\Address;
+use App\Models\Classification;
 use App\Models\User;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
@@ -15,12 +17,19 @@ class StorefrontRedesignTest extends TestCase
     {
         $this->get(route('shoes.index'))
             ->assertOk()
-            ->assertSee('<title>Giày — Shoes — Fakestore</title>', false)
-            ->assertSee('Giày nam')
-            ->assertSee('Chính sách')
+            ->assertSee('<title>Giày — Shoes — Cena</title>', false)
+            ->assertSee('Khám phá')
+            ->assertSee('Danh mục &amp; Phân loại', false)
+            ->assertSee('Chính sách &amp; Hỗ trợ', false)
             ->assertSee('Thanh toán khi nhận hàng (COD)')
+            ->assertSee('Miễn phí vận chuyển đơn từ 2.000.000 ₫')
             ->assertSee('không phải website chính thức của Nike')
-            ->assertSee('href="'.route('register').'"', false);
+            ->assertSee('href="'.route('register').'"', false)
+            ->assertDontSee('Bộ Sưu Tập')
+            ->assertDontSee('1900 0000')
+            ->assertDontSee('hotro@cena.test')
+            ->assertDontSee('12 Nguyễn Văn Bảo')
+            ->assertDontSee('Miễn phí vận chuyển mọi đơn');
     }
 
     public function test_auth_pages_are_full_screen_without_navbar_and_link_to_each_other(): void
@@ -28,14 +37,14 @@ class StorefrontRedesignTest extends TestCase
         $this->get(route('login'))
             ->assertOk()
             ->assertSee('Chào mừng trở lại.')
-            ->assertSee('legacy/video/register.mp4', false)
+            ->assertSee('cena-auth-bg.svg', false)
             ->assertSee('href="'.route('register').'"', false)
             ->assertDontSee('aria-label="Main navigation"', false)
             ->assertDontSee('id="cart-panel"', false);
 
         $this->get(route('register'))
             ->assertOk()
-            ->assertSee('Gia nhập cùng Fakestore.')
+            ->assertSee('Gia nhập cùng Cena.')
             ->assertSee('href="'.route('login').'"', false)
             ->assertSee('name="password_confirmation"', false)
             ->assertDontSee('aria-label="Main navigation"', false);
@@ -52,15 +61,30 @@ class StorefrontRedesignTest extends TestCase
     public function test_admin_dashboard_lists_modules_and_signed_in_staff_details(): void
     {
         $staff = User::factory()->staff()->create(['full_name' => 'Nhân viên <i>Kho</i>']);
+        $admin = User::factory()->administrator()->create(['full_name' => 'Quản trị <b>CENA</b>']);
 
-        $this->actingAs($staff)->get(route('admin.dashboard'))
+        $this->post(route('login.store'), [
+            'email' => $staff->email,
+            'password' => 'factory-password',
+        ])->assertRedirect(route('admin.operations-work-items.index'));
+
+        $this->actingAs($staff)->get(route('admin.dashboard'))->assertForbidden();
+
+        $this->actingAs($staff)->get(route('admin.operations-work-items.index'))
             ->assertOk()
-            ->assertSee('Các mô-đun quản lý')
             ->assertSee('Nhân viên &lt;i&gt;Kho&lt;/i&gt;', false)
             ->assertSee('Nhân viên')
             ->assertSee('href="'.route('admin.categories.index').'"', false)
+            ->assertDontSee('href="'.route('admin.dashboard').'"', false)
+            ->assertDontSee('href="'.route('admin.stock-imports.index').'"', false)
+            ->assertSee('aria-label="Điều hướng quản trị"', false);
+
+        $this->actingAs($admin)->get(route('admin.dashboard'))
+            ->assertOk()
+            ->assertSee('Quản trị &lt;b&gt;CENA&lt;/b&gt;', false)
+            ->assertSee('href="'.route('admin.categories.index').'"', false)
             ->assertSee('href="'.route('admin.stock-imports.index').'"', false)
-            ->assertSee('aria-label="Main navigation"', false);
+            ->assertSee('aria-label="Điều hướng quản trị"', false);
     }
 
     public function test_account_overview_requires_login_and_shows_the_default_address(): void
@@ -107,5 +131,83 @@ class StorefrontRedesignTest extends TestCase
         $this->actingAs(User::factory()->administrator()->create())->get(route('home'))
             ->assertSee('href="'.route('admin.dashboard').'"', false)
             ->assertDontSee('href="'.route('orders.index').'"', false);
+    }
+
+    public function test_header_menu_caps_classifications_includes_search_and_keeps_role_links_in_footer(): void
+    {
+        Classification::query()->update(['show_in_home_nav' => false]);
+
+        $selectedSil = [];
+        for ($i = 1; $i <= 6; $i++) {
+            $selectedSil[] = Classification::forceCreate([
+                'name' => sprintf('Header Sil %02d', $i),
+                'slug' => 'header-sil-'.$i.'-'.uniqid(),
+                'classification_group' => ClassificationGroup::Silhouette,
+                'sort_order' => $i,
+                'is_active' => true,
+                'show_in_home_nav' => true,
+            ]);
+        }
+
+        $unselectedSil = Classification::forceCreate([
+            'name' => 'Header Sil Unselected 07',
+            'slug' => 'header-sil-unselected-'.uniqid(),
+            'classification_group' => ClassificationGroup::Silhouette,
+            'sort_order' => 7,
+            'is_active' => true,
+            'show_in_home_nav' => false,
+        ]);
+
+        $inactiveSelectedAct = Classification::forceCreate([
+            'name' => 'Header Act Inactive Selected',
+            'slug' => 'header-act-inactive-'.uniqid(),
+            'classification_group' => ClassificationGroup::Activity,
+            'sort_order' => 1,
+            'is_active' => false,
+            'show_in_home_nav' => true,
+        ]);
+
+        $selectedAct = Classification::forceCreate([
+            'name' => 'Header Act Active Selected',
+            'slug' => 'header-act-active-'.uniqid(),
+            'classification_group' => ClassificationGroup::Activity,
+            'sort_order' => 2,
+            'is_active' => true,
+            'show_in_home_nav' => true,
+        ]);
+
+        // Trên /news: Header và mobile menu chỉ hiển thị các mục active được chọn theo thứ tự, Bài viết đang active
+        $this->get(route('news.index'))->assertOk()
+            ->assertSee('Sản phẩm')
+            ->assertSee('Danh mục &amp; Phân loại', false)
+            ->assertSee('Bài viết')
+            ->assertSee('name="search"', false)
+            ->assertSee('id="header-categories-menu"', false)
+            ->assertSee('href="'.route('categories.index').'"', false)
+            ->assertSee('id="notice-panel"', false)
+            ->assertSee('Chế độ giao diện')
+            ->assertSee('aria-current="page"', false)
+            ->assertSeeInOrder([$selectedSil[0]->name, $selectedSil[5]->name])
+            ->assertSee($selectedAct->name)
+            ->assertDontSee($unselectedSil->name)
+            ->assertDontSee($inactiveSelectedAct->name);
+
+        // Trang toàn bộ /categories và bộ lọc /shoes vẫn hiển thị cả mục active chưa chọn ở menu
+        $this->get(route('categories.index'))->assertOk()
+            ->assertSee('aria-current="page"', false)
+            ->assertSee($selectedSil[0]->name)
+            ->assertSee($unselectedSil->name)
+            ->assertDontSee($inactiveSelectedAct->name);
+
+        // Trên /shoes: Sản phẩm active, bộ lọc có cả mục chưa chọn ở menu
+        $this->get(route('shoes.index'))->assertOk()
+            ->assertSee('aria-current="page"', false)
+            ->assertSee($unselectedSil->name);
+
+        // Staff thấy cả Đơn hàng của tôi và Trang quản trị ở footer
+        $staff = User::factory()->staff()->create();
+        $this->actingAs($staff)->get(route('shoes.index'))->assertOk()
+            ->assertSee('href="'.route('orders.index').'"', false)
+            ->assertSee('href="'.route('admin.dashboard').'"', false);
     }
 }

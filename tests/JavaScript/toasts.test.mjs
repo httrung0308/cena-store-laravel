@@ -26,3 +26,14 @@ test('unknown type is neutral; unsafe input never becomes a CSS class or HTML', 
   assert.equal(t.items[0].request_id, 'R-1');
   assert.equal(t.notify({ message: '' }), null);
 });
+test('default timeouts differentiate errors from success', () => {
+  const c = clock();
+  const controller = toastsController({ ...c });
+  controller.notify({ type: 'success', message: 'Thành công' });
+  controller.notify({ type: 'error', message: 'Lỗi quan trọng' });
+  c.tick(5000);
+  // Success should auto-dismiss after 5000ms, while error remains visible
+  assert.equal(controller.items.length, 1);
+  assert.equal(controller.items[0].type, 'error');
+  controller.destroy();
+});

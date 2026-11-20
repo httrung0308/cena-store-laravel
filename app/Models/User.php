@@ -99,6 +99,11 @@ class User extends Authenticatable
         return $this->hasMany(OrderStatusHistory::class, 'actor_id');
     }
 
+    public function storeNotifications(): HasMany
+    {
+        return $this->hasMany(StoreNotification::class, 'user_id');
+    }
+
     public function payments(): HasMany
     {
         return $this->hasMany(Payment::class, 'confirmed_by');
@@ -177,5 +182,58 @@ class User extends Authenticatable
     public function hasRole(RoleSlug $role): bool
     {
         return $this->roles()->where('slug', $role->value)->exists();
+    }
+
+    /**
+     * Build a compact display name by taking complete words from the end (bottom-up)
+     * so the given name is never truncated mid-word with an ellipsis.
+     */
+    public function compactDisplayName(int $maxLength = 18): string
+    {
+        $normalized = trim((string) preg_replace('/\s+/u', ' ', (string) $this->full_name));
+        if ($normalized === '') {
+            return 'Tài khoản';
+        }
+
+        if (mb_strlen($normalized, 'UTF-8') <= $maxLength) {
+            return $normalized;
+        }
+
+        $words = preg_split('/\s+/u', $normalized) ?: [$normalized];
+        $count = count($words);
+        $selected = [$words[$count - 1]];
+
+        for ($i = $count - 2; $i >= 0; $i--) {
+            $candidate = $words[$i].' '.implode(' ', $selected);
+            if (mb_strlen($candidate, 'UTF-8') > $maxLength) {
+                break;
+            }
+            array_unshift($selected, $words[$i]);
+        }
+
+        return implode(' ', $selected);
+    }
+
+    /**
+     * Return two uppercase initials derived from the last two words of the user's name.
+     */
+    public function avatarInitials(): string
+    {
+        $words = array_values(array_filter(preg_split('/\s+/u', trim((string) $this->full_name)) ?: []));
+        if ($words === []) {
+            return 'TK';
+        }
+
+        if (count($words) === 1) {
+            return mb_strtoupper(mb_substr($words[0], 0, 2, 'UTF-8'), 'UTF-8');
+        }
+
+        $secondLast = $words[count($words) - 2];
+        $last = $words[count($words) - 1];
+
+        return mb_strtoupper(
+            mb_substr($secondLast, 0, 1, 'UTF-8').mb_substr($last, 0, 1, 'UTF-8'),
+            'UTF-8'
+        );
     }
 }

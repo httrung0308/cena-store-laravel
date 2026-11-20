@@ -11,11 +11,10 @@ class StorePaginationTest extends TestCase
     public function test_links_preserve_filters_and_escape_query(): void
     {
         $paginator = new LengthAwarePaginator([], 30, 9, 2, ['path' => '/shoes']);
-        $paginator->appends(['search' => '<script>bad</script>', 'gender' => 'MEN', 'colors' => ['black', 'red'], 'sort' => 'price_asc']);
+        $paginator->appends(['search' => '<script>bad</script>', 'gender' => 'MEN', 'sort' => 'price_asc']);
         $html = Blade::render('<x-ui.pagination :paginator="$paginator" />', compact('paginator'));
         $this->assertStringContainsString('search=%3Cscript%3Ebad%3C%2Fscript%3E', $html);
         $this->assertStringContainsString('gender=MEN', $html);
-        $this->assertStringContainsString('colors%5B0%5D=black', $html);
         $this->assertStringContainsString('aria-current="page"', $html);
         $this->assertStringNotContainsString('<script>', $html);
     }

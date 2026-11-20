@@ -13,3 +13,16 @@ test('Arrow keys select only existing ids',()=>{
   assert.equal(g.selectedId,'two');g.onKeydown({key:'ArrowLeft',preventDefault(){calls++}});
   assert.equal(g.selectedId,'one');assert.equal(calls,2);
 });
+test('lightbox opens only when an image exists and Escape closes it',()=>{
+  const six=Array.from({length:6},(_,i)=>({id:i+1,url:`/img-${i+1}.jpg`}));
+  const g=galleryController({albums:{a:six},initialColor:'a'});
+  assert.equal(g.images.length,6);
+  assert.equal(g.currentIndex,1);
+  g.openLightbox(); assert.equal(g.lightboxOpen,true);
+  g.onKeydown({key:'Escape',preventDefault(){}});
+  assert.equal(g.lightboxOpen,false);
+
+  const empty=galleryController({albums:{a:[]},initialColor:'a'});
+  empty.openLightbox();
+  assert.equal(empty.lightboxOpen,false);
+});

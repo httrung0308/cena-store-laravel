@@ -1,28 +1,76 @@
 # Cộng tác Cena Store
 
-Bắt đầu bằng [README](README.md): cài lần đầu bằng `setup-project.ps1`, mở lại bằng hai lệnh; không cần dựng lại project mỗi lần sửa code.
+Thành viên chỉ cần mở web chạy thử hoặc xem dữ liệu mẫu hãy xem [README.md](README.md) và [TEAM_DEMO_TESTING_GUIDE.md](docs/TEAM_DEMO_TESTING_GUIDE.md). Tài liệu này dành cho việc phát triển code, chạy kiểm thử và gửi PR.
 
-## Quy trình chung
+---
 
-1. Lấy main mới nhất, tạo nhánh `feat/ten-task` hoặc `fix/ten-loi`; một PR cho một task. Collaborator làm trực tiếp trên nhánh repo; người ngoài fork rồi PR về `httrung0308/cena-store-laravel:main`.
-2. Đọc `AGENTS.md`, yêu cầu của task và phần đặc tả liên quan. Với đợt7 chức năng, dùng [plan và phân quyền file](docs/collaboration/PLAN_7_CHUC_NANG.md); với EXT, dùng đúng [task/allowlist](docs/collaboration/EXTERNAL_TASKS_AND_PROMPTS.txt). Không cần đọc cả roadmap cho một sửa đổi nhỏ.
-3. Kiểm tra phần đã thay đổi: PHP chạy test liên quan và Pint; UI build, kiểm trên desktop/mobile. Ghi kết quả thật, chưa chạy thì ghi `NOT RUN`. Không cần tự lặp lại mọi bước CI trước mỗi push; CI vẫn chạy đủ suite tích hợp.
-4. Commit đúng file, push nhánh, mở PR. Mô tả ngắn: thay đổi gì, kiểm tra gì, còn thiếu gì. EXT ghi thêm task ID và BASE_SHA; không cần báo cáo nghiệm thu riêng.
-5. Chờ mọi CI bắt buộc **xanh trên commit cuối**, người có quyền review rồi squash merge. CI fail/pending thì chưa merge. Sau cập nhật main/xử lý xung đột phải chờ CI lại. Không push trực tiếp vào main hoặc bỏ qua check.
+## 1. Quy trình nhánh, Commit và PR
 
-Nếu chỉ làm một task trên máy riêng, dùng một clone là đủ. Nếu nhiều người/agent dùng chung máy hoặc làm song song, mỗi người dùng worktree/thư mục riêng, không reset/stash/checkout thư mục của người khác. X4 đang được Claude phụ trách: task khác không sửa code X4; nhận thay đổi của nhau qua main sau merge.
+Thành viên đã có quyền ghi repo clone trực tiếp; chưa có quyền thì fork trước, clone fork và mở PR về `httrung0308/cena-store-laravel:main`.
 
-## Những điều cần giữ
+1. **Tạo nhánh từ `main` mới nhất:**
 
-- Giữ UI Cena và source cũ; tái sử dụng Blade/Tailwind3/Alpine3/EXT. Không đưa Next/Recoil/JWT/localStorage/Stripe runtime cũ vào Laravel.
-- Sửa đúng phạm vi được giao. Models, migrations, lockfiles, Money/Clock/Resources/guard hoặc nền tiền-kho-quyền ngoài task cần trao đổi trước. Không thêm dependency hoặc thay hợp đồng chỉ để vượt lỗi.
-- Test dùng MySQL8.4 riêng; không dùng DB development/SQLite/root/app user. Mỗi instance/máy riêng dùng cấu hình test riêng. Trên máy chung, không chạy hai suite cùng schema; dùng cặp Codex đã duyệt và config PHPUnit riêng hoặc chạy luân phiên. Xem README trước khi chạy test.
-- Không commit env, mật khẩu/token, uploads, vendor/node_modules/build hoặc archive lồng. Dùng `git status` và add đúng file.
-- Không bỏ test, tắt guard, đổi workflow hoặc dùng `pull_request_target`/secret để làm CI xanh giả. PR đầu từ fork có thể cần chủ repo duyệt chạy Actions.
-- Nhật ký `docs/ai-progress.md`: chủ task được giao quyền cập nhật chỉ thêm mục cuối; giữ mục của người khác khi xung đột. EXT UI PREP không tự đánh dấu hoàn thành phase hoặc bật route trước dependency.
+```powershell
+git switch main
+git pull --ff-only
+git switch -c feat/ten-task
+```
 
-## Nếu chưa có quyền/tool
+2. **Đọc phạm vi & quy tắc liên quan:**
+   - Đọc `AGENTS.md` và phần đặc tả liên quan.
+   - Với đợt 7 chức năng, xem [Kế hoạch 7 chức năng](docs/collaboration/PLAN_7_CHUC_NANG.md); với EXT, xem [Task và allowlist](docs/collaboration/EXTERNAL_TASKS_AND_PROMPTS.txt).
 
-- Không có quyền ghi: fork và PR, hoặc nhờ chủ repo cấp collaborator; không cần quyền push main.
-- ChatGPT Web không có terminal/quyền GitHub write: xuất patch + mô tả và ghi rõ `NOT RUN`, để người có môi trường chạy/apply/PR. Không bịa SHA, URL hoặc kết quả test.
-- GitHub CLI là tùy chọn; GitHub web có đủ nút tạo PR, xem Checks và Squash and merge. Xem [README](README.md) để làm theo từng bước trong mục “Gửi code cho team”.
+3. **Kiểm tra phần đã thay đổi trước khi push:**
+
+```powershell
+# Chỉ lần đầu cần dựng schema test riêng (cena_store_test):
+.\scripts\php.ps1 artisan migrate --env=testing --no-interaction
+
+# Chạy file test liên quan (thay bằng file test của task bạn làm):
+.\scripts\php.ps1 artisan test --compact tests/Feature/OrderWorkflowTest.php
+
+# Format PHP bằng Pint (bắt buộc trước khi push để CI không fail bước git diff):
+.\scripts\php.ps1 vendor/bin/pint --dirty --format agent
+
+# Nếu có sửa giao diện (Blade/CSS/JS):
+.\scripts\npm.ps1 run build
+```
+
+4. **Commit đúng file, push và tạo PR:**
+
+```powershell
+git status
+git add app/Services/TenService.php tests/Feature/TenTest.php
+git commit -m "feat: mo ta thay doi"
+git push -u origin HEAD
+```
+
+Mở PR vào `main` trên GitHub, mô tả ngắn: thay đổi gì, đã kiểm tra gì, còn thiếu gì (EXT ghi thêm task ID và `BASE_SHA`).
+
+5. **Chờ CI xanh và review trước khi Squash and merge:**
+   - CI GitHub tự chạy `composer validate/install`, `npm ci && npm run build`, `migrate`, toàn bộ suite PHPUnit trên MySQL 8.4 và `pint --format agent` + `git diff --exit-code`.
+   - **Không merge khi CI fail hoặc pending.** Nếu cập nhật theo `main` hoặc xử lý xung đột, phải chờ CI pass lại trên commit mới nhất.
+   - Repo chỉ bật **Squash and merge** (không dùng merge commit/rebase trực tiếp); không push thẳng lên `main`.
+
+```powershell
+gh pr checks 123 --repo httrung0308/cena-store-laravel --watch
+gh pr merge 123 --repo httrung0308/cena-store-laravel --squash
+```
+
+---
+
+## 2. Quy tắc kỹ thuật & cô lập môi trường
+
+- **Phiên bản runtime:** PHP 8.4, Composer 2.9.4, Node 22.x (>= 22.12), MySQL 8.4 (khóa tại [docs/runtime-versions.json](docs/runtime-versions.json) và lockfiles).
+- **Database test cô lập:** Test bắt buộc chạy trên MySQL 8.4 riêng (`cena_store_test` hoặc schema test đã được guard cho phép), **không** dùng DB phát triển, SQLite, root hoặc app user. Không chạy hai suite PHPUnit đồng thời trên cùng một schema test.
+- **Không dùng `migrate:fresh` trên DB phát triển.** Không chạy `scripts/configure-env.php --ci` trên máy phát triển dùng chung (chỉ dành cho MySQL disposable của CI).
+- **Không commit file nhạy cảm / tạo sinh:** `.env`, `.env.testing`, mật khẩu/token, `storage/` uploads, `vendor/`, `node_modules/`, `public/build/`, `.ai/` hoặc archive lồng.
+- **Giữ UI Cena & source cũ:** Tái sử dụng Blade / Tailwind 3 / Alpine 3; không chỉnh sửa source Java/Next cũ và không thêm dependency ngoài phạm vi khi chưa trao đổi.
+- **Nhật ký `docs/ai-progress.md`:** Chỉ thêm mục mới ở cuối nếu task có yêu cầu cập nhật; giữ nguyên mục của người khác khi có xung đột.
+
+---
+
+## 3. Nếu chưa có quyền hoặc tool
+
+- Không có quyền ghi: fork và mở PR, hoặc nhờ chủ repo cấp collaborator.
+- GitHub CLI (`gh`) là tùy chọn; mọi thao tác tạo PR, xem Checks và Squash and merge đều có thể làm trực tiếp trên giao diện web GitHub.

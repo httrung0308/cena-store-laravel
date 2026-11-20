@@ -8,18 +8,32 @@ use App\Http\Requests\Admin\CategoryRequest;
 use App\Models\Category;
 use App\Services\ProductManagementTaxonomyService;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class CategoryController extends Controller
 {
     public function index(Request $request): View
     {
-        $data = $request->validate(['search' => ['nullable', 'string', 'max:150'], 'active' => ['nullable', 'in:0,1']]);
-        $query = Category::query()->when($data['search'] ?? null, fn ($q, $s) => $q->where('name', 'like', '%'.$s.'%'))->when(isset($data['active']), fn ($q) => $q->where('is_active', $data['active']));
+        $data = $request->validate([
+            'search' => ['nullable', 'string', 'max:150'],
+            'gender_group' => ['nullable', Rule::enum(GenderGroup::class)],
+            'active' => ['nullable', 'in:0,1'],
+        ]);
+        $query = Category::query()
+            ->when($data['search'] ?? null, fn ($q, $s) => $q->where(fn ($sub) => $sub->where('name', 'like', '%'.$s.'%')->orWhere('slug', 'like', '%'.$s.'%')))
+            ->when($data['gender_group'] ?? null, fn ($q, $g) => $q->where('gender_group', $g))
+            ->when(isset($data['active']), fn ($q) => $q->where('is_active', $data['active']));
         $paginator = $query->orderBy('id')->paginate(15)->withQueryString();
 
-        return view('admin.categories.index', ['paginator' => $paginator, 'search' => $data['search'] ?? '']);
+        return view('admin.categories.index', [
+            'paginator' => $paginator,
+            'search' => $data['search'] ?? '',
+            'genderGroup' => $data['gender_group'] ?? '',
+            'active' => $data['active'] ?? '',
+        ]);
     }
 
     public function create(): View
@@ -34,7 +48,20 @@ class CategoryController extends Controller
 
     private function form(Category $record): View
     {
-        return view('admin.categories.form', ['record' => $record, 'parents' => Category::whereNull('parent_id')->where('id', '!=', $record->id ?? 0)->orderBy('display_order')->get(['id', 'name'])->toArray(), 'genderOptions' => array_map(fn ($gender) => ['value' => $gender->value, 'label' => $gender->label()], GenderGroup::cases())]);
+        return view('admin.categories.form', [
+            'record' => $record,
+            'parents' => Category::whereNull('parent_id')
+                ->where('id', '!=', $record->id ?? 0)
+                ->orderBy('display_order')
+                ->get(['id', 'name', 'gender_group'])
+                ->map(fn ($p) => [
+                    'id' => $p->id,
+                    'name' => $p->name,
+                    'gender_group' => $p->gender_group instanceof GenderGroup ? $p->gender_group->value : (string) $p->gender_group,
+                ])
+                ->toArray(),
+            'genderOptions' => array_map(fn ($gender) => ['value' => $gender->value, 'label' => $gender->label()], GenderGroup::cases()),
+        ]);
     }
 
     public function store(CategoryRequest $request, ProductManagementTaxonomyService $service): RedirectResponse
@@ -51,10 +78,48 @@ class CategoryController extends Controller
         return to_route('admin.categories.index')->with('status', 'Đã lưu thay đổi.');
     }
 
-    public function deactivate(Request $request, Category $category, ProductManagementTaxonomyService $service): RedirectResponse
+    public function activate(Request $request, Category $category, ProductManagementTaxonomyService $service): RedirectResponse|JsonResponse
     {
-        $service->deactivate($request->user(), $category);
+        $updated = $service->setActive($request->user(), $category, true);
+        $message = 'Đã hiển thị lại danh mục.';
 
-        return to_route('admin.categories.index')->with('status', 'Đã ngừng hiển thị; lịch sử được giữ nguyên.');
+        if ($request->expectsJson()) {
+            return response()->json(['message' => $message, 'is_active' => $updated->is_active]);
+        }
+
+        return back(fallback: route('admin.categories.index'))->with('status', $message);
+    }
+
+    public function deactivate(Request $request, Category $category, ProductManagementTaxonomyService $service): RedirectResponse|JsonResponse
+    {
+        $updated = $service->setActive($request->user(), $category, false);
+        $message = 'Đã ngừng hiển thị; lịch sử được giữ nguyên.';
+
+        if ($request->expectsJson()) {
+            return response()->json(['message' => $message, 'is_active' => $updated->is_active]);
+        }
+
+        return back(fallback: route('admin.categories.index'))->with('status', $message);
+    }
+
+    public function updateOrder(Request $request, Category $category): RedirectResponse|JsonResponse
+    {
+        $validated = $request->validate([
+            'order' => ['required', 'integer', 'between:0,65535'],
+        ], [
+            'order.required' => 'Vui lòng nhập thứ tự hiển thị.',
+            'order.integer' => 'Thứ tự hiển thị phải là số nguyên.',
+            'order.between' => 'Thứ tự hiển thị phải từ 0 đến 65535.',
+        ]);
+
+        $order = (int) $validated['order'];
+        $category->forceFill(['display_order' => $order])->save();
+        $message = "Đã cập nhật thứ tự danh mục '{$category->name}' thành {$order}.";
+
+        if ($request->expectsJson()) {
+            return response()->json(['message' => $message, 'order' => $order]);
+        }
+
+        return back(fallback: route('admin.categories.index'))->with('status', $message);
     }
 }

@@ -30,14 +30,14 @@
     @if ($hasError || $hint) aria-describedby="{{ collect([$hint ? $hintId : null, $hasError ? $errorId : null])->filter()->implode(' ') }}" @endif
 >
     <legend class="text-lg font-semibold">{{ $label }}</legend>
-    @if ($hint)<p id="{{ $hintId }}" class="text-xs text-zinc-500">{{ $hint }}</p>@endif
+    @if ($hint)<p id="{{ $hintId }}" class="text-xs text-muted">{{ $hint }}</p>@endif
     @foreach ($options as $option)
         @if (is_array($option) && isset($option['value']) && is_string($option['value']) && isset($option['label']))
             @php
                 $optionId = $groupId.'-'.(string) $loop->index;
                 $isChecked = in_array($option['value'], $selected, true);
             @endphp
-            <label for="{{ $optionId }}" @class(['flex cursor-pointer items-center gap-2 text-sm', 'cursor-not-allowed text-zinc-400' => $disabled || $readonlyChoices || ($option['disabled'] ?? false)])>
+            <label for="{{ $optionId }}" @class(['flex cursor-pointer items-center gap-2 text-sm', 'cursor-not-allowed text-muted' => $disabled || $readonlyChoices || ($option['disabled'] ?? false)])>
                 <input id="{{ $optionId }}" type="{{ $mode }}"
                     name="{{ $mode === 'checkbox' ? $fieldName.'[]' : $fieldName }}"
                     value="{{ $option['value'] }}" @checked($isChecked)
@@ -45,12 +45,12 @@
                     @if ($readonlyChoices) aria-readonly="true" @endif
                     class="peer sr-only">
                 <span aria-hidden="true" @class([
-                    'inline-flex h-5 w-5 shrink-0 items-center justify-center border border-black bg-white text-sm font-bold text-transparent',
+                    'inline-flex h-5 w-5 shrink-0 items-center justify-center border border-border bg-surface-card text-sm font-bold text-transparent',
                     'rounded-full' => $mode === 'radio',
                     'rounded-sm' => $mode === 'checkbox',
-                    'peer-checked:border-black peer-checked:bg-black peer-checked:text-white',
-                    'peer-focus-visible:ring-4 peer-focus-visible:ring-zinc-400 peer-focus-visible:ring-offset-2',
-                    'peer-disabled:border-zinc-300 peer-disabled:bg-zinc-100 peer-disabled:opacity-50',
+                    'peer-checked:border-accent peer-checked:bg-accent peer-checked:text-accent-text',
+                    'peer-focus-visible:ring-4 peer-focus-visible:ring-accent/40 peer-focus-visible:ring-offset-2',
+                    'peer-disabled:border-border peer-disabled:bg-surface peer-disabled:opacity-50',
                 ])>{{ $mode === 'checkbox' ? '✓' : '●' }}</span>
                 <span>{{ (string) $option['label'] }}</span>
             </label>

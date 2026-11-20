@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -65,5 +66,16 @@ class Product extends DomainModel
     public function historicalCategory(): BelongsTo
     {
         return $this->belongsTo(Category::class, 'category_id')->withTrashed();
+    }
+
+    public function classifications(): BelongsToMany
+    {
+        return $this->belongsToMany(Classification::class, 'product_classifications');
+    }
+
+    public function activeClassifications(): BelongsToMany
+    {
+        return $this->belongsToMany(Classification::class, 'product_classifications')
+            ->where('classifications.is_active', true);
     }
 }

@@ -265,15 +265,76 @@ class ProductManagementTest extends TestCase
         $this->assertDatabaseCount('product_images', 4);
     }
 
+    public function test_creating_and_updating_product_without_color_key_primary_hex_or_style_color_code_autogenerates_and_preserves_code(): void
+    {
+        $category = Category::factory()->create();
+        $payload = [
+            'name' => 'Giày Tự Sinh Mã Màu',
+            'slug' => 'giay-tu-sinh-ma-mau',
+            'category_id' => $category->id,
+            'base_price' => 1500000,
+            'warranty_months' => 6,
+            'exchange_days' => 7,
+            'is_active' => 1,
+            'colors' => [
+                [
+                    'color_name' => 'Xanh Rêu',
+                    'is_active' => 1,
+                    'variants' => [
+                        ['size_value' => '41', 'sku' => '', 'is_active' => 1],
+                    ],
+                    'images' => [
+                        ['external_url' => 'https://example.com/green.jpg', 'alt_text' => 'Xanh Rêu', 'is_thumbnail' => true],
+                    ],
+                ],
+            ],
+        ];
+
+        $this->actingAs($this->actor)->postJson('/admin/products', $payload)->assertCreated();
+        $product = Product::where('slug', 'giay-tu-sinh-ma-mau')->firstOrFail();
+        $color = $product->colors()->with(['variants', 'images'])->firstOrFail();
+        $generatedCode = $color->style_color_code;
+
+        $this->assertNotEmpty($generatedCode);
+        $this->assertMatchesRegularExpression('/^[A-Za-z0-9_-]+$/D', $generatedCode);
+
+        $updatePayload = [
+            'name' => 'Giày Tự Sinh Mã Màu (Đã sửa)',
+            'slug' => 'giay-tu-sinh-ma-mau',
+            'category_id' => $category->id,
+            'base_price' => 1600000,
+            'warranty_months' => 6,
+            'exchange_days' => 7,
+            'is_active' => 1,
+            'colors' => [
+                [
+                    'id' => $color->id,
+                    'color_name' => 'Xanh Rêu Đậm',
+                    'is_active' => 1,
+                    'variants' => [
+                        ['id' => $color->variants->firstOrFail()->id, 'size_value' => '41', 'sku' => $color->variants->firstOrFail()->sku, 'is_active' => 1],
+                    ],
+                    'images' => [
+                        ['id' => $color->images->firstOrFail()->id, 'external_url' => 'https://example.com/green.jpg', 'alt_text' => 'Xanh Rêu Đậm', 'is_thumbnail' => true],
+                    ],
+                ],
+            ],
+        ];
+
+        $this->actingAs($this->actor)->putJson('/admin/products/'.$product->id, $updatePayload)->assertOk();
+        $this->assertSame($generatedCode, $color->fresh()->style_color_code);
+        $this->assertSame('Xanh Rêu Đậm', $color->fresh()->color_name);
+    }
+
     private function data(string $prefix = 'SHOE'): array
     {
         $colors = [];
-        foreach (['black', 'white'] as $i => $key) {
+        foreach (['black', 'white'] as $key) {
             $variants = [];
             foreach (['40', '40.5', '41'] as $size) {
                 $variants[] = ['size_value' => $size, 'sku' => $prefix.'-'.$key.'-'.str_replace('.', '_', $size), 'price_override' => null, 'is_active' => 1];
             }
-            $colors[] = ['style_color_code' => $prefix.'-'.$key, 'color_name' => $key, 'color_key' => $key, 'primary_hex' => $i ? '#ffffff' : '#000000', 'is_active' => 1, 'variants' => $variants,
+            $colors[] = ['style_color_code' => $prefix.'-'.$key, 'color_name' => $key, 'is_active' => 1, 'variants' => $variants,
                 'images' => [['external_url' => 'https://example.com/a.jpg', 'alt_text' => 'Shoe', 'is_thumbnail' => true], ['external_url' => 'https://example.com/b.jpg', 'alt_text' => 'Side', 'is_thumbnail' => false]]];
         }
 
@@ -284,7 +345,7 @@ class ProductManagementTest extends TestCase
     {
         $product->load('colors.variants', 'colors.images');
         $data = array_intersect_key($product->toArray(), array_flip(['name', 'slug', 'category_id', 'brand_line', 'description', 'base_price', 'promotion_price', 'warranty_months', 'exchange_days', 'is_active']));
-        $data['colors'] = $product->colors->map(fn ($c) => ['id' => $c->id, 'style_color_code' => $c->style_color_code, 'color_name' => $c->color_name, 'color_key' => $c->color_key, 'primary_hex' => $c->primary_hex, 'is_active' => $c->is_active,
+        $data['colors'] = $product->colors->map(fn ($c) => ['id' => $c->id, 'style_color_code' => $c->style_color_code, 'color_name' => $c->color_name, 'is_active' => $c->is_active,
             'variants' => $c->variants->map(fn ($v) => ['id' => $v->id, 'sku' => $v->sku, 'size_value' => $v->size_value, 'price_override' => $v->price_override, 'is_active' => $v->is_active])->all(),
             'images' => $c->images->map(fn ($i) => ['id' => $i->id, 'external_url' => $i->external_url, 'alt_text' => $i->alt_text, 'is_thumbnail' => $i->is_thumbnail])->all()])->all();
 

@@ -6,6 +6,7 @@ use App\Enums\RoleSlug;
 use App\Exceptions\DomainException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Account\ProfileRequest;
+use App\Http\Requests\Admin\CreatePrivilegedUserRequest;
 use App\Http\Requests\Admin\UserRolesRequest;
 use App\Models\Order;
 use App\Models\User;
@@ -43,6 +44,24 @@ class UserController extends Controller
             ->paginate(15)->withQueryString();
 
         return view('admin.users.index', ['users' => $users, 'filters' => $filters]);
+    }
+
+    public function create(): View
+    {
+        return view('admin.users.create');
+    }
+
+    public function store(CreatePrivilegedUserRequest $request): RedirectResponse
+    {
+        try {
+            $user = $this->access->createPrivilegedUser($request->user(), $request->payload());
+        } catch (DomainException $exception) {
+            return back()
+                ->withInput($request->except(['password', 'password_confirmation']))
+                ->withErrors($exception->errors === [] ? ['user' => $exception->getMessage()] : $exception->errors);
+        }
+
+        return redirect()->route('admin.users.show', $user)->with('status', 'Đã tạo tài khoản thành công.');
     }
 
     public function show(User $user): View

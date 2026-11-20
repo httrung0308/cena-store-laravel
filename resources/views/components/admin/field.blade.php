@@ -7,10 +7,10 @@
     $inputValue = is_scalar($inputValue) ? (string) $inputValue : '';
 @endphp
 <div>
-    <label for="{{ $inputId }}" class="admin-label">{{ $label }} @if ($required)<span class="text-red-500">*</span>@endif</label>
+    <label for="{{ $inputId }}" class="admin-label">{{ $label }} @if ($required)<span class="text-error">*</span>@endif</label>
     <input id="{{ $inputId }}" name="{{ $name }}" type="{{ $type }}" value="{{ $inputValue }}" @if ($required) required aria-required="true" @endif
         aria-invalid="{{ $hasError ? 'true' : 'false' }}" @if ($hasError) aria-describedby="{{ $inputId }}-error" @endif
-        {{ $attributes->class(['input w-full', 'border-red-500' => $hasError, 'border-zinc-300' => ! $hasError]) }}>
-    @if ($hint)<p class="mt-1 text-xs text-zinc-500">{{ $hint }}</p>@endif
-    @if ($hasError)<p id="{{ $inputId }}-error" role="alert" class="mt-1 text-sm text-red-500">{{ $errors->first($name) }}</p>@endif
+        {{ $attributes->class(['input w-full', 'border-error focus:border-error focus:ring-2 focus:ring-error/20 ring-1 ring-error' => $hasError, 'border-border focus:border-accent' => ! $hasError]) }}>
+    @if ($hint)<p class="mt-1 text-xs text-muted">{{ $hint }}</p>@endif
+    @if ($hasError)<p id="{{ $inputId }}-error" role="alert" class="mt-1 text-xs font-medium text-error">{{ $errors->first($name) }}</p>@endif
 </div>

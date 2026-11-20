@@ -7,6 +7,7 @@ use App\Http\Requests\Admin\SupplierRequest;
 use App\Models\Supplier;
 use App\Services\ProductManagementTaxonomyService;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
@@ -50,10 +51,27 @@ class SupplierController extends Controller
         return to_route('admin.suppliers.index')->with('status', 'Đã lưu thay đổi.');
     }
 
-    public function deactivate(Request $request, Supplier $supplier, ProductManagementTaxonomyService $service): RedirectResponse
+    public function activate(Request $request, Supplier $supplier, ProductManagementTaxonomyService $service): RedirectResponse|JsonResponse
     {
-        $service->deactivate($request->user(), $supplier);
+        $updated = $service->setActive($request->user(), $supplier, true);
+        $message = 'Đã kích hoạt lại nhà cung cấp.';
 
-        return to_route('admin.suppliers.index')->with('status', 'Đã ngừng hiển thị; lịch sử được giữ nguyên.');
+        if ($request->expectsJson()) {
+            return response()->json(['message' => $message, 'is_active' => $updated->is_active]);
+        }
+
+        return back(fallback: route('admin.suppliers.index'))->with('status', $message);
+    }
+
+    public function deactivate(Request $request, Supplier $supplier, ProductManagementTaxonomyService $service): RedirectResponse|JsonResponse
+    {
+        $updated = $service->setActive($request->user(), $supplier, false);
+        $message = 'Đã ngừng hiển thị; lịch sử được giữ nguyên.';
+
+        if ($request->expectsJson()) {
+            return response()->json(['message' => $message, 'is_active' => $updated->is_active]);
+        }
+
+        return back(fallback: route('admin.suppliers.index'))->with('status', $message);
     }
 }

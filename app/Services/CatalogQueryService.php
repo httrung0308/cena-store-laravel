@@ -2,8 +2,10 @@
 
 namespace App\Services;
 
+use App\Enums\ClassificationGroup;
 use App\Enums\ProductImageSourceType;
 use App\Models\Category;
+use App\Models\Classification;
 use App\Models\Product;
 use App\Models\ProductColor;
 use App\Models\ProductImage;
@@ -30,7 +32,7 @@ final class CatalogQueryService
     private const PRICE = 'COALESCE(v.price_override, products.promotion_price, products.base_price)';
 
     /**
-     * @param  array{search?: string, category?: string, gender?: string, colors?: list<string>, size?: string, min_price?: int, max_price?: int, promotion?: bool, in_stock?: bool, sort?: string, page?: int}  $filters
+     * @param  array{search?: string, category?: string, gender?: string, size?: string, min_price?: int, max_price?: int, promotion?: bool, in_stock?: bool, sort?: string, page?: int}  $filters
      * @return LengthAwarePaginator<int, array{product: array<string, mixed>, detailUrl: string, imageUrl: string}>
      */
     public function listing(array $filters): LengthAwarePaginator
@@ -48,6 +50,20 @@ final class CatalogQueryService
             $query->whereHas('category', fn (Builder $category) => $category->where(fn (Builder $slug) => $slug
                 ->where('slug', $filters['category'])
                 ->orWhereHas('parent', fn (Builder $parent) => $parent->where('slug', $filters['category']))));
+        }
+        if (! empty($filters['silhouette'])) {
+            $query->whereHas('classifications', fn (Builder $q) => $q
+                ->where('classifications.classification_group', ClassificationGroup::Silhouette->value)
+                ->where('classifications.is_active', true)
+                ->whereIn('classifications.slug', (array) $filters['silhouette'])
+            );
+        }
+        if (! empty($filters['activity'])) {
+            $query->whereHas('classifications', fn (Builder $q) => $q
+                ->where('classifications.classification_group', ClassificationGroup::Activity->value)
+                ->where('classifications.is_active', true)
+                ->whereIn('classifications.slug', (array) $filters['activity'])
+            );
         }
 
         match ($filters['sort'] ?? 'newest') {
@@ -73,38 +89,56 @@ final class CatalogQueryService
     }
 
     /**
-     * @return array{product: array<string, mixed>, colors: list<array<string, mixed>>, variants: list<array<string, mixed>>, albums: array<string, list<array{id: int, url: string, alt: string}>>, initialColorId: int}
+     * @return array{product: array<string, mixed>, colors: list<array<string, mixed>>, variants: list<array<string, mixed>>, albums: array<string, list<array{id: int, url: string, thumb_url: string, alt: string}>>, initialColorId: int}
      */
     public function detail(string $slug, ?string $styleColor = null): array
     {
-        $product = $this->publicProducts()->where('slug', $slug)->with($this->relations())->firstOrFail();
+        $product = $this->publicProducts()
+            ->where('slug', $slug)
+            ->with($this->relations())
+            ->with(['activeClassifications' => fn ($q) => $q->orderBy('classification_group')->orderBy('sort_order')->orderBy('name')])
+            ->firstOrFail();
+
         $colors = [];
         $variants = [];
         $albums = [];
         $initialColorId = null;
+        $maxPerVariant = (int) config('store.limits.variant_quantity', 10);
 
         foreach ($product->colors as $color) {
-            $colors[] = $this->color($product, $color);
+            $colorData = $this->color($product, $color);
+            $colorAvailable = 0;
+
             $albums[(string) $color->id] = $color->images
-                ->map(fn (ProductImage $image): array => ['id' => $image->id, 'url' => $this->imageUrl($image), 'alt' => $image->alt_text ?? $product->name])
+                ->map(fn (ProductImage $image): array => ['id' => $image->id, 'url' => $this->imageUrl($image), 'thumb_url' => $this->imageUrl($image, 400), 'alt' => $image->alt_text ?? $product->name])
                 ->all();
+
             foreach ($color->variants as $variant) {
                 $available = max(0, $variant->stock_qty - $variant->reserved_qty);
+                $colorAvailable += $available;
                 if ($initialColorId === null && $available > 0) {
                     $initialColorId = $color->id;
                 }
                 $price = $this->price($product, $variant);
+                $hasDiscount = $price < $product->base_price && $product->base_price > 0;
+                $discountPercent = $hasDiscount ? (int) round((($product->base_price - $price) / $product->base_price) * 100) : 0;
+
                 $variants[] = [
                     'id' => $variant->id,
                     'product_color_id' => $color->id,
                     'size_value' => $variant->size_value,
                     'is_active' => true,
                     'available_qty' => $available,
+                    'max_cart_qty' => min($available, $maxPerVariant),
                     'effective_price' => $price,
                     'price_label' => $this->formatVnd($price),
-                    'base_price_label' => $price < $product->base_price ? $this->formatVnd($product->base_price) : null,
+                    'base_price_label' => $hasDiscount ? $this->formatVnd($product->base_price) : null,
+                    'discount_percent' => $discountPercent,
                 ];
             }
+
+            $colorData['has_available'] = $colorAvailable > 0;
+            $colors[] = $colorData;
         }
 
         if ($styleColor !== null && $styleColor !== '') {
@@ -112,6 +146,11 @@ final class CatalogQueryService
             abort_if($chosen === null, 404);
             $initialColorId = $chosen['id'];
         }
+
+        $prices = array_column($variants, 'effective_price');
+        $minPrice = $prices !== [] ? min($prices) : Money::integer($product->base_price);
+        $maxPrice = $prices !== [] ? max($prices) : $minPrice;
+        $genderSlug = strtolower($product->category->gender_group?->value ?? '');
 
         return [
             'product' => [
@@ -121,12 +160,29 @@ final class CatalogQueryService
                 'brand_line' => $product->brand_line,
                 'description' => $product->description,
                 'specifications' => $product->specifications,
+                'category_id' => $product->category_id,
                 'category' => $product->category->name,
+                'category_slug' => $product->category->slug,
+                'gender_slug' => $genderSlug,
+                'category_url' => $product->category->parent_id !== null
+                    ? route('shoes.index', ['category' => $product->category->slug])
+                    : ($genderSlug !== '' ? route('shoes.index', ['gender' => $genderSlug]) : route('shoes.index')),
+                'classifications' => $product->activeClassifications->map(fn (Classification $c): array => [
+                    'name' => $c->name,
+                    'slug' => $c->slug,
+                    'group' => $c->classification_group->value,
+                    'url' => $c->classification_group === ClassificationGroup::Silhouette
+                        ? route('shoes.index', ['silhouette' => [$c->slug]])
+                        : route('shoes.index', ['activity' => [$c->slug]]),
+                ])->values()->all(),
                 'warranty_months' => $product->warranty_months,
                 'exchange_days' => $product->exchange_days,
                 'rating_avg' => (float) $product->rating_avg,
                 'reviews_count' => (int) $product->reviews_count,
-                'price_label' => $this->formatVnd(min(array_column($variants, 'effective_price'))),
+                'price_label' => $this->formatVnd($minPrice),
+                'max_price_label' => $this->formatVnd($maxPrice),
+                'price_varies' => $minPrice !== $maxPrice,
+                'free_shipping_threshold' => config('store.shipping.free_threshold'),
             ],
             'colors' => $colors,
             'variants' => $variants,
@@ -136,7 +192,36 @@ final class CatalogQueryService
     }
 
     /**
-     * @return array{genderOptions: list<array{value: string, label: string}>, colorOptions: list<array{value: string, label: string}>, categoryOptions: list<array{slug: string, name: string}>}
+     * Public active products in the same category/gender for cross-discovery below the detail fold.
+     *
+     * @return list<array{product: array<string, mixed>, detailUrl: string, imageUrl: string}>
+     */
+    public function relatedProducts(int $productId, int $categoryId, string $genderGroup = '', int $limit = 4): array
+    {
+        $matches = $this->matchingVariants([]);
+        $query = $this->publicProducts()
+            ->where('products.id', '!=', $productId)
+            ->whereExists((clone $matches)->selectRaw('1'))
+            ->select('products.*')
+            ->selectSub((clone $matches)->selectRaw('MIN('.self::PRICE.')'), 'matching_price')
+            ->with($this->relations())
+            ->orderByRaw('CASE WHEN products.category_id = ? THEN 0 ELSE 1 END', [$categoryId])
+            ->when($genderGroup !== '', fn (Builder $q) => $q->whereHas('category', fn (Builder $c) => $c->where('gender_group', strtoupper($genderGroup))))
+            ->orderByDesc('products.is_featured')
+            ->orderByDesc('products.id')
+            ->limit($limit)
+            ->get();
+
+        $allVariantIds = $query
+            ->flatMap(fn (Product $p) => $p->colors->flatMap(fn (ProductColor $c) => $c->variants->pluck('id')))
+            ->flip()
+            ->all();
+
+        return $query->map(fn (Product $p): array => $this->card($p, $allVariantIds))->all();
+    }
+
+    /**
+     * @return array{genderOptions: list<array{value: string, label: string}>, categoryOptions: list<array{slug: string, name: string}>, silhouetteOptions: list<array{value: string, label: string}>, activityOptions: list<array{value: string, label: string}>}
      */
     public function filterOptions(): array
     {
@@ -149,16 +234,31 @@ final class CatalogQueryService
         return [
             'genderOptions' => [
                 ['value' => '', 'label' => 'Tất cả'],
-                ['value' => 'men', 'label' => 'Men'],
-                ['value' => 'women', 'label' => 'Women'],
-                ['value' => 'kids', 'label' => 'Kids'],
+                ['value' => 'men', 'label' => 'Nam'],
+                ['value' => 'women', 'label' => 'Nữ'],
+                ['value' => 'kids', 'label' => 'Trẻ em'],
                 ['value' => 'unisex', 'label' => 'Unisex'],
             ],
-            'colorOptions' => collect(config('store.palette'))
-                ->map(fn (array $palette, string $key): array => ['value' => $key, 'label' => $palette['label']])
-                ->values()->all(),
             'categoryOptions' => $categories
-                ->map(fn (Category $category): array => ['slug' => $category->slug, 'name' => ($category->parent_id ? '— ' : '').$category->name])
+                ->map(fn (Category $category): array => [
+                    'slug' => $category->slug,
+                    'name' => ($category->parent_id ? '— ' : '').$category->name,
+                    'is_root_gender' => $category->parent_id === null && in_array($category->slug, ['men', 'women', 'kids', 'unisex'], true),
+                ])
+                ->all(),
+            'silhouetteOptions' => Classification::query()
+                ->where('classification_group', ClassificationGroup::Silhouette->value)
+                ->where('is_active', true)
+                ->orderBy('sort_order')->orderBy('name')
+                ->get(['slug', 'name'])
+                ->map(fn (Classification $c): array => ['value' => $c->slug, 'label' => $c->name])
+                ->all(),
+            'activityOptions' => Classification::query()
+                ->where('classification_group', ClassificationGroup::Activity->value)
+                ->where('is_active', true)
+                ->orderBy('sort_order')->orderBy('name')
+                ->get(['slug', 'name'])
+                ->map(fn (Classification $c): array => ['value' => $c->slug, 'label' => $c->name])
                 ->all(),
         ];
     }
@@ -192,7 +292,7 @@ final class CatalogQueryService
                 'colors' => $colors,
             ],
             'detailUrl' => $colors[0]['url'] ?? route('shoes.show', $product->slug),
-            'imageUrl' => $colors[0]['image_url'] ?? asset(self::FALLBACK_IMAGE),
+            'imageUrl' => $colors[0]['card_image_url'] ?? $this->imageUrl($product->colors->first()?->thumbnail, 400),
         ];
     }
 
@@ -254,9 +354,6 @@ final class CatalogQueryService
                 ->whereRaw("products.name LIKE ? ESCAPE '!'", [$pattern])
                 ->orWhereRaw("c.style_color_code LIKE ? ESCAPE '!'", [$pattern]));
         }
-        if (! empty($filters['colors'])) {
-            $query->whereIn('c.color_key', $filters['colors']);
-        }
         if (! empty($filters['size'])) {
             $query->where('v.size_value', $filters['size']);
         }
@@ -287,7 +384,7 @@ final class CatalogQueryService
         return number_format($amount, 0, ',', '.').' ₫';
     }
 
-    /** @return array{id: int, name: string, hex: ?string, style_color_code: string, image_url: string, url: string} */
+    /** @return array{id: int, name: string, hex: ?string, style_color_code: string, image_url: string, card_image_url: string, url: string} */
     private function color(Product $product, ProductColor $color): array
     {
         return [
@@ -295,20 +392,34 @@ final class CatalogQueryService
             'name' => $color->color_name,
             'hex' => $color->primary_hex,
             'style_color_code' => $color->style_color_code,
-            'image_url' => $this->imageUrl($color->thumbnail),
+            'image_url' => $this->imageUrl($color->thumbnail, 64),
+            'card_image_url' => $this->imageUrl($color->thumbnail, 400),
             'url' => route('shoes.show', ['slug' => $product->slug, 'style_color' => $color->style_color_code]),
         ];
     }
 
     /** Safe public URL of a stored or HTTPS image, else the local fallback asset. */
-    public function imageUrl(?ProductImage $image): string
+    public function imageUrl(?ProductImage $image, ?int $size = null): string
     {
-        if ($image?->source_type === ProductImageSourceType::ExternalUrl && is_string($image->external_url)
-            && filter_var($image->external_url, FILTER_VALIDATE_URL) && parse_url($image->external_url, PHP_URL_SCHEME) === 'https'
-            && parse_url($image->external_url, PHP_URL_USER) === null && parse_url($image->external_url, PHP_URL_PASS) === null) {
-            return $image->external_url;
+        if ($image === null) {
+            return asset(self::FALLBACK_IMAGE);
         }
-        if ($image?->source_type === ProductImageSourceType::Upload && is_string($image->storage_path)
+
+        if ($image->source_type === ProductImageSourceType::ExternalUrl) {
+            if (is_string($image->external_url)
+                && filter_var($image->external_url, FILTER_VALIDATE_URL) && parse_url($image->external_url, PHP_URL_SCHEME) === 'https'
+                && parse_url($image->external_url, PHP_URL_USER) === null && parse_url($image->external_url, PHP_URL_PASS) === null) {
+                return $image->external_url;
+            }
+
+            return asset(self::FALLBACK_IMAGE);
+        }
+
+        if ($size !== null) {
+            return $image->thumbnailUrl($size);
+        }
+
+        if ($image->source_type === ProductImageSourceType::Upload && is_string($image->storage_path)
             && preg_match('~^products/[A-Za-z0-9]{40}\.(?:jpe?g|png|webp)$~D', $image->storage_path)) {
             return Storage::disk('public')->url($image->storage_path);
         }

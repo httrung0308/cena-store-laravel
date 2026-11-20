@@ -47,6 +47,12 @@ Database bảo vệ kiểu/null/default/PK/FK/unique/CHECK cục bộ một dòn
 
 Fixture kiểm schema ở `tests/Fixtures/schema-contract.json` là contract cố định trích dictionary, được so với information_schema thực tế, không đọc migration để kết luận đúng. Test cấu trúc tạo raw SQL fixtures tối thiểu vì models/factories đầy đủ còn ở P01.02/P01.04; đó không phải dữ liệu demo vận hành.
 
+## Luồng coupon, thanh toán mô phỏng và minh chứng giao hàng
+
+Migration `2026_11_05_000001_add_demo_prepaid_and_shipment_delivery_proofs` bổ sung `PREPAID_DEMO` vào các CHECK phương thức thanh toán hiện hữu và tạo `shipment_delivery_proofs`. Bảng minh chứng giữ đường dẫn trên private disk, MIME, kích thước, SHA-256 duy nhất và người tải lên; mỗi shipment chỉ có một minh chứng. Ảnh chỉ được ghi khi giao thành công đơn COD. Quyền đọc được cung cấp qua route back-office có middleware nhân viên, không trả đường dẫn file cho phía khách.
+
+Coupon giữ quota bằng cách khóa dòng `coupons` trong cùng transaction tạo đơn và ghi `coupon_redemptions` trạng thái `RESERVED`. Đơn giao thành công chuyển thành `CONSUMED`; hủy trước giao hoặc giao thất bại chuyển thành `RELEASED`. Giá sau giảm được lưu vào snapshot đơn, dòng hàng, đơn vị hàng và lần thanh toán để tính doanh thu/hoàn tiền nhất quán. Thanh toán PREPAID_DEMO chỉ ghi nhận tiền đã thu mô phỏng; phê duyệt hoàn tiền không ghi nhận giao dịch chuyển tiền thật.
+
 ## Dictionary triển khai
 
 Giá trị “không” trong nullable nghĩa NOT NULL. Default “—” nghĩa không khai báo default (SQL metadata NULL), không có nghĩa cột cho phép NULL. Ý nghĩa nghiệp vụ/snapshot/owner chi tiết giữ nguyên trong DB-01..DB-34 của specification.

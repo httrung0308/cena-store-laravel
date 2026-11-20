@@ -2,7 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Enums\ErrorCode;
 use App\Enums\StockImportStatus;
+use App\Exceptions\DomainException;
 use App\Models\InventoryMovement;
 use App\Models\ProductVariant;
 use App\Models\StockImport;
@@ -29,7 +31,7 @@ class StockImportTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->actor = User::factory()->staff()->create();
+        $this->actor = User::factory()->administrator()->create();
         $this->service = app(StockImportService::class);
         Storage::fake('public');
     }
@@ -173,16 +175,16 @@ class StockImportTest extends TestCase
 
     public function test_admin_can_approve_free_receipt_with_meaningful_note_but_staff_cannot_post_it(): void
     {
-        $admin = User::factory()->administrator()->create();
+        $staff = User::factory()->staff()->create();
         $data = $this->data();
         $data['items'][0]['unit_cost_amount'] = 0;
         $data['note'] = 'Duyệt nhập tặng phục vụ chương trình trưng bày';
-        $import = $this->service->saveDraft($admin, null, $data);
-        $this->actingAs($this->actor)->postJson('/admin/stock-imports/'.$import->id.'/post')->assertUnprocessable();
-        $this->service->post($admin, $import);
+        $import = $this->service->saveDraft($this->actor, null, $data);
+        $this->actingAs($staff)->postJson('/admin/stock-imports/'.$import->id.'/post')->assertForbidden();
+        $this->service->post($this->actor, $import);
         $this->assertSame(StockImportStatus::Posted, $import->fresh()->status);
         $this->assertSame('0.0000', ProductVariant::findOrFail($data['items'][0]['variant_id'])->average_cost);
-        $this->assertSame($admin->id, $import->fresh()->posted_by);
+        $this->assertSame($this->actor->id, $import->fresh()->posted_by);
     }
 
     public function test_post_recomputes_draft_totals_from_locked_items_and_accepts_inactive_not_deleted_sku(): void
@@ -193,6 +195,37 @@ class StockImportTest extends TestCase
         $import->forceFill(['total_quantity' => 99, 'total_cost_amount' => 999])->save();
         $posted = $this->service->post($this->actor, $import);
         $this->assertSame([3, 300], [$posted->total_quantity, $posted->total_cost_amount]);
+    }
+
+    public function test_staff_is_forbidden_from_all_stock_import_routes_and_service_actions(): void
+    {
+        $data = $this->data();
+        $import = $this->service->saveDraft($this->actor, null, $data);
+        $staff = User::factory()->staff()->create();
+
+        $this->actingAs($staff)->get(route('admin.stock-imports.index'))->assertForbidden();
+        $this->actingAs($staff)->get(route('admin.stock-imports.create'))->assertForbidden();
+        $this->actingAs($staff)->post(route('admin.stock-imports.store'), $data)->assertForbidden();
+        $this->actingAs($staff)->get(route('admin.stock-imports.show', $import))->assertForbidden();
+        $this->actingAs($staff)->get(route('admin.stock-imports.edit', $import))->assertForbidden();
+        $this->actingAs($staff)->put(route('admin.stock-imports.update', $import), $data)->assertForbidden();
+        $this->actingAs($staff)->post(route('admin.stock-imports.post', $import))->assertForbidden();
+        $this->actingAs($staff)->post(route('admin.stock-imports.cancel', $import), ['reason' => 'Không được phép'])->assertForbidden();
+        $this->actingAs($staff)->get(route('admin.stock-imports.template'))->assertForbidden();
+        $this->actingAs($staff)->post(route('admin.stock-imports.spreadsheet'))->assertForbidden();
+
+        foreach ([
+            fn () => $this->service->saveDraft($staff, null, $this->data()),
+            fn () => $this->service->post($staff, $import),
+            fn () => $this->service->cancel($staff, $import, 'Không được phép'),
+        ] as $call) {
+            try {
+                $call();
+                $this->fail('Expected DomainException(ErrorCode::Forbidden) for staff.');
+            } catch (DomainException $e) {
+                $this->assertSame(ErrorCode::Forbidden, $e->errorCode);
+            }
+        }
     }
 
     public function test_permissions_and_cancel_reason_validation(): void

@@ -14,9 +14,16 @@ class SupplierRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
-        $this->merge(['is_active' => $this->input('is_active', '0')]);
+        $code = $this->input('code');
+        $normalizedCode = is_string($code) ? mb_strtoupper(trim($code)) : null;
+
+        $this->merge([
+            'code' => $normalizedCode === '' ? null : $normalizedCode,
+            'is_active' => $this->input('is_active', '0'),
+        ]);
     }
 
+    /** @return array<string, mixed> */
     public function rules(): array
     {
         return app(ProductManagementTaxonomyService::class)->supplierRules($this->route('supplier'));

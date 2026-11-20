@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Enums\AdministrativeUnitLevel;
+use App\Enums\OrderStatus;
 use App\Enums\RoleSlug;
 use App\Models\AdministrativeUnit;
 use App\Models\Cart;
@@ -23,6 +24,7 @@ use App\Services\StockImportService;
 use App\Support\BusinessClock;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Seeder;
+use Illuminate\Http\Testing\File;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Str;
 use LogicException;
@@ -419,9 +421,9 @@ class StoreSalesDemoSeeder extends Seeder
 
         return match ($step) {
             'confirm' => $workflow->confirm($order, $staff, $expected),
-            'pack' => $workflow->pack($order, $staff, $expected),
+            'pack' => $order->order_status === OrderStatus::Packing ? $order : $workflow->pack($order, $staff, $expected),
             'ship' => $workflow->ship($order, $staff, $expected, ['GHN', 'GHTK', 'J&T Express'][$order->id % 3], 'VN'.str_pad((string) $order->id, 9, '0', STR_PAD_LEFT)),
-            'deliver' => $workflow->deliver($order, $staff, $expected, 'PT-'.$order->order_code),
+            'deliver' => $workflow->deliver($order, $staff, $expected, $this->demoProof($order)),
             'fail' => $workflow->fail($order, $staff, $expected, $plan['reason']),
             'customer_cancel' => $workflow->cancel($order, $plan['customer']['user'], $expected, $plan['reason'], true),
             'staff_cancel' => $workflow->cancel($order, $staff, $expected, $plan['reason'], false),
@@ -440,6 +442,27 @@ class StoreSalesDemoSeeder extends Seeder
         }
 
         return array_key_last($weights);
+    }
+
+    private function demoProof(Order $order): ?UploadedFile
+    {
+        if ($order->payment_method?->value !== 'COD') {
+            return null;
+        }
+
+        $image = imagecreatetruecolor(240, 60);
+        $intSeed = crc32($order->order_code);
+        $bgColor = imagecolorallocate($image, 200 + abs($intSeed % 50), 200 + abs(($intSeed >> 3) % 50), 200 + abs(($intSeed >> 6) % 50));
+        imagefill($image, 0, 0, $bgColor);
+        $textColor = imagecolorallocate($image, 20, 20, 20);
+        imagestring($image, 3, 10, 20, $order->order_code, $textColor);
+        $temp = tmpfile();
+        ob_start();
+        imagejpeg($image);
+        imagedestroy($image);
+        fwrite($temp, ob_get_clean());
+
+        return new File('proof-'.$order->order_code.'.jpg', $temp);
     }
 
     private function userWithRole(RoleSlug $role): ?User

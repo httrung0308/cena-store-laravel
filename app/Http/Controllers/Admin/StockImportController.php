@@ -13,21 +13,43 @@ use App\Services\StockImportSpreadsheet;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Str;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class StockImportController extends Controller
 {
     public function index(Request $request): View
     {
-        $data = $request->validate(['search' => ['nullable', 'string', 'max:150'], 'status' => ['nullable', 'in:DRAFT,POSTED,CANCELLED']]);
-        $imports = StockImport::when($data['search'] ?? null, fn ($q, $s) => $q->where('import_code', 'like', '%'.$s.'%'))->when($data['status'] ?? null, fn ($q, $s) => $q->where('status', $s))->orderByDesc('id')->paginate(15)->withQueryString();
+        $data = $request->validate([
+            'search' => ['nullable', 'string', 'max:150'],
+            'status' => ['nullable', 'in:DRAFT,POSTED,CANCELLED'],
+            'supplier_id' => ['nullable', 'integer', 'min:1'],
+        ]);
 
-        return view('admin.inventory.imports.index', compact('imports'));
+        $imports = StockImport::when($data['search'] ?? null, fn ($q, $s) => $q->where('import_code', 'like', '%'.$s.'%'))
+            ->when($data['status'] ?? null, fn ($q, $s) => $q->where('status', $s))
+            ->when($data['supplier_id'] ?? null, fn ($q, $id) => $q->where('supplier_id', $id))
+            ->orderByDesc('id')
+            ->paginate(15)
+            ->withQueryString();
+
+        $suppliers = Supplier::orderBy('name')->get(['id', 'code', 'name']);
+        $filters = [
+            'search' => (string) ($data['search'] ?? ''),
+            'status' => (string) ($data['status'] ?? ''),
+            'supplier_id' => isset($data['supplier_id']) ? (string) $data['supplier_id'] : '',
+        ];
+
+        return view('admin.inventory.imports.index', compact('imports', 'suppliers', 'filters'));
     }
 
-    public function create(): View
+    public function create(Request $request): View
     {
-        return $this->form(new StockImport);
+        $variantId = $request->integer('variant_id');
+        $prefillVariantId = ($variantId > 0 && ProductVariant::whereKey($variantId)->exists()) ? $variantId : null;
+
+        return $this->form(new StockImport, $prefillVariantId);
     }
 
     public function edit(StockImport $stock_import): View
@@ -37,11 +59,17 @@ class StockImportController extends Controller
         return $this->form($stock_import);
     }
 
-    private function form(StockImport $import): View
+    private function form(StockImport $import, ?int $prefillVariantId = null): View
     {
-        return view('admin.inventory.imports.form', ['import' => $import, 'commandKey' => (string) Str::uuid(), 'suppliers' => Supplier::orderBy('name')->get(),
+        return view('admin.inventory.imports.form', [
+            'import' => $import,
+            'commandKey' => (string) Str::uuid(),
+            'suppliers' => Supplier::orderBy('name')->get(),
             'variants' => ProductVariant::with('color.product')->orderBy('sku')->get(),
-            'items' => $import->exists ? $import->items()->orderBy('variant_id')->get()->map(fn ($i) => ['variant_id' => $i->variant_id, 'quantity' => $i->quantity, 'unit_cost_amount' => $i->unit_cost_amount])->all() : [['variant_id' => '', 'quantity' => 1, 'unit_cost_amount' => '']]]);
+            'items' => $import->exists
+                ? $import->items()->orderBy('variant_id')->get()->map(fn ($i) => ['variant_id' => $i->variant_id, 'quantity' => $i->quantity, 'unit_cost_amount' => $i->unit_cost_amount])->all()
+                : [['variant_id' => $prefillVariantId ? (string) $prefillVariantId : '', 'quantity' => 1, 'unit_cost_amount' => '']],
+        ]);
     }
 
     /**
@@ -58,7 +86,18 @@ class StockImportController extends Controller
         $file = $data['file'];
         $result = $spreadsheet->parse((string) $file->getRealPath(), $file->getClientOriginalExtension());
 
-        $redirect = to_route('admin.stock-imports.create')->withInput($result['items'] === [] ? [] : ['items' => $result['items']]);
+        $preserved = array_filter([
+            'supplier_id' => $request->input('supplier_id'),
+            'note' => $request->input('note'),
+        ], static fn (mixed $value): bool => $value !== null && $value !== '');
+
+        $input = $result['items'] === []
+            ? $preserved
+            : array_merge($preserved, ['items' => $result['items']]);
+
+        $redirect = $result['items'] === []
+            ? to_route('admin.stock-imports.index')
+            : to_route('admin.stock-imports.create')->withInput($input);
         if ($result['errors'] !== []) {
             $redirect->withErrors($result['errors'], 'spreadsheet');
         }
@@ -69,9 +108,87 @@ class StockImportController extends Controller
         return $redirect;
     }
 
+    public function template(Request $request): BinaryFileResponse|Response
+    {
+        $format = strtolower((string) $request->query('format', 'csv'));
+        $sampleSku1 = ProductVariant::query()->value('sku') ?? 'CENA-PEG40-BLK-40';
+        $sampleSku2 = ProductVariant::query()->skip(1)->value('sku') ?? 'CENA-PEG40-BLK-41';
+
+        if ($format === 'xlsx') {
+            $tempPath = tempnam(sys_get_temp_dir(), 'cena_stock_tmpl_').'.xlsx';
+            $zip = new \ZipArchive;
+            $zip->open($tempPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE);
+
+            $contentTypes = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
+  <Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+</Types>';
+            $zip->addFromString('[Content_Types].xml', $contentTypes);
+
+            $rels = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
+</Relationships>';
+            $zip->addFromString('_rels/.rels', $rels);
+
+            $workbook = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <sheets>
+    <sheet name="NhapKho" sheetId="1" r:id="rId1"/>
+  </sheets>
+</workbook>';
+            $zip->addFromString('xl/workbook.xml', $workbook);
+
+            $wbRels = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
+</Relationships>';
+            $zip->addFromString('xl/_rels/workbook.xml.rels', $wbRels);
+
+            $rowsData = [
+                ['SKU', 'Số lượng', 'Giá nhập'],
+                [$sampleSku1, '10', '950000'],
+                [$sampleSku2, '15', '950000'],
+            ];
+
+            $sheetXml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+  <sheetData>';
+            foreach ($rowsData as $rIdx => $row) {
+                $rowNum = $rIdx + 1;
+                $sheetXml .= "<row r=\"{$rowNum}\">";
+                foreach ($row as $cIdx => $val) {
+                    $colLetter = chr(65 + $cIdx);
+                    $escaped = htmlspecialchars((string) $val, ENT_XML1, 'UTF-8');
+                    $sheetXml .= "<c r=\"{$colLetter}{$rowNum}\" t=\"inlineStr\"><is><t>{$escaped}</t></is></c>";
+                }
+                $sheetXml .= '</row>';
+            }
+            $sheetXml .= '  </sheetData>
+</worksheet>';
+            $zip->addFromString('xl/worksheets/sheet1.xml', $sheetXml);
+            $zip->close();
+
+            return response()->download($tempPath, 'mau_nhap_kho.xlsx')->deleteFileAfterSend();
+        }
+
+        $bom = "\xEF\xBB\xBF";
+        $csv = $bom."SKU,Số lượng,Giá nhập\n{$sampleSku1},10,950000\n{$sampleSku2},15,950000\n";
+
+        return response($csv, 200, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="mau_nhap_kho.csv"',
+        ]);
+    }
+
     public function show(StockImport $stock_import): View
     {
-        return view('admin.inventory.imports.show', ['import' => $stock_import->load(['items', 'createdBy', 'postedBy'])]);
+        return view('admin.inventory.imports.show', [
+            'import' => $stock_import->load(['items.variant.color.product', 'createdBy', 'postedBy']),
+        ]);
     }
 
     public function store(StockImportRequest $request, StockImportService $service): RedirectResponse

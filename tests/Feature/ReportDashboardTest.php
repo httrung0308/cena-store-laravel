@@ -25,7 +25,10 @@ use App\Services\ReportService;
 use App\Services\SalesLedgerService;
 use App\Support\BusinessClock;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Http\Testing\File;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
@@ -43,6 +46,7 @@ class ReportDashboardTest extends TestCase
     {
         parent::setUp();
         config(['store.shipping.dataset_version' => 'factory-v1', 'store.shipping.hcm_province_code' => 'none']);
+        Storage::fake('private');
         $this->admin = User::factory()->administrator()->create();
         $this->staff = User::factory()->staff()->create();
         $this->customer = User::factory()->customer()->create();
@@ -82,7 +86,7 @@ class ReportDashboardTest extends TestCase
         $this->actingAs($this->admin)->get(route('admin.reports.index', ['from' => '2026-11-01', 'to' => '2026-11-01']))->assertOk()
             ->assertViewHas('money', ['revenue' => $merchandise + $shipping, 'merchandise' => $merchandise, 'shipping' => $shipping, 'cogs' => $cogs, 'expense' => 0, 'profit' => $merchandise + $shipping - $cogs])
             ->assertViewHas('bestSellers', fn (array $rows) => array_column($rows, 'pairs') === [3, 1] && $rows[0]['name'] === 'Runner <Một>')
-            ->assertViewHas('daily', fn (array $days) => $days === [['day' => '2026-11-01', 'revenue' => $merchandise + $shipping, 'cogs' => $cogs, 'profit' => $merchandise + $shipping - $cogs]])
+            ->assertViewHas('daily', fn (array $days) => $days === [['day' => '2026-11-01', 'revenue' => $merchandise + $shipping, 'cogs' => $cogs, 'expense' => 0, 'profit' => $merchandise + $shipping - $cogs]])
             ->assertViewHas('operations', [['day' => '2026-11-01', 'orders' => 5, 'pairs' => 4]])
             ->assertSee('Runner &lt;Một&gt;', false)->assertDontSee('Runner <Một>', false)
             ->assertSee('Giá vốn')->assertSee('Lợi nhuận')->assertSee('data-report-chart', false)->assertSee('data-margin-chart', false);
@@ -138,7 +142,7 @@ class ReportDashboardTest extends TestCase
         $this->actingAs($this->admin)->get(route('admin.reports.index', ['from' => '2026-11-01', 'to' => '2026-11-01']))->assertOk()
             ->assertViewHas('money', fn (array $money) => $money['merchandise'] === 1_600_000 && $money['cogs'] === 1_120_000)
             ->assertViewHas('previousMoney', fn (array $money) => $money['merchandise'] === 800_000 && $money['cogs'] === 560_000)
-            ->assertViewHas('presets', fn (array $presets) => $presets[0] === ['label' => '7 ngày', 'from' => '2026-10-26', 'to' => '2026-11-01'])
+            ->assertViewHas('periodOptions', fn (array $options) => $options[0] === ['key' => 'week', 'label' => 'Tuần', 'from' => '2026-10-26', 'to' => '2026-11-01'])
             ->assertSee('so với 1 ngày trước đó')->assertSee('Lãi 31,7% trên doanh thu')->assertSee('Mỗi 100 đồng doanh thu')->assertSee('Biên lợi nhuận');
     }
 
@@ -183,7 +187,8 @@ class ReportDashboardTest extends TestCase
             ->assertSee('Sản phẩm bán chạy')->assertSee('Staff View')->assertSee('Tồn kho còn bán được')->assertSee('data-orders-heatmap', false)->assertSee('Lịch số đơn mỗi ngày')
             ->assertDontSee('data-metric', false)->assertDontSee('data-report-chart', false)->assertDontSee('data-margin-chart', false)->assertDontSee('563.457')
             ->assertDontSee('&quot;revenue&quot;', false)->assertDontSee('"revenue"', false)->assertDontSee('Mỗi 100 đồng doanh thu');
-        $this->actingAs($this->staff)->get(route('admin.dashboard'))->assertSee('href="'.route('admin.reports.index').'"', false);
+        $this->actingAs($this->staff)->get(route('admin.dashboard'))->assertForbidden();
+        $this->actingAs($this->staff)->get(route('admin.operations-work-items.index'))->assertOk()->assertSee('href="'.route('admin.reports.index').'"', false);
 
         $this->actingAs($this->customer)->get(route('admin.reports.index'))->assertForbidden();
         auth()->logout();
@@ -198,7 +203,7 @@ class ReportDashboardTest extends TestCase
     private function ship(Order $order): Order
     {
         $this->actingAs($this->staff);
-        foreach (['confirm' => [], 'pack' => [], 'ship' => ['carrier_name' => 'GHN', 'tracking_code' => 'GHN-'.$order->id]] as $action => $fields) {
+        foreach (['confirm' => [], 'ship' => ['carrier_name' => 'GHN', 'tracking_code' => 'GHN-'.$order->id]] as $action => $fields) {
             $this->post(route('admin.orders.transition', [$order, $action]), ['expected_status' => $order->fresh()->order_status->value] + $fields)->assertRedirect();
         }
 
@@ -208,9 +213,27 @@ class ReportDashboardTest extends TestCase
     private function deliver(Order $order): Order
     {
         $order = $this->ship($order);
-        $this->post(route('admin.orders.transition', [$order, 'deliver']), ['expected_status' => 'ON_DELIVERY', 'receipt_reference' => 'PT-'.$order->id])->assertRedirect();
+        $proof = $this->createProofImage('delivery-'.$order->id.'.jpg', $order->order_code);
+        $this->post(route('admin.orders.transition', [$order, 'deliver']), ['expected_status' => 'ON_DELIVERY', 'proof' => $proof])->assertRedirect();
 
         return $order->fresh();
+    }
+
+    private function createProofImage(string $name, string $seed): UploadedFile
+    {
+        $image = imagecreatetruecolor(240, 60);
+        $intSeed = crc32($seed);
+        $bgColor = imagecolorallocate($image, 200 + abs($intSeed % 50), 200 + abs(($intSeed >> 3) % 50), 200 + abs(($intSeed >> 6) % 50));
+        imagefill($image, 0, 0, $bgColor);
+        $textColor = imagecolorallocate($image, 20, 20, 20);
+        imagestring($image, 3, 10, 20, $seed, $textColor);
+        $temp = tmpfile();
+        ob_start();
+        imagejpeg($image);
+        imagedestroy($image);
+        fwrite($temp, ob_get_clean());
+
+        return new File($name, $temp);
     }
 
     private function placeOrder(ProductVariant $variant, int $quantity): Order

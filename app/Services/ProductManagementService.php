@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Exceptions\DomainException;
 use App\Models\Category;
+use App\Models\Classification;
 use App\Models\Product;
 use App\Models\ProductColor;
 use App\Models\ProductImage;
@@ -16,6 +17,7 @@ use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Throwable;
@@ -23,6 +25,45 @@ use Throwable;
 final class ProductManagementService
 {
     public function __construct(private readonly MediaService $media) {}
+
+    public static function defaultPrefix(string $productSlug, string $styleColorCode): string
+    {
+        $slugClean = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $productSlug));
+        $productPart = substr($slugClean, 0, 8);
+        if ($productPart === '') {
+            $productPart = 'CENA';
+        }
+        $colorPart = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $styleColorCode));
+        if ($colorPart === '') {
+            $colorPart = 'DEF';
+        }
+
+        return "{$productPart}-{$colorPart}";
+    }
+
+    public static function generateSkuWithPrefix(string $prefix, string|float|int $sizeValue, ?int $ignoreVariantId = null): string
+    {
+        $sizeClean = str_replace('.', '_', (string) $sizeValue);
+        $baseCandidate = "{$prefix}-{$sizeClean}";
+        $candidate = $baseCandidate;
+        $suffix = 1;
+
+        while (ProductVariant::query()
+            ->where('sku', $candidate)
+            ->when($ignoreVariantId, fn ($q) => $q->where('id', '!=', $ignoreVariantId))
+            ->exists()) {
+            $candidate = sprintf('%s-%02d', $baseCandidate, $suffix++);
+        }
+
+        return $candidate;
+    }
+
+    public static function generateSku(string $productSlug, string $styleColorCode, string|float|int $sizeValue, ?int $ignoreVariantId = null): string
+    {
+        $prefix = self::defaultPrefix($productSlug, $styleColorCode);
+
+        return self::generateSkuWithPrefix($prefix, $sizeValue, $ignoreVariantId);
+    }
 
     /** Preserve numeric form indexes through multipart merging and validated-data reconstruction. @param array<string,mixed> $data @return array<string,mixed> */
     public function orderedInput(array $data): array
@@ -45,8 +86,60 @@ final class ProductManagementService
         return $data;
     }
 
+    /**
+     * Generate a globally unique, URL-safe style_color_code matching ^[A-Za-z0-9_-]+$.
+     *
+     * @param  array<string, true>  $usedCodesUpper
+     */
+    public static function generateUniqueStyleColorCode(string $colorName, string $productSlug = '', array $usedCodesUpper = []): string
+    {
+        $base = strtoupper(Str::slug($colorName, '-'));
+        $base = preg_replace('/[^A-Z0-9_-]+/', '', $base) ?? '';
+        $base = trim($base, '-_');
+        if ($base === '') {
+            $base = 'COLOR';
+        }
+        $base = substr($base, 0, 50);
+
+        $isTaken = static function (string $candidate) use ($usedCodesUpper): bool {
+            if (isset($usedCodesUpper[strtoupper($candidate)])) {
+                return true;
+            }
+
+            return ProductColor::withTrashed()
+                ->where('style_color_code', $candidate)
+                ->exists();
+        };
+
+        if (! $isTaken($base)) {
+            return $base;
+        }
+
+        $slugPart = strtoupper(Str::slug($productSlug, '-'));
+        $slugPart = preg_replace('/[^A-Z0-9_-]+/', '', $slugPart) ?? '';
+        $slugPart = trim(substr($slugPart, 0, 20), '-_');
+
+        if ($slugPart !== '') {
+            $withSlug = substr($slugPart.'-'.substr($base, 0, max(1, 49 - strlen($slugPart))), 0, 50);
+            if (! $isTaken($withSlug)) {
+                return $withSlug;
+            }
+            $base = $withSlug;
+        }
+
+        $suffix = 2;
+        while (true) {
+            $suffixStr = '-'.$suffix;
+            $candidate = substr($base, 0, 50 - strlen($suffixStr)).$suffixStr;
+            if (! $isTaken($candidate)) {
+                return $candidate;
+            }
+            $suffix++;
+        }
+    }
+
     /** @return array<string, mixed> */
-    public function rules(?Product $product = null): array
+    public function rules(?Product $product = null, bool $allowWithoutImages = false): array
     {
         $rules = ['name' => ['required', 'string', 'max:150'], 'slug' => ['required', 'string', 'max:180', 'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/D', Rule::unique('products', 'slug')->ignore($product?->id)],
             'category_id' => ['required', 'integer', Rule::exists('categories', 'id')->whereNull('deleted_at')],
@@ -54,19 +147,25 @@ final class ProductManagementService
             'base_price' => ['required', 'integer', 'min:1'], 'promotion_price' => ['nullable', 'integer', 'min:1', 'lte:base_price'],
             'warranty_months' => ['required', 'integer', 'between:0,120'], 'exchange_days' => ['required', 'integer', 'between:0,365'],
             'is_active' => ['required', 'boolean'], 'is_featured' => ['sometimes', 'boolean'],
+            'classification_ids' => ['nullable', 'array'], 'classification_ids.*' => ['integer', Rule::exists('classifications', 'id')],
             'colors' => ['required', 'array', 'list', 'min:1', 'max:20'], 'colors.*.id' => ['nullable', 'integer', 'min:1'],
-            'colors.*.style_color_code' => ['required', 'string', 'max:50', 'regex:/^[A-Za-z0-9_-]+$/D'],
-            'colors.*.color_name' => ['required', 'string', 'max:100'], 'colors.*.color_key' => ['required', Rule::in(array_keys(config('store.palette')))],
-            'colors.*.primary_hex' => ['required', 'regex:/^#[A-Fa-f0-9]{6}$/D'], 'colors.*.is_active' => ['sometimes', 'boolean'],
+            'colors.*.style_color_code' => ['sometimes', 'nullable', 'string', 'max:50', 'regex:/^[A-Za-z0-9_-]+$/D'],
+            'colors.*.color_name' => ['required', 'string', 'max:100'],
+            'colors.*.color_key' => ['sometimes', 'nullable', 'string', 'max:20', Rule::in(array_merge(['neutral'], array_keys(config('store.palette'))))],
+            'colors.*.primary_hex' => ['sometimes', 'nullable', 'regex:/^#[A-Fa-f0-9]{6}$/D'],
+            'colors.*.is_active' => ['sometimes', 'boolean'],
             'colors.*.variants' => ['nullable', 'array', 'list', 'max:100'], 'colors.*.range_start' => ['nullable', 'string'], 'colors.*.range_end' => ['nullable', 'string'],
             'colors.*.sku_prefix' => ['nullable', 'string', 'max:85', 'regex:/^[A-Za-z0-9_-]+$/D'],
             'colors.*.variants.*.id' => ['nullable', 'integer', 'min:1'], 'colors.*.variants.*.size_value' => ['required'],
-            'colors.*.variants.*.sku' => ['required', 'string', 'max:100', 'regex:/^[A-Za-z0-9_-]+$/D'],
+            'colors.*.variants.*.sku' => ['nullable', 'string', 'max:100', 'regex:/^[A-Za-z0-9_-]+$/D'],
             'colors.*.variants.*.price_override' => ['nullable', 'integer', 'min:1'], 'colors.*.variants.*.is_active' => ['sometimes', 'boolean'],
-            'colors.*.images' => ['required', 'array', 'list', 'min:1', 'max:20'], 'colors.*.images.*.id' => ['nullable', 'integer', 'min:1'],
+            'colors.*.images' => [$allowWithoutImages ? 'nullable' : 'required', 'array', 'list', 'max:20'],
+            'colors.*.images.*.id' => ['nullable', 'integer', 'min:1'],
             'colors.*.images.*.file' => ['nullable', 'file', 'mimetypes:image/jpeg,image/png,image/webp', 'max:5120'],
             'colors.*.images.*.external_url' => ['nullable', 'string', 'max:1000', 'url:https'],
-            'colors.*.images.*.alt_text' => ['required', 'string', 'max:255'], 'colors.*.images.*.is_thumbnail' => ['required', 'boolean']];
+            'colors.*.images.*.clone_source_path' => ['nullable', 'string', 'max:500'],
+            'colors.*.images.*.alt_text' => ['nullable', 'string', 'max:255'],
+            'colors.*.images.*.is_thumbnail' => [$allowWithoutImages ? 'nullable' : 'required', 'boolean']];
         foreach (['stock_qty', 'reserved_qty', 'quarantine_qty', 'average_cost', 'unit_cost_basis', 'size_numeric'] as $field) {
             $rules[$field] = ['prohibited'];
             $rules['colors.*.variants.*.'.$field] = ['prohibited'];
@@ -75,19 +174,125 @@ final class ProductManagementService
         return $rules;
     }
 
+    /** @return array<string, string> */
+    public function validationMessages(): array
+    {
+        return [
+            'name.required' => 'Vui lòng nhập tên sản phẩm.',
+            'name.max' => 'Tên sản phẩm không được vượt quá :max ký tự.',
+            'slug.required' => 'Vui lòng nhập đường dẫn slug.',
+            'slug.max' => 'Đường dẫn slug không được vượt quá :max ký tự.',
+            'slug.regex' => 'Slug chỉ được gồm chữ thường không dấu, số và dấu gạch nối (-).',
+            'slug.unique' => 'Đường dẫn slug này đã tồn tại. Vui lòng chọn slug khác.',
+            'category_id.required' => 'Vui lòng chọn danh mục sản phẩm.',
+            'category_id.integer' => 'Danh mục sản phẩm không hợp lệ.',
+            'category_id.exists' => 'Danh mục đã chọn không tồn tại hoặc đã bị xóa.',
+            'base_price.required' => 'Vui lòng nhập giá gốc.',
+            'base_price.integer' => 'Giá gốc phải là số nguyên (VNĐ).',
+            'base_price.min' => 'Giá gốc phải lớn hơn 0.',
+            'promotion_price.integer' => 'Giá khuyến mãi phải là số nguyên (VNĐ).',
+            'promotion_price.min' => 'Giá khuyến mãi phải lớn hơn 0.',
+            'promotion_price.lte' => 'Giá khuyến mãi phải nhỏ hơn hoặc bằng giá gốc.',
+            'warranty_months.required' => 'Vui lòng nhập thời gian bảo hành.',
+            'warranty_months.integer' => 'Thời gian bảo hành phải là số nguyên.',
+            'warranty_months.between' => 'Thời gian bảo hành phải từ :min đến :max tháng.',
+            'exchange_days.required' => 'Vui lòng nhập thời hạn đổi size.',
+            'exchange_days.integer' => 'Thời hạn đổi size phải là số nguyên.',
+            'exchange_days.between' => 'Thời hạn đổi size phải từ :min đến :max ngày.',
+            'colors.required' => 'Sản phẩm phải có ít nhất một phối màu.',
+            'colors.min' => 'Sản phẩm phải có ít nhất một phối màu.',
+            'colors.*.color_name.required' => 'Vui lòng nhập tên màu.',
+            'colors.*.style_color_code.regex' => 'Mã phối màu chỉ được gồm chữ cái, số, dấu gạch dưới hoặc gạch nối.',
+            'colors.*.primary_hex.regex' => 'Mã màu HEX phải có định dạng #RRGGBB (ví dụ: #111111).',
+            'colors.*.variants.*.size_value.required' => 'Vui lòng nhập size.',
+            'colors.*.variants.*.sku.regex' => 'Mã SKU chỉ được gồm chữ cái, số, dấu gạch dưới hoặc gạch nối.',
+            'colors.*.variants.*.price_override.integer' => 'Giá riêng phải là số nguyên (VNĐ).',
+            'colors.*.variants.*.price_override.min' => 'Giá riêng phải lớn hơn 0.',
+            'colors.*.images.required' => 'Mỗi phối màu cần ít nhất một ảnh.',
+            'colors.*.images.*.file.mimetypes' => 'Ảnh chỉ hỗ trợ định dạng JPEG, PNG hoặc WebP.',
+            'colors.*.images.*.file.max' => 'Dung lượng mỗi ảnh không được vượt quá 5MB.',
+            'colors.*.images.*.external_url.url' => 'URL ảnh phải bắt đầu bằng https:// hợp lệ.',
+            'colors.*.images.*.is_thumbnail.required' => 'Vui lòng chọn ảnh đại diện cho phối màu.',
+        ];
+    }
+
+    /** @return array<string, string> */
+    public function validationAttributes(): array
+    {
+        return [
+            'name' => 'tên sản phẩm',
+            'slug' => 'đường dẫn slug',
+            'category_id' => 'danh mục',
+            'base_price' => 'giá gốc',
+            'promotion_price' => 'giá khuyến mãi',
+            'warranty_months' => 'bảo hành',
+            'exchange_days' => 'đổi size',
+        ];
+    }
+
     /** @param array<string, mixed> $input */
-    public function save(User $actor, ?Product $product, array $input): Product
+    public function save(User $actor, ?Product $product, array $input, bool $allowWithoutImages = false): Product
     {
         DB::transaction(fn () => ProductManagementAccess::lock($actor));
-        $data = Validator::make($this->orderedInput($input), $this->rules($product))->validate();
+        $data = Validator::make(
+            $this->orderedInput($input),
+            $this->rules($product, $allowWithoutImages),
+            $this->validationMessages(),
+            $this->validationAttributes()
+        )->validate();
         $data['base_price'] = Money::integer($data['base_price']);
         $data['promotion_price'] = isset($data['promotion_price']) ? Money::integer($data['promotion_price']) : null;
+        if ($allowWithoutImages) {
+            $data['is_active'] = false;
+        }
+        if (! empty($data['classification_ids'])) {
+            $existingIds = $product?->exists ? $product->classifications()->pluck('classifications.id')->all() : [];
+            $newIds = array_diff($data['classification_ids'], $existingIds);
+            if (! empty($newIds)) {
+                $inactiveNames = Classification::query()
+                    ->whereIn('id', $newIds)
+                    ->where('is_active', false)
+                    ->pluck('name')
+                    ->all();
+                if (! empty($inactiveNames)) {
+                    $this->invalid('classification_ids', 'Không thể gắn mới nhãn đang tạm ngưng: '.implode(', ', $inactiveNames).'.');
+                }
+            }
+        }
         $paths = [];
         try {
+            $existingColors = $product?->exists
+                ? ProductColor::where('product_id', $product->id)->get()->keyBy('id')
+                : collect();
+
+            $usedStyleCodesUpper = [];
+            foreach ($data['colors'] as &$color) {
+                $existingColor = ! empty($color['id']) ? $existingColors->get((int) $color['id']) : null;
+                $rawCode = isset($color['style_color_code']) ? trim((string) $color['style_color_code']) : '';
+                if ($existingColor && $rawCode === '') {
+                    $color['style_color_code'] = $existingColor->style_color_code;
+                    $usedStyleCodesUpper[strtoupper($existingColor->style_color_code)] = true;
+                } elseif ($rawCode !== '') {
+                    $color['style_color_code'] = $rawCode;
+                    $usedStyleCodesUpper[strtoupper($rawCode)] = true;
+                }
+            }
+            unset($color);
+
+            foreach ($data['colors'] as &$color) {
+                if (trim((string) ($color['style_color_code'] ?? '')) === '') {
+                    $generated = self::generateUniqueStyleColorCode($color['color_name'], $data['slug'], $usedStyleCodesUpper);
+                    $color['style_color_code'] = $generated;
+                    $usedStyleCodesUpper[strtoupper($generated)] = true;
+                }
+            }
+            unset($color);
+
+            $seenFormSkus = [];
             foreach ($data['colors'] as $ci => &$color) {
                 $variants = $color['variants'] ?? [];
                 if (! empty($color['range_start']) || ! empty($color['range_end'])) {
-                    if ($variants || empty($color['range_start']) || empty($color['range_end']) || empty($color['sku_prefix'])) {
+                    if ($variants || empty($color['range_start']) || empty($color['range_end'])) {
                         $this->invalid('colors.'.$ci.'.variants', 'Chọn dải size hoặc từng SKU, không nhập cả hai.');
                     }
                     try {
@@ -96,9 +301,16 @@ final class ProductManagementService
                         $this->invalid('colors.'.$ci.'.range_start', 'Dải size không hợp lệ.');
                     }
                     if (count($sizes) > 100) {
-                        $this->invalid('colors.'.$ci.'.range_end', 'Tối đa100 size cho mỗi màu.');
+                        $this->invalid('colors.'.$ci.'.range_end', 'Tối đa 100 size cho mỗi màu.');
                     }
-                    $variants = array_map(fn ($size) => ['size_value' => $size, 'sku' => $color['sku_prefix'].'-'.str_replace('.', '_', $size), 'price_override' => null], $sizes);
+                    $prefix = ! empty($color['sku_prefix'])
+                        ? $color['sku_prefix']
+                        : self::defaultPrefix($data['slug'], $color['style_color_code']);
+                    $variants = array_map(fn ($size) => [
+                        'size_value' => $size,
+                        'sku' => self::generateSkuWithPrefix($prefix, $size),
+                        'price_override' => null,
+                    ], $sizes);
                 }
                 if (! $variants) {
                     $this->invalid('colors.'.$ci.'.variants', 'Mỗi màu cần ít nhất một size.');
@@ -115,30 +327,61 @@ final class ProductManagementService
                     }
                     $seen[$variant['size_value']] = true;
                     $variant['price_override'] = isset($variant['price_override']) ? Money::integer($variant['price_override']) : null;
+
+                    // Auto generate SKU if empty
+                    if (empty($variant['sku'])) {
+                        $variant['sku'] = self::generateSku($data['slug'], $color['style_color_code'], $variant['size_value'], $variant['id'] ?? null);
+                    }
+
+                    // Check duplicate SKU across entire form
+                    $skuUpper = strtoupper($variant['sku']);
+                    if (isset($seenFormSkus[$skuUpper])) {
+                        throw ValidationException::withMessages([
+                            'colors' => 'Slug, mã màu, SKU hoặc size đã được sử dụng.',
+                            "colors.$ci.variants.$vi.sku" => "Mã SKU '{$variant['sku']}' bị trùng lặp trong form.",
+                        ]);
+                    }
+                    $seenFormSkus[$skuUpper] = true;
                 }
                 unset($variant);
                 $color['variants'] = $variants;
-                if (array_sum(array_column($color['images'], 'is_thumbnail')) !== 1) {
-                    $this->invalid("colors.$ci.images", 'Mỗi màu phải có đúng một ảnh đại diện.');
+
+                $images = $color['images'] ?? [];
+                if (! $allowWithoutImages || ! empty($images)) {
+                    if (array_sum(array_column($images, 'is_thumbnail')) !== 1) {
+                        $this->invalid("colors.$ci.images", 'Mỗi màu phải có đúng một ảnh đại diện.');
+                    }
                 }
-                foreach ($color['images'] as $ii => &$image) {
+
+                foreach ($images as $ii => &$image) {
                     $file = $image['file'] ?? null;
                     $url = $image['external_url'] ?? null;
+                    $clonePath = $image['clone_source_path'] ?? null;
                     if ($file && $url) {
                         $this->invalid("colors.$ci.images.$ii", 'Chỉ chọn một nguồn ảnh.');
                     }
-                    if (! $file && ! $url && empty($image['id'])) {
+                    if (! $file && ! $url && empty($image['id']) && empty($clonePath) && ! $allowWithoutImages) {
                         $this->invalid("colors.$ci.images.$ii", 'Ảnh cần tệp JPEG/PNG/WebP hoặc URL HTTPS.');
                     }
                     if ($url && (parse_url($url, PHP_URL_USER) !== null || parse_url($url, PHP_URL_PASS) !== null)) {
                         $this->invalid("colors.$ci.images.$ii.external_url", 'URL không được chứa tài khoản hoặc mật khẩu.');
                     }
+                    if (trim((string) ($image['alt_text'] ?? '')) === '') {
+                        $image['alt_text'] = mb_substr(trim($data['name']).' - '.trim($color['color_name']), 0, 255);
+                    }
                     if ($file instanceof UploadedFile) {
                         $image['_path'] = $this->media->stage($file);
                         $paths[] = $image['_path'];
+                    } elseif (! empty($clonePath)) {
+                        $cloned = $this->media->duplicate($clonePath);
+                        if ($cloned) {
+                            $image['_path'] = $cloned;
+                            $paths[] = $cloned;
+                        }
                     }
                 }
                 unset($image);
+                $color['images'] = $images;
             }
             unset($color);
 
@@ -149,6 +392,9 @@ final class ProductManagementService
                 $current->forceFill(array_intersect_key($data, array_flip(['name', 'slug', 'brand_line', 'description', 'base_price', 'promotion_price', 'warranty_months', 'exchange_days', 'is_active', 'is_featured'])));
                 $current->category_id = $category->id;
                 $current->save();
+                if (array_key_exists('classification_ids', $data)) {
+                    $current->classifications()->sync($data['classification_ids'] ?? []);
+                }
                 $colors = ProductColor::where('product_id', $current->id)->orderBy('id')->lockForUpdate()->get()->keyBy('id');
                 $allVariants = ProductVariant::whereIn('product_color_id', $colors->keys())->orderBy('id')->lockForUpdate()->get()->keyBy('id');
                 $seenColors = [];
@@ -165,7 +411,14 @@ final class ProductManagementService
                             }
                         }
                     }
-                    $color->forceFill(array_intersect_key($inputColor, array_flip(['style_color_code', 'color_name', 'color_key', 'primary_hex'])));
+                    $color->style_color_code = $inputColor['style_color_code'];
+                    $color->color_name = $inputColor['color_name'];
+                    $color->color_key = ! empty($inputColor['color_key'])
+                        ? $inputColor['color_key']
+                        : ($color->exists ? $color->color_key : 'neutral');
+                    $color->primary_hex = ! empty($inputColor['primary_hex'])
+                        ? $inputColor['primary_hex']
+                        : ($color->exists ? $color->primary_hex : '#000000');
                     $color->product_id = $current->id;
                     $color->display_order = $ci + 1;
                     $color->is_active = $inputColor['is_active'] ?? true;
@@ -198,7 +451,7 @@ final class ProductManagementService
                         $storedImage->syncOriginalAttribute('is_thumbnail');
                     }
                     $seenImages = [];
-                    foreach ($inputColor['images'] as $ii => $inputImage) {
+                    foreach ($inputColor['images'] ?? [] as $ii => $inputImage) {
                         $image = empty($inputImage['id']) ? new ProductImage : $images->get((int) $inputImage['id']);
                         abort_unless($image, 404);
                         if ($image->exists && isset($seenImages[$image->id])) {
@@ -237,12 +490,40 @@ final class ProductManagementService
         }
     }
 
+    public function setActive(User $actor, Product $product, bool $active): Product
+    {
+        return DB::transaction(function () use ($actor, $product, $active): Product {
+            ProductManagementAccess::lock($actor);
+            $locked = Product::whereKey($product->id)->lockForUpdate()->firstOrFail();
+            $locked->forceFill(['is_active' => $active])->save();
+
+            return $locked->refresh();
+        }, 3);
+    }
+
     public function deactivate(User $actor, Product $product): void
     {
-        DB::transaction(function () use ($actor, $product): void {
-            ProductManagementAccess::lock($actor);
-            Product::whereKey($product->id)->lockForUpdate()->firstOrFail()->forceFill(['is_active' => false])->save();
-        }, 3);
+        $this->setActive($actor, $product, false);
+    }
+
+    /** @return list<int> */
+    public function documentedVariantIds(Product $product): array
+    {
+        if (! $product->exists) {
+            return [];
+        }
+
+        $product->loadMissing('colors.variants');
+        $ids = [];
+        foreach ($product->colors as $color) {
+            foreach ($color->variants as $variant) {
+                if ($this->documented($variant)) {
+                    $ids[] = $variant->id;
+                }
+            }
+        }
+
+        return $ids;
     }
 
     private function documented(ProductVariant $variant): bool

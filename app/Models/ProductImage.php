@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\ProductImageSourceType;
+use App\Services\ProductImageThumbnailService;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -36,5 +37,14 @@ class ProductImage extends DomainModel
     public function color(): BelongsTo
     {
         return $this->belongsTo(ProductColor::class, 'product_color_id');
+    }
+
+    public function thumbnailUrl(int $size = 400): string
+    {
+        return app(ProductImageThumbnailService::class)->getThumbnailUrl(
+            $this->storage_path,
+            $this->external_url,
+            $size
+        );
     }
 }

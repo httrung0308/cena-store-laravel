@@ -29,6 +29,11 @@ final class ReportService
         return $this->clock->now()->setTimezone($this->timezone())->format('Y-m-d');
     }
 
+    public function now(): CarbonImmutable
+    {
+        return $this->clock->now();
+    }
+
     /** @return array{revenue: int, merchandise: int, shipping: int, cogs: int, expense: int, profit: int} */
     public function money(CarbonImmutable $start, CarbonImmutable $end): array
     {
@@ -52,24 +57,26 @@ final class ReportService
     }
 
     /**
-     * Revenue, COGS and profit per Vietnamese calendar day, including days without sales.
+     * Revenue, COGS, expense and profit per Vietnamese calendar day, including days without sales.
      *
-     * @return list<array{day: string, revenue: int, cogs: int, profit: int}>
+     * @return list<array{day: string, revenue: int, cogs: int, expense: int, profit: int}>
      */
     public function daily(CarbonImmutable $start, CarbonImmutable $end): array
     {
         $rows = DB::table('sales_ledger_entries')
             ->where('occurred_at', '>=', $start)->where('occurred_at', '<', $end)
             ->selectRaw("DATE(CONVERT_TZ(occurred_at, '+00:00', ?)) AS day", [$this->offset($start)])
-            ->selectRaw('SUM(merchandise_revenue_delta + shipping_revenue_delta) AS revenue')
-            ->selectRaw('SUM(cogs_delta) AS cogs')
-            ->selectRaw('SUM(merchandise_revenue_delta + shipping_revenue_delta - cogs_delta - expense_delta) AS profit')
+            ->selectRaw('COALESCE(SUM(merchandise_revenue_delta + shipping_revenue_delta), 0) AS revenue')
+            ->selectRaw('COALESCE(SUM(cogs_delta), 0) AS cogs')
+            ->selectRaw('COALESCE(SUM(expense_delta), 0) AS expense')
+            ->selectRaw('COALESCE(SUM(merchandise_revenue_delta + shipping_revenue_delta - cogs_delta - expense_delta), 0) AS profit')
             ->groupBy('day')->get()->keyBy('day');
 
         return array_map(fn (string $day): array => [
             'day' => $day,
             'revenue' => (int) ($rows[$day]->revenue ?? 0),
             'cogs' => (int) ($rows[$day]->cogs ?? 0),
+            'expense' => (int) ($rows[$day]->expense ?? 0),
             'profit' => (int) ($rows[$day]->profit ?? 0),
         ], $this->days($start, $end));
     }
@@ -159,7 +166,7 @@ final class ReportService
      * Sellable stock (on hand minus reserved; quarantined pairs are a separate bucket and never count).
      * Every low size is listed, fewest pairs first.
      *
-     * @return array{sellable: int, reserved: int, quarantine: int, variants: int, low: list<array{product: string, color: string, size: string, sku: string, sellable: int}>}
+     * @return array{sellable: int, reserved: int, quarantine: int, variants: int, low: list<array{variant_id: int, product: string, color: string, size: string, sku: string, sellable: int}>}
      */
     public function inventory(int $threshold = self::LOW_STOCK_THRESHOLD): array
     {
@@ -172,10 +179,10 @@ final class ReportService
         $totals = (clone $variants)->selectRaw('COALESCE(SUM(product_variants.stock_qty - product_variants.reserved_qty), 0) AS sellable, COALESCE(SUM(product_variants.reserved_qty), 0) AS reserved, COALESCE(SUM(product_variants.quarantine_qty), 0) AS quarantine, COUNT(*) AS variants')->first();
         $low = (clone $variants)
             ->whereRaw('product_variants.stock_qty - product_variants.reserved_qty <= ?', [$threshold])
-            ->selectRaw('products.name AS product, product_colors.color_name AS color, product_variants.size_value AS size, product_variants.sku AS sku, product_variants.stock_qty - product_variants.reserved_qty AS sellable')
+            ->selectRaw('product_variants.id AS variant_id, products.name AS product, product_colors.color_name AS color, product_variants.size_value AS size, product_variants.sku AS sku, product_variants.stock_qty - product_variants.reserved_qty AS sellable')
             ->orderBy('sellable')->orderBy('products.name')->orderBy('product_variants.id')
             ->get()
-            ->map(fn (object $row): array => ['product' => (string) $row->product, 'color' => (string) $row->color, 'size' => (string) $row->size, 'sku' => (string) $row->sku, 'sellable' => (int) $row->sellable])
+            ->map(fn (object $row): array => ['variant_id' => (int) $row->variant_id, 'product' => (string) $row->product, 'color' => (string) $row->color, 'size' => (string) $row->size, 'sku' => (string) $row->sku, 'sellable' => (int) $row->sellable])
             ->all();
 
         return ['sellable' => (int) $totals->sellable, 'reserved' => (int) $totals->reserved, 'quarantine' => (int) $totals->quarantine, 'variants' => (int) $totals->variants, 'low' => $low];

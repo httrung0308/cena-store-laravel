@@ -28,7 +28,7 @@ class OrderTransitionRequest extends FormRequest
             'expected_status' => ['required', Rule::enum(OrderStatus::class)],
             'carrier_name' => [Rule::requiredIf($action === 'ship'), 'nullable', 'string', 'max:100'],
             'tracking_code' => ['nullable', 'string', 'max:100', 'regex:/^[A-Za-z0-9._\/-]+$/D'],
-            'receipt_reference' => [Rule::requiredIf($action === 'deliver'), 'nullable', 'string', 'max:150', 'regex:/^[A-Za-z0-9._\/-]+$/D'],
+            'proof' => [Rule::requiredIf($action === 'deliver' && $this->route('order')?->payment_method?->value === 'COD'), 'nullable', 'file', 'mimetypes:image/jpeg,image/png,image/webp', 'max:5120'],
             'reason' => [Rule::requiredIf(in_array($action, ['cancel', 'fail'], true)), 'nullable', 'string', 'min:5', 'max:500'],
         ];
     }
@@ -38,6 +38,6 @@ class OrderTransitionRequest extends FormRequest
      */
     public function attributes(): array
     {
-        return ['carrier_name' => 'đơn vị vận chuyển', 'tracking_code' => 'mã vận đơn', 'receipt_reference' => 'mã phiếu thu COD', 'reason' => 'lý do'];
+        return ['carrier_name' => 'đơn vị vận chuyển', 'tracking_code' => 'mã vận đơn', 'proof' => 'ảnh minh chứng giao hàng', 'reason' => 'lý do'];
     }
 }

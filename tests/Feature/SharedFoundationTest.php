@@ -33,7 +33,7 @@ class SharedFoundationTest extends TestCase
             ->assertViewIs('catalog.index')
             ->assertSee('Shoes')
             ->assertSee('aria-controls="cart-panel"', false)
-            ->assertSee('Mua sắm')
+            ->assertSee('Khám phá')
             ->assertDontSee('legacy-navigation', false);
     }
 
@@ -54,12 +54,25 @@ class SharedFoundationTest extends TestCase
     {
         $user = User::factory()->{$state}()->create(['full_name' => 'Nhân sự <b>Cena</b>']);
 
-        $this->actingAs($user)->get('/admin')
+        if ($state === 'administrator') {
+            $this->actingAs($user)->get('/admin')
+                ->assertOk()
+                ->assertViewIs('admin.dashboard')
+                ->assertSee('href="'.route('admin.dashboard').'"', false)
+                ->assertSee('Nhân sự &lt;b&gt;Cena&lt;/b&gt;', false)
+                ->assertSee('href="'.route('admin.products.index').'"', false);
+
+            return;
+        }
+
+        $this->actingAs($user)->get('/admin')->assertForbidden();
+        $this->actingAs($user)->get(route('admin.operations-work-items.index'))
             ->assertOk()
-            ->assertViewIs('admin.dashboard')
-            ->assertSee('href="'.route('admin.dashboard').'"', false)
+            ->assertSee('href="'.route('admin.operations-work-items.index').'"', false)
             ->assertSee('Nhân sự &lt;b&gt;Cena&lt;/b&gt;', false)
-            ->assertSee('href="'.route('admin.products.index').'"', false);
+            ->assertSee('href="'.route('admin.products.index').'"', false)
+            ->assertDontSee('href="'.route('admin.dashboard').'"', false)
+            ->assertDontSee('href="'.route('admin.stock-imports.index').'"', false);
     }
 
     public function test_customer_inactive_or_deleted_staff_and_user_without_role_are_forbidden(): void
@@ -115,7 +128,7 @@ class SharedFoundationTest extends TestCase
         $html = Blade::render("@extends('layouts.store')\n@section('title', \$title)\n@section('content')<p>Nội dung</p>@endsection", ['title' => '<script>x</script>']);
 
         $this->assertStringContainsString('<p>Nội dung</p>', $html);
-        $this->assertStringContainsString('&lt;script&gt;x&lt;/script&gt; — Fakestore', $html);
+        $this->assertStringContainsString('&lt;script&gt;x&lt;/script&gt; — Cena', $html);
         $this->assertStringNotContainsString('<script>x</script>', $html);
     }
 

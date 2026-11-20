@@ -12,12 +12,11 @@ class FoundationSmokeTest extends TestCase
         $this->get(route('home'))
             ->assertOk()
             ->assertViewIs('storefront.home')
-            ->assertSee('<html lang="en">', false)
-            ->assertSee('Thể thao là')->assertSee('không ngừng bỏ cuộc.')
-            ->assertSee('legacy/img/fakestore-logo.png')->assertDontSee('the smart choice.')
-            ->assertSee('legacy/img/main.jpg')
-            ->assertSee('Fresh summer collection avaible now')
-            ->assertSee('Mua sắm')
+            ->assertSee('lang="vi"', false)
+            ->assertSee('Thể thao là')
+            ->assertSee('không ngừng bỏ cuộc.')
+            ->assertSee('cena-logo.svg')
+            ->assertDontSee('the smart choice.')
             ->assertSee('/build/assets/', false)
             ->assertSee('aria-controls="cart-panel"', false);
     }
