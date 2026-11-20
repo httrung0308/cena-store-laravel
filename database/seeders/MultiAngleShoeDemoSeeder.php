@@ -73,11 +73,11 @@ class MultiAngleShoeDemoSeeder extends Seeder
 
         if ($product === null) {
             $product = $products->save($actor, null, [
-                'name' => $entry['name'].' · ảnh tham khảo',
+                'name' => $entry['name'],
                 'slug' => $entry['slug'],
                 'category_id' => Category::where('slug', $entry['group'])->firstOrFail()->id,
-                'brand_line' => 'Nike · Sản phẩm minh họa',
-                'description' => 'Ảnh lấy từ trang Nike Việt Nam cho demo đồ án. Giá, size và tồn kho là dữ liệu mô phỏng; cửa hàng không tự nhận là nhà phân phối chính hãng.',
+                'brand_line' => 'Nike',
+                'description' => $this->description($entry),
                 'base_price' => $entry['demo_price_vnd'],
                 'promotion_price' => null,
                 'warranty_months' => 6,
@@ -107,6 +107,15 @@ class MultiAngleShoeDemoSeeder extends Seeder
             throw new LogicException('Demo product changed or removed; refusing to overwrite it.');
         }
 
+        if ($product->brand_line === 'Nike · Sản phẩm minh họa' && str_ends_with($product->name, ' · ảnh tham khảo')) {
+            $product->update([
+                'name' => $entry['name'],
+                'brand_line' => 'Nike',
+                'description' => $this->description($entry),
+            ]);
+            $product->colors()->where('style_color_code', $code)->update(['color_name' => $entry['color_name']]);
+        }
+
         $variants = ProductVariant::whereHas('color', fn ($query) => $query
             ->where('product_id', $product->id)
             ->where('style_color_code', $code))
@@ -131,5 +140,11 @@ class MultiAngleShoeDemoSeeder extends Seeder
         }
         $imports->post($actor, $import);
         $this->command?->info('Album Nike: /shoes/'.$entry['slug']);
+    }
+
+    /** @param array<string, mixed> $entry */
+    private function description(array $entry): string
+    {
+        return 'Mã sản phẩm: '.$entry['style_color_code'].'. Phối màu: '.$entry['color_name'].'.';
     }
 }
