@@ -116,6 +116,19 @@ class MultiAngleShoeDemoSeeder extends Seeder
             $product->colors()->where('style_color_code', $code)->update(['color_name' => $entry['color_name']]);
         }
 
+        $color = $product->colors()->where('style_color_code', $code)->sole();
+        foreach ($color->images as $image) {
+            $currentUrl = $image->external_url;
+            if (! is_string($currentUrl) || ! str_contains($currentUrl, '/t_PDP_144_v1/')) {
+                continue;
+            }
+
+            $highResolutionUrl = str_replace('/t_PDP_144_v1/', '/t_PDP_1728_v1/', $currentUrl);
+            if (in_array($highResolutionUrl, $entry['images'], true)) {
+                $image->forceFill(['external_url' => $highResolutionUrl])->save();
+            }
+        }
+
         $variants = ProductVariant::whereHas('color', fn ($query) => $query
             ->where('product_id', $product->id)
             ->where('style_color_code', $code))

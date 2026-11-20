@@ -32,6 +32,7 @@ class MultiAngleShoeDemoSeederTest extends TestCase
             $this->assertCount(4, $entry['images']);
             $this->assertCount(4, array_unique($entry['images']));
             $this->assertTrue(collect($entry['images'])->every(fn (string $url): bool => str_starts_with($url, 'https://static.nike.com/a/images/')));
+            $this->assertTrue(collect($entry['images'])->every(fn (string $url): bool => str_contains($url, '/t_PDP_1728_v1/')));
         }
         $this->seed(MultiAngleShoeDemoSeeder::class);
 
@@ -63,14 +64,20 @@ class MultiAngleShoeDemoSeederTest extends TestCase
         $legacy = Product::where('slug', $entries[5]['slug'])->sole();
         $legacy->update(['name' => 'Nike Pegasus Plus 2 Nữ · ảnh tham khảo', 'brand_line' => 'Nike · Sản phẩm minh họa', 'description' => 'Dữ liệu demo cũ']);
         $legacy->colors()->update(['color_name' => 'Theo mã IM2543-600']);
+        $legacyImage = $legacy->colors()->sole()->images()->orderBy('display_order')->firstOrFail();
+        $legacyImage->forceFill(['external_url' => str_replace('/t_PDP_1728_v1/', '/t_PDP_144_v1/', $entries[5]['images'][0])])->save();
         $custom = Product::where('slug', $entries[1]['slug'])->sole();
         $custom->update(['name' => 'Tên cửa hàng tự đặt', 'brand_line' => 'Nike · Sản phẩm minh họa']);
+        $customImage = $custom->colors()->sole()->images()->orderBy('display_order')->firstOrFail();
+        $customImage->forceFill(['external_url' => 'https://example.test/custom-product.jpg'])->save();
 
         $this->seed(MultiAngleShoeDemoSeeder::class);
         $this->assertSame($entries[5]['name'], $legacy->fresh()->name);
         $this->assertSame('Nike', $legacy->fresh()->brand_line);
         $this->assertSame($entries[5]['color_name'], $legacy->colors()->sole()->color_name);
         $this->assertSame('Tên cửa hàng tự đặt', $custom->fresh()->name);
+        $this->assertSame($entries[5]['images'][0], $legacyImage->fresh()->external_url);
+        $this->assertSame('https://example.test/custom-product.jpg', $customImage->fresh()->external_url);
         foreach ($snapshots as $colorId => [$imageIds, $stock]) {
             $this->assertSame($imageIds, ProductImage::where('product_color_id', $colorId)->orderBy('display_order')->pluck('id')->all());
             $this->assertSame($stock, ProductVariant::where('product_color_id', $colorId)->orderBy('id')->pluck('stock_qty')->all());
