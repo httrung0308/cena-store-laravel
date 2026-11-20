@@ -136,7 +136,7 @@ class MultiAngleShoeDemoSeeder extends Seeder
     }
 
     /** @param array<string, mixed> $entry
-     *  @return list<array{external_url: string, alt_text: string, is_thumbnail: bool}>
+     * @return list<array{external_url: string, alt_text: string, is_thumbnail: bool}>
      */
     private function images(array $entry): array
     {
