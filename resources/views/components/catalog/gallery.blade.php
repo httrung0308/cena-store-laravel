@@ -76,7 +76,7 @@
 
     {{-- Thumbnail Rail (renders ALL images of current color cleanly) --}}
     <div x-show="images.length > 1"
-        class="grid grid-cols-5 gap-2 sm:grid-cols-6 sm:gap-2.5"
+        class="grid grid-cols-4 gap-2 sm:gap-2.5"
         role="group"
         aria-label="Chọn ảnh">
         <template x-for="(image, index) in images" :key="image.id">
