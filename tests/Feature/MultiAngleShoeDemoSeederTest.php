@@ -38,7 +38,11 @@ class MultiAngleShoeDemoSeederTest extends TestCase
         $snapshots = [];
         foreach ($entries as $entry) {
             $product = Product::where('slug', $entry['slug'])->sole();
+            $this->assertSame($entry['name'], $product->name);
+            $this->assertSame('Nike', $product->brand_line);
+            $this->assertStringNotContainsString('ảnh tham khảo', $product->description);
             $color = $product->colors()->sole();
+            $this->assertSame($entry['color_name'], $color->color_name);
             $images = ProductImage::where('product_color_id', $color->id)->orderBy('display_order')->get();
             $this->assertCount(4, $images);
             $this->assertSame([true, false, false, false], $images->pluck('is_thumbnail')->all());
@@ -56,7 +60,17 @@ class MultiAngleShoeDemoSeederTest extends TestCase
             ];
         }
 
+        $legacy = Product::where('slug', $entries[5]['slug'])->sole();
+        $legacy->update(['name' => 'Nike Pegasus Plus 2 Nữ · ảnh tham khảo', 'brand_line' => 'Nike · Sản phẩm minh họa', 'description' => 'Dữ liệu demo cũ']);
+        $legacy->colors()->update(['color_name' => 'Theo mã IM2543-600']);
+        $custom = Product::where('slug', $entries[1]['slug'])->sole();
+        $custom->update(['name' => 'Tên cửa hàng tự đặt', 'brand_line' => 'Nike · Sản phẩm minh họa']);
+
         $this->seed(MultiAngleShoeDemoSeeder::class);
+        $this->assertSame($entries[5]['name'], $legacy->fresh()->name);
+        $this->assertSame('Nike', $legacy->fresh()->brand_line);
+        $this->assertSame($entries[5]['color_name'], $legacy->colors()->sole()->color_name);
+        $this->assertSame('Tên cửa hàng tự đặt', $custom->fresh()->name);
         foreach ($snapshots as $colorId => [$imageIds, $stock]) {
             $this->assertSame($imageIds, ProductImage::where('product_color_id', $colorId)->orderBy('display_order')->pluck('id')->all());
             $this->assertSame($stock, ProductVariant::where('product_color_id', $colorId)->orderBy('id')->pluck('stock_qty')->all());
