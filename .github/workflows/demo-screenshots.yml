@@ -53,6 +53,7 @@ jobs:
       - run: php artisan storage:link --no-interaction
       - run: php artisan db:seed --class=FullDemoSeeder --no-interaction
       - run: php artisan db:seed --class=MultiAngleShoeDemoSeeder --no-interaction
+      - run: php artisan db:seed --class=AdidasMultiAngleDemoSeeder --no-interaction
       - name: Start local Laravel server
         run: |
           php artisan serve --host=127.0.0.1 --port=8000 > /tmp/cena-demo-server.log 2>&1 &

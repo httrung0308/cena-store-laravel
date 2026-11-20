@@ -9,6 +9,7 @@ if (!password) throw new Error('CENA_DEMO_PASSWORD is required for seeded demo s
 
 await mkdir(output, { recursive: true });
 const entries = JSON.parse(await readFile('database/data/nike-multiview-demo.json', 'utf8'));
+const adidasEntries = JSON.parse(await readFile('database/data/adidas-multiview-demo.json', 'utf8'));
 const browser = await chromium.launch({
   headless: true,
   executablePath: process.env.CHROME_PATH,
@@ -60,6 +61,17 @@ try {
   await visit(publicPage, '/shoes/' + entries[10].slug, 'chi-tiet-giay-pegasus-42');
   await publicPage.getByRole('button', { name: 'Ảnh 2', exact: true }).first().click();
   await screenshot(publicPage, 'chi-tiet-chuyen-goc-anh');
+  await visit(publicPage, '/shoes/' + adidasEntries[0].slug, 'chi-tiet-adidas-samba-og');
+  if (await publicPage.getByRole('group', { name: 'Chọn ảnh' }).getByRole('button').count() !== 4) {
+    throw new Error('adidas product gallery must show four angles');
+  }
+  const adidasMainImage = publicPage.locator('[data-gallery-zoom] img').first();
+  await adidasMainImage.evaluate(img => img.decode());
+  if (!await adidasMainImage.evaluate(img => img.currentSrc.startsWith('https://assets.adidas.com/') && img.naturalWidth >= 1000)) {
+    throw new Error('adidas main photo did not load at high resolution');
+  }
+  await publicPage.getByRole('button', { name: 'Ảnh 2', exact: true }).first().click();
+  await screenshot(publicPage, 'chi-tiet-adidas-chuyen-goc');
   await visit(publicPage, '/news', 'danh-sach-bai-viet');
   const newsHref = await publicPage.locator('a[href*="/news/"]').evaluateAll(nodes =>
     nodes.map(a => a.getAttribute('href')).find(href => /\/news\/[a-z0-9-]+(?:\?|$)/.test(href ?? '')));
