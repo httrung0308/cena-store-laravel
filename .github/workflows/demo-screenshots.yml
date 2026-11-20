@@ -65,13 +65,13 @@ jobs:
       - name: Capture screenshots
         run: |
           npm install --no-save --package-lock=false playwright-core@1.56.1
-          echo "CHROME_PATH=$(command -v google-chrome || command -v chromium)" >> "$GITHUB_ENV"
+          export CHROME_PATH="$(command -v google-chrome || command -v chromium)"
           node scripts/capture-demo-screenshots.mjs
           zip -qr cena-store-screenshots.zip screenshot-output
         env:
           CENA_DEMO_PASSWORD: CenaDemo@2026
       - uses: actions/upload-artifact@v4
-        if: always()
+        if: success()
         with:
           name: cena-store-screenshots
           path: |
