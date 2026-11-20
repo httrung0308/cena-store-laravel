@@ -28,6 +28,11 @@ class MultiAngleShoeDemoSeederTest extends TestCase
     {
         $entries = json_decode(file_get_contents(database_path('data/nike-multiview-demo.json')), true, 512, JSON_THROW_ON_ERROR);
         $this->assertGreaterThan(10, count($entries));
+        foreach ($entries as $entry) {
+            $this->assertCount(4, $entry['images']);
+            $this->assertCount(4, array_unique($entry['images']));
+            $this->assertTrue(collect($entry['images'])->every(fn (string $url): bool => str_starts_with($url, 'https://static.nike.com/a/images/')));
+        }
         $this->seed(MultiAngleShoeDemoSeeder::class);
 
         $snapshots = [];
