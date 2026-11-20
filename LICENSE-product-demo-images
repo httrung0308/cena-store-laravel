@@ -1,23 +1,5 @@
-The four Wikimedia Commons photographs referenced by MultiAngleShoeDemoSeeder
-show A Bathing Ape Roadsta shoes. Photographer: Christian H. License: Creative
-Commons Attribution 2.0 Generic (CC BY 2.0):
-https://creativecommons.org/licenses/by/2.0/
+Demo image sources: https://www.nike.com/vn/w/shoes-y7ok
 
-Sources (images are linked, not copied into this repository):
-https://commons.wikimedia.org/wiki/File:Bape_Roadsta_(2009-03-21_00.19.01_by_Christian_H.).jpg
-https://commons.wikimedia.org/wiki/File:Bape_Roadsta_(2009-03-21_00.19.20_by_Christian_H.).jpg
-https://commons.wikimedia.org/wiki/File:Bape_Roadsta_(2009-03-21_00.20.04_by_Christian_H.).jpg
-https://commons.wikimedia.org/wiki/File:Bape_Roadsta_(2009-03-21_00.20.21_by_Christian_H.).jpg
+database/data/nike-multiview-demo.json records each product's source page, Nike style-colour code, and four linked images from that same product page. Images are external links served by static.nike.com; this repository does not store or grant rights to them. Use for this classroom demonstration only and review Nike's terms before any other use.
 
-The three Converse All Star photographs show white low-top shoes. Photographer:
-Thewildone85. License: Creative Commons Attribution-ShareAlike 3.0 Unported
-(CC BY-SA 3.0): https://creativecommons.org/licenses/by-sa/3.0/
-
-Sources (images are linked, not copied into this repository):
-https://commons.wikimedia.org/wiki/File:Converse_side_view.JPG
-https://commons.wikimedia.org/wiki/File:White_converse_front.JPG
-https://commons.wikimedia.org/wiki/File:White_converse_heel.JPG
-
-No image modifications are made. The product listing, prices, sizes, and inventory
-are fictional demo data and do not imply affiliation or endorsement by the brand
-or photographer.
+The names identify the photographed products. Display prices, sizes, supplier and inventory are demo data; Cena Store is not represented as an authorized Nike retailer. Photo availability depends on Nike's remote image service.

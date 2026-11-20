@@ -1,4 +1,11 @@
+Warning: truncated output (original token count: 32788)
+Total output lines: 582
+
 # Nhật ký triển khai AI — Cena Store
+
+## 20/11/2026 — Album Nike cho demo local
+
+Thay album Bape/Converse trước đây bằng bộ dữ liệu 12 mẫu Nike, mỗi mẫu 4 liên kết ảnh cùng mã phối màu và trang sản phẩm gốc tại `database/data/nike-multiview-demo.json`. Seeder `MultiAngleShoeDemoSeeder` chỉ chạy khi bật demo ở local/testing; tạo hàng qua ProductManagementService và StockImportService, chạy lại không nhân kho. Hai mẫu cũ được ngừng hiển thị nếu đúng mã demo, không xóa chứng từ. Gallery bốn ảnh và hover zoom tiếp tục dùng thành phần hiện có. Ảnh phụ thuộc nguồn Nike bên ngoài; giá, size và tồn kho là mô phỏng.
 
 Đặc tả: `specification.md`. Ngày làm việc:31/10/2026. Yêu cầu bổ sung: giữ giao diện source gốc; homepage đã chuyển từ JSX sang Blade, các phase sau tiếp tục dùng giao diện gốc.
 
@@ -326,58 +333,7 @@ Nguồn người dùng chọn: Địa Chỉ Việt (diachiviet.com, CC BY 4.0), 
 
 ## Đợt 7 chức năng — PR-X1 danh mục/NCC (02/11/2026, Codex)
 
-- Nhánh feat/x1-categories-suppliers, worktree cena-codex-x1, base f137ff39ee6f07038b78a3a4dbcdc24dbefda34c; đã fetch/merge origin/main trước kiểm tra. Chỉ phạm vi Codex và hai ngoại lệ guard/test được người dùng cho phép; không thay source cũ, layouts/navigation, models/enums/migrations/Resources/helper tiền-kho hoặc lockfiles.
-- Danh mục: CRUD tạo/sửa/ẩn, search/phân trang, slug unique kể cả bản soft-delete, cây tối đa2cấp cùng gender, chặn self/cycle/cấp3/đổi nhóm root còn child. Hide giữ nguyên nhánh/product để catalog kiểm ancestor visibility; không có route hard-delete.
-- NCC: tạo/sửa/search/ngừng hợp tác, code unique, validate phone/email; giữ chứng từ và snapshot đã dùng. Admin/Staff dùng chung auth+role middleware và service kiểm current actor/quyền trước ghi; guest/customer/locked/revoked bị chặn.
-- Dùng EXT-021/022 và layout chung. Bỏ input contact_name vì schema không có cột này; không thêm cột. ProductDemoTaxonomySeeder chỉ local/testing, cần Admin chủ động tạo trước;4root+3NCC theo slug/code, replay giữID và không hồi sinh bản đã ngừng, không tạo tồn/ledger.
-- Nền ngoại lệ đã merge riêng trong PR-X0 (#10): TestDatabaseGuard chỉ thêm cặp chính xác cena_store_test_codex/cena_test_codex, chặn cross-pair/cache/root/SQLite. User Codex chỉ có quyền trên schema Codex. .env riêng và PHPUnit config riêng ngoài Git vượt force-name của phpunit.xml chung; không sửa phpunit.xml/credential/schema của Claude.
-- Kiểm tra hẹp:25tests/93assertions PASS, gồm12 test nghiệp vụ/quyền và13 test guard. Build npm PASS; full Pint và dirty Pint PASS; desktop1440x900/mobile360x800 đã kiểm trực tiếp danh mục/NCC, thao tác và form giữ style Cena. Lần đầu thiếu build manifest và expected locked403 không còn đúng sau C1 (trả401): đã build asset và sửa expected theo middleware hiện hành, không nới quyền.
-- Fixture browser chỉ trong schema Codex, dừng server riêng rồi reset đúng schema Codex có guard, không reset schema Claude/dev. CI toàn suite phải xanh trước squash merge; không tự sửa các phần Claude đang làm.
-## Đợt 7 chức năng — PR-C3 sổ địa chỉ (02/11/2026, Claude)
-
-Theo WF-04 / P02.05 ở mức tối thiểu.
-
-- `AddressService`: thêm, sửa, xóa mềm, đặt mặc định. Mọi thao tác khóa dòng user trước, nên hai yêu cầu đặt mặc định cùng lúc chạy tuần tự; DB còn chặn thêm bằng cột `default_owner_id` unique. Địa chỉ đầu tiên tự thành mặc định; bỏ tick mặc định của địa chỉ mặc định duy nhất bị bỏ qua; xóa địa chỉ mặc định thì bỏ cờ trước rồi chuyển mặc định cho địa chỉ còn lại có id nhỏ nhất.
-- Tỉnh/phường phải thuộc snapshot hiện hành và phường đúng tỉnh; lưu `province_id/ward_id` + snapshot mã, tên, `dataset_version`. Địa chỉ của snapshot cũ hiện cảnh báo cần chọn lại.
-- Chủ sở hữu luôn lấy từ phiên; địa chỉ người khác hoặc đã xóa trả 404 cho xem/sửa/xóa/đặt mặc định.
-- `App\Support\PhoneNumber` chuẩn hóa SĐT (bỏ dấu cách/chấm/gạch, `+84` → `0`), dùng chung cho đăng ký và địa chỉ.
-- Giao diện `/account/addresses` (danh sách, thêm, sửa) trong layout cửa hàng; ô chọn tỉnh → phường của EXT-019 được nối với API `locations.wards` qua prop `wardsUrl`, giữ lựa chọn cũ khi lỗi nhập; ô "Đặt làm mặc định" dùng `choice-group`. Panel tài khoản tự hiện "Sổ địa chỉ".
-- Test `AddressBookTest` 9 ca: khách bị chuyển đăng nhập, địa chỉ đầu tiên mặc định + snapshot, phường sai tỉnh/snapshot cũ/sai định dạng bị chặn, đổi mặc định chỉ còn 1, sửa chụp lại snapshot, xóa mặc định chuyển sang id nhỏ nhất, địa chỉ người khác 404, DB chặn 2 mặc định, trang escape dữ liệu và hiện cảnh báo snapshot cũ.
-- Trình duyệt (DB dev, dữ liệu thật): chưa đăng nhập bị chuyển login rồi quay về sổ địa chỉ; chọn TP.HCM tải 168 phường; thêm địa chỉ thành công, tự mặc định; trang sửa chọn sẵn đúng tỉnh/phường.
-- Giới hạn: chưa có test hai tiến trình MySQL cho đặt mặc định đồng thời — dựa vào khóa dòng user và ràng buộc unique của DB (có test).
-
-## Đợt 7 chức năng — PR-C4 giỏ hàng (02/11/2026, Claude)
-
-Theo WF-09 / P05.02–P05.04 ở mức tối thiểu (chưa có checkout).
-
-- `CartService`: giỏ khách tìm bằng hash của token ngẫu nhiên lưu trong session (DB chỉ giữ hash, hết hạn 30 ngày); giỏ tài khoản theo `user_id`. Không nhận owner/giá/cart_id từ client. Thêm cộng dồn tối đa min(còn bán = stock − reserved, 10) mỗi size, tối đa 50 dòng; sửa là số tuyệt đối 1–10 (giảm luôn được, tăng phải còn hàng); xóa dòng và xóa hết là thao tác riêng. Mỗi thay đổi khóa giỏ, kiểm `version` (sai → 409 `CART_STALE` kèm giỏ hiện tại) rồi tăng version. **Không giữ hàng** khi thêm giỏ.
-- Giá hiệu lực = giá riêng của size → giá khuyến mãi → giá gốc (VND nguyên). Món ngừng bán/hết hàng/vượt tồn vẫn hiện trong giỏ kèm cảnh báo và không tính vào tạm tính.
-- Gộp giỏ khi đăng nhập/đăng ký (sau khi đổi session, token được giữ): khóa hai giỏ theo id tăng, cộng theo variant rồi cắt theo tồn/10, bỏ món không còn bán, báo lại các món bị giảm/bỏ; xóa giỏ khách trong cùng transaction (lỗi → giữ nguyên cả hai); gọi lại lần hai không làm gì. Đăng xuất → khách mới có giỏ trống.
-- API JSON `cart.show`, `cart.items.store|update|destroy`, `cart.clear` (60 request/phút); item của giỏ khác → 404.
-- Giao diện: `resources/js/components/cart.js` (Alpine store `cart`): chỉ đổi số sau khi server trả lời, mỗi lúc chỉ một thao tác, xử lý 401/419/409/422/429/404/mất mạng; khung giỏ trong `panels` (ảnh, màu, size, giá, +/−, xóa, tạm tính, ghi chú "kiểm tra lại khi đặt hàng"), số đôi trên icon giỏ, meta CSRF. Nút nào có `data-add-to-cart data-variant-id` (trang chi tiết của PR-X4) sẽ tự thêm vào giỏ và mở khung giỏ.
-- Test: `CartTest` 10 ca, `CartMergeTest` 4 ca, `tests/JavaScript/cart.test.mjs` 7 ca. Toàn bộ suite local **940 tests PASS**; Node 28/28.
-- Giới hạn: chưa kiểm luồng thêm giỏ trên trình duyệt với sản phẩm thật vì DB dev chưa có sản phẩm (đợi PR-X2/X3/X4); pane trình duyệt bị ẩn nên không xem được hiệu ứng mở khung giỏ, dữ liệu khung giỏ đã kiểm bằng JS. Nút "Đặt hàng" để trạng thái "sắp có".
-
-## Đợt 7 chức năng — PR-X2 sản phẩm/màu/size/ảnh (02/11/2026, Codex)
-
-- Worktree cena-codex-x2, nhánh feat/x2-products từ main sau X1; đã fetch/merge main mới nhất a519898221a3d22acba695239dd7e3416acf6f84, nhận C3/C4 mà không sửa file Claude. Không đổi models/enums/migrations/Resources/InventoryService/Money/Cost/Clock hoặc dependency/lockfiles.
-- ProductManagementService lưu nguyên graph trong transaction: thông tin sản phẩm, colors, variants và album; stage file ngoài closure retry SQL, lỗi rollback graph và dọn đúng tệp mới. Giữ tệp cũ khi bỏ ảnh khỏi album để snapshot chứng từ không vỡ; cleanup orphan do process crash cần quy trình bảo trì sau đợt demo, không xóa hàng loạt file lịch sử.
-- Dùng ShoeSize/ShoeSizeSequence, giữ chuỗi40.5 và chặn trùng sau canonical40.0→40; dải size chỉ dùng riêng, SKU/style-color unique, scoped child IDs trả404. SKU/size/style-color đã có chứng từ không đổi; bỏ màu/size chỉ deactivate; ngừng bán product giữ graph và chứng từ.
-- Chặn stock/reserved/quarantine/cost/size_numeric trong payload; variant mới dùng số dư0 từ schema, không tạo movement/ledger. Giá VND dùng Money, base/sale/override dương và sale<=base; override cao hơn base vẫn được giữ.
-- Ảnh dùng đúng1source upload JPEG/PNG/WebP kiểm MIME server hoặc URL HTTPS không chứa user/password; không fetch URL từ server. Mỗi màu đúng1thumbnail. Media path/hash do server tạo; không nhận storage_path của client.
-- Form EXT-023/024/026 được nối native multipart, thêm SKU/dải size/album/thumbnail/sắp ảnh; không đổi layout/navigation/app.js. Root/child flags, input name và old input được wire; giữ style Cena và label/keyboard cơ bản.
--33test X2/185assertions, cộng12test hồi quy X1 thành45tests/268assertions PASS trên cena_store_test_codex. Bao graph2màu×3size/album, MIME giả, hai nguồn, file upload thật, lỗi SKU cuối rollback file+DB, canonical duplicate, cost payload, giá, ownership404, chứng từ immutable, roles guest/customer/staff/admin, đổi và giữ thumbnail.
-- Lỗi tìm qua test/QA: Blade namespace escape sai đã sửa; validated multipart dựng lại thứ tự numeric index nên chuẩn hóa theo index trước cả hai lượt validate (không đổi InputBag/file objects); thumbnail bulk clear làm model stale nên sync original trước ghi lại. Test upload dùng HTTP multipart thật, không postJson giả file. Thêm assert giữ thumbnail khi save lại cùng graph.
-- Browser desktop1440x900/mobile360x800: ảnh public load thật, sửa tên+giá riêng size40.5 rồi reload còn đúng, thumbnail qua hai lần save còn chọn; sửa fieldset min-width/file-input để body350<=viewport360. Không lỗi JavaScript trong phiên QA. Build và Pint PASS; ảnh QA ngoài Git, không báo cáo riêng.
-- MySQL local từng dừng kết nối trong QA; restart đúng runtime Cena/my.ini hiện hữu, không initialize/provision lại hoặc reset credential. Fixture UI chỉ trong Codex schema, đóng tab/server và guard schema trước reset/rerun; không thay dữ liệu dev hoặc schema Claude.
-
-- CI đầu PR-X2 #13: https://github.com/httrung0308/cena-store-laravel/actions/runs/41386672622 có971test PASS và2test SharedFoundationTest fail vì còn assert menu Sản phẩm disabled. X2 đã bật route/menu đúng contract. Chưa merge; đang xin ngoại lệ cập nhật đúng assertion trong test chung, không đổi layout/navigation hoặc nới kiểm quyền.
-
-- Người dùng đã cho phép ngoại lệ SharedFoundationTest.php: chỉ thay assertion placeholder Sản phẩm disabled bằng kiểm tra href admin.products.index cho cả Admin/Staff; không đổi layout/navigation hoặc kiểm quyền khác. Chạy lại regression và CI trước merge.
-
-## Đợt 7 chức năng — PR-X3 phiếu nhập kho (02/11/2026, Codex)
-
-- Worktree cena-codex-x3, nhánh feat/x3-stock-imports từ main 532e77d (X2 đã merge); chỉ sửa khu vực Codex và ngoại lệ test hạ tầng người dùng duyệt. Giữ nguyên source Cena cũ, giao diện/layout/navigation và toàn bộ mã tài khoản/địa chỉ/giỏ Claude; không dependency/lockfile/model/enum/migration mới.
+- Nhánh feat/x1-categories-suppliers, worktree cena-codex-x1, base f137ff39ee6f07038b78a3a4dbcdc24dbefda34c; đã fetch/merge origin/main trước kiểm tra. Chỉ phạm vi Codex và hai ngoại lệ guard/test được người dùng cho phép; không thay source cũ, layouts/navigation, models/enums/migrations/Resou…2788 tokens truncated…g dependency/lockfile/model/enum/migration mới.
 - StockImportService: tạo/sửa DRAFT, UUID command_key, từ chối trùng SKU và payload tự gán status/tổng/snapshot/actor; server chuẩn hóa Money/Cost, kiểm INT32 từng movement/UINT32 tổng lượng và overflow tiền. Nháp chỉ có chứng từ/items; không ghi tồn/cost/movement/ledger.
 - Ghi sổ: kiểm quyền hiện hành và khóa actor/roles → root → NCC/items → toàn bộ variants tăng dần, gọi InventoryService::receive trong cùng transaction SQL-only retry3. Mỗi dòng dùng import:{id}:post:{variant}; root POSTED/posted_by/UTC clock cuối cùng. Replay POSTED trả metadata gốc, không cộng tồn lại, kể cả NCC đã ngừng. Một SKU lỗi/drift rollback tất cả balance/movement/status. Giá vốn bình quân qua InventoryService, không tự tính hoặc sửa service nền.
 - NCC phải còn active lúc lưu và ghi sổ; SKU inactive được restock, soft-deleted bị chặn. Nhập tặng cost0 chỉ Admin và lý do >=20 ký tự, kiểm lại người ghi sổ. Giá nhập từng dòng phục vụ Staff/Admin; không lộ WAC hoặc aggregate tài chính khác.

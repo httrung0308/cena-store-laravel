@@ -13,50 +13,17 @@ use App\Services\StockImportService;
 use Illuminate\Database\Seeder;
 use LogicException;
 
-/** Adds real, credited multi-view shoe photographs to an existing demo shop. */
+/** Local/testing Nike product albums: four views of each exact style-colour code. */
 class MultiAngleShoeDemoSeeder extends Seeder
 {
-    private const COMMONS = 'https://upload.wikimedia.org/wikipedia/commons/';
+    /** @var list<string> */
+    private const PREVIOUS_DEMO_SLUGS = ['bape-roadsta-photo-demo', 'converse-white-low-photo-demo'];
 
-    /** @var list<array<string, mixed>> */
-    private const PRODUCTS = [
-        [
-            'slug' => 'bape-roadsta-photo-demo',
-            'name' => 'Bape Roadsta · ảnh tham khảo',
-            'category' => 'unisex',
-            'color_code' => 'BAPE-ROADSTA-PHOTO-DEMO',
-            'color_name' => 'Trắng · Vàng',
-            'color_key' => 'white',
-            'color_hex' => '#d6b96d',
-            'price' => 1_790_000,
-            'cost' => 1_050_000,
-            'credit' => 'Ảnh: Christian H. · CC BY 2.0',
-            'import_key' => '72000000-0000-4000-8000-000000000001',
-            'photos' => [
-                '6/65/Bape_Roadsta_%282009-03-21_00.19.01_by_Christian_H.%29.jpg',
-                '9/9b/Bape_Roadsta_%282009-03-21_00.19.20_by_Christian_H.%29.jpg',
-                '0/0d/Bape_Roadsta_%282009-03-21_00.20.04_by_Christian_H.%29.jpg',
-                '5/5c/Bape_Roadsta_%282009-03-21_00.20.21_by_Christian_H.%29.jpg',
-            ],
-        ],
-        [
-            'slug' => 'converse-white-low-photo-demo',
-            'name' => 'Converse All Star trắng · ảnh tham khảo',
-            'category' => 'women',
-            'color_code' => 'CONVERSE-WHITE-LOW-PHOTO-DEMO',
-            'color_name' => 'Trắng',
-            'color_key' => 'white',
-            'color_hex' => '#f5f5f4',
-            'price' => 1_390_000,
-            'cost' => 800_000,
-            'credit' => 'Ảnh: Thewildone85 · CC BY-SA 3.0',
-            'import_key' => '72000000-0000-4000-8000-000000000002',
-            'photos' => [
-                'a/a3/Converse_side_view.JPG',
-                'b/be/White_converse_front.JPG',
-                '2/2d/White_converse_heel.JPG',
-            ],
-        ],
+    /** @var array<string, list<string>> */
+    private const SIZES = [
+        'men' => ['40', '41', '42'],
+        'women' => ['37', '38', '39'],
+        'kids' => ['32', '33', '34'],
     ];
 
     public function run(ProductManagementService $products, StockImportService $imports): void
@@ -65,85 +32,104 @@ class MultiAngleShoeDemoSeeder extends Seeder
             throw new LogicException('Explicit local/testing demo opt-in required.');
         }
 
+        $entries = json_decode(file_get_contents(database_path('data/nike-multiview-demo.json')), true, 512, JSON_THROW_ON_ERROR);
+        if (! is_array($entries) || count($entries) < 11) {
+            throw new LogicException('Nike demo catalog must contain more than ten products.');
+        }
+        foreach ($entries as $entry) {
+            if (! isset(self::SIZES[$entry['group']]) || count($entry['images'] ?? []) !== 4
+                || count(array_unique($entry['images'])) !== 4
+                || ! str_ends_with($entry['source_url'], '/'.$entry['style_color_code'])) {
+                throw new LogicException('Invalid Nike demo album: expected four distinct photos from one style-colour code.');
+            }
+            foreach ($entry['images'] as $url) {
+                if (! str_starts_with($url, 'https://static.nike.com/a/images/')) {
+                    throw new LogicException('Nike demo album contains an unexpected image source.');
+                }
+            }
+        }
+
         $this->call(ProductDemoTaxonomySeeder::class);
         $actor = User::where('is_active', true)->whereHas('roles', fn ($query) => $query->where('slug', 'admin'))->orderBy('id')->firstOrFail();
         $supplier = Supplier::where('code', 'DEMO-NCC-1')->firstOrFail();
 
-        foreach (self::PRODUCTS as $entry) {
-            $this->seedProduct($actor, $supplier, $products, $imports, $entry);
+        foreach ($entries as $index => $entry) {
+            $this->seedProduct($actor, $supplier, $products, $imports, $entry, $index);
+        }
+
+        foreach (self::PREVIOUS_DEMO_SLUGS as $slug) {
+            $old = Product::where('slug', $slug)->where('is_active', true)->first();
+            if ($old !== null && $old->colors()->whereIn('style_color_code', ['BAPE-ROADSTA-PHOTO-DEMO', 'CONVERSE-WHITE-LOW-PHOTO-DEMO'])->exists()) {
+                $products->setActive($actor, $old, false);
+            }
         }
     }
 
     /** @param array<string, mixed> $entry */
-    private function seedProduct(User $actor, Supplier $supplier, ProductManagementService $products, StockImportService $imports, array $entry): void
+    private function seedProduct(User $actor, Supplier $supplier, ProductManagementService $products, StockImportService $imports, array $entry, int $index): void
     {
         $product = Product::withTrashed()->where('slug', $entry['slug'])->first();
+        $code = 'NIKE-DEMO-'.$entry['style_color_code'];
+
         if ($product === null) {
             $product = $products->save($actor, null, [
-                'name' => $entry['name'],
+                'name' => $entry['name'].' · ảnh tham khảo',
                 'slug' => $entry['slug'],
-                'category_id' => Category::where('slug', $entry['category'])->firstOrFail()->id,
-                'brand_line' => $entry['credit'],
-                'description' => 'Ảnh thật nhiều góc dùng để minh họa giao diện. Giá, size và tồn kho là dữ liệu mô phỏng; cửa hàng không tự nhận là nhà phân phối chính hãng.',
-                'base_price' => $entry['price'],
+                'category_id' => Category::where('slug', $entry['group'])->firstOrFail()->id,
+                'brand_line' => 'Nike · Sản phẩm minh họa',
+                'description' => 'Ảnh lấy từ trang Nike Việt Nam cho demo đồ án. Giá, size và tồn kho là dữ liệu mô phỏng; cửa hàng không tự nhận là nhà phân phối chính hãng.',
+                'base_price' => $entry['demo_price_vnd'],
                 'promotion_price' => null,
                 'warranty_months' => 6,
                 'exchange_days' => 7,
                 'is_active' => 1,
                 'colors' => [[
-                    'style_color_code' => $entry['color_code'],
+                    'style_color_code' => $code,
                     'color_name' => $entry['color_name'],
                     'color_key' => $entry['color_key'],
-                    'primary_hex' => $entry['color_hex'],
+                    'primary_hex' => (string) config('store.palette.'.$entry['color_key'].'.hex'),
                     'is_active' => 1,
                     'variants' => array_map(fn (string $size): array => [
                         'size_value' => $size,
-                        'sku' => strtoupper($entry['slug']).'-'.$size,
+                        'sku' => $code.'-'.$size,
                         'is_active' => 1,
-                    ], ['40', '41', '42']),
-                    'images' => $this->images($entry),
+                    ], self::SIZES[$entry['group']]),
+                    'images' => array_map(fn (string $url, int $position): array => [
+                        'external_url' => $url,
+                        'alt_text' => $entry['name'].' ('.$entry['style_color_code'].') — ảnh '.($position + 1),
+                        'is_thumbnail' => $position === 0,
+                    ], $entry['images'], array_keys($entry['images'])),
                 ]],
             ]);
         }
 
-        if ($product->trashed()) {
-            throw new LogicException('Demo product was removed; refusing to restore or change it.');
+        if ($product->trashed() || $product->colors()->where('style_color_code', $code)->count() !== 1) {
+            throw new LogicException('Demo product changed or removed; refusing to overwrite it.');
         }
 
         $variants = ProductVariant::whereHas('color', fn ($query) => $query
             ->where('product_id', $product->id)
-            ->where('style_color_code', $entry['color_code']))
+            ->where('style_color_code', $code))
             ->orderBy('id')->get();
         if ($variants->count() !== 3) {
             throw new LogicException('Demo variants changed; review before importing stock.');
         }
 
-        $import = StockImport::where('command_key', $entry['import_key'])->first();
+        $importKey = sprintf('73000000-0000-4000-8000-%012d', $index + 1);
+        $import = StockImport::where('command_key', $importKey)->first();
         if ($import === null) {
             $import = $imports->saveDraft($actor, null, [
-                'command_key' => $entry['import_key'],
+                'command_key' => $importKey,
                 'supplier_id' => $supplier->id,
-                'note' => 'Nhập kho mẫu ảnh nhiều góc: '.$entry['name'],
+                'note' => 'Nhập kho mẫu ảnh Nike: '.$entry['name'],
                 'items' => $variants->map(fn (ProductVariant $variant): array => [
                     'variant_id' => $variant->id,
                     'quantity' => 8,
-                    'unit_cost_amount' => $entry['cost'],
+                    'unit_cost_amount' => intdiv($entry['demo_price_vnd'] * 60, 100),
                 ])->all(),
             ]);
         }
         $imports->post($actor, $import);
-        $this->command?->info('Album ảnh thật: /shoes/'.$entry['slug']);
-    }
-
-    /** @param array<string, mixed> $entry
-     * @return list<array{external_url: string, alt_text: string, is_thumbnail: bool}>
-     */
-    private function images(array $entry): array
-    {
-        return array_map(fn (string $filename, int $index): array => [
-            'external_url' => self::COMMONS.$filename,
-            'alt_text' => $entry['name'].' — góc chụp '.($index + 1),
-            'is_thumbnail' => $index === 0,
-        ], $entry['photos'], array_keys($entry['photos']));
+        $this->command?->info('Album Nike: /shoes/'.$entry['slug']);
     }
 }
