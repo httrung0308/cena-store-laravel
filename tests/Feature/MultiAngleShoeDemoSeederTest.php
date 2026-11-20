@@ -3,8 +3,8 @@
 namespace Tests\Feature;
 
 use App\Models\Product;
-use App\Models\ProductImage;
 use App\Models\ProductColor;
+use App\Models\ProductImage;
 use App\Models\ProductVariant;
 use App\Models\StockImport;
 use App\Models\User;
