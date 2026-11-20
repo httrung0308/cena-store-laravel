@@ -1,0 +1,81 @@
+name: Capture Cena Store demo screens
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/demo-screenshots.yml'
+      - 'scripts/capture-demo-screenshots.mjs'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  screenshots:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: cena_ci_ephemeral_root
+          MYSQL_ROOT_HOST: '%'
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -pcena_ci_ephemeral_root"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: bcmath, ctype, curl, dom, fileinfo, gd, intl, mbstring, openssl, pdo_mysql, tokenizer, xml, zip
+          tools: composer:2.9.4
+          coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.23.4'
+          cache: npm
+      - name: Create disposable demo database
+        run: |
+          php scripts/configure-env.php --ci
+          sed -i 's/^STORE_DEMO_USERS=.*/STORE_DEMO_USERS=true/' .env
+          sed -i 's/^STORE_DEMO_PASSWORD=.*/STORE_DEMO_PASSWORD=CenaDemo@2026/' .env
+        env:
+          CENA_DB_PORT: '3306'
+          CENA_MYSQL_ROOT_PASSWORD: cena_ci_ephemeral_root
+      - run: composer install --no-interaction --prefer-dist --no-progress
+      - run: npm ci
+      - run: npm run build
+      - run: php artisan migrate --force --no-interaction
+      - run: php artisan storage:link --no-interaction
+      - run: php artisan db:seed --class=FullDemoSeeder --no-interaction
+      - run: php artisan db:seed --class=MultiAngleShoeDemoSeeder --no-interaction
+      - name: Start local Laravel server
+        run: |
+          php artisan serve --host=127.0.0.1 --port=8000 > /tmp/cena-demo-server.log 2>&1 &
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:8000/ > /dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/cena-demo-server.log
+          exit 1
+      - name: Capture screenshots
+        run: |
+          npm install --no-save --package-lock=false playwright-core@1.56.1
+          echo "CHROME_PATH=$(command -v google-chrome || command -v chromium)" >> "$GITHUB_ENV"
+          node scripts/capture-demo-screenshots.mjs
+          zip -qr cena-store-screenshots.zip screenshot-output
+        env:
+          CENA_DEMO_PASSWORD: CenaDemo@2026
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cena-store-screenshots
+          path: |
+            cena-store-screenshots.zip
+            screenshot-output/
+          if-no-files-found: error
+          retention-days: 14
