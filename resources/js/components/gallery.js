@@ -7,7 +7,6 @@ export function galleryController({ albums = {}, initialColor = null } = {}) {
         color: initialColor,
         images: safe(initialColor),
         selectedId: safe(initialColor)[0]?.id ?? null,
-        lightboxOpen: false,
         get selected() { return this.images.find(i => i.id === this.selectedId) ?? null; },
         get currentIndex() {
             const idx = this.images.findIndex(i => i.id === this.selectedId);
@@ -28,16 +27,9 @@ export function galleryController({ albums = {}, initialColor = null } = {}) {
             const next = (i + direction + this.images.length) % this.images.length;
             this.selectedId = this.images[next].id;
         },
-        openLightbox() {
-            if (this.selected) this.lightboxOpen = true;
-        },
-        closeLightbox() {
-            this.lightboxOpen = false;
-        },
         onKeydown(event) {
             if (event.key === 'ArrowRight') { event.preventDefault(); this.step(1); }
             if (event.key === 'ArrowLeft') { event.preventDefault(); this.step(-1); }
-            if (event.key === 'Escape' && this.lightboxOpen) { event.preventDefault(); this.closeLightbox(); }
         },
     };
 }
