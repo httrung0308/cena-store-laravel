@@ -129,6 +129,37 @@ class CouponCheckoutTest extends TestCase
         $this->assertFalse($coupon->fresh()->is_active);
     }
 
+    public function test_fixed_discount_accepts_zero_minimum_order_on_create_and_update(): void
+    {
+        $admin = User::factory()->administrator()->create();
+        $payload = [
+            'code' => 'ALLORDERS50',
+            'name' => 'Giảm 50.000đ mọi đơn hàng',
+            'type' => CouponType::Fixed->value,
+            'value' => '50000',
+            'min_order_amount' => '0',
+            'per_user_limit' => '1',
+            'is_active' => '1',
+        ];
+
+        $this->actingAs($admin)->post(route('admin.coupons.store'), $payload)
+            ->assertRedirect(route('admin.coupons.index'));
+
+        $coupon = Coupon::where('code', 'ALLORDERS50')->sole();
+        $this->assertSame(0, $coupon->min_order_amount);
+
+        $payload['name'] = 'Giảm 50.000đ không yêu cầu giá trị đơn tối thiểu';
+        $this->put(route('admin.coupons.update', $coupon), $payload)
+            ->assertRedirect(route('admin.coupons.index'));
+
+        $this->assertSame(0, $coupon->fresh()->min_order_amount);
+        $this->assertSame(50000, $coupon->fresh()->value);
+
+        unset($payload['value']);
+        $this->put(route('admin.coupons.update', $coupon), $payload)
+            ->assertSessionHasErrors('value');
+    }
+
     public function test_checkout_quote_ajax_returns_json_without_page_reload(): void
     {
         $customer = User::factory()->customer()->create();

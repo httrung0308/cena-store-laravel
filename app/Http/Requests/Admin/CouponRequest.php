@@ -51,6 +51,16 @@ class CouponRequest extends FormRequest
         ];
     }
 
+    /** @return array<string, string> */
+    public function messages(): array
+    {
+        return [
+            'value.required' => 'Vui lòng nhập mức giảm giá.',
+            'value.min' => 'Mức giảm giá phải lớn hơn 0 (riêng miễn phí vận chuyển dùng 0).',
+            'min_order_amount.required' => 'Vui lòng nhập giá trị đơn hàng tối thiểu; nhập 0 để áp dụng cho mọi đơn.',
+        ];
+    }
+
     /** @return array<string, mixed> */
     public function validated($key = null, $default = null): mixed
     {

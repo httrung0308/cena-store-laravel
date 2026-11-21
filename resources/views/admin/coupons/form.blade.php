@@ -89,6 +89,7 @@
           }">
         @csrf
         @if ($coupon->exists) @method('PUT') @endif
+        <input type="hidden" name="value" x-bind:value="type === 'FREE_SHIPPING' ? '0' : rawValue">
 
         <div class="admin-card space-y-6">
             <div>
@@ -139,7 +140,6 @@
                                 <span>Miễn 100% phí vận chuyển</span>
                                 <span class="font-mono font-bold text-accent">0 ₫</span>
                             </div>
-                            <input type="hidden" name="value" value="0">
                             <p class="mt-1 text-[11px] text-muted">Miễn toàn bộ phí vận chuyển khi đạt đơn tối thiểu.</p>
                         </div>
                     </template>
@@ -153,7 +153,6 @@
                                        placeholder="Ví dụ: 10, 20, 50" required>
                                 <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-muted pointer-events-none">%</span>
                             </div>
-                            <input type="hidden" name="value" x-bind:value="rawValue">
                             <p class="mt-1 text-[11px] text-muted">Nhập từ 1 đến 100.</p>
                             <x-forms.field-error name="value" />
                         </div>
@@ -168,7 +167,6 @@
                                        placeholder="Ví dụ: 50.000, 100.000" required>
                                 <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-muted pointer-events-none">₫</span>
                             </div>
-                            <input type="hidden" name="value" x-bind:value="rawValue">
                             <p class="mt-1 text-[11px] text-muted">Trừ trực tiếp vào tổng tiền hàng.</p>
                             <x-forms.field-error name="value" />
                         </div>
