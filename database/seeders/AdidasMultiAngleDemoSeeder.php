@@ -103,6 +103,7 @@ class AdidasMultiAngleDemoSeeder extends Seeder
         $variants = ProductVariant::whereHas('color', fn ($query) => $query
             ->where('product_id', $product->id)
             ->where('style_color_code', $code))
+            ->whereIn('size_value', self::SIZES[$entry['group']])
             ->orderBy('id')->get();
         if ($variants->count() !== 3) {
             throw new LogicException('Demo variants changed; review before importing stock.');

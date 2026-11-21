@@ -13,16 +13,12 @@ test('Arrow keys select only existing ids',()=>{
   assert.equal(g.selectedId,'two');g.onKeydown({key:'ArrowLeft',preventDefault(){calls++}});
   assert.equal(g.selectedId,'one');assert.equal(calls,2);
 });
-test('lightbox opens only when an image exists and Escape closes it',()=>{
-  const six=Array.from({length:6},(_,i)=>({id:i+1,url:`/img-${i+1}.jpg`}));
-  const g=galleryController({albums:{a:six},initialColor:'a'});
-  assert.equal(g.images.length,6);
+test('four-angle gallery wraps between last and first image without a dialog',()=>{
+  const angles=Array.from({length:4},(_,i)=>({id:i+1,url:`/img-${i+1}.jpg`}));
+  const g=galleryController({albums:{a:angles},initialColor:'a'});
+  assert.equal(g.images.length,4);
   assert.equal(g.currentIndex,1);
-  g.openLightbox(); assert.equal(g.lightboxOpen,true);
-  g.onKeydown({key:'Escape',preventDefault(){}});
-  assert.equal(g.lightboxOpen,false);
-
-  const empty=galleryController({albums:{a:[]},initialColor:'a'});
-  empty.openLightbox();
-  assert.equal(empty.lightboxOpen,false);
+  g.step(-1); assert.equal(g.currentIndex,4);
+  g.step(1); assert.equal(g.currentIndex,1);
+  assert.equal('lightboxOpen' in g,false);
 });

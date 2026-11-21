@@ -19,7 +19,6 @@
             <img x-bind:src="selected.url"
                 x-bind:alt="selected.alt || 'Ảnh sản phẩm'"
                 x-on:error="$el.src !== @js($fallbackImage) && ($el.src = @js($fallbackImage))"
-                x-on:click="openLightbox()"
                 x-bind:style="{ transformOrigin: `${originX}% ${originY}%`, transform: zoom ? 'scale(2.25)' : 'scale(1)' }"
                 class="h-full w-full object-cover transition-transform duration-200 ease-out motion-reduce:transition-none">
         </template>
@@ -53,24 +52,12 @@
             </div>
         </template>
 
-        {{-- Counter & Lightbox Trigger --}}
-        <div class="pointer-events-none absolute inset-x-3 bottom-3 flex items-center justify-between gap-2">
+        {{-- Image counter --}}
+        <div class="pointer-events-none absolute inset-x-3 bottom-3 flex items-center">
             <span x-cloak
                 x-show="images.length > 1"
                 x-text="currentIndex + ' / ' + images.length"
                 class="pointer-events-auto rounded-full border border-border bg-surface-card/95 px-2.5 py-1 text-[11px] font-bold text-main shadow-subtle"></span>
-
-            <button type="button"
-                x-cloak
-                x-show="selected"
-                x-on:click.stop="openLightbox()"
-                aria-label="Phóng to ảnh sản phẩm"
-                class="pointer-events-auto ml-auto inline-flex items-center gap-1.5 rounded-full border border-border bg-surface-card/95 px-3 py-1.5 text-[11px] font-semibold text-main shadow-subtle transition hover:border-accent hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
-                <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607ZM10.5 7.5v6m3-3h-6" />
-                </svg>
-                <span>Phóng to</span>
-            </button>
         </div>
     </div>
 
@@ -96,58 +83,5 @@
                     class="h-full w-full rounded-lg object-cover aspect-square">
             </button>
         </template>
-    </div>
-
-    {{-- Fullscreen Lightbox Dialog --}}
-    <div x-cloak
-        x-show="lightboxOpen"
-        x-transition.opacity
-        role="dialog"
-        aria-modal="true"
-        aria-label="Xem ảnh phóng to"
-        x-on:click.self="closeLightbox()"
-        class="fixed inset-0 z-50 flex items-center justify-center bg-black/85 p-4 sm:p-8">
-        <div class="relative flex max-h-[90vh] w-full max-w-3xl flex-col items-center gap-4">
-            <div class="flex w-full items-center justify-between text-white">
-                <span class="text-xs font-semibold" x-show="images.length > 1" x-text="'Ảnh ' + currentIndex + ' / ' + images.length"></span>
-                <button type="button"
-                    x-on:click="closeLightbox()"
-                    aria-label="Đóng xem ảnh phóng to"
-                    class="ml-auto inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/25 bg-black/50 text-white transition hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white">
-                    <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
-                    </svg>
-                </button>
-            </div>
-
-            <div class="relative flex max-h-[75vh] w-full items-center justify-center overflow-hidden rounded-2xl bg-surface-card">
-                <template x-if="selected">
-                    <img x-bind:src="selected.url"
-                        x-bind:alt="selected.alt || 'Ảnh sản phẩm phóng to'"
-                        x-on:error="$el.src !== @js($fallbackImage) && ($el.src = @js($fallbackImage))"
-                        class="max-h-[75vh] w-auto max-w-full object-contain">
-                </template>
-                <template x-if="images.length > 1">
-                    <div>
-                        <button type="button"
-                            x-on:click="step(-1)"
-                            aria-label="Ảnh trước"
-                            class="absolute left-3 top-1/2 -translate-y-1/2 inline-flex h-11 w-11 items-center justify-center rounded-full border border-border bg-surface-card/90 text-main shadow-lg transition hover:border-accent">
-                            <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
-                            </svg>
-                        </button>
-                        <button type="button"
-                            x-on:click="step(1)"
-                            aria-label="Ảnh kế tiếp"
-                            class="absolute right-3 top-1/2 -translate-y-1/2 inline-flex h-11 w-11 items-center justify-center rounded-full border border-border bg-surface-card/90 text-main shadow-lg transition hover:border-accent">
-                            <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
-                            </svg>
-                        </button>
-                    </div>
-                </template>
-            </div>
-        </div>
     </div>
 </section>
